@@ -223,6 +223,23 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal((await request("不允许改他人评论")).status, 403);
     assert.equal(actual.get(id).body.includes("不允许"), false);
   });
+  it("allows a configured moderator to delete spam but not edit other authors", async () => {
+    env.ADMIN_GITHUB_LOGINS = user.login;
+    const created = (await (await send(requestBody())).json()) as any;
+    const id = created.comment.id;
+    actual.get(id).author = { ...user, login: "spam-account" };
+    const path = `/api/posts/${postId}/comments/${id}`;
+    const headers = { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf };
+    assert.equal((await call(path, {
+      method: "PUT", headers, body: JSON.stringify({ body: "未经作者允许的编辑" }),
+    })).status, 403);
+    assert.equal((await call(path, { method: "DELETE", headers })).status, 200);
+    assert.equal(actual.has(id), false);
+    const session = (await (await call("/api/session", {
+      headers: { Cookie: `__Host-echo_session=${rawSession}` },
+    })).json()) as any;
+    assert.equal(session.moderator, true);
+  });
   it("deletes only one's own comment and clears anchors and comment cache", async () => {
     const created = (await (await send(requestBody())).json()) as any;
     const id = created.comment.id;
