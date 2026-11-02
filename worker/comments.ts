@@ -389,6 +389,16 @@ async function persistWrite(
     );
   await env.DB!.batch(statements);
 }
+/** Count clickable text links; fenced code/inline code stays usable for developers. */
+function checkPublicLinks(body: string) {
+  const prose = body
+    .replace(/```[^]*?```/g, "")
+    .replace(/`[^`\n]*`/g, "");
+  const links = prose.match(/(?:https?:\/\/|www\.)[^\s<>()]+/gi) || [];
+  if (links.length > 2)
+    throw new HttpError(400, "LINK_LIMIT", "每条评论最多包含 2 个链接。");
+}
+
 export async function writeComment(request: Request, env: Env, postId: string) {
   const post = requirePost(postId);
   if (!readReady(env))
@@ -409,10 +419,7 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   )
     throw new HttpError(400, "COMMENT_LENGTH", "请写下 1 到 6000 字的想法。");
   const body = data.body.trim();
-  // Public discussions invite spam. Cap outbound links without rejecting ordinary prose.
-  const links = body.match(/(?:https?:\/\/|www\.)[^\s<>()]+/gi) || [];
-  if (links.length > 2)
-    throw new HttpError(400, "LINK_LIMIT", "每条评论最多包含 2 个链接。");
+  checkPublicLinks(body);
   if (/<!--\s*echo:/i.test(body))
     throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
   if (
@@ -645,6 +652,7 @@ export async function manageComment(
       !data.body.trim() || data.body.trim().length > 6000)
       throw new HttpError(400, "COMMENT_LENGTH", "评论需要 1 到 6000 字。");
     const body = data.body.trim();
+    checkPublicLinks(body);
     if (/<!--\s*echo:/i.test(body))
       throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
     // Keep the original annotation and nested-reply metadata after editing.
