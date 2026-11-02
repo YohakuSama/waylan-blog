@@ -376,6 +376,32 @@ export default function Reader({ post }: { post: Post }) {
     window.addEventListener("waylan:highlights-changed", sync);
     return () => window.removeEventListener("waylan:highlights-changed", sync);
   }, [post.id]);
+  // iOS Safari's keyboard can shrink the visual viewport without changing 100dvh.
+  // Keep the full-screen composer and submit button inside the visible area.
+  useEffect(() => {
+    if (!panel || panelIds.length) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const sync = () => {
+      document.documentElement.style.setProperty("--waylan-editor-view-height", `${viewport.height}px`);
+      document.documentElement.style.setProperty("--waylan-editor-view-top", `${viewport.offsetTop}px`);
+    };
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      document.documentElement.style.removeProperty("--waylan-editor-view-height");
+      document.documentElement.style.removeProperty("--waylan-editor-view-top");
+    };
+  }, [panel, panelIds.length]);
+  useEffect(() => {
+    if (!panel || panelIds.length || !window.matchMedia("(pointer: fine)").matches)
+      return;
+    const id = window.requestAnimationFrame(() => composerArea.current?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(id);
+  }, [panel, panelIds.length]);
   const state = comments || commentState.data || emptyPage;
   const visibleTopComments = state.nodes.filter(visibleComment);
   const visibleCount = Math.max(0, state.totalCount - (state.nodes.length - visibleTopComments.length));
