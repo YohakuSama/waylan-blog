@@ -9,7 +9,7 @@
     "build": "npm run content && vite build && node --import tsx scripts/prerender.tsx && npm run build:preview",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
-    "check": "npm run typecheck && npm run test && npm run build && node --import tsx scripts/check-build.ts && node --import tsx scripts/check-preview.ts",
+    "check": "npm run typecheck && npm run build && npm run test && node --import tsx scripts/check-build.ts && node --import tsx scripts/check-preview.ts",
     "preview": "vite preview --host 0.0.0.0",
     "dev:worker": "npm run build && wrangler dev",
     "db:local": "wrangler d1 migrations apply echo-db --local",
