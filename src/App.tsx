@@ -130,30 +130,15 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     setSearch(false);
   }, [router.path]);
   const post = posts.find((p) => pathname === `/post/${p.slug}`);
-  const feedType =
-    pathname === "/feed"
-      ? params.get("type") ||
-        (params.get("q") || params.get("tag") ? "all" : "article")
-      : post?.type;
+  // Primary navigation is for destinations, not content-type filters.
+  // Every type (article, note, thought, journal, project) lives in /feed.
   const nav = [
     { url: "/", label: "首页", term: "~", active: pathname === "/" },
     {
-      url: "/feed",
-      label: "文章",
+      url: "/feed?type=all",
+      label: "内容",
       term: "posts",
-      active: feedType === "article",
-    },
-    {
-      url: "/feed?type=note",
-      label: "笔记",
-      term: "notes",
-      active: feedType === "note",
-    },
-    {
-      url: "/projects",
-      label: "项目",
-      term: "projects",
-      active: pathname === "/projects" || feedType === "project",
+      active: pathname === "/feed" || pathname === "/projects" || !!post,
     },
     {
       url: "/archive",
