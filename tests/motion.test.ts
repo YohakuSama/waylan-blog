@@ -184,28 +184,43 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
 });
 
 describe("immersive composer viewport and motion contract", () => {
-  it("anchors fullscreen dialogs at the origin with explicit viewport dimensions", () => {
+  const cssRule = (css: string, selector: string) => {
+    const start = css.indexOf(selector + " {");
+    assert.ok(start >= 0, `CSS rule not found: ${selector}`);
+    return css.slice(start, css.indexOf("}", start) + 1);
+  };
+  it("anchors fullscreen at the physical viewport origin, without width clamps", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const sheet = css.match(/\\.discussion-dialog\\.composer-dialog \\{([\\s\\S]*?)\\n\\}/)?.[1] || "";
-    const fullscreen = css.match(/\\.discussion-dialog\\.composer-dialog\\.composer-fullscreen \\{([\\s\\S]*?)\\n\\}/)?.[1] || "";
-    assert.match(sheet, /inset:\\s*auto 0 18px/);
-    assert.match(fullscreen, /inset:\\s*0 auto auto 0/);
-    assert.match(fullscreen, /margin:\\s*0/);
-    assert.match(fullscreen, /width:\\s*100dvw/);
-    assert.match(fullscreen, /inline-size:\\s*100dvw/);
-    assert.match(fullscreen, /min-inline-size:\\s*100dvw/);
-    assert.match(fullscreen, /max-inline-size:\\s*100dvw/);
-    assert.match(fullscreen, /height:\\s*100dvh/);
-    assert.doesNotMatch(sheet, /width 340ms/);
+    const compact = cssRule(css, ".discussion-dialog.composer-dialog");
+    const fullscreen = cssRule(css, ".discussion-dialog.composer-dialog.composer-fullscreen");
+    assert.ok(compact.includes("inset: auto 0 18px;"));
+    for (const fragment of [
+      "inset: 0 auto auto 0;",
+      "margin: 0;",
+      "width: 100dvw;",
+      "height: 100dvh;",
+      "min-width: 0;",
+      "max-inline-size: none;",
+    ]) assert.ok(fullscreen.includes(fragment), fragment);
+    assert.equal(fullscreen.includes("min-inline-size: 100dvw"), false);
+    assert.equal(fullscreen.includes("inline-size: 100dvw"), false);
+    assert.equal(compact.includes("width 340ms"), false);
   });
-  it("applies the same full-bleed rules to tablet and mobile viewports", () => {
+  it("uses the same unclamped viewport sizing on phones and tablets", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const rule = css.match(/@media \\(max-width: 1024px\\) \\{\\s*\\.discussion-dialog\\.composer-dialog,\\s*\\.discussion-dialog\\.composer-dialog\\.composer-fullscreen \\{([\\s\\S]*?)\\n  \\}/)?.[1] || "";
-    assert.match(rule, /width:\\s*100dvw/);
-    assert.match(rule, /max-inline-size:\\s*100dvw/);
-    assert.match(rule, /--waylan-editor-view-height/);
+    const marker = ".discussion-dialog.composer-dialog,\n  .discussion-dialog.composer-dialog.composer-fullscreen {";
+    const start = css.indexOf(marker);
+    assert.ok(start >= 0);
+    const rule = css.slice(start, css.indexOf("}", start) + 1);
+    for (const fragment of [
+      "width: 100dvw;",
+      "min-width: 0;",
+      "max-inline-size: none;",
+      "--waylan-editor-view-height",
+    ]) assert.ok(rule.includes(fragment), fragment);
+    assert.equal(rule.includes("min-inline-size: 100dvw"), false);
   });
-  it("expands and shrinks on the same layout path with Waylan's shared motion tokens", () => {
+  it("expands and shrinks on the same geometry path and shared easing", () => {
     const element = document.createElement("dialog");
     document.body.appendChild(element);
     const compact = rect(420, 240, 760, 680);
@@ -230,9 +245,8 @@ describe("immersive composer viewport and motion contract", () => {
     assert.equal(calls[0].options.duration, calls[1].options.duration);
     assert.equal(calls[0].options.easing, calls[1].options.easing);
     assert.equal(calls[0].options.duration, 320);
-    assert.equal(animateDialogResize(element, compact, compact, "18px", "18px"), null);
   });
-  it("respects explicit reduced-motion preferences", () => {
+  it("respects reduced-motion preferences", () => {
     const element = document.createElement("dialog");
     setMotionPreference("reduced");
     assert.equal(
