@@ -38,7 +38,6 @@ try {
   await waitForServer();
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ deviceScaleFactor: 1, reducedMotion: "reduce" });
-  await page.addInitScript(() => { window.__WAYLAN_HYDRATION_DIAGNOSTIC__ = true; });
   const errors = [];
   page.on("pageerror", (error) => errors.push({ route: new URL(page.url()).pathname, message: error.message }));
 
@@ -107,17 +106,35 @@ try {
         }
       }
       results.push({ route, width, ...geometry });
-      const traces = await page.evaluate(() => window.__WAYLAN_HYDRATION_TRACE__ || []);
-      if (errors.length || traces.length) {
-        console.error("Hydration trace:", JSON.stringify(traces.slice(0, 3)).slice(0, 12000));
-        console.error("Browser page errors:", JSON.stringify(errors.slice(0, 3)));
-        throw new Error("Hydration diagnosis: stop at first affected route");
+
+      // Check the alternative terminal skin too; it has different nav label
+      // widths and must stay inside the same responsive geometry.
+      if ([1440, 1200, 900, 390].includes(width)) {
+        const terminal = await page.evaluate(() => {
+          document.documentElement.dataset.skin = "terminal";
+          const coords = (el) => el && { left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right };
+          const nav = document.querySelector("#site-nav");
+          return {
+            viewport: document.documentElement.clientWidth,
+            documentWidth: document.documentElement.scrollWidth,
+            brand: coords(document.querySelector(".brand")),
+            nav: nav && getComputedStyle(nav).display !== "none" ? coords(nav) : null,
+            tools: coords(document.querySelector(".header-tools")),
+          };
+        });
+        assert.ok(terminal.documentWidth <= terminal.viewport + 2, `${label}: terminal horizontal overflow`);
+        if (width > 860 && terminal.nav) {
+          assert.ok(terminal.brand.right <= terminal.nav.left + 3, `${label}: terminal brand/nav overlap`);
+          assert.ok(terminal.nav.right <= terminal.tools.left + 3, `${label}: terminal nav/tools overlap`);
+        }
+        await page.screenshot({ path: `${out}/${label}-terminal.png`, animations: "disabled" });
+        await page.evaluate(() => { document.documentElement.dataset.skin = "editorial"; });
       }
+      assert.equal(errors.length, 0, `${label}: unexpected browser errors`);
     }
   }
-  if (errors.length) console.error("Browser error totals by route:", JSON.stringify(errors.reduce((a,e)=>{ a[e.route]=(a[e.route]||0)+1; return a; }, {})));
   assert.deepEqual(errors, [], "Unexpected browser runtime errors");
-  console.log("Visual geometry checks passed:", results.length, "viewport/page combinations");
+  console.log("Visual geometry checks passed:", results.length, "viewport/page combinations plus 12 terminal-skin snapshots");
 } finally {
   await writeFile(`${out}/geometry.json`, JSON.stringify(results, null, 2));
   await browser?.close();
