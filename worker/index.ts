@@ -15,7 +15,7 @@ import {
 } from "./comments";
 import { readViews, recordView } from "./views";
 import { admin } from "./admin";
-import { inbox, updateInbox, commentNotification, notificationsReady } from "./notifications";
+import { inbox, updateInbox, testInbox, commentNotification, notificationsReady } from "./notifications";
 async function webhook(request: Request, env: Env) {
   if (!env.DB || !env.GITHUB_WEBHOOK_SECRET)
     throw new HttpError(503, "WEBHOOK_DISABLED", "Webhook 尚未配置。");
@@ -157,6 +157,9 @@ const worker = {
         request.method === "POST"
       )
         response = await webhook(request, env);
+      else if (url.pathname === "/api/notifications/test" &&
+        (request.method === "POST" || request.method === "DELETE"))
+        response = await testInbox(request, env);
       else if (url.pathname === "/api/notifications" && request.method === "GET")
         response = await inbox(request, env);
       else if (url.pathname === "/api/notifications" && request.method === "POST")
