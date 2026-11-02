@@ -25,7 +25,7 @@ if (root.dataset.prerender === "true")
           (diagnostic.__WAYLAN_HYDRATION_TRACE__ ||= []).push({
             route: location.pathname,
             detail: error instanceof Error ? error.message : String(error),
-            stack: info.componentStack,
+            stack: info.componentStack || "",
           });
         }
       },
