@@ -1689,29 +1689,9 @@ h3 {
   .view-toggle {
     display: none;
   }
-  /* A two-row wrap is easier to discover than clipping categories offscreen.
-     At exceptionally narrow widths more rows are allowed; never hide a type. */
-  .type-tabs {
-    flex-wrap: wrap;
-    overflow: visible;
-    margin-right: 0;
-    padding-right: 0;
-    gap: 8px;
-  }
-  /* The moving clip-path pill cannot interpolate across two flex rows:
-     let the selected tab use the site's existing color transition instead. */
-  .type-tabs[data-pill] .type-fill {
-    display: none;
-  }
-  .type-tabs[data-pill] .type-tab.active {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .type-tabs[data-pill] .type-tab.active .tab-count {
-    background: color-mix(in srgb, var(--paper) 18%, transparent);
-    color: var(--paper);
-  }
+  /* All six type filters remain visible; the single-layer selected state
+     works across flex rows without an animated duplicate. */
+  .type-tabs { flex-wrap:wrap; overflow:visible; margin-right:0; padding-right:0; gap:8px; }
   .sort-control select {
     width: 100%;
   }
@@ -1771,8 +1751,7 @@ h3 {
     justify-content: center;
     padding: 0 6px;
   }
-  .type-tab,
-  .type-fill-tab {
+  .type-tab {
     height: 32px;
     padding: 0 10px 0 14px;
     font-size: 14px;
@@ -1894,4 +1873,18 @@ h3 {
   .type-tab .tab-count { min-width:18px; padding:0 4px; font-size:10px; }
   .archive-month { grid-template-columns:minmax(0,1fr); gap:0; }
   .archive-month-label { padding:6px 0; font-size:12px; }
+}
+
+/* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
+.header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+.header-search:hover { background:var(--surface-muted); }
+.intro-copy > .primary-button {
+  min-height:44px; padding:9px 19px; border-radius:var(--radius-full);
+  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.feed-controls .sort-control select, .feed-controls .topic-select select { min-height:40px; }
+.feed-result-line a:hover, .timeline-result a:hover { color:var(--brand); }
+@media (hover:none) {
+  .type-tab:hover { background:var(--surface); border-color:var(--line); color:var(--ink-soft); }
+  .type-tab.active:hover { background:var(--ink); border-color:var(--ink); color:var(--paper); }
 }
