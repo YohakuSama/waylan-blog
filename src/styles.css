@@ -2093,3 +2093,24 @@ body,
     max-height: var(--waylan-editor-view-height, 100dvh);
   }
 }
+
+
+/* Explicit modal anchoring avoids native dialog centering the bottom sheet. */
+@media (min-width: 1025px) {
+  .discussion-dialog.composer-dialog:not(.composer-fullscreen) {
+    position: fixed;
+    inset: auto 0 18px;
+    margin: 0 auto;
+    max-width: calc(100vw - 32px);
+  }
+  .discussion-dialog.composer-dialog.composer-fullscreen {
+    inset: 0;
+    max-width: none;
+  }
+}
+@media (max-width: 1024px) {
+  .discussion-dialog.composer-dialog,
+  .discussion-dialog.composer-dialog.composer-fullscreen {
+    max-width: none;
+  }
+}
