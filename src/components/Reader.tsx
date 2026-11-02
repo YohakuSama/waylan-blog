@@ -1,5 +1,5 @@
-import { motionAllowed } from "../lib/motion";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { motionAllowed, animateDialogResize } from "../lib/motion";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import { MarkdownTools } from "./MarkdownTools";
 import {
@@ -330,7 +330,9 @@ export default function Reader({ post }: { post: Post }) {
   const router = useRouter(),
     prose = useRef<HTMLDivElement>(null),
     article = useRef<HTMLElement>(null),
-    composerArea = useRef<HTMLTextAreaElement>(null);
+    composerArea = useRef<HTMLTextAreaElement>(null),
+    composerGeometry = useRef<{ from: DOMRect; radius: string } | null>(null),
+    composerResizeAnimation = useRef<Animation | null>(null);
   const [progress, setProgress] = useState(0),
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
@@ -376,6 +378,37 @@ export default function Reader({ post }: { post: Post }) {
     window.addEventListener("waylan:highlights-changed", sync);
     return () => window.removeEventListener("waylan:highlights-changed", sync);
   }, [post.id]);
+  // Snapshot before React changes the class; run geometry animation in
+  // layout effect after the new bounds exist, before the first painted frame.
+  function toggleComposerFullscreen(event: ReactMouseEvent<HTMLButtonElement>) {
+    const dialog = event.currentTarget.closest("dialog");
+    if (!dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    const radius = getComputedStyle(dialog).borderRadius;
+    composerResizeAnimation.current?.cancel();
+    composerGeometry.current = { from: bounds, radius };
+    setComposerFullscreen((value) => !value);
+  }
+  useLayoutEffect(() => {
+    const previous = composerGeometry.current;
+    if (!previous) return;
+    composerGeometry.current = null;
+    const dialog = document.querySelector<HTMLDialogElement>(
+      "dialog.discussion-dialog.composer-dialog[open]",
+    );
+    if (!dialog) return;
+    composerResizeAnimation.current = animateDialogResize(
+      dialog,
+      previous.from,
+      dialog.getBoundingClientRect(),
+      previous.radius,
+      getComputedStyle(dialog).borderRadius,
+    );
+  }, [composerFullscreen]);
+  useEffect(() => () => {
+    composerResizeAnimation.current?.cancel();
+    composerGeometry.current = null;
+  }, []);
   // iOS Safari's keyboard can shrink the visual viewport without changing 100dvh.
   // Keep the full-screen composer and submit button inside the visible area.
   useEffect(() => {
@@ -1470,7 +1503,7 @@ export default function Reader({ post }: { post: Post }) {
           <button type="button" className="icon-button composer-expand" title={composerFullscreen ? "退出沉浸模式" : "全屏沉浸编辑"}
             aria-label={composerFullscreen ? "退出全屏编辑" : "进入全屏编辑"}
             aria-pressed={composerFullscreen}
-            onClick={() => setComposerFullscreen((v) => !v)}>
+            onClick={toggleComposerFullscreen}>
             {composerFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
         ) : undefined}
