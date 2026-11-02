@@ -131,6 +131,9 @@ const worker = {
           user: session?.user || null,
           ...(session ? { csrf: session.row.csrf } : {}),
           configured: authReady(env) && readReady(env),
+          moderator: !!session && (env.ADMIN_GITHUB_LOGINS || "")
+            .split(/[\s,]+/)
+            .some((login) => login.toLowerCase() === session.user.login.toLowerCase()),
         });
       } else if (
         url.pathname === "/api/auth/github" &&
