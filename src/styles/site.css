@@ -1814,7 +1814,7 @@ h3 {
     right: 0;
     height: 100%;
     margin: 0;
-    opacity: .25;
+    opacity: .16;
   }
   /* Five categories stay completely visible as balanced 3+2 rows on phones,
      instead of four pills and one orphan or an unmarked horizontal scroller. */
