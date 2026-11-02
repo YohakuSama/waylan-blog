@@ -1574,7 +1574,7 @@ h3 {
     position: absolute;
     z-index: 0;
     inset: 0 0 auto auto;
-    right: -8px;
+    right: 0;
     width: min(100%, 650px);
     max-width: none;
     height: 100%;
@@ -1702,8 +1702,8 @@ h3 {
     font-size: 13.5px;
   }
   :root:not([data-skin="terminal"]) .home-hero .hero-visual {
-    width: calc(100% + 10px);
-    right: -5px;
+    width: 100%;
+    right: 0;
     height: 100%;
     margin: 0;
     opacity: .25;
