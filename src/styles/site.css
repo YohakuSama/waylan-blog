@@ -1475,6 +1475,8 @@ h3 {
     grid-template-columns: minmax(0, 1fr);
   }
   .site-sidebar {
+    min-height: 0;
+    align-content: start;
     border-left: 0;
     border-top: 1px solid var(--ink);
     margin-top: 40px;
@@ -1568,7 +1570,8 @@ h3 {
 }
 @media (max-width: 767px) {
   .site-sidebar {
-    grid-template-columns: minmax(0, 1fr);
+    /* A single-column sidebar should flow naturally on iOS Safari. */
+    display: block;
   }
   .feed-item,
   .feed-item.has-media,
