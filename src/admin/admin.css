@@ -612,3 +612,27 @@ main {
   box-shadow:0 10px 30px #0002;
 }
 .markdown-emoji-picker button { font-size:18px; width:35px; height:35px; }
+
+
+/* Same local emoji picker as the public comment editor. */
+.markdown-tools .markdown-emoji-picker {
+  position: absolute; z-index: 40; bottom: calc(100% + 8px); left: -30px;
+  display: flex; flex-direction: column; gap: 0; padding: 0;
+  width: min(360px, calc(100vw - 36px)); max-height: min(380px, 55dvh);
+  border: 1px solid var(--line); border-radius: 9px;
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 14px 32px #0003; overflow: hidden;
+}
+.markdown-tools .emoji-picker-header,.markdown-tools .emoji-search,.markdown-tools .emoji-categories {
+  display: flex; align-items: center; gap: 7px; padding: 8px 10px;
+}
+.markdown-tools .emoji-picker-header { justify-content: space-between; font-size: 12px; }
+.markdown-tools .emoji-search { margin: 0 10px 6px; border: 1px solid var(--line); border-radius: 6px; }
+.markdown-tools .emoji-search input { width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 12px; outline: none; }
+.markdown-tools .emoji-categories { overflow-x: auto; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.markdown-tools .emoji-categories button { min-width: 0; width: auto; height: 27px; padding: 3px 8px; font-size: 11px; flex: none; }
+.markdown-tools .emoji-categories button.selected { background: var(--line); color: var(--ink); }
+.markdown-tools .emoji-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 2px; padding: 8px; overflow-y: auto; max-height: 225px; min-height: 90px; }
+.markdown-tools .emoji-grid button { width: 100%; min-width: 0; height: 37px; font-size: 24px; }
+.markdown-tools .emoji-glyph { font-family: "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif; }
+.markdown-tools .emoji-empty { grid-column: 1/-1; text-align: center; font-size: 12px; color: var(--muted); }
