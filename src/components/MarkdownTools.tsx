@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { Bold, Code2, FileCode2, Link2, Smile, Quote, Search, X } from "lucide-react";
 
 // Familiar emoji with broad Windows 10, iOS and Android glyph coverage.
-// The previous 🥹 was not supported by older Windows emoji fonts.
+// The prior 2021 'holding back tears' glyph was missing on some Windows 10 systems.
 type EmojiEntry = readonly [symbol: string, name: string];
 const groups: { label: string; items: EmojiEntry[] }[] = [
   { label: "表情", items: [
