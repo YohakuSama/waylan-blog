@@ -1,7 +1,7 @@
 import { getSession, requireSession } from "./auth";
 import { github, parseMarker } from "./github";
 import { HttpError, json, now, type Env } from "./types";
-import { readBody } from "./security";
+import { limit, readBody } from "./security";
 
 export const notificationsReady = (env: Env) =>
   env.NOTIFICATIONS_ENABLED === "true" && !!env.DB;
@@ -79,6 +79,50 @@ export async function updateInbox(request: Request, env: Env) {
       `UPDATE notifications SET read_at=? WHERE recipient_login=?
        AND id IN (${body.ids.map(() => "?").join(",")}) AND read_at IS NULL`,
     ).bind(now(), login, ...body.ids).run();
+  return json({ ok: true });
+}
+
+/**
+ * Only the configured blog owner may generate a synthetic inbox item.
+ * No GitHub Discussion is posted; the test entry stays private in D1.
+ */
+export async function testInbox(request: Request, env: Env) {
+  if (!notificationsReady(env))
+    throw new HttpError(503, "NOTIFICATIONS_OFF", "站内通知尚未启用。");
+  const session = await requireSession(request, env);
+  const login = session.user.login.toLowerCase();
+  const moderator = (env.ADMIN_GITHUB_LOGINS || "")
+    .split(/[\s,]+/)
+    .some((name) => name.toLowerCase() === login);
+  if (!moderator)
+    throw new HttpError(403, "ADMIN_ONLY", "只有站长可以发送测试通知。");
+  if (request.method === "DELETE") {
+    // Cleanup never touches real GitHub notifications or other users' inboxes.
+    await env.DB!.prepare(
+      "DELETE FROM notifications WHERE recipient_login=? AND id LIKE 'test:%' AND actor_login='waylan-system'",
+    ).bind(login).run();
+    return json({ ok: true });
+  }
+  if (request.method !== "POST")
+    throw new HttpError(405, "METHOD", "这个操作不受支持。");
+  // The existing API limit controls bursts; this narrower limit protects D1.
+  await limit(env, `notify-test:${login}`, 4, 3600);
+  const subscribed = (await env.DB!.prepare(
+    "SELECT enabled FROM notification_settings WHERE recipient_login=?",
+  ).bind(login).first<{ enabled: number }>())?.enabled !== 0;
+  if (!subscribed)
+    throw new HttpError(409, "NOTIFICATION_MUTED", "请先开启站内提醒。");
+  const post = await env.DB!.prepare(
+    "SELECT id FROM posts ORDER BY id LIMIT 1",
+  ).first<{ id: string }>();
+  if (!post)
+    throw new HttpError(503, "NO_POSTS", "没有可用的文章来测试消息跳转。");
+  const id = `test:${crypto.randomUUID()}`;
+  await env.DB!.prepare(
+    `INSERT INTO notifications
+    (id,recipient_login,actor_login,post_id,comment_id,root_comment_id,kind,created_at)
+    VALUES(?,?,?,?,?,?,?,?)`,
+  ).bind(id, login, "waylan-system", post.id, id, null, "new_comment", now()).run();
   return json({ ok: true });
 }
 
