@@ -1579,6 +1579,39 @@ h3 {
     right: 0;
   }
 }
+/* Tablets and phones use the same compact secondary filtering controls.
+   Content types remain explicit; topic + sort share one row. */
+@media (max-width: 1024px) {
+  .feed-controls .filter-tabs {
+    display: none;
+  }
+  .feed-controls .topic-select {
+    display: inline-flex;
+  }
+  .feed-controls .feed-search-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+  .feed-controls .feed-search-row .sort-control {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .feed-controls .feed-search-row .sort-control select {
+    width: 100%;
+    min-width: 0;
+  }
+  .feed-controls {
+    gap: 10px;
+    padding: 12px;
+  }
+  .feed-controls .feed-search-row {
+    grid-column: 1 / -1;
+  }
+}
 /* Navigation collapses into a menu. */
 @media (max-width: 860px) {
   :root {
@@ -1738,34 +1771,6 @@ h3 {
   .type-tabs[data-pill] .type-tab.active .tab-count {
     background: color-mix(in srgb, var(--paper) 18%, transparent);
     color: var(--paper);
-  }
-  /* Content types stay explicit; secondary filters become a compact pair.
-     Mobile Safari native selects are more usable than another button wall. */
-  .feed-controls .filter-tabs {
-    display: none;
-  }
-  .feed-controls .topic-select {
-    display: inline-flex;
-  }
-  .feed-controls .feed-search-row {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-  }
-  .feed-controls .feed-search-row .sort-control {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .feed-controls .feed-search-row .sort-control select {
-    width: 100%;
-    min-width: 0;
-  }
-  .feed-controls {
-    gap: 10px;
-    padding: 12px;
   }
   .sort-control select {
     width: 100%;
