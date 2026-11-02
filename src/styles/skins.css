@@ -972,7 +972,9 @@ html {
   content: "grep ";
   color: var(--brand);
 }
-/* Hero: the shell session replaces the dotted wave. */
+/* Both skins use the SAME homepage grid and button locations. The terminal
+   session is atmosphere behind the introduction, not a second feed card.
+   Keep its own mono/green graphics, but not a dedicated layout row. */
 :root[data-skin="terminal"] .network-wave {
   display: none;
 }
@@ -980,16 +982,44 @@ html {
   display: block;
 }
 :root[data-skin="terminal"] .home-hero {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
-  gap: 32px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  isolation: isolate;
 }
-:root[data-skin="terminal"] .hero-visual {
-  position: static;
-  width: auto;
-  pointer-events: auto;
-  -webkit-mask-image: none;
-  mask-image: none;
+:root[data-skin="terminal"] .home-hero .intro-copy {
+  position: relative;
+  z-index: 1;
+}
+:root[data-skin="terminal"] .home-hero .hero-visual {
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto auto;
+  width: min(58%, 520px);
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0.38;
+  pointer-events: none;
+  /* Same softly dissolved decoration approach as the editorial mesh. */
+  -webkit-mask-image: radial-gradient(ellipse 78% 72% at 73% 48%, #000 12%, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 72% at 73% 48%, #000 12%, transparent 100%);
+}
+:root[data-skin="terminal"] .home-hero .hero-terminal {
+  position: absolute;
+  top: 5px;
+  right: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 11px;
+}
+:root[data-skin="terminal"] .home-hero .term-bar {
+  display: none;
+}
+:root[data-skin="terminal"] .home-hero .term-body {
+  padding: 8px 12px;
 }
 :root[data-skin="terminal"] .hero-square {
   width: 0.55em;
@@ -1150,19 +1180,27 @@ html {
   }
 }
 @media (max-width: 1100px) {
-  :root[data-skin="terminal"] .home-hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  :root[data-skin="terminal"] .hero-visual {
-    max-width: 560px;
+  /* Tablet: don't stack a large console panel below the introduction. */
+  :root[data-skin="terminal"] .home-hero .hero-visual {
+    width: min(100%, 650px);
+    opacity: 0.23;
   }
 }
 @media (max-width: 860px) {
   :root[data-skin="terminal"] .nav-link .nav-label::before {
     padding: 2px 0;
   }
-  :root[data-skin="terminal"] .hero-visual {
-    margin: 20px 0 0;
+  :root[data-skin="terminal"] .home-hero .hero-visual {
+    inset: 0 0 auto auto;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0.16;
+  }
+  :root[data-skin="terminal"] .home-hero .hero-terminal {
+    top: 0;
+    right: 0;
+    font-size: 10px;
   }
   :root[data-skin="terminal"] .header-search-text::before {
     content: none;
@@ -1210,6 +1248,9 @@ html {
   :root[data-skin="terminal"] .brand-term {
     font-size: 13px;
   }
+  :root[data-skin="terminal"] .home-hero .hero-visual {
+    opacity: 0.12;
+  }
 }
 @media print {
   .code-bar,
@@ -1238,10 +1279,11 @@ html {
 :root[data-skin="terminal"] .article-block-shell.block-code {
   border-radius: 0;
 }
+/* Preserve the same translucent, blurred header in both skins. */
 :root[data-skin="terminal"] .site-header {
-  background: var(--paper);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
 }
 :root[data-skin="terminal"] .nav-link[data-term="~"] .nav-label::before {
   content: "~/";
@@ -1425,10 +1467,8 @@ html {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
 }
-:root[data-skin="terminal"] .echo-dialog::backdrop {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
+/* The terminal skin keeps square corners but shares modal veil and blur with
+   editorial. A theme switch should never silently disable focus treatment. */
 
 /* ---------- 2.0 · reading shelf ---------- */
 .shelf-trigger {
