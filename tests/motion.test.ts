@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import {
   motionAllowed,
@@ -178,5 +179,29 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(document.getElementById("target")!.style.visibility, "");
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
     await transition.finished;
+  });
+});
+
+describe("immersive composer geometry contract", () => {
+  it("keeps a stable bottom anchor for a smooth desktop fullscreen transition", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const sheet = css.match(/\.discussion-dialog\.composer-dialog \{([\s\S]*?)\n\}/)?.[1] || "";
+    const fullscreen = css.match(/\.discussion-dialog\.composer-dialog\.composer-fullscreen \{([\s\S]*?)\n\}/)?.[1] || "";
+    assert.match(sheet, /inset:\s*auto 0 18px/);
+    assert.match(fullscreen, /inset:\s*auto 0 0/);
+    assert.match(sheet, /width 340ms/);
+    assert.match(sheet, /height 340ms/);
+    assert.match(sheet, /bottom 340ms/);
+    assert.match(fullscreen, /width:\s*100%/);
+    assert.match(fullscreen, /max-inline-size:\s*none/);
+    assert.doesNotMatch(fullscreen, /inset:\s*0\s*;/);
+  });
+  it("does not leave a width or max-inline-size gutter on small viewports", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/@media \(max-width: 1024px\) \{\s*\.discussion-dialog\.composer-dialog,\s*\.discussion-dialog\.composer-dialog\.composer-fullscreen \{([\s\S]*?)\n  \}/)?.[1] || "";
+    assert.match(rule, /width:\s*100%/);
+    assert.match(rule, /max-width:\s*none/);
+    assert.match(rule, /max-inline-size:\s*none/);
+    assert.match(rule, /--waylan-editor-view-height/);
   });
 });
