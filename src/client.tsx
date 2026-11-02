@@ -18,7 +18,7 @@ if (root.dataset.prerender === "true")
     {
       onRecoverableError(error, info) {
         if ((window as Window & { __WAYLAN_HYDRATION_DIAGNOSTIC__?: boolean }).__WAYLAN_HYDRATION_DIAGNOSTIC__)
-          console.warn("WAYLAN_HYDRATION_TRACE", location.pathname, error.message, info.componentStack);
+          console.warn("WAYLAN_HYDRATION_TRACE", location.pathname, error instanceof Error ? error.message : String(error), info.componentStack);
       },
     },
   );
