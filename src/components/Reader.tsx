@@ -941,12 +941,12 @@ export default function Reader({ post }: { post: Post }) {
             selection.rect.left + selection.rect.width / 2 - toolbarWidth / 2,
           ),
         ),
-        top: selection.rect.bottom + 14 + 52 <=
+        top: selection.rect.bottom + 14 + 82 <=
             (typeof window === "undefined" ? 768 : window.innerHeight)
           ? selection.rect.bottom + 14
           : Math.max(16, Math.min(
-              selection.rect.top - 60,
-              (typeof window === "undefined" ? 768 : window.innerHeight) - 60,
+              selection.rect.top - 90,
+              (typeof window === "undefined" ? 768 : window.innerHeight) - 84,
             )),
       }
     : {};
