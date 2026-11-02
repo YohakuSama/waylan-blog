@@ -630,11 +630,13 @@ export async function manageComment(
   if (!current)
     throw new HttpError(404, "COMMENT_NOT_FOUND", "这条评论已被删除。");
   checkDiscussion(current.discussion, env, map);
-  if (
-    !current.author?.login ||
-    current.author.login.toLowerCase() !== session.user.login.toLowerCase()
-  )
-    throw new HttpError(403, "NOT_AUTHOR", "只能编辑或删除自己发表的评论。");
+  const author = current.author?.login?.toLowerCase() === session.user.login.toLowerCase();
+  const moderator = (env.ADMIN_GITHUB_LOGINS || "")
+    .split(/[\s,]+/)
+    .some((login) => login.toLowerCase() === session.user.login.toLowerCase());
+  // Moderators may remove spam from Waylan; they cannot edit others' words.
+  if (!author && !(request.method === "DELETE" && moderator))
+    throw new HttpError(403, "NOT_AUTHOR", "只能管理自己的评论，管理员可删除违规内容。");
   await limit(env, `manage:user:${session.row.user_id}`, 20, 600);
   if (request.method === "PUT") {
     const data = (await readBody(request, 48000)) as { body?: unknown };
