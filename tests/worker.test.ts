@@ -157,6 +157,19 @@ beforeEach(async () => {
           html_url: user.url,
         });
       const { query, variables: v } = JSON.parse(String(init?.body));
+      if (query.includes("updateDiscussionComment")) {
+        writeTokens.push(new Headers(init?.headers).get("Authorization") || "");
+        const current = actual.get(v.input.commentId);
+        if (!current) return Response.json({ errors: [{ message: "Not found", type: "NOT_FOUND" }] });
+        const updated = { ...current, body: v.input.body, updatedAt: "2026-11-01T10:00:00Z" };
+        actual.set(updated.id, updated);
+        return Response.json({ data: { updateDiscussionComment: { comment: updated } } });
+      }
+      if (query.includes("deleteDiscussionComment")) {
+        writeTokens.push(new Headers(init?.headers).get("Authorization") || "");
+        actual.delete(v.input.id);
+        return Response.json({ data: { deleteDiscussionComment: { clientMutationId: null } } });
+      }
       if (query.includes("addDiscussionComment")) {
         writeTokens.push(new Headers(init?.headers).get("Authorization") || "");
         const c = {
@@ -190,6 +203,55 @@ afterEach(() => {
   db.sqlite.close();
 });
 describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", () => {
+  it("edits only one's own comment, preserving GitHub metadata and CSRF checks", async () => {
+    const created = (await (await send(requestBody())).json()) as any;
+    const id = created.comment.id;
+    const path = `/api/posts/${postId}/comments/${id}`;
+    const request = (body: string, headers: HeadersInit = {
+      Cookie: `__Host-echo_session=${rawSession}`,
+      "X-CSRF-Token": csrf,
+    }) => call(path, { method: "PUT", headers, body: JSON.stringify({ body }) });
+    assert.equal((await request("改变文字", {})).status, 403);
+    const updated = await request("已经修改的测试评论");
+    assert.equal(updated.status, 200);
+    const data = (await updated.json()) as any;
+    assert.equal(data.comment.body, "已经修改的测试评论");
+    assert.deepEqual(data.comment.annotation?.anchor, anchor);
+    assert.ok(actual.get(id).body.includes("<!-- echo:v1:"));
+    assert.ok(writeTokens.every((t) => t === "Bearer test-current-user-token"));
+    actual.get(id).author = { ...user, login: "someone-else" };
+    assert.equal((await request("不允许改他人评论")).status, 403);
+    assert.equal(actual.get(id).body.includes("不允许"), false);
+  });
+  it("deletes only one's own comment and clears anchors and comment cache", async () => {
+    const created = (await (await send(requestBody())).json()) as any;
+    const id = created.comment.id;
+    const path = `/api/posts/${postId}/comments/${id}`;
+    const remove = () => call(path, {
+      method: "DELETE",
+      headers: { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf },
+    });
+    actual.get(id).author = { ...user, login: "someone-else" };
+    assert.equal((await remove()).status, 403);
+    actual.get(id).author = user;
+    assert.equal((await remove()).status, 200);
+    assert.equal(actual.has(id), false);
+    assert.equal((await remove()).status, 404);
+    assert.equal(
+      (db.sqlite.prepare("SELECT COUNT(*) AS n FROM annotations WHERE comment_id=?").get(id) as any).n,
+      0,
+    );
+    const after = (await (await call(`/api/posts/${postId}/comments`)).json()) as any;
+    assert.equal(after.totalCount, 0);
+  });
+  it("keeps the exact addressee for a reply to another reply", async () => {
+    const first = (await (await send(requestBody({ anchor: undefined }))).json()) as any;
+    const second = (await (await send(requestBody({ replyToId: first.comment.id, anchor: undefined }))).json()) as any;
+    const third = (await (await send(requestBody({ replyToId: second.comment.id, anchor: undefined }))).json()) as any;
+    assert.equal(actual.get(third.comment.id).replyTo?.id, first.comment.id);
+    assert.equal(parseMarker(actual.get(third.comment.id).body)?.replyTarget?.id, second.comment.id);
+    assert.equal(third.comment.replyTarget?.login, user.login);
+  });
   it("reads a public discussion without login", async () => {
     const response = await call(`/api/posts/${postId}/comments`);
     assert.equal(response.status, 200);
