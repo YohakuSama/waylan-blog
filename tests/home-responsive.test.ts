@@ -21,6 +21,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(region.includes("z-index: 1;"));
     const mobile = site.slice(site.indexOf('@media (max-width: 480px)'));
     assert.ok(mobile.includes("opacity: .25;"));
+    assert.ok(mobile.includes("width: 100%;"));
+    assert.ok(mobile.includes("right: 0;"));
     assert.equal(mobile.includes("height: clamp(94px, 25vw, 112px)"), false);
   });
 
