@@ -1486,7 +1486,7 @@ export default function Reader({ post }: { post: Post }) {
           </div>
         </aside>
       </div>
-      {excerptMode && (
+      {excerptMode && !selection && (
         <div className="excerpt-mode-hint" role="status">
           <Highlighter size={16} />
           <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
