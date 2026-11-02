@@ -262,19 +262,78 @@ export function navigateWithMotion(
  * they glide to their new slots; the active pill slides between tabs.
  * Without View Transitions the change simply applies.
  */
+// Only list-changing actions share this gate. Never lock typing, browser
+// navigation, dialog dismissal or assistive controls behind a global click timer.
+const activeListDocuments = new WeakSet<Document>();
 export function listTransition(change: () => void) {
-  const doc = document as ViewTransitionDocument,
-    root = document.documentElement;
-  if (motionLevel() !== "shared" || !doc.startViewTransition) return change();
-  root.dataset.vt = "list";
-  try {
-    doc
-      .startViewTransition(change)
-      .finished.catch(() => {})
-      .finally(() => delete root.dataset.vt);
-  } catch {
-    delete root.dataset.vt;
+  const doc = document as ViewTransitionDocument;
+  if (activeListDocuments.has(doc)) return;
+  if (!motionAllowed()) return change();
+
+  const root = doc.documentElement;
+  activeListDocuments.add(doc);
+  let changed = false;
+  let settled = false;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(watchdog);
+    activeListDocuments.delete(doc);
+    if (root.dataset.vt === "list") delete root.dataset.vt;
+  };
+  // A safety valve, not a debounce: normal release is driven by actual
+  // animation completion. A stalled browser API must never freeze interaction.
+  const watchdog = setTimeout(finish, 1500);
+  const commit = () => {
+    if (changed) return;
+    changed = true;
     change();
+  };
+  if (motionLevel() === "shared" && doc.startViewTransition) {
+    root.dataset.vt = "list";
+    try {
+      const transition = doc.startViewTransition(commit);
+      void transition.finished.then(finish, () => {
+        try {
+          // If the browser rejects before invoking its update callback,
+          // the user's requested state change must still happen once.
+          commit();
+        } finally {
+          finish();
+        }
+      });
+      return;
+    } catch {
+      try {
+        commit();
+      } finally {
+        finish();
+      }
+      return;
+    }
+  }
+  // In engines without View Transitions, wait for *finite, real* CSS
+  // transitions on the affected list/pill, not an arbitrary fixed delay.
+  try {
+    commit();
+    const frame = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (callback: FrameRequestCallback) => setTimeout(callback, 0);
+    frame(() => {
+      if (settled) return;
+      const animations = [...doc.querySelectorAll<HTMLElement>(
+        ".type-fill, .feed-list, .feed-item, .view-toggle",
+      )].flatMap((element) => element.getAnimations?.() || []).filter(
+        (animation) => animation.playState !== "finished" &&
+          animation.effect?.getComputedTiming().iterations !== Infinity,
+      );
+      if (!animations.length) finish();
+      else void Promise.allSettled(animations.map((animation) => animation.finished))
+        .then(finish);
+    });
+  } catch (error) {
+    finish();
+    throw error;
   }
 }
 function visibleRect(element: Element | null | undefined) {
