@@ -26,7 +26,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.equal(mobile.includes("height: clamp(94px, 25vw, 112px)"), false);
   });
 
-  it("shows every filter on phones without an overflowing horizontal scroller", () => {
+  it("shows every content-page type on phones without horizontal clipping", () => {
     const start = site.indexOf("/* A two-row wrap is easier");
     assert.ok(start > 0);
     const region = site.slice(start, start + 1300);
@@ -40,6 +40,21 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(narrow.includes("flex: 1 1 100%;"));
   });
 
+  it("keeps the homepage a single editorial feed rather than two filter panels", () => {
+    assert.ok(site.includes(".home-feed-heading"));
+    assert.ok(site.includes(".home-feed-count"));
+    assert.ok(site.includes(".home-hero .resume-link"));
+  });
+  it("reduces small-screen content filtering to two adjacent selects", () => {
+    const mobile = site.slice(site.indexOf("@media (max-width: 767px)"));
+    assert.ok(mobile.includes(".feed-controls .filter-tabs"));
+    assert.ok(mobile.includes("display: none;"));
+    assert.ok(mobile.includes(".feed-controls .topic-select"));
+    assert.ok(mobile.includes("display: inline-flex;"));
+    assert.ok(mobile.includes(".feed-controls .feed-search-row"));
+    assert.ok(mobile.includes("flex-direction: row;"));
+    assert.ok(mobile.includes(".feed-controls .feed-search-row .sort-control"));
+  });
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = site.indexOf("@media (max-width: 1024px)");
     assert.ok(bp > 0);
