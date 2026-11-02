@@ -5,6 +5,8 @@ export type Env = {
   SITE_ORIGIN?: string;
   GITHUB_REPO_OWNER?: string;
   GITHUB_REPO_NAME?: string;
+  /** Legacy OAuth App or fine-grained GitHub App user authorization. */
+  GITHUB_AUTH_PROVIDER?: "oauth-app" | "github-app";
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_READ_TOKEN?: string;
@@ -51,7 +53,11 @@ export const readReady = (env: Env) =>
   present(env.GITHUB_READ_TOKEN) &&
   present(env.GITHUB_REPO_OWNER) &&
   present(env.GITHUB_REPO_NAME);
+export const authProvider = (env: Env) => env.GITHUB_AUTH_PROVIDER || "oauth-app";
 export const authReady = (env: Env) =>
+  (env.GITHUB_AUTH_PROVIDER === undefined ||
+    env.GITHUB_AUTH_PROVIDER === "oauth-app" ||
+    env.GITHUB_AUTH_PROVIDER === "github-app") &&
   !!env.DB &&
   present(env.GITHUB_CLIENT_ID) &&
   present(env.GITHUB_CLIENT_SECRET) &&
