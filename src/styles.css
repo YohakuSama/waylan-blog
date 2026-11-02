@@ -897,6 +897,13 @@ textarea::placeholder {
   font-size: 10px;
   color: color-mix(in srgb, var(--paper) 65%, transparent);
 }
+.selection-toolbar-context > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .selection-toolbar-context > button {
   flex: none;
   width: 26px;
