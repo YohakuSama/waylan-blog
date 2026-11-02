@@ -114,8 +114,7 @@ function HeroTerminal() {
   );
 }
 export function Home() {
-  const [type, setType] = useState<TypeFilter>("all");
-  const [density, setDensity] = useDensity();
+  const [density] = useDensity();
   const [resume, setResume] = useState<{
     slug: string;
     title: string;
@@ -129,9 +128,9 @@ export function Home() {
     } | null>("reading", null);
     if (last && posts.some((p) => p.slug === last.slug)) setResume(last);
   }, []);
-  const items = posts
-    .filter((p) => type === "all" || p.type === type)
-    .sort(newestFirst);
+  // The home page is a reading doorway, not a second filtering interface.
+  // Detailed type/topic/sort controls belong exclusively on the content page.
+  const items = newestFirstList();
   return (
     <div className="content-grid home-grid">
       <div className="feed-column">
@@ -140,27 +139,19 @@ export function Home() {
             <span className="hero-square" aria-hidden="true" />
             <HeroTitle />
             <p className="intro-description">{site.intro}</p>
-            <Link className="primary-button" href="/feed">
-              浏览全部文章
+            <Link className="primary-button" href="/feed?type=all">
+              浏览全部内容
               <ArrowRight size={17} />
-            </Link>
-            <Link className="text-button hero-about" href="/about">
-              关于作者
-              <ArrowUpRight size={15} />
             </Link>
             {resume && (
               <Link
                 className="resume-link"
                 href={`/post/${resume.slug}?resume=1`}
               >
-                <BookOpen size={15} />
-                <span>
-                  继续阅读
-                  <small>
-                    {resume.title} · {resume.progress}%
-                  </small>
-                </span>
-                <ArrowRight size={16} />
+                <BookOpen size={15} aria-hidden="true" />
+                <span>继续阅读：{resume.title}</span>
+                <small>{resume.progress}%</small>
+                <ArrowRight size={14} aria-hidden="true" />
               </Link>
             )}
           </div>
@@ -170,23 +161,18 @@ export function Home() {
           </div>
         </section>
         <section className="home-feed" aria-labelledby="latest-heading">
-          <h2 id="latest-heading" className="sr-only">
-            最新内容
-          </h2>
-          <div className="feed-toolbar">
-            <TypeTabs active={type} onSelect={setType} />
-            <ViewToggle density={density} onChange={setDensity} />
+          <div className="home-feed-heading">
+            <h2 id="latest-heading">最近更新</h2>
+            <span className="home-feed-count">{items.length} 篇记录</span>
           </div>
           <FeedList
             items={items}
-            resetKey={type}
+            resetKey="latest"
             density={density}
             empty={
               <div className="empty-state">
-                <h3>
-                  这里暂时还没有{type === "all" ? "内容" : typeLabels[type]}。
-                </h3>
-                <p>换一个分类看看，或者稍后再来。</p>
+                <h3>第一篇文字，正在路上。</h3>
+                <p>这里会按发布时间显示最近的记录。</p>
               </div>
             }
           />
