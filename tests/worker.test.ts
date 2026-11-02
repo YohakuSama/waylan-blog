@@ -772,7 +772,7 @@ describe("OAuth, cryptography and rendering", () => {
   it("restricts simulated inbox alerts to the site owner and clears only those alerts", async () => {
     env.NOTIFICATIONS_ENABLED = "true";
     const headers = { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf };
-    const submit = (method: "POST" | "DELETE", given = headers) =>
+    const submit = (method: "POST" | "DELETE", given: HeadersInit = headers) =>
       call("/api/notifications/test", { method, headers: given });
     assert.equal((await submit("POST")).status, 403); // Not an admin
     env.ADMIN_GITHUB_LOGINS = user.login;
