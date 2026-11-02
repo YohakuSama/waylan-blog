@@ -28,7 +28,7 @@ const pageTitles: Record<string, string> = {
   "/": site.tagline,
   "/feed": "文章与笔记",
   "/projects": "项目",
-  "/archive": "归档",
+  "/archive": "写作年表",
   "/about": "关于",
 };
 export function metadata(path: string) {
