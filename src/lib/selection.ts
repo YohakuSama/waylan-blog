@@ -78,7 +78,7 @@ export function captureBlockExcerpt(
   if (!root.contains(element) || !element.matches("[data-block-id]")) return null;
   if (["code", "image", "media"].includes(element.dataset.type || "")) return null;
   const text = element.textContent || "";
-  const from = text.search(/\\S/);
+  const from = text.search(/\S/);
   if (from < 0) return null;
   const length = Math.min(400, text.length - from);
   const to = from + length;
