@@ -2067,3 +2067,18 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .discussion-dialog.composer-dialog { transition: none; }
 }
+
+
+/* Site-owner-only inbox diagnostics never touch GitHub comments. */
+.notification-test-tools {
+  padding: 9px 14px; border-top: 1px solid var(--line);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.notification-test-tools > span {
+  flex-basis: 100%; color: var(--muted); font-size: 10px;
+}
+.notification-test-tools .text-button { font-size: 11px; }
+.notification-success {
+  margin: 0; padding: 8px 14px;
+  color: var(--ink-soft); font-size: 11px;
+}
