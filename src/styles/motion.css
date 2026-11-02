@@ -206,6 +206,14 @@ a:hover {
 /* Placeholders only shimmer after a beat, so quick loads never flash. */
 :is(.comment-skeleton, .reader-skeleton) { animation: vt-fade-in 200ms 150ms both; }
 
+/* A list transition is a scoped transaction, not a page-wide click lock.
+   Other links, text inputs, scrolling and dialog close buttons remain usable. */
+:root[data-list-busy] .type-tabs :is(button, a),
+:root[data-list-busy] .view-toggle button {
+  pointer-events: none;
+  cursor: progress;
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-motion="full"]) *,
