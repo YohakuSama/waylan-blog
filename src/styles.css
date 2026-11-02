@@ -1822,6 +1822,20 @@ textarea::placeholder {
     font-size: 11px;
   }
 }
+/* Five reader controls must still fit a 320px phone without side scrolling. */
+@media (max-width: 480px) {
+  .reader-topbar > .text-button {
+    font-size: 0;
+    min-width: 40px;
+    padding-inline: 8px;
+  }
+  .reader-topbar > .text-button svg { width: 19px; height: 19px; }
+  .reader-controls { gap: 0; }
+}
+@media (max-width: 380px) {
+  .reader-controls .font-button span { display: none; }
+  .reader-controls .icon-button { min-width: 40px; min-height: 44px; }
+}
 @media print {
   .reader-topbar,
   .reader-toc,
