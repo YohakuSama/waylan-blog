@@ -139,18 +139,20 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount();
     await click(
       [...document.querySelectorAll("a")].find((a) =>
-        a.textContent?.includes("浏览全部文章"),
+        a.textContent?.includes("浏览全部内容"),
       )!,
     );
     assert.equal(location.pathname, "/feed");
-    assert.equal(document.querySelectorAll(".post-card").length, 6);
+    assert.equal(new URLSearchParams(location.search).get("type"), "all");
+    assert.equal(document.querySelectorAll(".post-card").length, Math.min(8, posts.length));
     await click(
       [...document.querySelectorAll(".filter-tabs button")].find(
         (b) => b.textContent === "随笔",
       )!,
     );
-    assert.equal(location.search, "?topic=notes");
-    assert.equal(document.querySelectorAll(".post-card").length, 1);
+    assert.equal(new URLSearchParams(location.search).get("topic"), "notes");
+    assert.equal(document.querySelectorAll(".post-card").length,
+      posts.filter((p) => p.topic === "notes").length);
   });
   it("restores the filtered feed and its saved scroll position after reading", async () => {
     await mount("/feed");
@@ -205,6 +207,19 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(common[1].includes("title-echo-001"));
     assert.ok(document.querySelector(".reader-prose"));
     assert.equal(document.querySelector("main>.empty-state"), null);
+  });
+  it("keeps primary navigation distinct from content-type filters", async () => {
+    await mount();
+    const nav = [...document.querySelectorAll<HTMLAnchorElement>("#site-nav .nav-link")];
+    assert.deepEqual(nav.map((link) => link.textContent?.trim()),
+      ["首页", "内容", "归档", "关于"]);
+    assert.deepEqual(nav.map((link) => link.getAttribute("href")),
+      ["/", "/feed?type=all", "/archive", "/about"]);
+    assert.ok(!document.querySelector(".home-feed .type-tabs"));
+    await click(nav[1]);
+    assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
+    assert.ok(document.querySelector(".topic-select select"));
+    assert.ok(document.querySelectorAll(".filter-tabs button").length > 1);
   });
   it("opens and closes the mobile navigation through the same accessible control", async () => {
     await mount();
@@ -473,8 +488,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     );
     assert.equal(destination, block.id);
   });
-  it("shows real per-type counts on the home tabs and filters the mixed feed", async () => {
+  it("keeps home editorial while the dedicated content page owns type filters", async () => {
     await mount();
+    assert.equal(document.querySelectorAll(".home-feed .type-tabs").length, 0);
+    assert.equal(document.querySelectorAll(".home-feed-heading").length, 1);
+    assert.equal(document.querySelectorAll(".hero-about").length, 0);
+    await click(document.querySelector(".intro-copy>.primary-button"));
     const tabs = [...document.querySelectorAll(".type-tabs .type-tab")];
     const count = (label: string) =>
       Number(
@@ -612,7 +631,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("does not execute repeated same-target route clicks while a transition is in flight", async () => {
     await mount("/");
-    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]');
+    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed?type=all"]');
     assert.ok(link);
     const push = history.pushState.bind(history);
     const replace = history.replaceState.bind(history);
@@ -645,9 +664,9 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(replaces, 0, "repeated clicks must not replace history repeatedly");
   });
   it("does not stack duplicate history entries when the current page is clicked again", async () => {
-    await mount("/feed");
+    await mount("/feed?type=all");
     const before = history.length;
-    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]')!;
+    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed?type=all"]')!;
     await click(link);
     await click(link);
     assert.equal(history.length, before);
