@@ -101,8 +101,8 @@ try {
         }
       }
       results.push({ route, width, ...geometry });
-      if (errors.length) {
-        const traces = await page.evaluate(() => window.__WAYLAN_HYDRATION_TRACE__ || []);
+      const traces = await page.evaluate(() => window.__WAYLAN_HYDRATION_TRACE__ || []);
+      if (errors.length || traces.length) {
         console.error("Hydration trace:", JSON.stringify(traces.slice(0, 3)).slice(0, 12000));
         console.error("Browser page errors:", JSON.stringify(errors.slice(0, 3)));
         throw new Error("Hydration diagnosis: stop at first affected route");
