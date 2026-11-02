@@ -27,3 +27,11 @@ Delete `NOTIFICATIONS_ENABLED` or set it to `false`, redeploy. The comment syste
 - GitHub webhook signatures and repository full name are checked. A claimed reply target is confirmed against the GitHub GraphQL API before notifying.
 - Notifications expire automatically after 180 days.
 - The feature is opt-in until database and webhook configuration are complete, preventing missing-table errors during automatic deployments.
+
+
+## Owner-only self-test
+When NOTIFICATIONS_ENABLED=true, sign in as a login listed in ADMIN_GITHUB_LOGINS and open the notification bell. Two owner-only buttons appear:
+- **发送测试通知** creates a D1-only test entry, addressed to your signed-in GitHub login. It does not call GitHub Discussions or trigger email and is rate-limited to four attempts per hour.
+- **清空测试消息** deletes only your own synthetic test items. Real reply and comment notifications remain untouched.
+Test messages link to an existing Waylan article, not to a non-existent GitHub comment.
+Regular readers never see the controls, and the Worker independently rejects their requests.
