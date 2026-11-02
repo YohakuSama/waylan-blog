@@ -43,11 +43,17 @@ try {
   page.on("pageerror", (error) => errors.push({ route: new URL(page.url()).pathname, message: error.message }));
 
 
-  for (const width of [1440]) {
+  for (const width of [1440, 1280, 1200, 1100, 1024, 900, 861, 860, 768, 480, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ["/", "/feed", "/archive"]) {
-      await page.goto(origin + route, { waitUntil: "domcontentloaded" });
+      // Vite preview serves /feed/index.html at /feed/, while Cloudflare
+      // production drops the trailing slash. Avoid the SPA fallback index.html.
+      const target = origin + (route === "/" ? "/" : route + "/");
+      const response = await page.goto(target, { waitUntil: "domcontentloaded" });
+      assert.ok(response?.ok(), `${route} ${width}: HTTP response failed`);
       await page.locator("main").waitFor();
+      if (route === "/feed") assert.match(await response.text(), /<h1>全部内容<\/h1>/);
+      if (route === "/archive") assert.match(await response.text(), /<h1>写作年表<\/h1>/);
       await page.evaluate(() => Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1500))]));
       const geometry = await page.evaluate(() => {
         const rect = (el) => {
