@@ -215,6 +215,38 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(button);
     assert.equal(button.getAttribute("aria-expanded"), "false");
   });
+  it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const toggle = document.querySelector<HTMLButtonElement>(
+      '.excerpt-mode-toggle[aria-label="开启摘录段落模式"]',
+    )!;
+    assert.ok(toggle);
+    await click(toggle);
+    assert.equal(toggle.getAttribute("aria-pressed"), "true");
+    assert.ok(document.querySelector(".excerpt-mode-hint"));
+    assert.equal(window.getSelection()?.toString(), "");
+    const paragraph = document.querySelector<HTMLElement>(
+      '.reader-prose .article-block[data-type="paragraph"]',
+    ) || document.querySelector<HTMLElement>(
+      '.reader-prose .article-block:not([data-type="code"])',
+    );
+    assert.ok(paragraph);
+    await click(paragraph);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    assert.ok(document.querySelector(".selection-toolbar-context"));
+    assert.ok(document.querySelector(".selection-toolbar-actions"));
+    assert.equal(document.querySelector(".excerpt-mode-hint"), null);
+    await click(document.querySelector<HTMLButtonElement>(
+      '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
+    ));
+    assert.equal(document.querySelector(".selection-toolbar"), null);
+    assert.ok(document.querySelector(".excerpt-mode-hint"));
+    await click(paragraph);
+    const mark = [...document.querySelectorAll(".selection-toolbar-actions button")]
+      .find((b) => b.textContent === "划线")!;
+    await click(mark);
+    assert.ok(document.querySelector("mark.private-mark"), "tap mode retains the usual persisted quote");
+  });
   it("stores a private highlight and restores it on a fresh React mount", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!,
