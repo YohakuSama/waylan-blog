@@ -15,7 +15,7 @@ import {
 } from "./comments";
 import { readViews, recordView } from "./views";
 import { admin } from "./admin";
-import { inbox, updateInbox, commentNotification } from "./notifications";
+import { inbox, updateInbox, commentNotification, notificationsReady } from "./notifications";
 async function webhook(request: Request, env: Env) {
   if (!env.DB || !env.GITHUB_WEBHOOK_SECRET)
     throw new HttpError(503, "WEBHOOK_DISABLED", "Webhook 尚未配置。");
@@ -127,7 +127,7 @@ const worker = {
         await limit(env, `api:${clientIP(request)}`, 180, 60);
       let response: Response;
       if (url.pathname === "/api/status" && request.method === "GET")
-        response = json({ comments: readReady(env), login: authReady(env) });
+        response = json({ comments: readReady(env), login: authReady(env), notifications: notificationsReady(env) });
       else if (url.pathname === "/api/session" && request.method === "GET") {
         const session = await getSession(request, env);
         response = json({
