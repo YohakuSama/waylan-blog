@@ -49,6 +49,7 @@ import { storage, transient } from "../lib/storage";
 import {
   applyHighlights,
   captureSelection,
+  captureBlockExcerpt,
   jumpToAnchor,
 } from "../lib/selection";
 import {
@@ -341,6 +342,7 @@ export default function Reader({ post }: { post: Post }) {
       anchor: Anchor;
       rect: DOMRect;
     } | null>(null),
+    [excerptMode, setExcerptMode] = useState(false),
     [localMarks, setLocalMarks] = useState<Annotation[]>([]),
     [orphans, setOrphans] = useState<string[]>([]);
   const [panel, setPanel] = useState(false),
@@ -641,39 +643,43 @@ export default function Reader({ post }: { post: Post }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
-    const onPointerDown = () => {
+    const scan = () => {
+      if (panel || !prose.current) return;
+      const found = captureSelection(prose.current, post);
+      // Native selection may collapse when its system menu is tapped.
+      // Keep an explicit touch excerpt until the reader dismisses it.
+      if (found) setSelection(found);
+      else if (!excerptMode) setSelection(null);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
       pointerDown = true;
     };
-    const onPointerUp = () => {
+    const onPointerUp = (event: PointerEvent) => {
       pointerDown = false;
+      if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
       clearTimeout(timer);
-      // Longer delay on pointerup gives the browser native menu time to appear
-      // first, reducing conflict with Edge's smart selection features.
-      timer = setTimeout(() => {
-        if (panel || !prose.current) return;
-        setSelection(captureSelection(prose.current, post));
-      }, 320);
+      // Selection handles and the native menu are asynchronous on iOS.
+      timer = setTimeout(scan, event.pointerType === "touch" ? 420 : 140);
     };
+    const onPointerCancel = () => { pointerDown = false; };
     const onSelectionChange = () => {
-      // Only react to selectionchange when the pointer is not held down;
-      // while dragging we wait for pointerup to avoid flicker.
       if (pointerDown) return;
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (panel || !prose.current) return;
-        setSelection(captureSelection(prose.current, post));
-      }, 320);
+      timer = setTimeout(scan, 180);
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("pointerup", onPointerUp);
+    document.addEventListener("pointercancel", onPointerCancel);
     document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       clearTimeout(timer);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointerup", onPointerUp);
+      document.removeEventListener("pointercancel", onPointerCancel);
       document.removeEventListener("selectionchange", onSelectionChange);
     };
-  }, [post, panel]);
+  }, [post, panel, excerptMode]);
   const handledHash = useRef("");
   useEffect(() => {
     const hash = router.path.split("#")[1];
@@ -921,22 +927,27 @@ export default function Reader({ post }: { post: Post }) {
     : draft.anchor;
   const prev = posts[posts.findIndex((p) => p.id === post.id) + 1],
     next = posts[posts.findIndex((p) => p.id === post.id) - 1];
-  const toolbarWidth = 264;
+  // Native browser menus usually appear ABOVE the highlighted line.
+  // Prefer the space below; on narrow screens CSS docks actions safely at
+  // the bottom instead of competing with iOS/Android selection handles.
+  const toolbarWidth = 290;
   const toolbarStyle: CSSProperties = selection
     ? {
         left: Math.max(
           12,
           Math.min(
             (typeof window === "undefined" ? 1024 : window.innerWidth) -
-              toolbarWidth -
-              12,
+              toolbarWidth - 12,
             selection.rect.left + selection.rect.width / 2 - toolbarWidth / 2,
           ),
         ),
-        top:
-          selection.rect.top > 64
-            ? selection.rect.top - 56
-            : selection.rect.bottom + 12,
+        top: selection.rect.bottom + 14 + 52 <=
+            (typeof window === "undefined" ? 768 : window.innerHeight)
+          ? selection.rect.bottom + 14
+          : Math.max(16, Math.min(
+              selection.rect.top - 60,
+              (typeof window === "undefined" ? 768 : window.innerHeight) - 60,
+            )),
       }
     : {};
   return (
@@ -979,6 +990,20 @@ export default function Reader({ post }: { post: Post }) {
             aria-label="分享文章"
           >
             <Share2 size={17} />
+          </button>
+          <button
+            type="button"
+            className="icon-button excerpt-mode-toggle"
+            aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+            aria-pressed={excerptMode}
+            title={excerptMode ? "退出摘录" : "摘录段落"}
+            onClick={() => {
+              setExcerptMode((value) => !value);
+              setSelection(null);
+              window.getSelection()?.removeAllRanges();
+            }}
+          >
+            <Highlighter size={18} />
           </button>
           <button
             className="icon-button mobile-toc"
@@ -1097,7 +1122,7 @@ export default function Reader({ post }: { post: Post }) {
             )}
             <div
               ref={prose}
-              className="reader-prose"
+              className={`reader-prose${excerptMode ? " excerpt-mode" : ""}`}
               style={{ "--reader-font": `${fontSize}px` } as CSSProperties}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
@@ -1105,6 +1130,16 @@ export default function Reader({ post }: { post: Post }) {
                 if (mark) {
                   openHighlights(mark.dataset.echoIds!.split(" "));
                   return;
+                }
+                if (excerptMode && !window.getSelection()?.toString().trim() &&
+                  !target.closest("a, button, input, textarea, pre, code, [role='button']")) {
+                  const block = target.closest<HTMLElement>("[data-block-id]");
+                  const found = block && prose.current
+                    ? captureBlockExcerpt(prose.current, post, block) : null;
+                  if (found) {
+                    setSelection(found);
+                    return;
+                  }
                 }
                 if (target.tagName === "IMG")
                   setImage({
@@ -1451,14 +1486,35 @@ export default function Reader({ post }: { post: Post }) {
           </div>
         </aside>
       </div>
+      {excerptMode && (
+        <div className="excerpt-mode-hint" role="status">
+          <Highlighter size={16} />
+          <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
+          <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
+            <X size={17} />
+          </button>
+        </div>
+      )}
       {selection && (
         <div
           className="selection-toolbar"
           role="toolbar"
           aria-label="选中文字的操作"
           style={toolbarStyle}
-          onPointerDown={(e) => e.preventDefault()}
+          onPointerDown={(e) => {
+            // Keep the selection while clicking toolbar controls on desktop,
+            // but do not interfere with touch-generated click events.
+            if (e.pointerType === "mouse") e.preventDefault();
+          }}
         >
+          <div className="selection-toolbar-context">
+            <span>已选文字 · {anchorQuote(selection.anchor).length} 字</span>
+            <button type="button" aria-label="关闭摘录工具栏" onClick={() => {
+              setSelection(null);
+              window.getSelection()?.removeAllRanges();
+            }}><X size={16} /></button>
+          </div>
+          <div className="selection-toolbar-actions">
           <button onClick={privateMark}>
             <Highlighter size={17} />
             <span>划线</span>
@@ -1486,6 +1542,7 @@ export default function Reader({ post }: { post: Post }) {
             <Share2 size={17} />
             <span>分享</span>
           </button>
+          </div>
         </div>
       )}
       <Dialog
