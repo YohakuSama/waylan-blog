@@ -185,6 +185,8 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(transitions, 0);
   });
   it("has a matching visual source and destination before starting the page transition", async () => {
+    // Full motion is independent of JSDOM platform and hardware defaults.
+    document.documentElement.dataset.motionPreference = "full";
     Object.defineProperty(globalThis, "matchMedia", {
       value: () => ({ matches: false }),
       configurable: true,
