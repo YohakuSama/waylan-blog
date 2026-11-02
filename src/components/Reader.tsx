@@ -386,7 +386,7 @@ export default function Reader({ post }: { post: Post }) {
     const dialog = event.currentTarget.closest("dialog");
     if (!dialog) return;
     const bounds = dialog.getBoundingClientRect();
-    const radius = getComputedStyle(dialog).borderRadius;
+    const radius = window.getComputedStyle(dialog).borderRadius;
     composerResizeAnimation.current?.cancel();
     composerGeometry.current = { from: bounds, radius };
     setComposerFullscreen((value) => !value);
@@ -404,7 +404,7 @@ export default function Reader({ post }: { post: Post }) {
       previous.from,
       dialog.getBoundingClientRect(),
       previous.radius,
-      getComputedStyle(dialog).borderRadius,
+      window.getComputedStyle(dialog).borderRadius,
     );
   }, [composerFullscreen]);
   useEffect(() => () => {
