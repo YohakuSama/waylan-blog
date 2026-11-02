@@ -398,88 +398,28 @@ h3 {
   padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
 }
-.type-tabs {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  min-width: 0;
+/* Simple single-layer filter controls: selected text never has a duplicate overlay. */
+.type-tabs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.type-tab {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:40px; padding:0 13px;
+  border:1px solid var(--line); border-radius:var(--radius-full);
+  background:var(--surface); color:var(--ink-soft);
+  font-size:13px; font-weight:500; white-space:nowrap;
+  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
-.type-tab,
-.type-fill-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 14px 0 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 15px;
-  white-space: nowrap;
+.type-tab-label { display:inline-flex; align-items:center; gap:7px; }
+.type-tab:hover { background:var(--surface-muted); border-color:var(--line-strong); color:var(--ink); }
+.type-tab .tab-count {
+  min-width:20px; padding:0 6px; border-radius:var(--radius-full);
+  background:var(--tag-bg); color:var(--muted);
+  font-size:11px; line-height:19px; text-align:center;
 }
-.type-tab:hover {
-  border-color: var(--line-strong);
-  color: var(--ink);
-}
-.type-tab .tab-count,
-.type-fill-tab .tab-count {
-  min-width: 22px;
-  padding: 0 6px;
-  border-radius: var(--radius-full);
-  background: var(--tag-bg);
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 18px;
-  text-align: center;
-}
-.type-tab.active {
-  border-color: transparent;
-  background: var(--ink);
-  color: var(--paper);
-}
-/* The selection is a filled copy of the row clipped to the active tab, so it
-   can slide between tabs; until it is measured (prerendered HTML) the active
-   tab fills itself. */
-.type-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-  display: none;
-  background: var(--ink);
-  transition: clip-path 420ms var(--ease-out);
-  pointer-events: none;
-}
-.type-tabs[data-pill] .type-fill {
-  display: block;
-}
-.type-fill-tab {
-  position: absolute;
-  box-sizing: border-box;
-  border-color: transparent;
-  background: none;
-  color: var(--paper);
-}
-.type-fill .tab-count,
+.type-tab.active { background:var(--ink); border-color:var(--ink); color:var(--paper); }
 .type-tab.active .tab-count {
-  background: color-mix(in srgb, var(--paper) 18%, transparent);
-  color: var(--paper);
+  background:color-mix(in srgb, var(--paper) 18%, transparent); color:var(--paper);
 }
-.type-tabs[data-pill] .type-tab.active {
-  border-color: var(--line);
-  background: var(--surface);
-  color: var(--ink);
-}
-.type-tabs[data-pill] .type-tab.active .tab-count {
-  background: var(--tag-bg);
-  color: var(--muted);
-}
-.type-tab.empty:not(.active) {
-  color: var(--muted);
-}
+.type-tab.empty:not(.active) { color:var(--muted); }
 .view-toggle {
   position: relative;
   isolation: isolate;
@@ -1882,3 +1822,76 @@ h3 {
 .discussion-setup-note { max-width:470px; margin:10px auto 0; color:var(--muted); font-size:13px; line-height:1.8; }
 
 @media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
+
+/* Archive is a time-oriented index rather than a duplicate feed. */
+.timeline-overview {
+  display:grid; grid-template-columns:minmax(150px, 220px) minmax(0,1fr);
+  align-items:center; gap:24px; padding:22px 24px;
+  border:1px solid var(--line); border-radius:var(--radius-lg);
+  background:var(--surface);
+}
+.timeline-summary { display:grid; gap:5px; min-width:0; }
+.timeline-summary strong { font:600 30px/1.2 var(--font-display); color:var(--ink); }
+.timeline-summary strong small { font:400 12px var(--font-sans); color:var(--muted); }
+.timeline-summary > span:last-child { font-size:12px; color:var(--muted); }
+.timeline-year-nav { display:flex; flex-wrap:wrap; align-items:center; gap:9px; min-width:0; }
+.timeline-year-nav a {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:40px; padding:7px 13px;
+  border:1px solid var(--line); border-radius:var(--radius-full);
+  background:var(--paper); color:var(--ink-soft);
+  font:600 13px var(--font-mono);
+  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.timeline-year-nav a small { color:var(--muted); font:11px var(--font-mono); }
+.timeline-year-nav a:hover { background:var(--brand-soft); border-color:var(--accent); color:var(--brand); }
+.timeline-result { margin-top:4px; }
+.archive-main { min-width:0; }
+.archive-year { scroll-margin-top:calc(var(--header-height) + 20px); }
+.archive-month { display:grid; grid-template-columns:72px minmax(0,1fr); gap:20px; padding-top:16px; }
+.archive-month-label { padding-top:10px; font:500 13px var(--font-sans); color:var(--muted); white-space:nowrap; }
+.archive-month-list { min-width:0; }
+.archive-month .archive-row { grid-template-columns:54px minmax(0,1fr) 20px; }
+.archive-row { min-width:0; min-height:66px; }
+.archive-row > span { min-width:0; overflow-wrap:anywhere; }
+.timeline-side-note h2 { margin:12px 0 8px; font-size:17px; }
+.timeline-side-note p { font-size:13px; line-height:1.8; color:var(--muted); }
+.timeline-side-note .quiet-button { margin-top:16px; }
+
+/* At 1025–1200px the fixed sidebar crushed desktop content and filter controls. */
+@media (min-width:1025px) and (max-width:1200px) {
+  .content-grid { grid-template-columns:minmax(0,1fr); }
+  .site-sidebar {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    align-content:start; gap:0 36px; min-height:0;
+    padding:30px 0 0; margin-top:40px;
+    border-left:0; border-top:1px solid var(--ink);
+  }
+  .page-heading + .content-grid .site-sidebar { padding-top:30px; }
+  .site-sidebar > * { min-width:0; }
+}
+/* Compact desktop header gets distinct space for brand, navigation and tools. */
+@media (min-width:861px) and (max-width:1279px) {
+  .header-inner { grid-template-columns:auto minmax(0,1fr) auto; gap:20px; }
+  #site-nav { justify-content:center; gap:clamp(12px,1.7vw,24px); min-width:0; }
+  .brand-rule,.brand-tagline { display:none; }
+  .header-tools { gap:4px; }
+  .header-search {
+    width:40px; height:40px; justify-content:center;
+    padding:0; margin-right:0; border-radius:var(--radius-md);
+  }
+  .header-search-text,.header-search kbd { display:none; }
+}
+@media (max-width:767px) {
+  .timeline-overview { grid-template-columns:minmax(0,1fr); padding:18px; gap:15px; }
+  .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
+  .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
+  .archive-month-label { font-size:12px; }
+}
+@media (max-width:480px) {
+  .type-tabs .type-tab { min-height:40px; height:auto; font-size:12px; padding:6px 5px; }
+  .type-tab-label { gap:5px; }
+  .type-tab .tab-count { min-width:18px; padding:0 4px; font-size:10px; }
+  .archive-month { grid-template-columns:minmax(0,1fr); gap:0; }
+  .archive-month-label { padding:6px 0; font-size:12px; }
+}
