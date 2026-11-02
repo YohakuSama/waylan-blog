@@ -143,14 +143,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
       )!,
     );
     assert.equal(location.pathname, "/feed");
-    assert.equal(new URLSearchParams(location.search).get("type"), "all");
+    assert.equal(location.search, "", "the content destination must need no query string");
     assert.equal(document.querySelectorAll(".post-card").length, Math.min(8, posts.length));
     await click(
       [...document.querySelectorAll(".filter-tabs button")].find(
         (b) => b.textContent === "随笔",
       )!,
     );
-    assert.equal(new URLSearchParams(location.search).get("topic"), "notes");
+    assert.equal(location.search, "?topic=notes");
     assert.equal(document.querySelectorAll(".post-card").length,
       posts.filter((p) => p.topic === "notes").length);
   });
@@ -171,7 +171,8 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     assert.equal(location.search, "?topic=notes");
     assert.equal(y, 730);
-    assert.equal(document.querySelectorAll(".post-card").length, 1);
+    assert.equal(document.querySelectorAll(".post-card").length,
+      posts.filter((p) => p.topic === "notes").length);
   });
   it("keeps the native reduced-motion preference usable without View Transitions", async () => {
     let transitions = 0;
@@ -214,7 +215,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.deepEqual(nav.map((link) => link.textContent?.trim()),
       ["首页", "内容", "归档", "关于"]);
     assert.deepEqual(nav.map((link) => link.getAttribute("href")),
-      ["/", "/feed?type=all", "/archive", "/about"]);
+      ["/", "/feed", "/archive", "/about"]);
     assert.ok(!document.querySelector(".home-feed .type-tabs"));
     await click(nav[1]);
     assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
@@ -631,7 +632,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("does not execute repeated same-target route clicks while a transition is in flight", async () => {
     await mount("/");
-    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed?type=all"]');
+    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]');
     assert.ok(link);
     const push = history.pushState.bind(history);
     const replace = history.replaceState.bind(history);
@@ -664,7 +665,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(replaces, 0, "repeated clicks must not replace history repeatedly");
   });
   it("does not stack duplicate history entries when the current page is clicked again", async () => {
-    await mount("/feed?type=all");
+    await mount("/feed");
     const before = history.length;
     const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed?type=all"]')!;
     await click(link);
