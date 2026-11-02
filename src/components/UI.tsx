@@ -105,6 +105,7 @@ export function Dialog({
   className = "",
   initialFocus,
   origin,
+  headerActions,
 }: {
   open: boolean;
   onClose: () => void;
@@ -112,6 +113,7 @@ export function Dialog({
   children: ReactNode;
   className?: string;
   initialFocus?: RefObject<HTMLElement | null>;
+  headerActions?: ReactNode;
   /** Where the dialog grows from and returns to; defaults to its trigger. */
   origin?: Element | null;
 }) {
@@ -225,9 +227,12 @@ export function Dialog({
     >
       <div className="dialog-header">
         <span>{label}</span>
-        <button className="icon-button" onClick={onClose} aria-label="关闭">
+        <div className="dialog-header-actions">
+          {headerActions}
+          <button className="icon-button" onClick={onClose} aria-label="关闭">
           <X size={19} />
-        </button>
+          </button>
+        </div>
       </div>
       {children}
     </dialog>
