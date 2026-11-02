@@ -16,6 +16,7 @@ import {
   cookie,
 } from "../worker/security";
 import { commentPayload, parseMarker, cleanComment } from "../worker/github";
+import { commentNotification } from "../worker/notifications";
 import type { Env } from "../worker/types";
 import type { Anchor, Comment } from "../shared/types";
 import manifest from "../worker/generated/manifest.json";
@@ -722,6 +723,34 @@ describe("OAuth, cryptography and rendering", () => {
     });
     assert.equal(mark.status, 200);
     assert.equal(((await (await call("/api/notifications", { headers })).json()) as any).unread, 0);
+  });
+  it("notifies the site author of new comments and respects opt-out", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    env.ADMIN_GITHUB_LOGINS = user.login;
+    const top = {
+      id: "C_guest-1", body: "来自 GitHub 的公开评论",
+      author: { ...user, login: "guest-account" }, replyTo: null,
+    };
+    actual.set(top.id, top);
+    await commentNotification(env, postId, "D_test", {
+      action: "created", comment: { node_id: top.id },
+    });
+    const headers = { Cookie: `__Host-echo_session=${rawSession}` };
+    const first = (await (await call("/api/notifications", { headers })).json()) as any;
+    assert.equal(first.unread, 1);
+    assert.equal(first.items[0].kind, "new_comment");
+    const optOut = await call("/api/notifications", {
+      method: "POST", headers: { ...headers, "X-CSRF-Token": csrf },
+      body: JSON.stringify({ subscribed: false }),
+    });
+    assert.equal(optOut.status, 200);
+    actual.set("C_guest-2", { ...top, id: "C_guest-2" });
+    await commentNotification(env, postId, "D_test", {
+      action: "created", comment: { node_id: "C_guest-2" },
+    });
+    const second = (await (await call("/api/notifications", { headers })).json()) as any;
+    assert.equal(second.unread, 1);
+    assert.equal(second.subscribed, false);
   });
   it("keeps notifications disabled until migrations and webhook setup are enabled", async () => {
     const response = await call("/api/notifications");
