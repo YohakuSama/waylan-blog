@@ -213,7 +213,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount();
     const nav = [...document.querySelectorAll<HTMLAnchorElement>("#site-nav .nav-link")];
     assert.deepEqual(nav.map((link) => link.textContent?.trim()),
-      ["首页", "内容", "归档", "关于"]);
+      ["首页", "内容", "年表", "关于"]);
     assert.deepEqual(nav.map((link) => link.getAttribute("href")),
       ["/", "/feed", "/archive", "/about"]);
     assert.ok(!document.querySelector(".home-feed .type-tabs"));
@@ -221,6 +221,27 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
     assert.ok(document.querySelector(".topic-select select"));
     assert.ok(document.querySelectorAll(".filter-tabs button").length > 1);
+  });
+  it("treats the yearbook as a chronological index, not a second type-filtered feed", async () => {
+    await mount("/archive");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "写作年表");
+    assert.equal(document.querySelectorAll(".archive-main .type-tabs").length, 0);
+    assert.equal(document.querySelectorAll(".archive-main .filter-tabs").length, 0);
+    assert.equal(document.querySelectorAll(".archive-row").length, posts.length);
+    const expectedYears = [...new Set(posts.map((post) => post.date.slice(0, 4)))];
+    const years = [...document.querySelectorAll<HTMLAnchorElement>(".timeline-year-nav a")];
+    assert.equal(years.length, expectedYears.length);
+    for (const year of expectedYears) {
+      assert.ok(years.some((a) => a.getAttribute("href") === "#year-" + year));
+      assert.ok(document.getElementById("year-" + year));
+    }
+    assert.ok(document.querySelector(".archive-month-label"));
+    const all = [...document.querySelectorAll<HTMLAnchorElement>(".archive-row")];
+    assert.deepEqual(
+      all.map((a) => a.getAttribute("href")).sort(),
+      posts.map((p) => "/post/" + p.slug).sort(),
+    );
+    assert.ok(document.querySelector('.timeline-result a[href="/feed"]'));
   });
   it("retains old content-type URLs while making /feed the unfiltered destination", async () => {
     await mount("/feed?type=note");
@@ -679,7 +700,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("does not stack duplicate history entries when the current page is clicked again", async () => {
     await mount("/feed");
     const before = history.length;
-    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed?type=all"]')!;
+    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]')!;
     await click(link);
     await click(link);
     assert.equal(history.length, before);
