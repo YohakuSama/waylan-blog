@@ -383,6 +383,32 @@ export default function Reader({ post }: { post: Post }) {
   function notify(text: string) {
     setToast(text);
   }
+  function commentChanged(id: string, next: Comment | null) {
+    const change = (nodes: Comment[]): Comment[] =>
+      nodes.flatMap((c) => {
+        if (c.id === id) return next ? [{ ...c, ...next }] : [];
+        if (!c.replies) return [c];
+        const replies = c.replies.nodes.flatMap((r) =>
+          r.id === id ? (next ? [{ ...r, ...next }] : []) : [r],
+        );
+        return [{ ...c, replies: {
+          ...c.replies,
+          nodes: replies,
+          totalCount: Math.max(0, c.replies.totalCount + (next ? 0 : replies.length - c.replies.nodes.length)),
+        } }];
+      });
+    setComments((prev) => prev ? {
+      ...prev,
+      nodes: change(prev.nodes),
+      totalCount: Math.max(0, prev.totalCount + (next ? 0 : -1)),
+    } : prev);
+    setFocused((prev) => prev?.id === id ? next : prev);
+    setPanelFetched((prev) => change(prev));
+    invalidateComments();
+    commentState.reload();
+    anchorState.reload();
+    notify(next ? "评论已更新。" : "评论已删除。");
+  }
   async function copySection(id: string) {
     const url = new URL(routeHref(`/post/${post.slug}#${id}`), location.href);
     try {
@@ -767,7 +793,8 @@ export default function Reader({ post }: { post: Post }) {
           body: JSON.stringify({
             body: draft.body.trim(),
             anchor: draft.anchor || undefined,
-            replyToId: draft.replyTo?.parentId || draft.replyTo?.id,
+            // Let the server preserve the exact addressee while GitHub keeps one reply level.
+            replyToId: draft.replyTo?.id,
             requestId: draft.requestId,
           }),
         },
@@ -1164,10 +1191,14 @@ export default function Reader({ post }: { post: Post }) {
                     GitHub 暂时没有回应，当前展示最近缓存的评论。
                   </p>
                 )}
-                {state.nodes.map((c) => (
+                {state.nodes.map((c, index) => (
                   <CommentItem
                     key={c.id}
                     comment={c}
+                    floor={`${index}F`}
+                    currentUser={session.data?.user?.login}
+                    csrf={session.data?.csrf}
+                    onChanged={commentChanged}
                     onQuote={quoteJump}
                     onReply={(c) => newComment(c.annotation?.anchor || null, c)}
                   />
@@ -1439,6 +1470,13 @@ export default function Reader({ post }: { post: Post }) {
             <CommentItem
               key={c.id}
               comment={c}
+              floor={(() => {
+                const n = state.nodes.findIndex((top) => top.id === (c.parentId || c.id));
+                return n < 0 ? undefined : `${n}F`;
+              })()}
+              currentUser={session.data?.user?.login}
+              csrf={session.data?.csrf}
+              onChanged={commentChanged}
               onQuote={quoteJump}
               onReply={(c) => newComment(c.annotation?.anchor || null, c)}
             />
