@@ -14,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "echo-db",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "a48454c4-6898-49e6-825d-0e2246dd027b",
       "migrations_dir": "migrations",
     },
   ],
