@@ -139,7 +139,7 @@ export function Home() {
             <span className="hero-square" aria-hidden="true" />
             <HeroTitle />
             <p className="intro-description">{site.intro}</p>
-            <Link className="primary-button" href="/feed?type=all">
+            <Link className="primary-button" href="/feed">
               浏览全部内容
               <ArrowRight size={17} />
             </Link>
@@ -201,11 +201,7 @@ export function Feed() {
     tag = params.get("tag") || "",
     sort = params.get("sort") || "newest";
   const type: TypeFilter =
-    rawType === "all" || isContentType(rawType)
-      ? rawType
-      : query || tag
-        ? "all"
-        : "article";
+    rawType === "all" || isContentType(rawType) ? rawType : "all";
   const [density, setDensity] = useDensity();
   const scoped = posts.filter(
     (p) =>
@@ -227,9 +223,9 @@ export function Feed() {
         next.delete(k);
       else next.set(k, v);
     }
-    // "article" is the default view, so keep the URL short when it is chosen.
-    if (next.get("type") === "article" && !next.get("q") && !next.get("tag"))
-      next.delete("type");
+    // /feed is the canonical "all content" route; older ?type=all
+    // permalinks are still accepted as a backwards-compatible alias.
+    if (next.get("type") === "all") next.delete("type");
     const qs = next.toString();
     return `/feed${qs ? "?" + qs : ""}`;
   }
