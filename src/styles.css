@@ -1989,16 +1989,15 @@ body,
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Use only physical width/height: inline-size or a full-viewport minimum
+     overrides WAAPI's measured width and makes the animation jump. */
   width: 100dvw;
-  min-width: 100dvw;
-  max-width: 100dvw;
-  inline-size: 100dvw;
-  min-inline-size: 100dvw;
-  max-inline-size: 100dvw;
+  min-width: 0;
+  max-width: none;
+  max-inline-size: none;
   height: 100dvh;
-  min-height: 100dvh;
+  min-height: 0;
   max-height: 100dvh;
-  block-size: 100dvh;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -2018,15 +2017,12 @@ body,
     padding: 0;
     box-sizing: border-box;
     width: 100dvw;
-    min-width: 100dvw;
-    max-width: 100dvw;
-    inline-size: 100dvw;
-    min-inline-size: 100dvw;
-    max-inline-size: 100dvw;
+    min-width: 0;
+    max-width: none;
+    max-inline-size: none;
     height: var(--waylan-editor-view-height, 100dvh);
-    min-height: var(--waylan-editor-view-height, 100dvh);
+    min-height: 0;
     max-height: var(--waylan-editor-view-height, 100dvh);
-    block-size: var(--waylan-editor-view-height, 100dvh);
     border: 0;
     border-radius: 0;
   }
