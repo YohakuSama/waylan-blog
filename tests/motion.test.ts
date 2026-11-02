@@ -201,9 +201,11 @@ describe("list animation single-flight and safe recovery", () => {
     for (let i = 0; i < 1000; i++) listTransition(() => updates++);
     assert.equal(updates, 1);
     assert.equal(transitions, 1);
+    assert.equal(document.documentElement.dataset.listBusy, "true");
     resolve();
     await finished;
     await Promise.resolve();
+    assert.equal(document.documentElement.dataset.listBusy, undefined);
     listTransition(() => updates++);
     assert.equal(updates, 2);
   });
