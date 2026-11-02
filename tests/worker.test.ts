@@ -59,7 +59,7 @@ const anchor: Anchor = {
 const postId = manifest[0].id;
 async function call(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
-  if (init.method === "POST") {
+  if (init.method && init.method !== "GET" && init.method !== "HEAD") {
     headers.set("Origin", "https://echo.test");
     headers.set("Content-Type", "application/json");
   }
