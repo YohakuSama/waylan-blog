@@ -1,0 +1,55 @@
+{
+  "name": "waylan-personal-journal",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx scripts/content.ts && vite --host 0.0.0.0",
+    "content": "node --import tsx scripts/content.ts",
+    "build": "npm run content && vite build && node --import tsx scripts/prerender.tsx && npm run build:preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "check": "npm run typecheck && npm run test && npm run build && node --import tsx scripts/check-build.ts && node --import tsx scripts/check-preview.ts",
+    "preview": "vite preview --host 0.0.0.0",
+    "dev:worker": "npm run build && wrangler dev",
+    "db:local": "wrangler d1 migrations apply echo-db --local",
+    "db:remote": "wrangler d1 migrations apply echo-db --remote",
+    "deploy": "npm run check && node --import tsx scripts/validate-deploy.ts && npm run db:remote && npm run db:sync:remote && wrangler deploy",
+    "setup:github": "npm run content && node --import tsx scripts/setup-github.ts",
+    "db:sync:local": "wrangler d1 execute echo-db --local --file .echo/posts.sql",
+    "db:sync:remote": "wrangler d1 execute echo-db --remote --file .echo/posts.sql",
+    "format": "prettier --write src worker shared scripts tests content/site.json package.json tsconfig.json vite.config.ts wrangler.jsonc README.md docs",
+    "build:preview": "node --import tsx scripts/offline-preview.tsx"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/noto-sans-sc": "^5.3.1",
+    "@fontsource-variable/noto-serif-sc": "^5.3.1",
+    "js-yaml": "^3.15.2",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261031.1",
+    "@types/js-yaml": "^3.12.10",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/sanitize-html": "^2.16.0",
+    "highlight.js": "^11.12.0",
+    "jsdom": "^26.1.0",
+    "marked": "^16.0.0",
+    "prettier": "^3.6.0",
+    "sanitize-html": "^2.17.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

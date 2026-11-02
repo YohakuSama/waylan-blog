@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "echo-blog",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"],
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "echo-db",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "SITE_ORIGIN": "https://waylan.org",
+    "GITHUB_REPO_OWNER": "YohakuSama",
+    "GITHUB_REPO_NAME": "YOUR_PUBLIC_DISCUSSIONS_REPOSITORY",
+    "GITHUB_CATEGORY_NAME": "Blog",
+    "ADMIN_GITHUB_LOGINS": "YohakuSama",
+    "CONTENT_REPO": "YohakuSama/waylan-blog",
+    "CONTENT_BRANCH": "main",
+  },
+  "triggers": { "crons": ["17 3 * * *"] },
+  "observability": { "enabled": true },
+}

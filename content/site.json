@@ -1,0 +1,54 @@
+{
+  "name": "Waylan",
+  "tagline": "系统、软件与技术实践",
+  "avatar": "",
+  "hero": {
+    "lines": [
+      "把问题解决，",
+      "把实践留下。"
+    ],
+    "highlight": "把实践留下"
+  },
+  "author": "Waylan",
+  "description": "记录操作系统、软件工具、网络服务、脚本自动化和新技术体验。以实际问题为起点，写清环境、操作、结果与取舍。",
+  "intro": "这里记录真实的技术折腾：系统安装与配置、软件使用、网络与自建服务、脚本和工具，以及新技术体验。更在意问题怎样发现、方案怎样验证、遇到了什么坑，而不只是展示结果。",
+  "topics": [
+    {
+      "id": "system",
+      "name": "系统与软件",
+      "description": "Linux、Windows、macOS 的安装、配置与日常使用"
+    },
+    {
+      "id": "network",
+      "name": "网络与服务",
+      "description": "网络环境、代理、自建服务与远程访问"
+    },
+    {
+      "id": "dev",
+      "name": "工具与开发",
+      "description": "脚本自动化、实用工具、代码与问题排查"
+    },
+    {
+      "id": "explore",
+      "name": "新技术",
+      "description": "Web3、AI 等新事物的上手与体验"
+    },
+    {
+      "id": "notes",
+      "name": "随笔",
+      "description": "阅读、思考与杂谈"
+    }
+  ],
+  "socials": [
+    {
+      "url": "https://github.com/YohakuSama"
+    }
+  ],
+  "sampleContent": false,
+  "profileTags": [
+    "系统配置",
+    "网络服务",
+    "工具实践",
+    "新技术"
+  ]
+}

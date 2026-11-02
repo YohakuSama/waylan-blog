@@ -1,0 +1,574 @@
+import { describe, it, beforeEach, afterEach, mock } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
+import ReactMarkdown from "react-markdown";
+import worker from "../worker/index";
+import { database } from "./db";
+import {
+  base64url,
+  hash,
+  seal,
+  unseal,
+  safeReturn,
+  limit,
+  cookie,
+} from "../worker/security";
+import { commentPayload, parseMarker, cleanComment } from "../worker/github";
+import type { Env } from "../worker/types";
+import type { Anchor, Comment } from "../shared/types";
+import manifest from "../worker/generated/manifest.json";
+const user = {
+  login: "test-reader",
+  avatarUrl: "https://avatars.githubusercontent.com/u/1",
+  url: "https://github.com/test-reader",
+};
+const discussion = {
+  id: "D_test",
+  repository: { nameWithOwner: "test-owner/test-blog", isPrivate: false },
+  url: "https://github.com/test-owner/test-blog/discussions/1",
+};
+const actual = new Map<string, any>();
+let sequence = 0,
+  writeTokens: string[] = [],
+  failAfterWrite = false,
+  offline = false,
+  privateRepo = false;
+let env: Env, db: ReturnType<typeof database>;
+const csrf = "test-csrf",
+  rawSession = "test-session-cookie";
+const block = manifest[0].blocks[0];
+const anchor: Anchor = {
+  schema: 1,
+  postId: manifest[0].id,
+  version: manifest[0].version,
+  segments: [
+    {
+      blockId: block.id,
+      quote: {
+        type: "TextQuoteSelector",
+        exact: block.text.slice(0, 12),
+        prefix: "",
+        suffix: block.text.slice(12, 44),
+      },
+      position: { type: "TextPositionSelector", start: 0, end: 12 },
+    },
+  ],
+};
+const postId = manifest[0].id;
+async function call(path: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (init.method === "POST") {
+    headers.set("Origin", "https://echo.test");
+    headers.set("Content-Type", "application/json");
+  }
+  return worker.fetch(
+    new Request("https://echo.test" + path, { ...init, headers }),
+    env,
+  );
+}
+const send = (
+  body: unknown,
+  headers: HeadersInit = {
+    Cookie: `__Host-echo_session=${rawSession}`,
+    "X-CSRF-Token": csrf,
+  },
+) =>
+  call(`/api/posts/${postId}/comments`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+const requestBody = (extras: Record<string, unknown> = {}) => ({
+  body: "这一句让我想起了一次真实的阅读。",
+  anchor,
+  requestId: crypto.randomUUID(),
+  ...extras,
+});
+const node = (id: string) =>
+  id === "D_test"
+    ? {
+        ...discussion,
+        repository: { ...discussion.repository, isPrivate: privateRepo },
+        comments: {
+          nodes: [...actual.values()],
+          totalCount: actual.size,
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+      }
+    : actual.has(id)
+      ? {
+          ...actual.get(id),
+          discussion: {
+            ...discussion,
+            repository: { ...discussion.repository, isPrivate: privateRepo },
+          },
+        }
+      : null;
+beforeEach(async () => {
+  db = database();
+  env = {
+    DB: db.db,
+    SITE_ORIGIN: "https://echo.test",
+    GITHUB_REPO_OWNER: "test-owner",
+    GITHUB_REPO_NAME: "test-blog",
+    GITHUB_READ_TOKEN: "test-read-only-token",
+    GITHUB_CLIENT_ID: "test-client",
+    GITHUB_CLIENT_SECRET: "test-secret",
+    SESSION_SECRET: "test-only-random-secret-longer-than-32-bytes",
+    GITHUB_WEBHOOK_SECRET: "test-webhook-secret",
+  };
+  db.sqlite
+    .prepare("INSERT INTO discussions VALUES(?,?,?,?)")
+    .run(postId, "D_test", 1, discussion.url);
+  db.sqlite
+    .prepare("INSERT INTO sessions VALUES(?,?,?,?,?,?)")
+    .run(
+      await hash(rawSession),
+      "1",
+      JSON.stringify(user),
+      await seal("test-current-user-token", env.SESSION_SECRET!),
+      csrf,
+      Math.floor(Date.now() / 1000) + 3600,
+    );
+  actual.clear();
+  sequence = 0;
+  writeTokens = [];
+  failAfterWrite = false;
+  offline = false;
+  privateRepo = false;
+  mock.method(
+    globalThis,
+    "fetch",
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (offline) throw new TypeError("network failed");
+      if (url.endsWith("/login/oauth/access_token"))
+        return Response.json({
+          access_token: "test-oauth-user-token",
+          expires_in: 28800,
+        });
+      if (url.endsWith("/user"))
+        return Response.json({
+          id: 1,
+          login: user.login,
+          avatar_url: user.avatarUrl,
+          html_url: user.url,
+        });
+      const { query, variables: v } = JSON.parse(String(init?.body));
+      if (query.includes("addDiscussionComment")) {
+        writeTokens.push(new Headers(init?.headers).get("Authorization") || "");
+        const c = {
+          id: `C_test${++sequence}`,
+          body: v.input.body,
+          url: `https://github.com/test-owner/test-blog/discussions/1#discussioncomment-${sequence}`,
+          createdAt: "2026-10-31T10:00:00Z",
+          updatedAt: "2026-10-31T10:00:00Z",
+          author: user,
+          replies: {
+            nodes: [],
+            totalCount: 0,
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+          replyTo: v.input.replyToId ? { id: v.input.replyToId } : null,
+        };
+        actual.set(c.id, c);
+        if (failAfterWrite) throw new TypeError("response lost");
+        return Response.json({
+          data: { addDiscussionComment: { comment: c } },
+        });
+      }
+      if (v?.ids) return Response.json({ data: { nodes: v.ids.map(node) } });
+      if (v?.id) return Response.json({ data: { node: node(v.id) } });
+      return Response.json({ data: { p0: node("D_test") } });
+    },
+  );
+});
+afterEach(() => {
+  mock.restoreAll();
+  db.sqlite.close();
+});
+describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", () => {
+  it("reads a public discussion without login", async () => {
+    const response = await call(`/api/posts/${postId}/comments`);
+    assert.equal(response.status, 200);
+    assert.partialDeepStrictEqual(await response.json(), {
+      nodes: [],
+      mapped: true,
+      totalCount: 0,
+    });
+  });
+  it("returns an honest unconfigured state without fake comments", async () => {
+    env = {};
+    const response = await call("/api/session");
+    assert.deepEqual(await response.json(), { user: null, configured: false });
+    assert.partialDeepStrictEqual(
+      await (await call(`/api/posts/${postId}/comments`)).json(),
+      { nodes: [], mapped: false },
+    );
+  });
+  it("returns 404 for a nonexistent article", async () =>
+    assert.equal((await call("/api/posts/not-a-post/comments")).status, 404));
+  it("rejects non-object JSON bodies instead of returning an internal error", async () => {
+    assert.equal((await send(null)).status, 400);
+    assert.equal((await send([])).status, 400);
+  });
+  it("requires login for a write", async () =>
+    assert.equal((await send(requestBody(), {})).status, 401));
+  it("rejects forged CSRF tokens", async () =>
+    assert.equal(
+      (
+        await send(requestBody(), {
+          Cookie: `__Host-echo_session=${rawSession}`,
+          "X-CSRF-Token": "forged",
+        })
+      ).status,
+      403,
+    ));
+  it("rejects cross-origin writes", async () => {
+    const req = new Request(`https://echo.test/api/posts/${postId}/comments`, {
+      method: "POST",
+      headers: {
+        Origin: "https://attacker.test",
+        "Content-Type": "application/json",
+        Cookie: `__Host-echo_session=${rawSession}`,
+        "X-CSRF-Token": csrf,
+      },
+      body: JSON.stringify(requestBody()),
+    });
+    assert.equal((await worker.fetch(req, env)).status, 403);
+  });
+  it("writes with the current user token, persists anchors, and survives a fresh GET", async () => {
+    const response = await send(requestBody());
+    assert.equal(response.status, 201);
+    const result = (await response.json()) as any;
+    assert.ok(!result.comment.body.includes("echo:v1"));
+    assert.deepEqual(writeTokens, ["Bearer test-current-user-token"]);
+    assert.equal(
+      db.sqlite.prepare("SELECT COUNT(*) n FROM annotations").get()!.n,
+      1,
+    );
+    assert.deepEqual(
+      ((await (await call(`/api/posts/${postId}/annotations`)).json()) as any)
+        .nodes[0].anchor,
+      anchor,
+    );
+    assert.deepEqual(
+      ((await (await call(`/api/posts/${postId}/comments`)).json()) as any)
+        .nodes[0].annotation.anchor,
+      anchor,
+    );
+  });
+  it("does not duplicate an acknowledged retry", async () => {
+    const body = requestBody();
+    await send(body);
+    assert.equal((await send(body)).status, 200);
+    assert.equal(writeTokens.length, 1);
+  });
+  it("recovers a lost GitHub response without posting twice", async () => {
+    failAfterWrite = true;
+    const body = requestBody();
+    const first = await send(body);
+    assert.equal(first.status, 409);
+    assert.equal(((await first.json()) as any).code, "DELIVERY_UNKNOWN");
+    failAfterWrite = false;
+    const retry = await send(body);
+    assert.equal(retry.status, 200);
+    assert.equal(writeTokens.length, 1);
+    assert.equal(
+      db.sqlite.prepare("SELECT COUNT(*) n FROM annotations").get()!.n,
+      1,
+    );
+  });
+  it("rejects idempotency keys reused for different text", async () => {
+    const body = requestBody();
+    await send(body);
+    assert.equal((await send({ ...body, body: "不同内容" })).status, 409);
+    assert.equal(writeTokens.length, 1);
+  });
+  it("rejects made-up anchors and changed quotations", async () => {
+    const changed = JSON.parse(JSON.stringify(anchor));
+    changed.segments[0].quote.exact = "这句话根本不存在";
+    changed.segments[0].position.end = changed.segments[0].quote.exact.length;
+    assert.equal((await send(requestBody({ anchor: changed }))).status, 409);
+    assert.equal(writeTokens.length, 0);
+  });
+  it("blocks replies to missing or foreign comments", async () =>
+    assert.equal(
+      (await send(requestBody({ replyToId: "C_unknown" }))).status,
+      404,
+    ));
+  it("checks a public repository before exposing any comment", async () => {
+    privateRepo = true;
+    assert.equal((await call(`/api/posts/${postId}/comments`)).status, 403);
+  });
+  it("returns a clear service failure when GitHub is unavailable", async () => {
+    offline = true;
+    const result = await call(`/api/posts/${postId}/comments`);
+    assert.equal(result.status, 503);
+    assert.equal(((await result.json()) as any).code, "GITHUB_NETWORK");
+  });
+  it("serves explicitly marked stale data only for temporary outages", async () => {
+    await call(`/api/posts/${postId}/comments`);
+    db.sqlite.prepare("UPDATE api_cache SET expires_at=0").run();
+    offline = true;
+    const result = (await (
+      await call(`/api/posts/${postId}/comments`)
+    ).json()) as any;
+    assert.equal(result.stale, true);
+  });
+  it("does not serve stale cache when the repository becomes private", async () => {
+    await call(`/api/posts/${postId}/comments`);
+    db.sqlite.prepare("UPDATE api_cache SET expires_at=0").run();
+    privateRepo = true;
+    assert.equal((await call(`/api/posts/${postId}/comments`)).status, 403);
+  });
+  it("filters deleted GitHub comments out of persisted highlights", async () => {
+    await send(requestBody());
+    actual.clear();
+    await env.DB!.prepare("DELETE FROM api_cache").run();
+    assert.deepEqual(
+      ((await (await call(`/api/posts/${postId}/annotations`)).json()) as any)
+        .nodes,
+      [],
+    );
+  });
+  it("returns real feed previews and real recent echoes", async () => {
+    await send(requestBody());
+    const preview = (await (
+      await call(`/api/feed/comments?ids=${postId}`)
+    ).json()) as any;
+    assert.equal(preview.posts[postId].totalCount, 1);
+    const echo = (await (await call("/api/echo")).json()) as any;
+    assert.equal(echo.comment.author.login, user.login);
+  });
+  it("enforces write rate limits across requests", async () => {
+    for (let i = 0; i < 5; i++)
+      assert.equal((await send(requestBody())).status, 201);
+    assert.equal((await send(requestBody())).status, 429);
+  });
+  it("expires sessions instead of accepting stale user credentials", async () => {
+    db.sqlite.prepare("UPDATE sessions SET expires_at=0").run();
+    assert.equal((await send(requestBody())).status, 401);
+  });
+  it("logs out and invalidates the server-side session", async () => {
+    const response = await call("/api/logout", {
+      method: "POST",
+      headers: {
+        Cookie: `__Host-echo_session=${rawSession}`,
+        "X-CSRF-Token": csrf,
+      },
+    });
+    assert.equal(response.status, 200);
+    assert.ok(response.headers.get("Set-Cookie")!.includes("Max-Age=0"));
+    assert.equal((await send(requestBody())).status, 401);
+  });
+});
+describe("Page views", () => {
+  const view = (headers: HeadersInit = {}, id = postId) =>
+    call(`/api/posts/${id}/view`, {
+      method: "POST",
+      headers: { "CF-Connecting-IP": "203.0.113.7", ...headers },
+    });
+  it("counts a visitor once per day and exposes the total", async () => {
+    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+    assert.deepEqual(
+      await (await view({ "CF-Connecting-IP": "203.0.113.8" })).json(),
+      { enabled: true, views: 2 },
+    );
+    assert.deepEqual(await (await call("/api/views")).json(), {
+      enabled: true,
+      views: { [postId]: 2 },
+    });
+  });
+  it("stores only opaque marks, never the address", async () => {
+    await view();
+    const marks = db.sqlite.prepare("SELECT mark FROM view_marks").all();
+    assert.equal(marks.length, 1);
+    assert.doesNotMatch(JSON.stringify(marks), /203\.0\.113/);
+  });
+  it("ignores crawlers and unknown posts, and refuses cross-site pings", async () => {
+    assert.deepEqual(
+      await (await view({ "User-Agent": "Googlebot/2.1" })).json(),
+      { enabled: true, views: 0 },
+    );
+    assert.equal((await view({}, "not-a-post")).status, 404);
+    const forged = new Request(`https://echo.test/api/posts/${postId}/view`, {
+      method: "POST",
+      headers: { Origin: "https://attacker.test" },
+    });
+    assert.equal((await worker.fetch(forged, env)).status, 403);
+  });
+  it("works with only a database and stays quiet without one", async () => {
+    env = { DB: db.db, SITE_ORIGIN: "https://echo.test" };
+    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+    env = { SITE_ORIGIN: "https://echo.test" };
+    assert.deepEqual(await (await call("/api/views")).json(), {
+      enabled: false,
+      views: {},
+    });
+  });
+  it("expires day marks in the scheduled cleanup", async () => {
+    await view();
+    db.sqlite.prepare("UPDATE view_marks SET expires_at=1").run();
+    await worker.scheduled({} as ScheduledController, env, {} as ExecutionContext);
+    assert.equal(
+      db.sqlite.prepare("SELECT COUNT(*) AS n FROM view_marks").get()!.n,
+      0,
+    );
+  });
+});
+describe("OAuth, cryptography and rendering", () => {
+  it("uses PKCE, a host-only secure cookie and a one-time state", async () => {
+    const response = await call(
+      "/api/auth/github?return=%2Fpost%2Fa-room-on-the-internet",
+    );
+    const location = new URL(response.headers.get("Location")!);
+    assert.equal(location.hostname, "github.com");
+    assert.equal(location.searchParams.get("code_challenge_method"), "S256");
+    assert.equal(location.searchParams.get("scope"), "public_repo");
+    const state = location.searchParams.get("state")!;
+    const flow = db.sqlite.prepare("SELECT * FROM oauth_states").get() as any;
+    assert.equal(
+      await hash(await unseal(flow.verifier_encrypted, env.SESSION_SECRET!)),
+      location.searchParams.get("code_challenge"),
+    );
+    const cookie = response.headers.get("Set-Cookie")!;
+    assert.ok(cookie.includes("__Host-echo_oauth"));
+    assert.ok(cookie.includes("HttpOnly; SameSite=Lax"));
+    assert.ok(cookie.includes("Secure"));
+    const callback = await call(
+      `/api/auth/callback?code=test-code&state=${state}`,
+      { headers: { Cookie: `__Host-echo_oauth=${state}` } },
+    );
+    assert.equal(callback.status, 302);
+    assert.equal(
+      callback.headers.get("Location"),
+      "https://echo.test/post/a-room-on-the-internet",
+    );
+    assert.ok(
+      callback.headers.get("Set-Cookie")!.includes("__Host-echo_session"),
+    );
+    assert.equal(
+      (
+        await call(`/api/auth/callback?code=test-code&state=${state}`, {
+          headers: { Cookie: `__Host-echo_oauth=${state}` },
+        })
+      ).status,
+      400,
+    );
+  });
+  it("rejects a mismatched browser OAuth state before token exchange", async () => {
+    assert.equal(
+      (
+        await call("/api/auth/callback?code=test&state=one", {
+          headers: { Cookie: "__Host-echo_oauth=two" },
+        })
+      ).status,
+      400,
+    );
+    assert.equal((fetch as any).mock.calls.length, 0);
+  });
+  it("restores the destination on declined authorization", async () => {
+    const start = await call("/api/auth/github?return=%2Ffeed");
+    const state = new URL(start.headers.get("Location")!).searchParams.get(
+      "state",
+    )!;
+    const response = await call(
+      `/api/auth/callback?error=access_denied&state=${state}`,
+      { headers: { Cookie: `__Host-echo_oauth=${state}` } },
+    );
+    assert.equal(
+      response.headers.get("Location"),
+      "https://echo.test/feed?auth_error=cancelled",
+    );
+  });
+  it("prevents return-URL injection", () => {
+    for (const url of [
+      "//evil.test",
+      "https://evil.test",
+      "/\\evil.test",
+      "/api/logout",
+      "/\nLocation:evil",
+    ])
+      assert.equal(safeReturn(url), "/feed");
+    assert.equal(safeReturn("/post/hello#echo-123"), "/post/hello#echo-123");
+  });
+  it("encrypts and authenticates stored user tokens", async () => {
+    const sealed = await seal("private-token", env.SESSION_SECRET!);
+    assert.ok(!sealed.includes("private-token"));
+    assert.equal(await unseal(sealed, env.SESSION_SECRET!), "private-token");
+    await assert.rejects(unseal(sealed, "a-different-key"));
+  });
+  it("keeps GitHub metadata recoverable and out of the rendered body", () => {
+    const body = commentPayload(
+      "认真留下的评论",
+      postId,
+      "test-request-id",
+      anchor,
+    );
+    assert.deepEqual(parseMarker(body)?.anchor, anchor);
+    assert.equal(
+      cleanComment({ id: "c", body } as Comment, postId).body,
+      "认真留下的评论",
+    );
+  });
+  it("does not execute HTML or javascript URLs in comment Markdown", () => {
+    const html = renderToStaticMarkup(
+      createElement(ReactMarkdown, {
+        skipHtml: true,
+        children: "hello<script>alert(1)</script> [link](javascript:alert(1))",
+      }),
+    );
+    assert.ok(!html.includes("<script"));
+    assert.ok(!html.includes("javascript:"));
+  });
+  it("validates GitHub webhook signatures and applies deletion", async () => {
+    const created = (await (await send(requestBody())).json()) as any;
+    const body = JSON.stringify({
+      action: "deleted",
+      repository: { full_name: "test-owner/test-blog" },
+      discussion: { node_id: "D_test" },
+      comment: { node_id: created.comment.id },
+    });
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(env.GITHUB_WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signature =
+      "sha256=" +
+      Array.from(
+        new Uint8Array(
+          await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)),
+        ),
+        (b) => b.toString(16).padStart(2, "0"),
+      ).join("");
+    const req = new Request("https://echo.test/api/webhook/github", {
+      method: "POST",
+      headers: {
+        "X-Hub-Signature-256": signature,
+        "X-GitHub-Event": "discussion_comment",
+      },
+      body,
+    });
+    assert.equal((await worker.fetch(req, env)).status, 200);
+    assert.equal(
+      db.sqlite.prepare("SELECT COUNT(*) n FROM annotations").get()!.n,
+      0,
+    );
+    const forged = new Request("https://echo.test/api/webhook/github", {
+      method: "POST",
+      headers: {
+        "X-Hub-Signature-256": "sha256=forged",
+        "X-GitHub-Event": "discussion_comment",
+      },
+      body,
+    });
+    assert.equal((await worker.fetch(forged, env)).status, 403);
+  });
+});

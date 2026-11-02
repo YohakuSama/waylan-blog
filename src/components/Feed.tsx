@@ -1,0 +1,460 @@
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { flushSync } from "react-dom";
+import { listTransition } from "../lib/motion";
+import { useReveal } from "../lib/reveal";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Github,
+  Globe,
+  LayoutList,
+  List,
+  Quote,
+} from "lucide-react";
+import { storage } from "../lib/storage";
+import { Link } from "../lib/router";
+import { useApi } from "../lib/api";
+import { posts, shortDate, typeLabels, typeOrder } from "../lib/data";
+import { ArtImage } from "./UI";
+import { BookmarkButton } from "./Shelf";
+import { useViews, viewsLabel } from "../lib/views";
+import type { ContentType, Post } from "../../shared/types";
+type Discussion = { totalCount: number; mapped: boolean };
+type FeedPreviews = { posts: Record<string, Discussion> };
+export type TypeFilter = ContentType | "all";
+/** Pill tabs with counts taken from the generated content, never hard-coded. */
+export function TypeTabs({
+  active,
+  source = posts,
+  onSelect,
+  hrefFor,
+  label = "按内容类型筛选",
+}: {
+  active: TypeFilter;
+  source?: Post[];
+  onSelect?: (type: TypeFilter) => void;
+  hrefFor?: (type: TypeFilter) => string;
+  label?: string;
+}) {
+  const options: TypeFilter[] = ["all", ...typeOrder];
+  const tabLabel = (type: TypeFilter, count: number) => (
+    <span className="type-tab-label">
+      <span>{type === "all" ? "全部" : typeLabels[type]}</span>
+      <span className="tab-count mono">{count}</span>
+    </span>
+  );
+  const counts = options.map((type) =>
+    type === "all" ? source.length : source.filter((p) => p.type === type).length,
+  );
+  const ref = useRef<HTMLDivElement>(null),
+    placed = useRef("");
+  // The selection is one filled copy of the row, clipped to the active tab. The
+  // clip slides by CSS, so text turns light exactly where the fill covers it and
+  // never fades ahead of it; the row stays live during the list transition.
+  useLayoutEffect(() => {
+    const row = ref.current,
+      fill = row?.querySelector<HTMLElement>(".type-fill");
+    if (!row || !fill) return;
+    const place = (animate: boolean) => {
+      const tabs = [...row.querySelectorAll<HTMLElement>(".type-tab")],
+        copies = fill.querySelectorAll<HTMLElement>(".type-fill-tab"),
+        current = row.querySelector<HTMLElement>(".type-tab.active");
+      if (!current) return;
+      const box = (t: HTMLElement) => [t.offsetLeft, t.offsetTop, t.offsetWidth, t.offsetHeight],
+        width = row.scrollWidth,
+        height = row.scrollHeight,
+        key = [width, height, ...tabs.flatMap(box), ...box(current)].join();
+      if (key === placed.current) return;
+      const still = !animate || !placed.current;
+      placed.current = key;
+      if (still) fill.style.transition = "none";
+      fill.style.width = `${width}px`;
+      fill.style.height = `${height}px`;
+      tabs.forEach((tab, i) => {
+        const [x, y, w, h] = box(tab),
+          copy = copies[i];
+        if (copy)
+          Object.assign(copy.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+      });
+      const [x, y, w, h] = box(current);
+      fill.style.clipPath = `inset(${y}px ${width - x - w}px ${height - y - h}px ${x}px round var(--radius-full))`;
+      row.dataset.pill = "";
+      if (still) {
+        void fill.offsetWidth;
+        fill.style.transition = "";
+      }
+    };
+    place(true);
+    // Fonts and wrapping can move tabs later; follow them without sliding.
+    const observer =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => place(false))
+        : null;
+    observer?.observe(row);
+    row.querySelectorAll(".type-tab").forEach((tab) => observer?.observe(tab));
+    return () => observer?.disconnect();
+  }, [active]);
+  return (
+    <div className="type-tabs" role="group" aria-label={label} ref={ref}>
+      {options.map((type, i) => {
+        const count = counts[i],
+          content = tabLabel(type, count);
+        const props = {
+          className: `type-tab${active === type ? " active" : ""}${count ? "" : " empty"}`,
+          "aria-pressed": active === type,
+          title: count ? undefined : "暂无内容",
+        };
+        return hrefFor ? (
+          <Link key={type} href={hrefFor(type)} {...props}>
+            {content}
+          </Link>
+        ) : (
+          <button
+            key={type}
+            type="button"
+            {...props}
+            // Synchronous commit inside the transition, so cards can glide.
+            onClick={() => listTransition(() => flushSync(() => onSelect?.(type)))}
+          >
+            {content}
+          </button>
+        );
+      })}
+      <span className="type-fill" aria-hidden="true">
+        {options.map((type, i) => (
+          <span key={type} className="type-fill-tab">
+            {tabLabel(type, counts[i])}
+          </span>
+        ))}
+      </span>
+    </div>
+  );
+}
+export function TagList({ tags }: { tags: string[] }) {
+  return tags.length ? (
+    <ul className="tag-list" aria-label="标签">
+      {tags.map((tag) => (
+        <li key={tag}>
+          <Link href={`/feed?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
+        </li>
+      ))}
+    </ul>
+  ) : null;
+}
+function EntryMeta({
+  post,
+  discussion,
+}: {
+  post: Post;
+  discussion?: Discussion;
+}) {
+  const views = useViews(),
+    count = views.enabled ? views.views[post.id] : 0;
+  return (
+    <div className="entry-meta">
+      <span className={`type-label type-${post.type}`}>
+        <span className="type-mark" aria-hidden="true" />
+        {typeLabels[post.type]}
+      </span>
+      <time dateTime={post.date}>{shortDate(post.date)}</time>
+      {(post.type === "article" || post.type === "note") && (
+        <span>{post.readingMinutes} 分钟阅读</span>
+      )}
+      {post.type === "project" && post.project && (
+        <span className="project-status">{post.project.status}</span>
+      )}
+      {discussion?.mapped && discussion.totalCount > 0 && (
+        <Link href={`/post/${post.slug}#discussion`}>
+          {discussion.totalCount} 条评论
+        </Link>
+      )}
+      {!!count && <span className="entry-views">{viewsLabel(count)} 阅读</span>}
+      <BookmarkButton post={post} className="card-bookmark" />
+    </div>
+  );
+}
+function Media({ post, children }: { post: Post; children: ReactNode }) {
+  return (
+    <Link
+      href={`/post/${post.slug}`}
+      className="feed-media-link"
+      tabIndex={-1}
+      aria-hidden="true"
+    >
+      {children}
+    </Link>
+  );
+}
+export function FeedEntry({
+  post,
+  discussion,
+  priority = false,
+}: {
+  post: Post;
+  discussion?: Discussion;
+  priority?: boolean;
+}) {
+  const href = `/post/${post.slug}`;
+  let media: ReactNode = null;
+  if (post.cover)
+    media = (
+      <Media post={post}>
+        <div
+          className="feed-media"
+          data-shared-cover={post.id}
+          style={{ viewTransitionName: `visual-${post.id}` }}
+        >
+          <ArtImage
+            src={post.cover}
+            alt={post.coverAlt}
+            width="1200"
+            height="750"
+            loading={priority ? undefined : "lazy"}
+          />
+        </div>
+      </Media>
+    );
+  else if (post.type === "note" && post.snippet)
+    media = (
+      <Media post={post}>
+        <div className="feed-media code-thumb">
+          <span className="code-dots" aria-hidden="true" />
+          <span className="code-lang mono">{post.snippet.lang}</span>
+          <pre>
+            <code>
+              {post.snippet.code
+                .split("\n")
+                .slice(0, 5)
+                .map((line, i) => (
+                  <span className="code-line" key={i}>
+                    {line || " "}
+                  </span>
+                ))}
+            </code>
+          </pre>
+        </div>
+      </Media>
+    );
+  else if (post.type === "project")
+    media = (
+      <Media post={post}>
+        <div className="feed-media project-thumb">
+          <span className="project-head">
+            <span className="project-initial">{post.title.slice(0, 1)}</span>
+            <span className="mono project-repo">
+              {post.project?.repo?.replace(/^https?:\/\/(www\.)?github\.com\//, "") ||
+                post.slug}
+            </span>
+          </span>
+          <span className="project-langs" aria-hidden="true">
+            {post.project?.stack.slice(0, 4).map((s, i, all) => (
+              <i key={s} style={{ flexGrow: all.length - i + 1 }} />
+            ))}
+          </span>
+          <span className="mono">
+            {post.project?.stack.slice(0, 3).join(" · ")}
+          </span>
+        </div>
+      </Media>
+    );
+  if (post.type === "thought")
+    return (
+      <article
+        className="feed-item post-card is-thought"
+        id={`card-${post.id}`}
+      >
+        <Quote className="thought-mark" size={20} aria-hidden="true" />
+        <div className="feed-body">
+          <EntryMeta post={post} discussion={discussion} />
+          <p className="thought-text">
+            <Link href={href} className="post-card-link">
+              {post.text.trim()}
+            </Link>
+          </p>
+          <TagList tags={post.tags} />
+        </div>
+        <Link
+          className="feed-arrow"
+          href={href}
+          aria-label={`打开：${post.title}`}
+        >
+          <ArrowRight size={18} />
+        </Link>
+      </article>
+    );
+  return (
+    <article
+      className={`feed-item post-card is-${post.type}${media ? " has-media" : ""}`}
+      id={`card-${post.id}`}
+    >
+      {media}
+      <div className="feed-body">
+        <EntryMeta post={post} discussion={discussion} />
+        <h2 style={{ viewTransitionName: `title-${post.id}` }}>
+          <Link href={href} className="post-card-link">
+            {post.title}
+          </Link>
+        </h2>
+        <p className="feed-excerpt">{post.excerpt}</p>
+        {post.project && (
+          <div className="project-facts">
+            <ul className="stack-list" aria-label="技术栈">
+              {post.project.stack.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+            {post.project.repo && (
+              <a href={post.project.repo} target="_blank" rel="noreferrer">
+                <Github size={14} />
+                仓库
+              </a>
+            )}
+            {post.project.demo && (
+              <a href={post.project.demo} target="_blank" rel="noreferrer">
+                <Globe size={14} />
+                演示
+              </a>
+            )}
+          </div>
+        )}
+        <TagList tags={post.tags} />
+      </div>
+      <Link
+        className="feed-arrow"
+        href={href}
+        aria-label={`打开：${post.title}`}
+      >
+        <ArrowRight size={18} />
+      </Link>
+    </article>
+  );
+}
+/** Renders entries in batches; discussion counts come from the Worker when it is configured. */
+export type Density = "full" | "compact";
+/** Reader-chosen list density, remembered on this device after hydration. */
+export function useDensity() {
+  const [density, set] = useState<Density>("full");
+  useEffect(() => {
+    if (storage.get<Density>("density", "full") === "compact") set("compact");
+  }, []);
+  return [
+    density,
+    (next: Density) => {
+      set(next);
+      storage.set("density", next);
+    },
+  ] as const;
+}
+export function ViewToggle({
+  density,
+  onChange,
+}: {
+  density: Density;
+  onChange: (d: Density) => void;
+}) {
+  return (
+    <div className="view-toggle" role="group" aria-label="列表密度">
+      <button
+        type="button"
+        aria-pressed={density === "full"}
+        aria-label="详细列表"
+        data-tip="详细列表"
+        onClick={() => listTransition(() => flushSync(() => onChange("full")))}
+      >
+        <LayoutList size={16} />
+      </button>
+      <button
+        type="button"
+        aria-pressed={density === "compact"}
+        aria-label="紧凑列表"
+        data-tip="紧凑列表"
+        onClick={() =>
+          listTransition(() => flushSync(() => onChange("compact")))
+        }
+      >
+        <List size={16} />
+      </button>
+    </div>
+  );
+}
+export function FeedList({
+  items,
+  batch = 8,
+  resetKey,
+  empty,
+  density = "full",
+}: {
+  items: Post[];
+  batch?: number;
+  resetKey: string;
+  empty: ReactNode;
+  density?: Density;
+}) {
+  const [limit, setLimit] = useState(batch);
+  useEffect(() => setLimit(batch), [resetKey, batch]);
+  const visible = items.slice(0, limit);
+  const [listRef, grow] = useReveal<HTMLDivElement>(".feed-item", [
+    resetKey,
+    visible.length,
+  ]);
+  const previews = useApi<FeedPreviews>(
+    visible.length
+      ? `/api/feed/comments?ids=${visible
+          .slice(0, 20)
+          .map((p) => p.id)
+          .join(",")}`
+      : null,
+  );
+  if (!items.length) return <>{empty}</>;
+  return (
+    <>
+      <div className={`feed-list density-${density}`} ref={listRef}>
+        {visible.map((p, i) => (
+          <FeedEntry
+            key={p.id}
+            post={p}
+            priority={i < 2}
+            discussion={previews.data?.posts[p.id]}
+          />
+        ))}
+      </div>
+      <div className="feed-footer">
+        {limit < items.length ? (
+          <button
+            type="button"
+            className="load-more"
+            onClick={() => {
+              grow();
+              setLimit((n) => n + batch);
+            }}
+          >
+            加载更多
+            <span className="mono">还有 {items.length - limit} 条</span>
+          </button>
+        ) : (
+          <span className="feed-end">已显示全部 {items.length} 条</span>
+        )}
+      </div>
+    </>
+  );
+}
+export function ArrowLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link className="arrow-link" href={href}>
+      {children}
+      <ArrowUpRight size={14} />
+    </Link>
+  );
+}
