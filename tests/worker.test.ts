@@ -460,6 +460,29 @@ describe("OAuth, cryptography and rendering", () => {
       400,
     );
   });
+  it("limits GitHub App login to its permissions and invalidates old OAuth sessions", async () => {
+    env.GITHUB_AUTH_PROVIDER = "github-app";
+    const before = await call("/api/admin/session", {
+      headers: { Cookie: `__Host-echo_session=${rawSession}` },
+    });
+    assert.equal(((await before.json()) as any).user, null);
+    const response = await call("/api/auth/github?return=%2Fadmin");
+    const location = new URL(response.headers.get("Location")!);
+    assert.equal(location.searchParams.has("scope"), false);
+    assert.equal(location.searchParams.get("code_challenge_method"), "S256");
+    const state = location.searchParams.get("state")!;
+    const callback = await call(`/api/auth/callback?code=test-code&state=${state}`, {
+      headers: { Cookie: `__Host-echo_oauth=${state}` },
+    });
+    assert.equal(callback.status, 302);
+    assert.equal(callback.headers.get("Location"), "https://echo.test/admin");
+    const rows = db.sqlite
+      .prepare("SELECT user_json FROM sessions")
+      .all() as { user_json: string }[];
+    assert.ok(
+      rows.some((row) => JSON.parse(row.user_json).authProvider === "github-app"),
+    );
+  });
   it("rejects a mismatched browser OAuth state before token exchange", async () => {
     assert.equal(
       (
