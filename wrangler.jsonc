@@ -21,7 +21,7 @@
   "vars": {
     "SITE_ORIGIN": "https://waylan.org",
     "GITHUB_REPO_OWNER": "YohakuSama",
-    "GITHUB_REPO_NAME": "YOUR_PUBLIC_DISCUSSIONS_REPOSITORY",
+    "GITHUB_REPO_NAME": "waylan-comments",
     "GITHUB_CATEGORY_NAME": "Blog",
     "ADMIN_GITHUB_LOGINS": "YohakuSama",
     "CONTENT_REPO": "YohakuSama/waylan-blog",
