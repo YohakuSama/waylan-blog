@@ -39,13 +39,13 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes("aria-pressed={selected}"));
   });
   it("reflows compact desktop content before fixed sidebars squeeze the feed", () => {
-    const sidebar = site.slice(site.indexOf("/* At 1025–1200px"));
-    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1200px)"));
+    const sidebar = site.slice(site.indexOf("/* At 1025–1279px"));
+    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1279px)"));
     assert.ok(sidebar.includes(".content-grid { grid-template-columns:minmax(0,1fr); }"));
     assert.ok(sidebar.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
     assert.ok(sidebar.includes("@media (min-width:861px) and (max-width:1279px)"));
     assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
-    assert.ok(sidebar.includes("grid-template-columns:auto minmax(0,1fr) auto"));
+    assert.ok(sidebar.includes("grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)"));
   });
   it("keeps the homepage a single editorial feed rather than two filter panels", () => {
     assert.ok(site.includes(".home-feed-heading"));

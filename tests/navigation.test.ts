@@ -214,7 +214,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("keeps primary navigation distinct from content-type filters", async () => {
     await mount();
     const nav = [...document.querySelectorAll<HTMLAnchorElement>("#site-nav .nav-link")];
-    assert.deepEqual(nav.map((link) => link.textContent?.trim()),
+    assert.deepEqual(nav.map((link) => link.querySelector(".nav-label")?.textContent?.trim()),
       ["首页", "内容", "年表", "关于"]);
     assert.deepEqual(nav.map((link) => link.getAttribute("href")),
       ["/", "/feed", "/archive", "/about"]);
@@ -572,7 +572,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       projects.reduce((n, p) => n + Number(!!p.project?.repo) + Number(!!p.project?.demo), 0),
     );
     assert.equal(
-      document.querySelector("#site-nav .selected")?.textContent,
+      document.querySelector("#site-nav .selected .nav-label")?.textContent,
       "内容",
     );
   });

@@ -161,7 +161,10 @@ export function Home() {
         <section className="home-feed" aria-labelledby="latest-heading">
           <div className="home-feed-heading">
             <h2 id="latest-heading">最近更新</h2>
-            <span className="home-feed-count">{items.length} 篇记录</span>
+            <div className="home-feed-more">
+              <span className="home-feed-count">{items.length} 篇记录</span>
+              <Link href="/feed">查看全部<ArrowRight size={15} aria-hidden="true" /></Link>
+            </div>
           </div>
           <FeedList
             items={items}
