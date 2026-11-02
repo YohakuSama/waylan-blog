@@ -347,3 +347,50 @@ export function animateDialog(
     fill: opening ? "none" : "forwards",
   });
 }
+
+/** Shared motion path for resizing a native <dialog> in the top layer.
+ * Animate fixed pixel bounds, not the content transform: text remains legible
+ * and both directions follow the same layout path and motion tokens.
+ * Layout changes must be committed before calling this (useLayoutEffect).
+ */
+export function animateDialogResize(
+  dialog: HTMLElement,
+  from: DOMRectReadOnly,
+  to: DOMRectReadOnly,
+  fromRadius: string,
+  toRadius: string,
+): Animation | null {
+  if (!motionAllowed()) return null;
+  if (
+    Math.abs(from.left - to.left) < 0.5 &&
+    Math.abs(from.top - to.top) < 0.5 &&
+    Math.abs(from.width - to.width) < 0.5 &&
+    Math.abs(from.height - to.height) < 0.5
+  ) return null;
+  const frame = (rect: DOMRectReadOnly, radius: string): Keyframe => ({
+    position: "fixed",
+    inset: "auto",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    right: "auto",
+    bottom: "auto",
+    margin: "0",
+    boxSizing: "border-box",
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    maxWidth: "none",
+    maxHeight: "none",
+    borderRadius: radius,
+  });
+  const timing = token("--motion-page", "320ms", dialog);
+  const duration = timing.endsWith("ms")
+    ? Number.parseFloat(timing)
+    : timing.endsWith("s")
+      ? Number.parseFloat(timing) * 1000
+      : 320;
+  return animateElement(dialog, [frame(from, fromRadius), frame(to, toRadius)], {
+    duration: Number.isFinite(duration) ? duration : 320,
+    easing: token("--ease-out", "cubic-bezier(.22,1,.36,1)", dialog),
+    fill: "none",
+  });
+}
