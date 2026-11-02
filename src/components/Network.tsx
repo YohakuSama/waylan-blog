@@ -59,8 +59,7 @@ export function NetworkWave({ className = "" }: { className?: string }) {
     <svg
       className={`network-wave ${className}`}
       viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label="由点阵组成的抽象网络波形"
+      aria-hidden="true"
       focusable="false"
     >
       <defs>
