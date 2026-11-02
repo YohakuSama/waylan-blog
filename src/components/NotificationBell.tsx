@@ -27,6 +27,7 @@ export function NotificationBell() {
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let active = true;
@@ -90,6 +91,7 @@ export function NotificationBell() {
   const mark = async (ids: string[]) => {
     if (!ids.length || busy) return;
     setBusy(true);
+    setError("");
     try {
       await api("/api/notifications", {
         method: "POST",
@@ -101,12 +103,15 @@ export function NotificationBell() {
         unread: Math.max(0, prev.unread - prev.items.filter((item) => ids.includes(item.id) && !item.read).length),
         items: prev.items.map((item) => ids.includes(item.id) ? { ...item, read: true } : item),
       }));
+    } catch {
+      setError("消息状态保存失败，请重试。");
     } finally {
       setBusy(false);
     }
   };
   const subscribe = async () => {
     setBusy(true);
+    setError("");
     try {
       await api("/api/notifications", {
         method: "POST",
@@ -114,6 +119,8 @@ export function NotificationBell() {
         body: JSON.stringify({ subscribed: !box.subscribed }),
       });
       setBox((prev) => ({ ...prev, subscribed: !prev.subscribed }));
+    } catch {
+      setError("通知偏好保存失败，请重试。");
     } finally {
       setBusy(false);
     }
@@ -166,6 +173,7 @@ export function NotificationBell() {
               </Link>
             )) : <p className="notification-empty">目前没有新消息。</p>}
           </div>
+          {error && <p className="small-error" role="alert">{error}</p>}
           <div className="notification-foot">
             <button type="button" className="text-button" disabled={busy} onClick={() => void subscribe()}>
               {box.subscribed ? "关闭站内提醒" : "开启站内提醒"}
