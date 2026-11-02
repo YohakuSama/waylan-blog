@@ -68,14 +68,15 @@ export function commentPayload(
   postId: string,
   requestId: string,
   anchor?: Anchor,
+  replyTarget?: { id: string; login: string },
 ) {
-  const data = { v: 1, postId, requestId, ...(anchor ? { anchor } : {}) };
+  const data = { v: 1, postId, requestId, ...(anchor ? { anchor } : {}), ...(replyTarget ? { replyTarget } : {}) };
   // URI-encoded JSON, not HTML. GitHub hides it, allowing safe retry recovery and metadata reconstruction.
   return `${body}\n\n<!-- echo:v1:${encodeURIComponent(JSON.stringify(data))} -->`;
 }
 export function parseMarker(
   body: string,
-): { v: number; postId: string; requestId: string; anchor?: Anchor } | null {
+): { v: number; postId: string; requestId: string; anchor?: Anchor; replyTarget?: { id: string; login: string } } | null {
   const match = body.match(/<!-- echo:v1:([^]*?) -->/);
   if (!match || match[1].length > 60000) return null;
   try {
@@ -103,6 +104,13 @@ export function cleanComment(
     ...comment,
     body: comment.body.replace(/<!-- echo:v1:[^]*? -->/g, "").trim(),
     annotation: annotation || fromMarker,
+    ...(marker?.postId === postId && marker.replyTarget &&
+      typeof marker.replyTarget.id === "string" &&
+      typeof marker.replyTarget.login === "string" &&
+      marker.replyTarget.login.length <= 39 &&
+      /^[a-zA-Z0-9-]+$/.test(marker.replyTarget.login)
+      ? { replyTarget: marker.replyTarget }
+      : {}),
     replies: comment.replies
       ? {
           ...comment.replies,
