@@ -578,6 +578,40 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".reader-prose .code-prompt"));
     assert.ok(document.querySelector(".reader-prose .hljs"));
   });
+  it("does not execute repeated same-target route clicks while a transition is in flight", async () => {
+    await mount("/");
+    const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]');
+    assert.ok(link);
+    const push = history.pushState.bind(history);
+    const replace = history.replaceState.bind(history);
+    let pushes = 0;
+    let replaces = 0;
+    Object.defineProperty(history, "pushState", {
+      configurable: true,
+      value: (...args: Parameters<History["pushState"]>) => {
+        pushes++;
+        return push(...args);
+      },
+    });
+    Object.defineProperty(history, "replaceState", {
+      configurable: true,
+      value: (...args: Parameters<History["replaceState"]>) => {
+        replaces++;
+        return replace(...args);
+      },
+    });
+    await act(async () => {
+      for (let i = 0; i < 1000; i++) {
+        link.dispatchEvent(new dom.window.MouseEvent("click", {
+          bubbles: true, cancelable: true, button: 0,
+        }));
+      }
+      await pause(70);
+    });
+    assert.equal(location.pathname, "/feed");
+    assert.equal(pushes, 1, "only one history navigation for one target");
+    assert.equal(replaces, 0, "repeated clicks must not replace history repeatedly");
+  });
   it("does not stack duplicate history entries when the current page is clicked again", async () => {
     await mount("/feed");
     const before = history.length;
