@@ -6,13 +6,22 @@ const site = readFileSync("src/styles/site.css", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
-  it("keeps the decorative wave compact and visible below 860px", () => {
+  it("layers the dotted wave behind hero copy without taking a new row on touch devices", () => {
     assert.ok(site.includes('@media (max-width: 860px)'));
-    assert.ok(site.includes(':root:not([data-skin="terminal"]) .home-hero .hero-visual'));
-    assert.ok(site.includes("height: clamp(114px, 18vw, 168px);"));
-    assert.ok(site.includes("height: clamp(94px, 25vw, 112px);"));
-    assert.ok(site.includes("transform: translateY(-50%);"));
-    assert.ok(site.includes("mask-image: linear-gradient"));
+    const begin = site.indexOf('  /* The wave is a background, not a card');
+    assert.ok(begin > 0);
+    const region = site.slice(begin, begin + 1250);
+    assert.ok(region.includes("position: absolute;"));
+    assert.ok(region.includes("z-index: 0;"));
+    assert.ok(region.includes("height: 100%;"));
+    assert.ok(region.includes("margin: 0;"));
+    assert.ok(region.includes("pointer-events: none;"));
+    assert.ok(region.includes("mask-image: radial-gradient"));
+    assert.ok(region.includes(".home-hero .intro-copy"));
+    assert.ok(region.includes("z-index: 1;"));
+    const mobile = site.slice(site.indexOf('@media (max-width: 480px)'));
+    assert.ok(mobile.includes("opacity: .25;"));
+    assert.equal(mobile.includes("height: clamp(94px, 25vw, 112px)"), false);
   });
 
   it("shows every filter on phones without an overflowing horizontal scroller", () => {
