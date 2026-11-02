@@ -1557,6 +1557,7 @@ h3 {
   .home-hero {
     min-height: 0;
     padding: 28px 0 20px;
+    isolation: isolate;
   }
   .hero-visual {
     position: relative;
@@ -1566,25 +1567,36 @@ h3 {
     margin: 4px 0 -24px auto;
     order: 2;
   }
-  /* Below 860px the wave is no longer a desktop background. Keep it as
-     a shallow panorama instead of letting its 2:1 SVG consume half a screen. */
+  /* The wave is a background, not a card or a second hero row.
+     Keep the original mesh behind the introduction so mobile readers reach
+     articles sooner. Text and links remain on their own higher layer. */
   :root:not([data-skin="terminal"]) .home-hero .hero-visual {
-    width: 100%;
+    position: absolute;
+    z-index: 0;
+    inset: 0 0 auto auto;
+    right: -8px;
+    width: min(100%, 650px);
     max-width: none;
-    height: clamp(114px, 18vw, 168px);
-    margin: 14px 0 0;
+    height: 100%;
+    margin: 0;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 19%, #000 78%, transparent);
-    mask-image: linear-gradient(to bottom, transparent, #000 19%, #000 78%, transparent);
+    opacity: .32;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse 72% 75% at 72% 45%, #000 15%, transparent 100%);
+    mask-image: radial-gradient(ellipse 72% 75% at 72% 45%, #000 15%, transparent 100%);
   }
   :root:not([data-skin="terminal"]) .home-hero .hero-visual .network-wave {
     position: absolute;
-    left: 0;
-    top: 50%;
     display: block;
-    width: 100%;
+    top: 18%;
+    left: 10%;
+    width: 122%;
     height: auto;
-    transform: translateY(-50%);
+    transform: none;
+  }
+  :root:not([data-skin="terminal"]) .home-hero .intro-copy {
+    position: relative;
+    z-index: 1;
   }
   .feed-toolbar {
     align-items: flex-start;
@@ -1690,8 +1702,11 @@ h3 {
     font-size: 13.5px;
   }
   :root:not([data-skin="terminal"]) .home-hero .hero-visual {
-    height: clamp(94px, 25vw, 112px);
-    margin-top: 10px;
+    width: calc(100% + 10px);
+    right: -5px;
+    height: 100%;
+    margin: 0;
+    opacity: .25;
   }
   /* Five categories stay completely visible as balanced 3+2 rows on phones,
      instead of four pills and one orphan or an unmarked horizontal scroller. */
