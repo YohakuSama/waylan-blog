@@ -371,6 +371,9 @@ export default function Reader({ post }: { post: Post }) {
   const visibleTopComments = state.nodes.filter(visibleComment);
   const visibleCount = Math.max(0, state.totalCount - (state.nodes.length - visibleTopComments.length));
   const allAnnotations = [...annotations, ...localMarks];
+  const inVisibleThread = (comment: Comment) =>
+    visibleComment(comment) && (!comment.parentId ||
+      !state.nodes.some((parent) => parent.id === comment.parentId && !visibleComment(parent)));
   const allComments = [
     ...new Map(
       [
@@ -381,8 +384,8 @@ export default function Reader({ post }: { post: Post }) {
             parentId: c.id,
           })),
         ]),
-        ...(focused ? [focused] : []),
-        ...panelFetched,
+        ...(focused && inVisibleThread(focused) ? [focused] : []),
+        ...panelFetched.filter(inVisibleThread),
       ].map((c) => [c.id, c]),
     ).values(),
   ];
@@ -1190,7 +1193,7 @@ export default function Reader({ post }: { post: Post }) {
                   重新读取
                 </button>
               </div>
-            ) : visibleTopComments.length ? (
+            ) : (visibleTopComments.length > 0 || state.pageInfo.hasNextPage) ? (
               <>
                 {state.stale && (
                   <p className="inline-notice">
