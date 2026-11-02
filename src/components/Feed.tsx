@@ -28,7 +28,8 @@ import type { ContentType, Post } from "../../shared/types";
 type Discussion = { totalCount: number; mapped: boolean };
 type FeedPreviews = { posts: Record<string, Discussion> };
 export type TypeFilter = ContentType | "all";
-/** Pill tabs with counts taken from the generated content, never hard-coded. */
+/** Stable, accessible type filters. A single label and one selected state
+ * avoid duplicating text in a measured overlay that breaks when tabs wrap. */
 export function TypeTabs({
   active,
   source = posts,
@@ -43,75 +44,23 @@ export function TypeTabs({
   label?: string;
 }) {
   const options: TypeFilter[] = ["all", ...typeOrder];
-  const tabLabel = (type: TypeFilter, count: number) => (
-    <span className="type-tab-label">
-      <span>{type === "all" ? "全部" : typeLabels[type]}</span>
-      <span className="tab-count mono">{count}</span>
-    </span>
-  );
-  const counts = options.map((type) =>
-    type === "all" ? source.length : source.filter((p) => p.type === type).length,
-  );
-  const ref = useRef<HTMLDivElement>(null),
-    placed = useRef("");
-  // The selection is one filled copy of the row, clipped to the active tab. The
-  // clip slides by CSS, so text turns light exactly where the fill covers it and
-  // never fades ahead of it; the row stays live during the list transition.
-  useLayoutEffect(() => {
-    const row = ref.current,
-      fill = row?.querySelector<HTMLElement>(".type-fill");
-    if (!row || !fill) return;
-    const place = (animate: boolean) => {
-      const tabs = [...row.querySelectorAll<HTMLElement>(".type-tab")],
-        copies = fill.querySelectorAll<HTMLElement>(".type-fill-tab"),
-        current = row.querySelector<HTMLElement>(".type-tab.active");
-      if (!current) return;
-      const box = (t: HTMLElement) => [t.offsetLeft, t.offsetTop, t.offsetWidth, t.offsetHeight],
-        width = row.scrollWidth,
-        height = row.scrollHeight,
-        key = [width, height, ...tabs.flatMap(box), ...box(current)].join();
-      if (key === placed.current) return;
-      const still = !animate || !placed.current;
-      placed.current = key;
-      if (still) fill.style.transition = "none";
-      fill.style.width = `${width}px`;
-      fill.style.height = `${height}px`;
-      tabs.forEach((tab, i) => {
-        const [x, y, w, h] = box(tab),
-          copy = copies[i];
-        if (copy)
-          Object.assign(copy.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
-      });
-      const [x, y, w, h] = box(current);
-      fill.style.clipPath = `inset(${y}px ${width - x - w}px ${height - y - h}px ${x}px round var(--radius-full))`;
-      row.dataset.pill = "";
-      if (still) {
-        void fill.offsetWidth;
-        fill.style.transition = "";
-      }
-    };
-    place(true);
-    // Fonts and wrapping can move tabs later; follow them without sliding.
-    const observer =
-      typeof ResizeObserver === "function"
-        ? new ResizeObserver(() => place(false))
-        : null;
-    observer?.observe(row);
-    row.querySelectorAll(".type-tab").forEach((tab) => observer?.observe(tab));
-    return () => observer?.disconnect();
-  }, [active]);
   return (
-    <div className="type-tabs" role="group" aria-label={label} ref={ref}>
-      {options.map((type, i) => {
-        const count = counts[i],
-          content = tabLabel(type, count);
+    <div className="type-tabs" role="group" aria-label={label}>
+      {options.map((type) => {
+        const count = type === "all" ? source.length : source.filter((p) => p.type === type).length;
+        const selected = active === type;
+        const content = (
+          <span className="type-tab-label">
+            <span>{type === "all" ? "全部" : typeLabels[type]}</span>
+            <span className="tab-count mono">{count}</span>
+          </span>
+        );
         const props = {
-          className: `type-tab${active === type ? " active" : ""}${count ? "" : " empty"}`,
-          "aria-pressed": active === type,
+          className: `type-tab${selected ? " active" : ""}${count ? "" : " empty"}`,
           title: count ? undefined : "暂无内容",
         };
         return hrefFor ? (
-          <Link key={type} href={hrefFor(type)} {...props}>
+          <Link key={type} href={hrefFor(type)} {...props} aria-current={selected ? "page" : undefined}>
             {content}
           </Link>
         ) : (
@@ -119,20 +68,13 @@ export function TypeTabs({
             key={type}
             type="button"
             {...props}
-            // Synchronous commit inside the transition, so cards can glide.
+            aria-pressed={selected}
             onClick={() => listTransition(() => flushSync(() => onSelect?.(type)))}
           >
             {content}
           </button>
         );
       })}
-      <span className="type-fill" aria-hidden="true">
-        {options.map((type, i) => (
-          <span key={type} className="type-fill-tab">
-            {tabLabel(type, counts[i])}
-          </span>
-        ))}
-      </span>
     </div>
   );
 }
