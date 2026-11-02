@@ -1371,7 +1371,7 @@ html {
 @media(prefers-reduced-motion: reduce){:root:not([data-motion="full"]) .site-header::after { animation:none; width:100%; transform:none; opacity:.6; }}
 
 /* v1.6.5: denser filter rhythm without sacrificing touch targets. */
-@media(min-width:701px){
+@media(min-width:1025px){
   .feed-controls{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:22px;row-gap:10px}
   .feed-controls>.feed-toolbar{grid-column:1/-1}
   .feed-controls>.filter-tabs{grid-column:1;min-width:0;align-items:center}
