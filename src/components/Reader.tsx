@@ -98,6 +98,7 @@ function CommentItem({
   onReply,
   onChanged,
   currentUser,
+  moderator,
   csrf,
   floor,
 }: {
@@ -106,6 +107,7 @@ function CommentItem({
   onReply: (c: Comment) => void;
   onChanged: (id: string, next: Comment | null) => void;
   currentUser?: string;
+  moderator?: boolean;
   csrf?: string;
   floor?: string;
 }) {
@@ -250,13 +252,11 @@ function CommentItem({
       {!editing && (
         <div className="comment-actions">
           <button className="text-button" onClick={() => onReply(comment)}>回复</button>
-          {own && (
-            <>
-              <button className="text-button" onClick={() => setEditing(true)} disabled={busy}>编辑</button>
-              <button className="text-button comment-delete" onClick={() => manage("DELETE")} disabled={busy}>
-                {busy ? "处理中…" : "删除"}
-              </button>
-            </>
+          {own && <button className="text-button" onClick={() => setEditing(true)} disabled={busy}>编辑</button>}
+          {(own || moderator) && (
+            <button className="text-button comment-delete" onClick={() => manage("DELETE")} disabled={busy}>
+              {busy ? "处理中…" : "删除"}
+            </button>
           )}
           <a href={safeURL(comment.url)} target="_blank" rel="noreferrer">
             在 GitHub 查看
@@ -272,6 +272,7 @@ function CommentItem({
               comment={{ ...reply, parentId: comment.id }}
               floor={floor ? `${floor}-${index + 1}` : undefined}
               currentUser={currentUser}
+              moderator={moderator}
               csrf={csrf}
               onChanged={onChanged}
               onQuote={onQuote}
@@ -1202,6 +1203,7 @@ export default function Reader({ post }: { post: Post }) {
                     comment={c}
                     floor={`${index}F`}
                     currentUser={session.data?.user?.login}
+                    moderator={session.data?.moderator}
                     csrf={session.data?.csrf}
                     onChanged={commentChanged}
                     onQuote={quoteJump}
@@ -1484,6 +1486,7 @@ export default function Reader({ post }: { post: Post }) {
                 return sub >= 0 ? `${n}F-${sub + 1}` : `${n}F`;
               })()}
               currentUser={session.data?.user?.login}
+              moderator={session.data?.moderator}
               csrf={session.data?.csrf}
               onChanged={commentChanged}
               onQuote={quoteJump}
