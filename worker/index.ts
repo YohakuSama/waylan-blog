@@ -6,6 +6,7 @@ import {
   cursor,
   feedPreviews,
   getSingle,
+  manageComment,
   readAnnotations,
   readComments,
   readReplies,
@@ -203,6 +204,9 @@ const worker = {
           );
         else if (resource === "comments" && request.method === "GET" && id)
           response = json({ comment: await getSingle(env, postId, id) });
+        else if (resource === "comments" && id && !replies &&
+          (request.method === "PUT" || request.method === "DELETE"))
+          response = await manageComment(request, env, postId, id);
         else if (resource === "comments" && request.method === "GET")
           response = await readComments(
             env,
