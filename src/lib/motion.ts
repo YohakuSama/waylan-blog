@@ -289,17 +289,36 @@ export function listTransition(change: () => void) {
     changed = true;
     change();
   };
+  const afterVisuals = () => {
+    if (settled) return;
+    // Native page transitions can finish before the category pill's own
+    // clip-path animation does. Wait for both before accepting another click.
+    try {
+      const animations = [...doc.querySelectorAll<HTMLElement>(
+        ".type-fill, .feed-list, .feed-item, .view-toggle",
+      )].flatMap((element) => element.getAnimations?.() || []).filter(
+        (animation) => animation.playState !== "finished" &&
+          animation.effect?.getComputedTiming().iterations !== Infinity,
+      );
+      if (!animations.length) finish();
+      else void Promise.allSettled(animations.map((animation) => animation.finished))
+        .then(finish);
+    } catch {
+      finish();
+    }
+  };
   if (motionLevel() === "shared" && doc.startViewTransition) {
     root.dataset.vt = "list";
     try {
       const transition = doc.startViewTransition(commit);
-      void transition.finished.then(finish, () => {
+      void transition.finished.then(afterVisuals, () => {
         try {
-          // If the browser rejects before invoking its update callback,
-          // the user's requested state change must still happen once.
+          // A rejected transition must still apply the requested state once.
           commit();
+        } catch {
+          // A broken update callback must not leave the interface locked.
         } finally {
-          finish();
+          afterVisuals();
         }
       });
       return;
@@ -319,18 +338,7 @@ export function listTransition(change: () => void) {
     const frame = typeof requestAnimationFrame === "function"
       ? requestAnimationFrame
       : (callback: FrameRequestCallback) => setTimeout(callback, 0);
-    frame(() => {
-      if (settled) return;
-      const animations = [...doc.querySelectorAll<HTMLElement>(
-        ".type-fill, .feed-list, .feed-item, .view-toggle",
-      )].flatMap((element) => element.getAnimations?.() || []).filter(
-        (animation) => animation.playState !== "finished" &&
-          animation.effect?.getComputedTiming().iterations !== Infinity,
-      );
-      if (!animations.length) finish();
-      else void Promise.allSettled(animations.map((animation) => animation.finished))
-        .then(finish);
-    });
+    frame(afterVisuals);
   } catch (error) {
     finish();
     throw error;
