@@ -41,7 +41,7 @@ try {
   await page.addInitScript(() => { window.__WAYLAN_HYDRATION_DIAGNOSTIC__ = true; });
   const errors = [];
   page.on("pageerror", (error) => errors.push({ route: new URL(page.url()).pathname, message: error.message }));
-  page.on("console", (message) => { if (message.text().includes("WAYLAN_HYDRATION_TRACE")) console.log("HYDRATION:", message.text().slice(0, 1800)); });
+
 
   for (const width of [1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -101,7 +101,12 @@ try {
         }
       }
       results.push({ route, width, ...geometry });
-      if (errors.length) { console.error("First hydration issue:", JSON.stringify(errors.slice(0, 3))); throw new Error("Hydration diagnosis: stop at first affected route"); }
+      if (errors.length) {
+        const traces = await page.evaluate(() => window.__WAYLAN_HYDRATION_TRACE__ || []);
+        console.error("Hydration trace:", JSON.stringify(traces.slice(0, 3)).slice(0, 12000));
+        console.error("Browser page errors:", JSON.stringify(errors.slice(0, 3)));
+        throw new Error("Hydration diagnosis: stop at first affected route");
+      }
     }
   }
   if (errors.length) console.error("Browser error totals by route:", JSON.stringify(errors.reduce((a,e)=>{ a[e.route]=(a[e.route]||0)+1; return a; }, {})));
