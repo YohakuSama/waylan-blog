@@ -373,6 +373,17 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal((await send(requestBody({ anchor: changed }))).status, 409);
     assert.equal(writeTokens.length, 0);
   });
+  it("prevents new replies under a deleted empty parent", async () => {
+    const created = (await (await send(requestBody({ anchor: undefined }))).json()) as any;
+    actual.get(created.comment.id).body = "";
+    const result = await send(requestBody({
+      replyToId: created.comment.id,
+      body: "不应继续回复已经删除的楼层",
+      anchor: undefined,
+    }));
+    assert.equal(result.status, 409);
+    assert.equal(((await result.json()) as any).code, "PARENT_DELETED");
+  });
   it("blocks replies to missing or foreign comments", async () =>
     assert.equal(
       (await send(requestBody({ replyToId: "C_unknown" }))).status,
