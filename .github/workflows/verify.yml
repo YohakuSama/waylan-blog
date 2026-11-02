@@ -25,3 +25,17 @@ jobs:
         run: npm ci
       - name: Typecheck, build and test
         run: npm run check
+      - name: Install browser test runner
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Check real desktop, tablet and phone viewports
+        run: node scripts/visual-smoke.mjs
+      - name: Upload viewport screenshots and geometry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-viewport-smoke
+          path: visual-report/
+          if-no-files-found: ignore
+          retention-days: 7
