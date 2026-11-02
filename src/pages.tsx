@@ -278,6 +278,22 @@ export function Feed() {
                 ))}
             </div>
             <div className="feed-search-row">
+              <label className="topic-select">
+                <span className="sr-only">按主题筛选</span>
+                <select
+                  aria-label="按主题筛选"
+                  value={topic}
+                  onChange={(e) => update({ topic: e.target.value })}
+                >
+                  <option value="all">全部主题</option>
+                  {site.topics
+                    .filter((t) => t.id === topic || usedTopics.includes(t))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                </select>
+                <ChevronDown size={13} aria-hidden="true" />
+              </label>
               {query && (
                 <Link className="query-chip" href={href({ q: "" })}>
                   <Search size={14} aria-hidden="true" />“{query}”
