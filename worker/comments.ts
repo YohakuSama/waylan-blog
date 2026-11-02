@@ -453,12 +453,15 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   );
   checkDiscussion(check.node, env, map);
   let replyToId: string | undefined;
+  let replyTarget: { id: string; login: string } | undefined;
   if (data.replyToId) {
     const reply = await getSingle(env, postId, data.replyToId);
     replyToId = reply.parentId || reply.id;
+    if (reply.parentId && reply.author?.login)
+      replyTarget = { id: reply.id, login: reply.author.login };
   }
   const requestId = data.requestId,
-    payloadHash = await hash(JSON.stringify({ body, anchor, replyToId }));
+    payloadHash = await hash(JSON.stringify({ body, anchor, replyToId, replyTarget }));
   type Intent = {
     request_id: string;
     user_id: string;
@@ -538,7 +541,7 @@ export async function writeComment(request: Request, env: Env, postId: string) {
       {
         input: {
           discussionId: map.discussion_id,
-          body: commentPayload(body, postId, requestId, anchor),
+          body: commentPayload(body, postId, requestId, anchor, replyTarget),
           ...(replyToId ? { replyToId } : {}),
           clientMutationId: requestId,
         },
@@ -578,6 +581,91 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   }
   return json({ comment: cleanComment(comment, postId) }, 201);
 }
+/**
+ * Editing and deleting a discussion comment always uses the signed-in
+ * author's user-to-server token. The server checks the exact discussion,
+ * repository and author first; the client can never choose an arbitrary
+ * GitHub node as a destination.
+ */
+export async function manageComment(
+  request: Request,
+  env: Env,
+  postId: string,
+  commentId: string,
+) {
+  requirePost(postId);
+  if (!readReady(env))
+    throw new HttpError(503, "NOT_CONFIGURED", "评论功能尚未开放。");
+  const session = await requireSession(request, env);
+  const map = await mapping(env, postId);
+  if (!map)
+    throw new HttpError(404, "COMMENT_NOT_FOUND", "这篇文章还没有开放讨论。");
+  const response = await github<{
+    node: (Comment & { discussion: DiscussionNode }) | null;
+  }>(
+    env.GITHUB_READ_TOKEN!,
+    `query($id:ID!){node(id:$id){... on DiscussionComment{ ${COMMENT_FIELDS} discussion{id repository{nameWithOwner isPrivate}} }}}`,
+    { id: commentId },
+  );
+  const current = response.node;
+  if (!current)
+    throw new HttpError(404, "COMMENT_NOT_FOUND", "这条评论已被删除。");
+  checkDiscussion(current.discussion, env, map);
+  if (
+    !current.author?.login ||
+    current.author.login.toLowerCase() !== session.user.login.toLowerCase()
+  )
+    throw new HttpError(403, "NOT_AUTHOR", "只能编辑或删除自己发表的评论。");
+  await limit(env, `manage:user:${session.row.user_id}`, 20, 600);
+  if (request.method === "PUT") {
+    const data = (await readBody(request, 48000)) as { body?: unknown };
+    if (!data || typeof data !== "object" || Array.isArray(data) ||
+      typeof data.body !== "string" ||
+      !data.body.trim() || data.body.trim().length > 6000)
+      throw new HttpError(400, "COMMENT_LENGTH", "评论需要 1 到 6000 字。");
+    const body = data.body.trim();
+    if (/<!--\s*echo:/i.test(body))
+      throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
+    // Keep the original annotation and nested-reply metadata after editing.
+    const marker = parseMarker(current.body);
+    const original = marker?.postId === postId
+      ? current.body.match(/<!-- echo:v1:[^]*? -->/)?.[0]
+      : undefined;
+    const result = await github<{
+      updateDiscussionComment: { comment: Comment };
+    }>(
+      session.token,
+      `mutation($input:UpdateDiscussionCommentInput!){updateDiscussionComment(input:$input){comment{${COMMENT_FIELDS}}}}`,
+      {
+        input: {
+          commentId,
+          body: original ? `${body}\n\n${original}` : body,
+        },
+      },
+    );
+    await env.DB!.prepare("DELETE FROM api_cache WHERE post_id=?")
+      .bind(postId).run();
+    const [updated] = await attach(env, postId, [result.updateDiscussionComment.comment]);
+    return json({ comment: updated });
+  }
+  if (request.method === "DELETE") {
+    await github(
+      session.token,
+      "mutation($input:DeleteDiscussionCommentInput!){deleteDiscussionComment(input:$input){clientMutationId}}",
+      { input: { id: commentId } },
+    );
+    await env.DB!.batch([
+      env.DB!.prepare("DELETE FROM api_cache WHERE post_id=?").bind(postId),
+      env.DB!.prepare("DELETE FROM annotations WHERE post_id=? AND comment_id=?")
+        .bind(postId, commentId),
+      env.DB!.prepare("DELETE FROM write_intents WHERE post_id=? AND comment_id=?")
+        .bind(postId, commentId),
+    ]);
+    return json({ ok: true });
+  }
+  throw new HttpError(405, "METHOD", "这个操作不受支持。");
+}
+
 export async function recentEcho(env: Env) {
   if (!readReady(env)) return json({ comment: null });
   // Only real indexed discussions; no synthetic readers or engagement numbers.
