@@ -1,4 +1,6 @@
 import {
+  authClientId,
+  authClientSecret,
   authProvider,
   authReady,
   HttpError,
@@ -82,7 +84,7 @@ export async function startAuth(request: Request, env: Env) {
     .run();
   const url = new URL("https://github.com/login/oauth/authorize");
   Object.entries({
-    client_id: env.GITHUB_CLIENT_ID!,
+    client_id: authClientId(env)!,
     redirect_uri: `${env.SITE_ORIGIN}/api/auth/callback`,
     // GitHub Apps use their registered fine-grained permissions, not OAuth scopes.
     ...(authProvider(env) === "oauth-app" ? { scope: "public_repo" } : {}),
@@ -151,8 +153,8 @@ export async function callback(request: Request, env: Env) {
           "User-Agent": "ECHO-Blog/1.0",
         },
         body: JSON.stringify({
-          client_id: env.GITHUB_CLIENT_ID,
-          client_secret: env.GITHUB_CLIENT_SECRET,
+          client_id: authClientId(env),
+          client_secret: authClientSecret(env),
           code: url.searchParams.get("code"),
           redirect_uri: `${env.SITE_ORIGIN}/api/auth/callback`,
           code_verifier: await unseal(
