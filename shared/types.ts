@@ -99,4 +99,5 @@ export type Session = {
   user: Author | null;
   csrf?: string;
   configured: boolean;
+  moderator?: boolean;
 };
