@@ -48,7 +48,7 @@ try {
     for (const route of ["/", "/feed", "/archive"]) {
       await page.goto(origin + route, { waitUntil: "domcontentloaded" });
       await page.locator("main").waitFor();
-      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 1500))]));
       const geometry = await page.evaluate(() => {
         const rect = (el) => {
           if (!el) return null;
