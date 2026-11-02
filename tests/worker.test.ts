@@ -212,7 +212,9 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
       Cookie: `__Host-echo_session=${rawSession}`,
       "X-CSRF-Token": csrf,
     }) => call(path, { method: "PUT", headers, body: JSON.stringify({ body }) });
-    assert.equal((await request("改变文字", {})).status, 403);
+    // Missing credentials are 401; a signed-in user missing CSRF is 403.
+    assert.equal((await request("改变文字", {})).status, 401);
+    assert.equal((await request("改变文字", { Cookie: `__Host-echo_session=${rawSession}` })).status, 403);
     const updated = await request("已经修改的测试评论");
     assert.equal(updated.status, 200);
     const data = (await updated.json()) as any;
