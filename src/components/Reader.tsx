@@ -1505,7 +1505,9 @@ export default function Reader({ post }: { post: Post }) {
           }}
         >
           <div className="selection-toolbar-context">
-            <span>已选文字 · {anchorQuote(selection.anchor).length} 字</span>
+            <span title={anchorQuote(selection.anchor)}>
+              已选 {anchorQuote(selection.anchor).length} 字 · “{anchorQuote(selection.anchor).slice(0, 28)}{anchorQuote(selection.anchor).length > 28 ? "…" : ""}”
+            </span>
             <button type="button" aria-label="关闭摘录工具栏" onClick={() => {
               setSelection(null);
               window.getSelection()?.removeAllRanges();
