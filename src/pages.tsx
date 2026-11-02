@@ -462,7 +462,7 @@ export function Archive() {
         </section>
         <aside className="site-sidebar timeline-sidebar" aria-label="写作概览">
           <section className="side-block">
-            <SideTitle icon={<ChartColumn size={17} />}>写作足迹</SideTitle>
+            <div className="side-head"><h2 className="side-title"><ChartColumn size={17} />写作足迹</h2></div>
             <SiteStats />
             <Heatmap />
           </section>
