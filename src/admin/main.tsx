@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 import ReactMarkdown from "react-markdown";
+import { MarkdownTools } from "../components/MarkdownTools";
 import {
   contentTypes,
   typeLabels,
@@ -290,6 +291,7 @@ function Markdown({
             预览
           </button>
         </div>
+        {mode === "write" && <MarkdownTools area={area} value={value} onChange={onChange} />}
         {onUpload && (
           <button type="button" className="ghost" onClick={insertImage}>
             插入图片
