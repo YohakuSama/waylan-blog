@@ -460,8 +460,18 @@ describe("OAuth, cryptography and rendering", () => {
       400,
     );
   });
+  it("keeps OAuth login available until separate GitHub App credentials are configured", async () => {
+    env.GITHUB_AUTH_PROVIDER = "github-app";
+    assert.equal((await call("/api/auth/github")).status, 503);
+    env.GITHUB_AUTH_PROVIDER = "oauth-app";
+    const location = new URL((await call("/api/auth/github")).headers.get("Location")!);
+    assert.equal(location.searchParams.get("client_id"), "test-client");
+    assert.equal(location.searchParams.get("scope"), "public_repo");
+  });
   it("limits GitHub App login to its permissions and invalidates old OAuth sessions", async () => {
     env.GITHUB_AUTH_PROVIDER = "github-app";
+    env.GITHUB_APP_CLIENT_ID = "app-client-id";
+    env.GITHUB_APP_CLIENT_SECRET = "app-secret";
     const before = await call("/api/admin/session", {
       headers: { Cookie: `__Host-echo_session=${rawSession}` },
     });
@@ -469,6 +479,7 @@ describe("OAuth, cryptography and rendering", () => {
     const response = await call("/api/auth/github?return=%2Fadmin");
     const location = new URL(response.headers.get("Location")!);
     assert.equal(location.searchParams.has("scope"), false);
+    assert.equal(location.searchParams.get("client_id"), "app-client-id");
     assert.equal(location.searchParams.get("code_challenge_method"), "S256");
     const state = location.searchParams.get("state")!;
     const callback = await call(`/api/auth/callback?code=test-code&state=${state}`, {
