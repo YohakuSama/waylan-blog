@@ -63,6 +63,45 @@ export function captureSelection(
     rect: range.getBoundingClientRect(),
   };
 }
+/**
+ * Touch-friendly, explicit paragraph selection without relying on the OS
+ * text-selection popup. It uses the same TextQuote/TextPosition anchor schema
+ * as a dragged selection, so existing marks and replies still work.
+ * Very long paragraphs select a bounded excerpt; precise ranges remain
+ * available via the browser's native text selection.
+ */
+export function captureBlockExcerpt(
+  root: HTMLElement,
+  post: Post,
+  element: HTMLElement,
+): { anchor: Anchor; rect: DOMRect } | null {
+  if (!root.contains(element) || !element.matches("[data-block-id]")) return null;
+  if (["code", "image", "media"].includes(element.dataset.type || "")) return null;
+  const text = element.textContent || "";
+  const from = text.search(/\\S/);
+  if (from < 0) return null;
+  const length = Math.min(400, text.length - from);
+  const to = from + length;
+  if (length < 2 || !element.dataset.blockId) return null;
+  return {
+    anchor: {
+      schema: 1,
+      postId: post.id,
+      version: post.version,
+      segments: [{
+        blockId: element.dataset.blockId,
+        quote: {
+          type: "TextQuoteSelector",
+          exact: text.slice(from, to),
+          prefix: text.slice(Math.max(0, from - 32), from),
+          suffix: text.slice(to, to + 32),
+        },
+        position: { type: "TextPositionSelector", start: from, end: to },
+      }],
+    },
+    rect: element.getBoundingClientRect(),
+  };
+}
 export function applyHighlights(
   root: HTMLElement,
   post: Post,
