@@ -451,6 +451,9 @@ main {
 }
 .markdown-bar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   justify-content: space-between;
   margin-bottom: 8px;
 }
