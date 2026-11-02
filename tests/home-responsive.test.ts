@@ -45,15 +45,18 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(site.includes(".home-feed-count"));
     assert.ok(site.includes(".home-hero .resume-link"));
   });
-  it("reduces small-screen content filtering to two adjacent selects", () => {
-    const mobile = site.slice(site.indexOf("@media (max-width: 767px)"));
-    assert.ok(mobile.includes(".feed-controls .filter-tabs"));
-    assert.ok(mobile.includes("display: none;"));
-    assert.ok(mobile.includes(".feed-controls .topic-select"));
-    assert.ok(mobile.includes("display: inline-flex;"));
-    assert.ok(mobile.includes(".feed-controls .feed-search-row"));
-    assert.ok(mobile.includes("flex-direction: row;"));
-    assert.ok(mobile.includes(".feed-controls .feed-search-row .sort-control"));
+  it("reduces tablet and phone content filtering to adjacent selects", () => {
+    const start = site.indexOf("/* Tablets and phones use the same compact");
+    assert.ok(start > 0);
+    const compact = site.slice(start, site.indexOf("/* Navigation collapses", start));
+    assert.ok(compact.includes("@media (max-width: 1024px)"));
+    assert.ok(compact.includes(".feed-controls .filter-tabs"));
+    assert.ok(compact.includes("display: none;"));
+    assert.ok(compact.includes(".feed-controls .topic-select"));
+    assert.ok(compact.includes("display: inline-flex;"));
+    assert.ok(compact.includes(".feed-controls .feed-search-row"));
+    assert.ok(compact.includes("flex-direction: row;"));
+    assert.ok(compact.includes(".feed-controls .feed-search-row .sort-control"));
   });
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = site.indexOf("@media (max-width: 1024px)");
