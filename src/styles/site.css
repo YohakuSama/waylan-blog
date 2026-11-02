@@ -1495,7 +1495,9 @@ h3 {
   }
   .hero-visual {
     width: min(56%, 480px);
-    right: -12px;
+    /* At tablet width the feed takes the entire row; a negative right offset
+       would add horizontal document overflow and a phantom side gutter. */
+    right: 0;
   }
 }
 /* Navigation collapses into a menu. */
