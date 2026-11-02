@@ -90,6 +90,7 @@ export function MarkdownTools({ value, onChange, area, disabled, maxLength }: Pr
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         event.stopPropagation();
         setEmojiOpen(false);
       }
