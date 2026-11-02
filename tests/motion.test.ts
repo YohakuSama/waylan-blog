@@ -238,7 +238,7 @@ describe("list animation single-flight and safe recovery", () => {
     playing = false;
     finishPill();
     await pendingPill;
-    await Promise.resolve();
+    await new Promise<void>((done) => setTimeout(done, 0));
     listTransition(() => updates++);
     assert.equal(updates, 2);
   });
