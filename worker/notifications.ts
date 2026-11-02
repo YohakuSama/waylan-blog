@@ -101,8 +101,8 @@ export async function commentNotification(
   const commentId = payload.comment?.node_id;
   if (typeof commentId !== "string" || commentId.length > 240) return;
   if (payload.action === "deleted") {
-    await env.DB!.prepare("DELETE FROM notifications WHERE comment_id=?")
-      .bind(commentId).run();
+    await env.DB!.prepare("DELETE FROM notifications WHERE comment_id=? OR root_comment_id=?")
+      .bind(commentId, commentId).run();
     return;
   }
   if (payload.action !== "created") return;
@@ -152,9 +152,10 @@ export async function commentNotification(
     if (settings?.enabled === 0) continue;
     statements.push(env.DB!.prepare(
       `INSERT OR IGNORE INTO notifications
-       (id,recipient_login,actor_login,post_id,comment_id,kind,created_at)
-       VALUES(?,?,?,?,?,?,?)`,
-    ).bind(`${commentId}:${recipient}:${kind}`, recipient, actor, postId, commentId, kind, timestamp));
+       (id,recipient_login,actor_login,post_id,comment_id,root_comment_id,kind,created_at)
+       VALUES(?,?,?,?,?,?,?,?)`,
+    ).bind(`${commentId}:${recipient}:${kind}`, recipient, actor, postId, commentId,
+      item.replyTo?.id || null, kind, timestamp));
   }
   if (statements.length) await env.DB!.batch(statements);
 }
