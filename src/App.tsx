@@ -13,6 +13,7 @@ import { posts, shortDate, site, stats, topicName, typeLabels, wordsLabel } from
 import { BackToTop, ShelfTrigger } from "./components/Shelf";
 import { assetURL, offlinePreview } from "./lib/runtime";
 import { Settings } from "./components/Settings";
+import { NotificationBell } from "./components/NotificationBell";
 import { Dialog, markHydrated } from "./components/UI";
 import { Wordmark } from "./components/Wordmark";
 import { PageScrollbar } from "./components/Scrollbar";
@@ -246,6 +247,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <kbd>{shortcut}</kbd>
             </button>
             <ShelfTrigger />
+            <NotificationBell />
             <Settings />
             <button
               ref={menuButton}
