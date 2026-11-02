@@ -1931,13 +1931,25 @@ body,
 .dialog-header-actions { display: flex; align-items: center; gap: 4px; }
 .discussion-dialog.composer-dialog {
   --dialog-motion: sheet;
-  margin: auto auto 18px;
+  /* Keep the same fixed anchor in both states. An inset:auto -> 0 change
+     prevents the browser from interpolating the fullscreen expansion. */
+  position: fixed;
+  inset: auto 0 18px;
+  margin: 0 auto;
+  box-sizing: border-box;
   width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-inline-size: none;
   height: min(76dvh, 740px);
   min-height: min(460px, calc(100dvh - 36px));
   max-height: calc(100dvh - 36px);
   border-radius: var(--radius-xl);
-  transition: width 240ms ease, height 240ms ease, margin 240ms ease, border-radius 240ms ease;
+  transition:
+    width 340ms var(--ease-out, ease-out),
+    height 340ms var(--ease-out, ease-out),
+    bottom 340ms var(--ease-out, ease-out),
+    border-radius 340ms var(--ease-out, ease-out),
+    box-shadow 340ms ease;
 }
 .discussion-dialog.composer-dialog::backdrop {
   backdrop-filter: blur(5px);
@@ -1968,8 +1980,19 @@ body,
 .discussion-dialog.composer-dialog .composer-hint { align-items: center; }
 .discussion-dialog.composer-dialog .composer-preview { overflow: auto; max-height: 36dvh; }
 .discussion-dialog.composer-dialog.composer-fullscreen {
-  width: 100vw; height: 100dvh; max-height: none; min-height: 0;
-  margin: 0; border-radius: 0; border: 0;
+  inset: auto 0 0;
+  margin: 0 auto;
+  /* Override native dialog inline-size constraints as well as physical width.
+     100% uses the actual dialog containing block rather than a vw with a gutter. */
+  width: 100%;
+  max-width: none;
+  max-inline-size: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  border-radius: 0;
+  border-color: transparent;
+  box-shadow: none;
 }
 .discussion-dialog.composer-fullscreen .discussion-panel-body > * {
   width: 100%; max-width: 900px; margin-left: auto; margin-right: auto;
@@ -1980,10 +2003,18 @@ body,
 @media (max-width: 1024px) {
   .discussion-dialog.composer-dialog,
   .discussion-dialog.composer-dialog.composer-fullscreen {
-    position: fixed; inset: 0; margin: 0;
-    width: 100vw; height: 100dvh;
-    min-height: 0; max-height: none;
-    border: 0; border-radius: 0;
+    position: fixed;
+    inset: var(--waylan-editor-view-top, 0px) 0 auto;
+    margin: 0;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    max-inline-size: none;
+    height: var(--waylan-editor-view-height, 100dvh);
+    min-height: 0;
+    max-height: var(--waylan-editor-view-height, 100dvh);
+    border: 0;
+    border-radius: 0;
     padding: 0;
   }
   .discussion-dialog.composer-dialog .dialog-header {
@@ -2082,35 +2113,5 @@ body,
   margin: 0; padding: 8px 14px;
   color: var(--ink-soft); font-size: 11px;
 }
-
-
-/* visualViewport tracks the keyboard-covered portion of iOS Safari. */
-@media (max-width: 1024px) {
-  .discussion-dialog.composer-dialog,
-  .discussion-dialog.composer-dialog.composer-fullscreen {
-    inset: var(--waylan-editor-view-top, 0px) 0 auto;
-    height: var(--waylan-editor-view-height, 100dvh);
-    max-height: var(--waylan-editor-view-height, 100dvh);
-  }
-}
-
-
-/* Explicit modal anchoring avoids native dialog centering the bottom sheet. */
-@media (min-width: 1025px) {
-  .discussion-dialog.composer-dialog:not(.composer-fullscreen) {
-    position: fixed;
-    inset: auto 0 18px;
-    margin: 0 auto;
-    max-width: calc(100vw - 32px);
-  }
-  .discussion-dialog.composer-dialog.composer-fullscreen {
-    inset: 0;
-    max-width: none;
-  }
-}
-@media (max-width: 1024px) {
-  .discussion-dialog.composer-dialog,
-  .discussion-dialog.composer-dialog.composer-fullscreen {
-    max-width: none;
-  }
-}
+/* The full-screen composer uses the same viewport geometry on phones and tablets.
+   Layout rules above are the only source of truth; no late modal overrides. */
