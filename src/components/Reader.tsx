@@ -227,7 +227,7 @@ function CommentItem({
             disabled={busy}
             onChange={(e) => setEditBody(e.target.value)}
           />
-          <MarkdownTools area={editArea} value={editBody} onChange={setEditBody} disabled={busy} />
+          <MarkdownTools area={editArea} value={editBody} onChange={setEditBody} disabled={busy} maxLength={6000} />
           <div className="comment-actions">
             <button className="text-button" onClick={() => manage("PUT")} disabled={busy || !editBody.trim()}>
               {busy ? "保存中…" : "保存修改"}
@@ -1613,7 +1613,7 @@ export default function Reader({ post }: { post: Post }) {
               />
               <MarkdownTools area={composerArea} value={draft.body}
                 onChange={(body) => setDraft((prev) => ({ ...prev, body }))}
-                disabled={sending || draft.uncertain} />
+                disabled={sending || draft.uncertain} maxLength={6000} />
               <div className="composer-hint">
                 <span>支持代码块与表情 · 评论公开可见</span>
                 <button type="button" className="text-button" onClick={() => setPreviewDraft((v) => !v)}>
