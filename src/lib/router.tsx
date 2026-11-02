@@ -168,9 +168,11 @@ export function RouterProvider({
           release();
         });
     } else if (target.search !== new URL(prevPath, "https://x.invalid").search) {
-      // Route changes must never be swallowed by a busy list-filter animation.
-      // Distinct route requests retain latest-intent-wins semantics.
-      change();
+      // Preserve the shared list animation. A user-clicked query is ignored
+      // during an active list animation, while browser Back/Forward always
+      // completes to remain in sync with its already-updated history URL.
+      if (options.pop) change();
+      else listTransition(change);
       release();
     } else {
       change();
