@@ -278,6 +278,7 @@ export function listTransition(change: () => void, onFinished?: () => void) {
 
   const root = doc.documentElement;
   activeListDocuments.add(doc);
+  root.dataset.listBusy = "true";
   let changed = false;
   let settled = false;
   const finish = () => {
@@ -286,6 +287,7 @@ export function listTransition(change: () => void, onFinished?: () => void) {
     clearTimeout(watchdog);
     activeListDocuments.delete(doc);
     if (root.dataset.vt === "list") delete root.dataset.vt;
+    delete root.dataset.listBusy;
     onFinished?.();
   };
   // A safety valve, not a debounce: normal release is driven by actual
