@@ -1002,6 +1002,47 @@ textarea::placeholder {
   font-size: 11px;
   margin-left: auto;
 }
+.comment-floor {
+  display: inline-flex;
+  align-items: center;
+  font: 600 10px/1.5 var(--font-mono);
+  color: var(--muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.comment-reply-target {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: var(--space-2);
+}
+.comment-inline-editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+  padding: var(--space-3);
+  resize: vertical;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  font: var(--text-caption)/1.8 var(--font-sans);
+}
+.comment-inline-editor textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.comment-actions {
+  flex-wrap: wrap;
+}
+.comment-actions .comment-delete {
+  color: var(--muted);
+}
+.comment-actions .comment-delete:hover {
+  color: #c04444;
+}
 .comment-quote {
   width: 100%;
   display: flex;
