@@ -218,11 +218,11 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
     const toggle = document.querySelector<HTMLButtonElement>(
-      '.excerpt-mode-toggle[aria-label="开启摘录段落模式"]',
+      '.excerpt-fab[aria-label="开启摘录段落模式"]',
     )!;
     assert.ok(toggle);
     await click(toggle);
-    assert.equal(toggle.getAttribute("aria-pressed"), "true");
+    assert.equal(document.querySelector(".excerpt-fab"), null, "floating trigger hides while excerpting");
     assert.ok(document.querySelector(".excerpt-mode-hint"));
     assert.equal(window.getSelection()?.toString(), "");
     const paragraph = document.querySelector<HTMLElement>(
