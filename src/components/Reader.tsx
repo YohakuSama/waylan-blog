@@ -992,20 +992,6 @@ export default function Reader({ post }: { post: Post }) {
             <Share2 size={17} />
           </button>
           <button
-            type="button"
-            className="icon-button excerpt-mode-toggle"
-            aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-            aria-pressed={excerptMode}
-            title={excerptMode ? "退出摘录" : "摘录段落"}
-            onClick={() => {
-              setExcerptMode((value) => !value);
-              setSelection(null);
-              window.getSelection()?.removeAllRanges();
-            }}
-          >
-            <Highlighter size={18} />
-          </button>
-          <button
             className="icon-button mobile-toc"
             onClick={() => setTocOpen(!tocOpen)}
             aria-label="展开文章目录"
@@ -1486,6 +1472,17 @@ export default function Reader({ post }: { post: Post }) {
           </div>
         </aside>
       </div>
+      {!excerptMode && !selection && !panel && (
+        <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
+          title="摘录段落" onClick={() => {
+            setExcerptMode(true);
+            setSelection(null);
+            window.getSelection()?.removeAllRanges();
+          }}>
+          <Highlighter size={18} />
+          <span>摘录</span>
+        </button>
+      )}
       {excerptMode && !selection && (
         <div className="excerpt-mode-hint" role="status">
           <Highlighter size={16} />
