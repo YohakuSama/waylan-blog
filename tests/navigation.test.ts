@@ -571,7 +571,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     );
     assert.equal(
       document.querySelector("#site-nav .selected")?.textContent,
-      "项目",
+      "内容",
     );
   });
   it("allows full motion to be selected when the system preference reduces it", async () => {
