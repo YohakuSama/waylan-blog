@@ -93,15 +93,62 @@ function CommentItem({
   comment,
   onQuote,
   onReply,
+  onChanged,
+  currentUser,
+  csrf,
+  floor,
 }: {
   comment: Comment;
   onQuote: (a: Annotation) => void;
   onReply: (c: Comment) => void;
+  onChanged: (id: string, next: Comment | null) => void;
+  currentUser?: string;
+  csrf?: string;
+  floor?: string;
 }) {
   const [replies, setReplies] = useState(comment.replies?.nodes || []),
     [page, setPage] = useState(comment.replies?.pageInfo),
     [loading, setLoading] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [editing, setEditing] = useState(false),
+    [editBody, setEditBody] = useState(comment.body),
+    [busy, setBusy] = useState(false),
+    [deleted, setDeleted] = useState(false);
+  const own = !!currentUser && currentUser.toLowerCase() === comment.author?.login.toLowerCase();
+  useEffect(() => {
+    if (!editing) setEditBody(comment.body);
+  }, [comment.body, editing]);
+  async function manage(method: "PUT" | "DELETE") {
+    if (busy) return;
+    if (method === "DELETE" && !window.confirm("确定删除这条评论吗？此操作不可撤销。")) return;
+    if (method === "PUT" && (!editBody.trim() || editBody.trim().length > 6000)) {
+      setError("评论需要 1 到 6000 字。");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ comment: Comment; ok?: boolean }>(
+        `/api/posts/${parentPost}/comments/${encodeURIComponent(comment.id)}`,
+        {
+          method,
+          headers: { "X-CSRF-Token": csrf || "" },
+          ...(method === "PUT" ? { body: JSON.stringify({ body: editBody.trim() }) } : {}),
+        },
+      );
+      if (method === "DELETE") {
+        setDeleted(true);
+        onChanged(comment.id, null);
+      } else {
+        setEditing(false);
+        onChanged(comment.id, result.comment);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   useEffect(() => {
     setReplies(comment.replies?.nodes || []);
     setPage(comment.replies?.pageInfo);
@@ -134,11 +181,13 @@ function CommentItem({
       setLoading(false);
     }
   }
+  if (deleted) return null;
   return (
     <article className="comment-item" id={`comment-${comment.id}`}>
       <header>
         <Avatar comment={comment} />
         <strong>{comment.author?.login || "已注销的读者"}</strong>
+        {floor && <span className="comment-floor">{floor}</span>}
         {comment.stale && <span className="sample-label">缓存</span>}
         <time dateTime={comment.createdAt}>
           {dateLabel(comment.createdAt.slice(0, 10))}
@@ -153,38 +202,77 @@ function CommentItem({
           <ArrowUpRight size={15} />
         </button>
       )}
-      <div className="comment-markdown">
-        <ReactMarkdown
-          skipHtml
-          components={{
-            a: ({ children, href }) => (
-              <a href={href} rel="nofollow noopener noreferrer" target="_blank">
-                {children}
-              </a>
-            ),
-            img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
-          }}
-        >
-          {comment.body}
-        </ReactMarkdown>
-      </div>
-      <div className="comment-actions">
-        <button className="text-button" onClick={() => onReply(comment)}>
-          回复
-        </button>
-        <a href={safeURL(comment.url)} target="_blank" rel="noreferrer">
-          在 GitHub 查看
-          <ExternalLink size={12} />
-        </a>
-      </div>
+      {comment.replyTarget && (
+        <p className="comment-reply-target">
+          回复 @{comment.replyTarget.login}
+        </p>
+      )}
+      {editing ? (
+        <div className="comment-inline-editor">
+          <textarea
+            aria-label="编辑评论"
+            rows={4}
+            maxLength={6000}
+            value={editBody}
+            disabled={busy}
+            onChange={(e) => setEditBody(e.target.value)}
+          />
+          <div className="comment-actions">
+            <button className="text-button" onClick={() => manage("PUT")} disabled={busy || !editBody.trim()}>
+              {busy ? "保存中…" : "保存修改"}
+            </button>
+            <button className="text-button" disabled={busy} onClick={() => { setEditing(false); setError(""); }}>
+              取消
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="comment-markdown">
+          <ReactMarkdown
+            skipHtml
+            components={{
+              a: ({ children, href }) => (
+                <a href={href} rel="nofollow noopener noreferrer" target="_blank">
+                  {children}
+                </a>
+              ),
+              img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
+            }}
+          >
+            {comment.body}
+          </ReactMarkdown>
+        </div>
+      )}
+      {error && <p role="alert" className="small-error">{error}</p>}
+      {!editing && (
+        <div className="comment-actions">
+          <button className="text-button" onClick={() => onReply(comment)}>回复</button>
+          {own && (
+            <>
+              <button className="text-button" onClick={() => setEditing(true)} disabled={busy}>编辑</button>
+              <button className="text-button comment-delete" onClick={() => manage("DELETE")} disabled={busy}>
+                {busy ? "处理中…" : "删除"}
+              </button>
+            </>
+          )}
+          <a href={safeURL(comment.url)} target="_blank" rel="noreferrer">
+            在 GitHub 查看
+            <ExternalLink size={12} />
+          </a>
+        </div>
+      )}
       {(replies.length > 0 || page?.hasNextPage) && (
         <div className="comment-replies">
-          {replies.map((reply) => (
+          {replies.map((reply, index) => (
             <CommentItem
               key={reply.id}
               comment={{ ...reply, parentId: comment.id }}
+              floor={floor ? `${floor}-${index + 1}` : undefined}
+              currentUser={currentUser}
+              csrf={csrf}
+              onChanged={onChanged}
               onQuote={onQuote}
-              onReply={() => onReply(comment)}
+              onReply={onReply}
             />
           ))}
           {page?.hasNextPage && (
