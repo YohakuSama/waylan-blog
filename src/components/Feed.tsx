@@ -397,12 +397,37 @@ export function FeedList({
   density?: Density;
 }) {
   const [limit, setLimit] = useState(batch);
-  useEffect(() => setLimit(batch), [resetKey, batch]);
+  const loadingMore = useRef(false);
+  useEffect(() => {
+    loadingMore.current = false;
+    setLimit(batch);
+  }, [resetKey, batch]);
   const visible = items.slice(0, limit);
   const [listRef, grow] = useReveal<HTMLDivElement>(".feed-item", [
     resetKey,
     visible.length,
   ]);
+  useEffect(() => {
+    if (!loadingMore.current) return;
+    let active = true;
+    const unlock = () => { if (active) loadingMore.current = false; };
+    // Safety release if an animation is suspended by the browser.
+    const timeout = window.setTimeout(unlock, 1500);
+    const frame = window.requestAnimationFrame(() => {
+      const motions = [...(listRef.current?.querySelectorAll<HTMLElement>(".feed-item") || [])]
+        .flatMap((item) => item.getAnimations?.() || [])
+        .filter((animation) => animation.playState !== "finished" &&
+          animation.effect?.getComputedTiming().iterations !== Infinity);
+      if (!motions.length) unlock();
+      else void Promise.allSettled(motions.map((animation) => animation.finished))
+        .then(unlock);
+    });
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [visible.length, resetKey]);
   const previews = useApi<FeedPreviews>(
     visible.length
       ? `/api/feed/comments?ids=${visible
@@ -430,8 +455,10 @@ export function FeedList({
             type="button"
             className="load-more"
             onClick={() => {
+              if (loadingMore.current) return;
+              loadingMore.current = true;
               grow();
-              setLimit((n) => n + batch);
+              setLimit((n) => Math.min(items.length, n + batch));
             }}
           >
             加载更多
