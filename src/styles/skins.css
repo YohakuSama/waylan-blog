@@ -921,7 +921,7 @@ html {
 :root[data-skin="terminal"] .nav-link .nav-label::before {
   content: "~/";
   position: absolute;
-  left: -8px;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   font: 10px var(--font-mono);
@@ -1123,7 +1123,7 @@ html {
 }
 @media (max-width: 860px) {
   :root[data-skin="terminal"] .nav-link .nav-label::before {
-    left: auto; right: 0; top: 50%;
+    left: auto; right: 24px; top: 50%;
   }
   :root[data-skin="terminal"] .home-hero .hero-visual {
     inset: 0 0 auto auto;

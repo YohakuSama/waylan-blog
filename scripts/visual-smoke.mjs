@@ -62,7 +62,7 @@ try {
           // This state change is made by the first React effect, after hydration.
           await page.getByRole("button", { name: "搜索（Ctrl K）", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
-          await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait"));
+          await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
           const geometry = await page.evaluate(() => {
             const rect = (element) => {
               if (!element || getComputedStyle(element).display === "none") return null;
@@ -90,6 +90,9 @@ try {
             };
           });
           results.push({ route, width, ...variant, ...geometry });
+          // Capture before assertions so a failing state is available to review.
+          if ([1440, 768, 390, 320].includes(width))
+            await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
@@ -97,7 +100,7 @@ try {
           assert.ok(geometry.brand.right <= (geometry.nav || geometry.tools).left + 1, `${label}: brand overlaps header`);
           if (geometry.nav) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
           for (const control of geometry.controls) {
-            assert.ok(control && control.width >= 40 && control.height >= 40, `${label}: small header target`);
+            assert.ok(control && control.width >= 44 && control.height >= 44, `${label}: small header target`);
             assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
           }
           if (geometry.column && geometry.sidebar) {
@@ -127,8 +130,6 @@ try {
             if (geometry.heroAction) sameBox(geometry.heroAction, baseline.heroAction, `${label}: homepage action`);
             if (geometry.readerFont) assert.equal(geometry.readerFont, baseline.readerFont, `${label}: reader font size changed with skin`);
           }
-          if ([1440, 768, 390, 320].includes(width))
-            await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
 
           if (route === "/" && [320, 768, 860].includes(width)) {
             await page.getByRole("button", { name: "打开导航", exact: true }).click();

@@ -112,7 +112,7 @@ h3 {
   align-items: center;
   gap: var(--space-2);
   width: 212px;
-  height: 36px;
+  height: var(--header-control-size);
   padding: 0 10px 0 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
@@ -1571,7 +1571,6 @@ h3 {
     --header-height: 60px;
     --page-gutter: 24px;
   }
-  :root { --header-control-size: 40px; }
   .header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;

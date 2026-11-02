@@ -375,3 +375,10 @@ a:hover {
   }
   .heading-anchor:hover { color: var(--brand); }
 }
+
+/* Reduced motion must not hold the boot-rise's translated first frame while
+   its delay runs. Keep initial content and controls at their final position. */
+:root[data-motion="reduced"].font-loader-out #root main {
+  animation: none;
+  transform: none;
+}
