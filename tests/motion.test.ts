@@ -7,6 +7,7 @@ import {
   motionLevel,
   setMotionPreference,
   navigateWithMotion,
+  animateDialogResize,
 } from "../src/lib/motion";
 let dom: JSDOM,
   reduced = false;
@@ -182,26 +183,63 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
   });
 });
 
-describe("immersive composer geometry contract", () => {
-  it("keeps a stable bottom anchor for a smooth desktop fullscreen transition", () => {
+describe("immersive composer viewport and motion contract", () => {
+  it("anchors fullscreen dialogs at the origin with explicit viewport dimensions", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const sheet = css.match(/\.discussion-dialog\.composer-dialog \{([\s\S]*?)\n\}/)?.[1] || "";
-    const fullscreen = css.match(/\.discussion-dialog\.composer-dialog\.composer-fullscreen \{([\s\S]*?)\n\}/)?.[1] || "";
-    assert.match(sheet, /inset:\s*auto 0 18px/);
-    assert.match(fullscreen, /inset:\s*auto 0 0/);
-    assert.match(sheet, /width 340ms/);
-    assert.match(sheet, /height 340ms/);
-    assert.match(sheet, /bottom 340ms/);
-    assert.match(fullscreen, /width:\s*100%/);
-    assert.match(fullscreen, /max-inline-size:\s*none/);
-    assert.doesNotMatch(fullscreen, /inset:\s*0\s*;/);
+    const sheet = css.match(/\\.discussion-dialog\\.composer-dialog \\{([\\s\\S]*?)\\n\\}/)?.[1] || "";
+    const fullscreen = css.match(/\\.discussion-dialog\\.composer-dialog\\.composer-fullscreen \\{([\\s\\S]*?)\\n\\}/)?.[1] || "";
+    assert.match(sheet, /inset:\\s*auto 0 18px/);
+    assert.match(fullscreen, /inset:\\s*0 auto auto 0/);
+    assert.match(fullscreen, /margin:\\s*0/);
+    assert.match(fullscreen, /width:\\s*100dvw/);
+    assert.match(fullscreen, /inline-size:\\s*100dvw/);
+    assert.match(fullscreen, /min-inline-size:\\s*100dvw/);
+    assert.match(fullscreen, /max-inline-size:\\s*100dvw/);
+    assert.match(fullscreen, /height:\\s*100dvh/);
+    assert.doesNotMatch(sheet, /width 340ms/);
   });
-  it("does not leave a width or max-inline-size gutter on small viewports", () => {
+  it("applies the same full-bleed rules to tablet and mobile viewports", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const rule = css.match(/@media \(max-width: 1024px\) \{\s*\.discussion-dialog\.composer-dialog,\s*\.discussion-dialog\.composer-dialog\.composer-fullscreen \{([\s\S]*?)\n  \}/)?.[1] || "";
-    assert.match(rule, /width:\s*100%/);
-    assert.match(rule, /max-width:\s*none/);
-    assert.match(rule, /max-inline-size:\s*none/);
+    const rule = css.match(/@media \\(max-width: 1024px\\) \\{\\s*\\.discussion-dialog\\.composer-dialog,\\s*\\.discussion-dialog\\.composer-dialog\\.composer-fullscreen \\{([\\s\\S]*?)\\n  \\}/)?.[1] || "";
+    assert.match(rule, /width:\\s*100dvw/);
+    assert.match(rule, /max-inline-size:\\s*100dvw/);
     assert.match(rule, /--waylan-editor-view-height/);
+  });
+  it("expands and shrinks on the same layout path with Waylan's shared motion tokens", () => {
+    const element = document.createElement("dialog");
+    document.body.appendChild(element);
+    const compact = rect(420, 240, 760, 680);
+    const fullscreen = rect(0, 0, 1920, 1000);
+    assert.ok(animateDialogResize(element, compact, fullscreen, "18px", "0px"));
+    assert.ok(animateDialogResize(element, fullscreen, compact, "0px", "18px"));
+    assert.equal(calls.length, 2);
+    assert.deepEqual(
+      calls[0].frames.map((frame) => [frame.left, frame.top, frame.width, frame.height]),
+      [
+        ["420px", "240px", "760px", "680px"],
+        ["0px", "0px", "1920px", "1000px"],
+      ],
+    );
+    assert.deepEqual(
+      calls[1].frames.map((frame) => [frame.left, frame.top, frame.width, frame.height]),
+      [
+        ["0px", "0px", "1920px", "1000px"],
+        ["420px", "240px", "760px", "680px"],
+      ],
+    );
+    assert.equal(calls[0].options.duration, calls[1].options.duration);
+    assert.equal(calls[0].options.easing, calls[1].options.easing);
+    assert.equal(calls[0].options.duration, 320);
+    assert.equal(animateDialogResize(element, compact, compact, "18px", "18px"), null);
+  });
+  it("respects explicit reduced-motion preferences", () => {
+    const element = document.createElement("dialog");
+    setMotionPreference("reduced");
+    assert.equal(
+      animateDialogResize(element, rect(400, 200, 760, 700), rect(0, 0, 1920, 1000), "18px", "0px"),
+      null,
+    );
+    assert.equal(calls.length, 0);
+    setMotionPreference("system");
   });
 });
