@@ -38,8 +38,10 @@ try {
   await waitForServer();
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ deviceScaleFactor: 1, reducedMotion: "reduce" });
+  await page.addInitScript(() => { window.__WAYLAN_HYDRATION_DIAGNOSTIC__ = true; });
   const errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => errors.push({ route: new URL(page.url()).pathname, message: error.message }));
+  page.on("console", (message) => { if (message.text().includes("WAYLAN_HYDRATION_TRACE")) console.log("HYDRATION:", message.text().slice(0, 1800)); });
 
   for (const width of [1440, 1280, 1200, 1100, 1024, 900, 861, 860, 768, 480, 390]) {
     await page.setViewportSize({ width, height: 900 });
@@ -101,6 +103,7 @@ try {
       results.push({ route, width, ...geometry });
     }
   }
+  if (errors.length) console.error("Browser error totals by route:", JSON.stringify(errors.reduce((a,e)=>{ a[e.route]=(a[e.route]||0)+1; return a; }, {})));
   assert.deepEqual(errors, [], "Unexpected browser runtime errors");
   console.log("Visual geometry checks passed:", results.length, "viewport/page combinations");
 } finally {
