@@ -351,6 +351,7 @@ export default function Reader({ post }: { post: Post }) {
     }),
     [sending, setSending] = useState(false),
     [sendError, setSendError] = useState(""),
+    [previewDraft, setPreviewDraft] = useState(false),
     [focused, setFocused] = useState<Comment | null>(null);
   const [panelFetched, setPanelFetched] = useState<Comment[]>([]),
     [panelLoading, setPanelLoading] = useState(false),
@@ -695,6 +696,7 @@ export default function Reader({ post }: { post: Post }) {
     }));
     setPanelIds([]);
     setSendError("");
+    setPreviewDraft(false);
     setSelection(null);
     setPanel(true);
   }
@@ -1575,8 +1577,19 @@ export default function Reader({ post }: { post: Post }) {
                 disabled={sending || draft.uncertain} />
               <div className="composer-hint">
                 <span>支持代码块与表情 · 评论公开可见</span>
+                <button type="button" className="text-button" onClick={() => setPreviewDraft((v) => !v)}>
+                  {previewDraft ? "关闭预览" : "预览"}
+                </button>
                 <span>{draft.body.length} / 6000</span>
               </div>
+              {previewDraft && (
+                <div className="comment-markdown composer-preview" aria-label="评论预览">
+                  <ReactMarkdown skipHtml components={{
+                    a: ({ children, href }) => <a href={href} target="_blank" rel="nofollow noopener noreferrer">{children}</a>,
+                    img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
+                  }}>{draft.body || "预览会显示在这里。"}</ReactMarkdown>
+                </div>
+              )}
               {sendError && (
                 <p role="alert" className="composer-error">
                   {sendError}
