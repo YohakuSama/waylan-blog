@@ -875,41 +875,131 @@ textarea::placeholder {
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
+/* Contextual actions are placed BELOW desktop selection to avoid Edge's
+   built-in selection menu. Touch devices use a safe-area-aware bottom tray. */
 .selection-toolbar {
   position: fixed;
-  /* z-index 70 — below browser context menus (typically 2^31-1) but above page content */
   z-index: 70;
-  display: flex;
-  align-items: center;
-  width: 264px;
-  padding: var(--space-1);
+  width: 290px;
+  padding: 5px;
   background: var(--ink);
   color: var(--paper);
   border: 1px solid var(--ink-soft);
   border-radius: var(--radius-lg);
-  box-shadow:
-    0 6px 20px #0003,
-    0 1px 4px #0001;
+  box-shadow: 0 12px 30px #0003, 0 2px 6px #0002;
   animation: toolbar-in var(--motion-fast) var(--ease-out);
-  /* Pointer-events: none while the native context menu may be up (set via JS) */
-  touch-action: none;
+}
+.selection-toolbar-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 2px 10px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--paper) 65%, transparent);
+}
+.selection-toolbar-context > button {
+  flex: none;
+  width: 26px;
+  height: 25px;
+  min-height: 25px;
+  padding: 0;
+}
+.selection-toolbar-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
 }
 .selection-toolbar button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  flex: 1;
+  gap: 4px;
+  min-width: 0;
   min-height: 38px;
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
+  touch-action: manipulation;
 }
-.selection-toolbar button:hover {
+.selection-toolbar button:hover,
+.selection-toolbar button:focus-visible {
   background: color-mix(in srgb, var(--paper) 12%, transparent);
 }
 .selection-toolbar svg {
   width: 15px;
   height: 15px;
+}
+.excerpt-mode-toggle { display: none !important; }
+.excerpt-mode-hint { display: none; }
+@media (max-width: 1024px), (pointer: coarse) {
+  .excerpt-mode-toggle {
+    display: inline-flex !important;
+  }
+  .excerpt-mode-toggle[aria-pressed="true"] {
+    color: var(--brand);
+    background: var(--surface-muted);
+  }
+  .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
+    cursor: pointer;
+    outline: 1px dashed transparent;
+    outline-offset: 3px;
+    transition: outline-color var(--motion-fast) var(--ease-out);
+  }
+  .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]):active {
+    outline-color: var(--brand);
+  }
+  .selection-toolbar {
+    position: fixed;
+    inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50% !important;
+    transform: translateX(-50%);
+    width: min(500px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    padding: 8px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 45px #0005;
+  }
+  .selection-toolbar-context {
+    font-size: 12px;
+    padding: 2px 4px 6px 8px;
+  }
+  .selection-toolbar-actions button {
+    min-height: 50px;
+    font-size: 12px;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .selection-toolbar-actions svg { width: 19px; height: 19px; }
+  .excerpt-mode-hint {
+    position: fixed;
+    z-index: 60;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    max-width: 510px;
+    margin-inline: auto;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 10px 30px #0003;
+    font-size: 12px;
+  }
+  .excerpt-mode-hint > span { flex: 1; }
+  .excerpt-mode-hint > button {
+    flex: none;
+    padding: 4px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+  .excerpt-mode-hint:has(~ .selection-toolbar) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .selection-toolbar { animation: none; }
+  .reader-prose.excerpt-mode .article-block { transition: none; }
 }
 .inline-notice,
 .orphan-notice {
