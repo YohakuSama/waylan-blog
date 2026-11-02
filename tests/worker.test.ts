@@ -769,6 +769,42 @@ describe("OAuth, cryptography and rendering", () => {
     assert.equal(second.unread, 1);
     assert.equal(second.subscribed, false);
   });
+  it("restricts simulated inbox alerts to the site owner and clears only those alerts", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    const headers = { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf };
+    const submit = (method: "POST" | "DELETE", given = headers) =>
+      call("/api/notifications/test", { method, headers: given });
+    assert.equal((await submit("POST")).status, 403); // Not an admin
+    env.ADMIN_GITHUB_LOGINS = user.login;
+    assert.equal((await submit("POST", {})).status, 401);
+    assert.equal((await submit("POST", { Cookie: `__Host-echo_session=${rawSession}` })).status, 403);
+    assert.equal((await submit("POST")).status, 200);
+    const inboxFirst = (await (await call("/api/notifications", {
+      headers: { Cookie: `__Host-echo_session=${rawSession}` },
+    })).json()) as any;
+    assert.equal(inboxFirst.unread, 1);
+    assert.equal(inboxFirst.items[0].actor, "waylan-system");
+    assert.ok(inboxFirst.items[0].id.startsWith("test:"));
+    assert.equal((await submit("DELETE")).status, 200);
+    const inboxLast = (await (await call("/api/notifications", {
+      headers: { Cookie: `__Host-echo_session=${rawSession}` },
+    })).json()) as any;
+    assert.equal(inboxLast.items.length, 0);
+    assert.equal(inboxLast.unread, 0);
+  });
+  it("rate limits owner self-test notifications and respects opt-out", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    env.ADMIN_GITHUB_LOGINS = user.login;
+    const headers = { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf };
+    for (let i = 0; i < 4; i++)
+      assert.equal((await call("/api/notifications/test", { method: "POST", headers })).status, 200);
+    assert.equal((await call("/api/notifications/test", { method: "POST", headers })).status, 429);
+    await call("/api/notifications", {
+      method: "POST", headers,
+      body: JSON.stringify({ subscribed: false }),
+    });
+    assert.equal((await call("/api/notifications/test", { method: "POST", headers })).status, 429);
+  });
   it("keeps notifications disabled until migrations and webhook setup are enabled", async () => {
     const response = await call("/api/notifications");
     assert.deepEqual(await response.json(), { enabled: false, unread: 0, items: [] });
