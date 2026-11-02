@@ -589,3 +589,23 @@ main {
     transition: none;
   }
 }
+
+
+/* Shared Markdown editing shortcuts, styled for the admin's palette. */
+.markdown-tools { display:flex; align-items:center; flex-wrap:wrap; position:relative; gap:3px; }
+.markdown-tools button {
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  min-width:30px; height:30px; padding:5px; border:1px solid transparent;
+  background:transparent; color:var(--muted); border-radius:6px;
+}
+.markdown-tools button:hover:not(:disabled) { border-color:var(--line); color:var(--ink); }
+.markdown-tools button:disabled { opacity:.4; }
+.markdown-tools-hint { font-size:10px; color:var(--muted); }
+.markdown-emoji-wrap { position:relative; }
+.markdown-emoji-picker {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:2px; position:absolute;
+  z-index:30; bottom:calc(100% + 5px); left:-90px; width:178px; padding:6px;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  box-shadow:0 10px 30px #0002;
+}
+.markdown-emoji-picker button { font-size:18px; width:35px; height:35px; }
