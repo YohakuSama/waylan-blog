@@ -15,6 +15,12 @@ if (root.dataset.prerender === "true")
   hydrateRoot(
     root,
     <App initialPath={location.pathname.replace(/\/$/, "") || "/"} />,
+    {
+      onRecoverableError(error, info) {
+        if ((window as Window & { __WAYLAN_HYDRATION_DIAGNOSTIC__?: boolean }).__WAYLAN_HYDRATION_DIAGNOSTIC__)
+          console.warn("WAYLAN_HYDRATION_TRACE", location.pathname, error.message, info.componentStack);
+      },
+    },
   );
 else
   createRoot(root).render(
