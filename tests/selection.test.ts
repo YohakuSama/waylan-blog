@@ -8,7 +8,7 @@ Object.assign(globalThis, {
 });
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { captureSelection, applyHighlights } from "../src/lib/selection";
+import { captureSelection, captureBlockExcerpt, applyHighlights } from "../src/lib/selection";
 import type { Anchor, Post } from "../shared/types";
 const html =
   '<div data-block-id="p1">一段<strong>认真读过</strong>的文字。</div><div data-block-id="p2">第二段也留下了回声。</div>';
@@ -51,6 +51,34 @@ describe("real DOM selection and overlapping marks", () => {
       right: 100,
       toJSON() {},
     }));
+  });
+  it("captures a paragraph by tap without any native Selection or Range", () => {
+    const root = document.getElementById("prose")!,
+      paragraph = root.querySelector<HTMLElement>('[data-block-id="p1"]')!;
+    assert.equal(window.getSelection()?.rangeCount, 0);
+    const result = captureBlockExcerpt(root, post, paragraph)!;
+    assert.ok(result);
+    assert.equal(result.anchor.segments[0].quote.exact, "一段认真读过的文字。");
+    assert.deepEqual(result.anchor.segments[0].position, {
+      type: "TextPositionSelector", start: 0, end: "一段认真读过的文字。".length,
+    });
+    applyHighlights(root, post, [{ id: "local-sample", commentId: "", anchor: result.anchor }]);
+    assert.equal(root.querySelector("mark.private-mark")?.textContent,
+      "一段认真读过的文字。");
+  });
+  it("rejects code and blocks outside the reader, and bounds large excerpts", () => {
+    const root = document.getElementById("prose")!,
+      paragraph = root.querySelector<HTMLElement>('[data-block-id="p1"]')!;
+    paragraph.dataset.type = "code";
+    assert.equal(captureBlockExcerpt(root, post, paragraph), null);
+    paragraph.dataset.type = "paragraph";
+    document.body.insertAdjacentHTML("beforeend", '<p data-block-id="alien">外部段落</p>');
+    assert.equal(captureBlockExcerpt(root, post, document.querySelector<HTMLElement>("#prose + p")!), null);
+    paragraph.textContent = "  " + "甲".repeat(700);
+    const result = captureBlockExcerpt(root, post, paragraph)!;
+    assert.equal(result.anchor.segments[0].position.start, 2);
+    assert.equal(result.anchor.segments[0].quote.exact.length, 400);
+    assert.equal(result.anchor.segments[0].quote.suffix.length, 32);
   });
   it("captures a selection spanning inline emphasis", () => {
     const root = document.getElementById("prose")!,
