@@ -206,7 +206,10 @@ a:hover {
 /* A list transition is a scoped transaction, not a page-wide click lock.
    Other links, text inputs, scrolling and dialog close buttons remain usable. */
 :root[data-list-busy] .type-tabs :is(button, a),
-:root[data-list-busy] .view-toggle button {
+:root[data-list-busy] .view-toggle button,
+:root[data-list-busy] .feed-controls .filter-tabs button,
+:root[data-list-busy] .feed-controls .topic-select select,
+:root[data-list-busy] .feed-controls .sort-control select {
   pointer-events: none;
   cursor: progress;
 }
