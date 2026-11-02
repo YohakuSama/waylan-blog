@@ -43,7 +43,7 @@ try {
   page.on("pageerror", (error) => errors.push({ route: new URL(page.url()).pathname, message: error.message }));
   page.on("console", (message) => { if (message.text().includes("WAYLAN_HYDRATION_TRACE")) console.log("HYDRATION:", message.text().slice(0, 1800)); });
 
-  for (const width of [1440, 1280, 1200, 1100, 1024, 900, 861, 860, 768, 480, 390]) {
+  for (const width of [1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ["/", "/feed", "/archive"]) {
       await page.goto(origin + route, { waitUntil: "domcontentloaded" });
@@ -101,6 +101,7 @@ try {
         }
       }
       results.push({ route, width, ...geometry });
+      if (errors.length) { console.error("First hydration issue:", JSON.stringify(errors.slice(0, 3))); throw new Error("Hydration diagnosis: stop at first affected route"); }
     }
   }
   if (errors.length) console.error("Browser error totals by route:", JSON.stringify(errors.reduce((a,e)=>{ a[e.route]=(a[e.route]||0)+1; return a; }, {})));
