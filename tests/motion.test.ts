@@ -7,6 +7,7 @@ import {
   motionLevel,
   setMotionPreference,
   navigateWithMotion,
+  listTransition,
   animateDialogResize,
 } from "../src/lib/motion";
 let dom: JSDOM,
@@ -180,6 +181,53 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(document.getElementById("target")!.style.visibility, "");
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
     await transition.finished;
+  });
+});
+
+describe("list animation single-flight and safe recovery", () => {
+  it("ignores a thousand repeated clicks until native transition completion", async () => {
+    let resolve!: () => void;
+    const finished = new Promise<void>((done) => { resolve = done; });
+    let transitions = 0;
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => void) => {
+        transitions++;
+        update();
+        return { finished, skipTransition() {} };
+      },
+    });
+    let updates = 0;
+    for (let i = 0; i < 1000; i++) listTransition(() => updates++);
+    assert.equal(updates, 1);
+    assert.equal(transitions, 1);
+    resolve();
+    await finished;
+    await Promise.resolve();
+    listTransition(() => updates++);
+    assert.equal(updates, 2);
+  });
+  it("releases the gate after a rejected browser animation", async () => {
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: () => ({
+        finished: Promise.reject(new Error("browser unavailable")),
+        skipTransition() {},
+      }),
+    });
+    let updates = 0;
+    listTransition(() => updates++);
+    await new Promise<void>((done) => setTimeout(done, 0));
+    assert.equal(updates, 1, "fallback commits exactly once");
+    listTransition(() => updates++);
+    await new Promise<void>((done) => setTimeout(done, 0));
+    assert.equal(updates, 2, "after rejection the control must work again");
+  });
+  it("still applies changes immediately with reduced motion", () => {
+    setMotionPreference("reduced");
+    let updates = 0;
+    for (let i = 0; i < 4; i++) listTransition(() => updates++);
+    assert.equal(updates, 4);
   });
 });
 
