@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const site = readFileSync("src/styles/site.css", "utf8");
+const feed = readFileSync("src/components/Feed.tsx", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
@@ -26,20 +27,26 @@ describe("home hero mobile and tablet layout", () => {
     assert.equal(mobile.includes("height: clamp(94px, 25vw, 112px)"), false);
   });
 
-  it("shows every content-page type on phones without horizontal clipping", () => {
-    const start = site.indexOf("/* A two-row wrap is easier");
-    assert.ok(start > 0);
-    const region = site.slice(start, start + 1300);
-    assert.ok(region.includes("flex-wrap: wrap;"));
-    assert.ok(region.includes("overflow: visible;"));
-    assert.ok(region.includes(".type-tabs[data-pill] .type-fill"));
-    assert.ok(region.includes("display: none;"));
+  it("keeps all content types visible and uses one accessible button layer", () => {
     const narrow = site.slice(site.indexOf("/* Five categories stay completely visible"));
     assert.ok(narrow.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
     assert.ok(narrow.includes("width: 100%;"));
     assert.ok(narrow.includes("flex: 1 1 100%;"));
+    assert.ok(site.includes(".type-tab.active"));
+    assert.ok(site.includes("min-height:40px"));
+    assert.equal(feed.includes('className="type-fill"'), false);
+    assert.equal(feed.includes("ResizeObserver"), false);
+    assert.ok(feed.includes("aria-pressed={selected}"));
   });
-
+  it("reflows compact desktop content before fixed sidebars squeeze the feed", () => {
+    const sidebar = site.slice(site.indexOf("/* At 1025–1200px"));
+    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1200px)"));
+    assert.ok(sidebar.includes(".content-grid { grid-template-columns:minmax(0,1fr); }"));
+    assert.ok(sidebar.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
+    assert.ok(sidebar.includes("@media (min-width:861px) and (max-width:1279px)"));
+    assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
+    assert.ok(sidebar.includes("grid-template-columns:auto minmax(0,1fr) auto"));
+  });
   it("keeps the homepage a single editorial feed rather than two filter panels", () => {
     assert.ok(site.includes(".home-feed-heading"));
     assert.ok(site.includes(".home-feed-count"));

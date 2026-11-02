@@ -40,9 +40,9 @@ describe("both visual themes share home geometry and focus treatments", () => {
     assert.ok(mobile.includes('grid-template-columns: repeat(3, minmax(0, 1fr));'));
     assert.ok(mobile.includes("overflow: visible;"));
     assert.ok(site.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
-    const touch = skin.slice(skin.indexOf("@media (max-width: 767px)"));
-    assert.ok(touch.includes(".type-tabs[data-pill] .type-tab.active"));
-    assert.ok(touch.includes("background: var(--brand);"));
+    assert.ok(skin.includes(':root[data-skin="terminal"] .type-tab.active'));
+    assert.ok(skin.includes("border-color: var(--brand);"));
+    assert.equal(skin.includes(".type-tabs[data-pill]"), false);
   });
 
   it("uses the same blurred modal veil for the terminal and editorial skins", () => {

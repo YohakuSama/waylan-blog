@@ -1078,16 +1078,7 @@ html {
 }
 :root[data-skin="terminal"] .type-tab.active {
   background: var(--brand);
-  color: var(--on-brand);
-}
-:root[data-skin="terminal"] .type-tabs[data-pill] .type-tab.active {
-  background: var(--surface);
-  color: var(--ink);
-}
-:root[data-skin="terminal"] .type-fill {
-  background: var(--brand);
-}
-:root[data-skin="terminal"] .type-fill-tab {
+  border-color: var(--brand);
   color: var(--on-brand);
 }
 :root[data-skin="terminal"] .feed-body h2 {
@@ -1241,19 +1232,6 @@ html {
     border-radius: 0;
   }
 }
-@media (max-width: 767px) {
-  /* The cross-row clip-path pill is hidden on both skins at touch sizes.
-     The terminal active state must remain visible without that pill. */
-  :root[data-skin="terminal"] .type-tabs[data-pill] .type-tab.active {
-    border-color: var(--brand);
-    background: var(--brand);
-    color: var(--on-brand);
-  }
-  :root[data-skin="terminal"] .type-tabs[data-pill] .type-tab.active .tab-count {
-    background: color-mix(in srgb, var(--on-brand) 16%, transparent);
-    color: var(--on-brand);
-  }
-}
 @media (max-width: 480px) {
   .brand-wordmark {
     height: 32px;
@@ -1294,12 +1272,9 @@ html {
 .code-thumb .code-dots::after {
   background: #28c840;
 }
-:root[data-skin="terminal"] .type-tab.active .tab-count,
-:root[data-skin="terminal"] .type-fill .tab-count {
+:root[data-skin="terminal"] .type-tab.active .tab-count {
+  background: color-mix(in srgb, var(--on-brand) 16%, transparent);
   color: var(--on-brand);
-}
-:root[data-skin="terminal"] .type-tabs[data-pill] .type-tab.active .tab-count {
-  color: var(--muted);
 }
 :root[data-skin="terminal"] .article-block-shell.block-code {
   border-radius: 0;

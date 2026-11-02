@@ -292,7 +292,8 @@ describe("immersive composer viewport and motion contract", () => {
     assert.equal(compact.includes("width 340ms"), false);
   });
   it("uses the same unclamped viewport sizing on phones and tablets", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    // The stylesheet is checked out with CRLF on some platforms.
+    const css = readFileSync("src/styles.css", "utf8").replace(/\r\n/g, "\n");
     const marker = ".discussion-dialog.composer-dialog,\n  .discussion-dialog.composer-dialog.composer-fullscreen {";
     const start = css.indexOf(marker);
     assert.ok(start >= 0);

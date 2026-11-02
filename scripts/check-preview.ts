@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { JSDOM, VirtualConsole } from "jsdom";
 import { randomUUID } from "node:crypto";
 import site from "../src/generated/site.json";
+import { posts } from "../src/lib/data";
 const html = await readFile("preview/index.html", "utf8");
 const parsed = new JSDOM(html).window.document;
 assert(parsed.title.includes(site.name));
@@ -186,14 +187,14 @@ try {
   );
   await click(dom, doc.querySelector(".intro-copy>.primary-button"));
   await until(() => dom.window.location.hash === "#/feed" && doc.querySelector(".page-heading"), "homepage to feed");
-  assert.equal(doc.querySelectorAll(".post-card").length, 6);
+  assert.equal(doc.querySelectorAll(".post-card").length, Math.min(8, posts.length));
   await click(
     dom,
     [...doc.querySelectorAll(".filter-tabs button")].find(
       (button) => button.textContent === "随笔",
     )!,
   );
-  assert.equal(doc.querySelectorAll(".post-card").length, 1);
+  assert.equal(doc.querySelectorAll(".post-card").length, posts.filter((post) => post.topic === "notes").length);
   assert(dom.window.location.hash.includes("topic=notes"));
   await click(dom, doc.querySelector(".header-search"));
   const input = doc.querySelector<HTMLInputElement>(".search-dialog input")!;

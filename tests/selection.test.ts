@@ -63,8 +63,9 @@ describe("real DOM selection and overlapping marks", () => {
       type: "TextPositionSelector", start: 0, end: "一段认真读过的文字。".length,
     });
     applyHighlights(root, post, [{ id: "local-sample", commentId: "", anchor: result.anchor }]);
-    assert.equal(root.querySelector("mark.private-mark")?.textContent,
-      "一段认真读过的文字。");
+    // Each text node is marked separately so inline <strong> formatting survives.
+    assert.equal([...root.querySelectorAll("mark.private-mark")]
+      .map((mark) => mark.textContent).join(""), "一段认真读过的文字。");
   });
   it("rejects code and blocks outside the reader, and bounds large excerpts", () => {
     const root = document.getElementById("prose")!,

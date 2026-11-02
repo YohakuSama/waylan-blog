@@ -33,17 +33,23 @@ for (const path of [
       (path === "404.html" ? 30 : 80),
     path + " empty prerender",
   );
-  if (path === "index.html") {
-    // Home tabs must report the real number of entries for each content type.
+  if (path === "feed/index.html") {
+    // The content page owns type filters; homepage stays an editorial doorway.
     const counts = [...doc.querySelectorAll(".type-tab")].map((tab) =>
       Number(tab.querySelector(".tab-count")?.textContent),
     );
-    assert.equal(counts[0], posts.length, "home 全部 count");
+    assert.equal(counts[0], posts.length, "feed 全部 count");
     assert.equal(
       counts.slice(1).reduce((a, b) => a + b, 0),
       posts.length,
-      "home type counts must add up",
+      "feed type counts must add up",
     );
+  }
+  if (path === "archive/index.html") {
+    assert.equal(doc.querySelectorAll(".archive-row").length, posts.length, "yearbook complete");
+    assert.equal(doc.querySelectorAll(".archive-main .type-tabs").length, 0, "yearbook has no duplicate type filters");
+  }
+  if (path === "index.html") {
     assert(
       doc.querySelector(".home-hero svg.network-wave"),
       "hero network wave",
