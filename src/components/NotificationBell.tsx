@@ -24,6 +24,8 @@ const empty: Inbox = { enabled: false, unread: 0, items: [] };
 export function NotificationBell() {
   const [box, setBox] = useState<Inbox>(empty);
   const [csrf, setCsrf] = useState("");
+  const [moderator, setModerator] = useState(false);
+  const [success, setSuccess] = useState("");
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -33,16 +35,18 @@ export function NotificationBell() {
     let active = true;
     async function refresh() {
       try {
-        const session = await api<{ user: { login: string } | null; csrf?: string }>("/api/session");
+        const session = await api<{ user: { login: string } | null; csrf?: string; moderator?: boolean }>("/api/session");
         if (!active) return;
         if (!session.user || !session.csrf) {
           setBox(empty);
           setCsrf("");
+          setModerator(false);
           const status = await api<{ notifications?: boolean }>("/api/status");
           if (active) setAvailable(!!status.notifications);
           return;
         }
         setCsrf(session.csrf);
+        setModerator(!!session.moderator);
         const next = await api<Inbox>("/api/notifications");
         if (active) {
           setBox(next);
@@ -109,6 +113,25 @@ export function NotificationBell() {
       setBusy(false);
     }
   };
+  const testNotification = async (method: "POST" | "DELETE") => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api("/api/notifications/test", {
+        method,
+        headers: { "X-CSRF-Token": csrf },
+      });
+      const updated = await api<Inbox>("/api/notifications");
+      setBox(updated);
+      setSuccess(method === "POST" ? "测试消息已发送到你的收件箱。" : "测试消息已清除。");
+    } catch (e) {
+      setError((e as Error).message || "操作失败，请重试。");
+    } finally {
+      setBusy(false);
+    }
+  };
   const subscribe = async () => {
     setBusy(true);
     setError("");
@@ -163,17 +186,25 @@ export function NotificationBell() {
             {box.items.length ? box.items.map((item) => (
               <Link
                 key={item.id}
-                href={`/post/${item.slug}#echo-${encodeURIComponent(item.commentId)}`}
+                href={item.id.startsWith("test:") ? `/post/${item.slug}` : `/post/${item.slug}#echo-${encodeURIComponent(item.commentId)}`}
                 className={item.read ? "notification-item" : "notification-item unread"}
                 onClick={() => { setOpen(false); void mark([item.id]); }}
               >
-                <strong>{item.kind === "reply" ? `@${item.actor} 回复了你` : `@${item.actor} 发表了评论`}</strong>
+                <strong>{item.id.startsWith("test:") ? "站长测试通知" : item.kind === "reply" ? `@${item.actor} 回复了你` : `@${item.actor} 发表了评论`}</strong>
                 <span>{item.title}</span>
                 <time>{new Date(item.time * 1000).toLocaleDateString("zh-CN")}</time>
               </Link>
             )) : <p className="notification-empty">目前没有新消息。</p>}
           </div>
           {error && <p className="small-error" role="alert">{error}</p>}
+          {success && <p className="notification-success" role="status">{success}</p>}
+          {moderator && <div className="notification-test-tools">
+            <span>仅站长可见 · 不会向 GitHub 发评论</span>
+            <button type="button" className="text-button" disabled={busy || !box.subscribed}
+              onClick={() => void testNotification("POST")}>发送测试通知</button>
+            <button type="button" className="text-button" disabled={busy}
+              onClick={() => void testNotification("DELETE")}>清空测试消息</button>
+          </div>}
           <div className="notification-foot">
             <button type="button" className="text-button" disabled={busy} onClick={() => void subscribe()}>
               {box.subscribed ? "关闭站内提醒" : "开启站内提醒"}
