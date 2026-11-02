@@ -400,7 +400,7 @@ export default function Reader({ post }: { post: Post }) {
     setComments((prev) => prev ? {
       ...prev,
       nodes: change(prev.nodes),
-      totalCount: Math.max(0, prev.totalCount + (next ? 0 : -1)),
+      totalCount: Math.max(0, prev.totalCount + (!next && prev.nodes.some((c) => c.id === id) ? -1 : 0)),
     } : prev);
     setFocused((prev) => prev?.id === id ? next : prev);
     setPanelFetched((prev) => change(prev));
@@ -1472,7 +1472,11 @@ export default function Reader({ post }: { post: Post }) {
               comment={c}
               floor={(() => {
                 const n = state.nodes.findIndex((top) => top.id === (c.parentId || c.id));
-                return n < 0 ? undefined : `${n}F`;
+                if (n < 0) return undefined;
+                const sub = c.parentId
+                  ? state.nodes[n].replies?.nodes.findIndex((reply) => reply.id === c.id) ?? -1
+                  : -1;
+                return sub >= 0 ? `${n}F-${sub + 1}` : `${n}F`;
               })()}
               currentUser={session.data?.user?.login}
               csrf={session.data?.csrf}
