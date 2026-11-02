@@ -139,8 +139,8 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     },
     {
       url: "/archive",
-      label: "归档",
-      term: "archive",
+      label: "年表",
+      term: "years",
       active: pathname === "/archive",
     },
     {
@@ -305,7 +305,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               </span>
             </span>
             <nav className="footer-links" aria-label="页脚导航">
-              <Link href="/archive">归档</Link>
+              <Link href="/archive">年表</Link>
               <Link href="/about">关于</Link>
               <a
                 href={assetURL("/rss.xml")}
