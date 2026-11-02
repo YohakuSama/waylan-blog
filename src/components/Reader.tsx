@@ -17,6 +17,8 @@ import {
   Highlighter,
   List,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
   MessageSquare,
   Plus,
   Send,
@@ -352,6 +354,7 @@ export default function Reader({ post }: { post: Post }) {
     [sending, setSending] = useState(false),
     [sendError, setSendError] = useState(""),
     [previewDraft, setPreviewDraft] = useState(false),
+    [composerFullscreen, setComposerFullscreen] = useState(false),
     [focused, setFocused] = useState<Comment | null>(null);
   const [panelFetched, setPanelFetched] = useState<Comment[]>([]),
     [panelLoading, setPanelLoading] = useState(false),
@@ -697,10 +700,12 @@ export default function Reader({ post }: { post: Post }) {
     setPanelIds([]);
     setSendError("");
     setPreviewDraft(false);
+    setComposerFullscreen(false);
     setSelection(null);
     setPanel(true);
   }
   function openHighlights(ids: string[]) {
+    setComposerFullscreen(false);
     setPanelIds(ids);
     setSelection(null);
     setPanel(true);
@@ -1434,7 +1439,15 @@ export default function Reader({ post }: { post: Post }) {
               ? "继续这段对话"
               : "发表评论"
         }
-        className="discussion-dialog"
+        className={`discussion-dialog ${panelIds.length ? "thread-dialog" : "composer-dialog"} ${composerFullscreen && !panelIds.length ? "composer-fullscreen" : ""}`}
+        headerActions={!panelIds.length ? (
+          <button type="button" className="icon-button composer-expand" title={composerFullscreen ? "退出沉浸模式" : "全屏沉浸编辑"}
+            aria-label={composerFullscreen ? "退出全屏编辑" : "进入全屏编辑"}
+            aria-pressed={composerFullscreen}
+            onClick={() => setComposerFullscreen((v) => !v)}>
+            {composerFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+        ) : undefined}
       >
         <div className="discussion-panel-body">
           {panelQuote && (
