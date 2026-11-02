@@ -15,6 +15,8 @@ export type Env = {
   GITHUB_READ_TOKEN?: string;
   SESSION_SECRET?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  /** Safe opt-in: enable only after 0004 migration + verified webhook setup. */
+  NOTIFICATIONS_ENABLED?: "true" | "false";
   /** Admin: GitHub logins allowed into /admin, comma separated. */
   ADMIN_GITHUB_LOGINS?: string;
   /** Admin: repository holding this site's source, "owner/name". */
