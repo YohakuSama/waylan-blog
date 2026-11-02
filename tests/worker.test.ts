@@ -405,10 +405,39 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     const echo = (await (await call("/api/echo")).json()) as any;
     assert.equal(echo.comment.author.login, user.login);
   });
+  it("blocks repeated messages with a new request ID and allows idempotent retries", async () => {
+    const submitted = requestBody({ body: "同一条广告消息" });
+    assert.equal((await send(submitted)).status, 201);
+    assert.equal((await send(submitted)).status, 200);
+    const copied = requestBody({ body: "同一条广告消息" });
+    const denied = await send(copied);
+    assert.equal(denied.status, 429);
+    assert.equal(((await denied.json()) as any).code, "DUPLICATE_COMMENT");
+    assert.equal(writeTokens.length, 1);
+  });
+  it("rejects link-heavy ads before posting", async () => {
+    const result = await send(requestBody({
+      body: "广告 https://a.example https://b.example https://c.example",
+    }));
+    assert.equal(result.status, 400);
+    assert.equal(((await result.json()) as any).code, "LINK_LIMIT");
+    assert.equal(writeTokens.length, 0);
+  });
+  it("limits comments across many GitHub accounts sharing one IP", async () => {
+    for (let i = 0; i < 8; i++) {
+      // Simulate different authenticated users, all behind the same client IP.
+      db.sqlite.prepare("UPDATE sessions SET user_id=?,user_json=?")
+        .run(String(i + 10), JSON.stringify({ ...user, login: `reader-${i}` }));
+      assert.equal((await send(requestBody({ body: `来自不同账号 ${i}` }))).status, 201);
+    }
+    db.sqlite.prepare("UPDATE sessions SET user_id=?,user_json=?")
+      .run("999", JSON.stringify({ ...user, login: "reader-extra" }));
+    assert.equal((await send(requestBody({ body: "第九条评论" }))).status, 429);
+  });
   it("enforces write rate limits across requests", async () => {
     for (let i = 0; i < 5; i++)
-      assert.equal((await send(requestBody())).status, 201);
-    assert.equal((await send(requestBody())).status, 429);
+      assert.equal((await send(requestBody({ body: `不同评论 ${i}` }))).status, 201);
+    assert.equal((await send(requestBody({ body: "第六条" }))).status, 429);
   });
   it("expires sessions instead of accepting stale user credentials", async () => {
     db.sqlite.prepare("UPDATE sessions SET expires_at=0").run();
