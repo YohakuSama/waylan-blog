@@ -267,7 +267,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(login.disabled, true);
     assert.ok(document.documentElement.classList.contains("dialog-open"));
     await click(
-      document.querySelector(".discussion-dialog .dialog-header button"),
+      document.querySelector('.discussion-dialog .dialog-header button[aria-label="关闭"]'),
     );
     await settle(200);
     assert.equal(document.querySelector(".discussion-dialog[open]"), null);
@@ -275,6 +275,39 @@ describe("React navigation and reading interactions (DOM integration, not browse
       document.documentElement.classList.contains("dialog-open"),
       false,
     );
+  });
+  it("offers centered immersive writing and a searchable categorized emoji picker", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!,
+      range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 8);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (b) => b.textContent === "评论",
+    )!);
+    const dialog = document.querySelector(".discussion-dialog[open]")!;
+    assert.ok(dialog.classList.contains("composer-dialog"));
+    await click(dialog.querySelector('button[aria-label="进入全屏编辑"]'));
+    assert.ok(dialog.classList.contains("composer-fullscreen"));
+    await click(dialog.querySelector('button[aria-label="退出全屏编辑"]'));
+    assert.equal(dialog.classList.contains("composer-fullscreen"), false);
+    await click(dialog.querySelector('button[aria-label="选择表情"]'));
+    const choices = document.querySelectorAll(".markdown-emoji-picker .emoji-grid button");
+    assert.ok(choices.length >= 25);
+    const input = document.querySelector<HTMLInputElement>('.emoji-search input')!;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!;
+      set.call(input, "火箭");
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      await pause(20);
+    });
+    assert.ok(document.querySelectorAll(".emoji-grid button").length >= 1);
+    await click(document.querySelector(".emoji-grid button"));
+    assert.ok(document.querySelector<HTMLTextAreaElement>("#echo-comment")!.value.includes("🚀"));
   });
   it("opens an annotated reply outside the first comments page by fetching its own deep endpoint", async () => {
     const post = posts[0],
