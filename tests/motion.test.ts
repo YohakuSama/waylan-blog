@@ -207,6 +207,41 @@ describe("list animation single-flight and safe recovery", () => {
     listTransition(() => updates++);
     assert.equal(updates, 2);
   });
+  it("waits for the category-pill animation after the native transition ends", async () => {
+    const pill = document.createElement("div");
+    pill.className = "type-fill";
+    document.body.appendChild(pill);
+    let finishPill!: () => void;
+    const pendingPill = new Promise<void>((done) => { finishPill = done; });
+    let playing = true;
+    Object.defineProperty(pill, "getAnimations", {
+      configurable: true,
+      value: () => playing ? [{
+        playState: "running",
+        effect: { getComputedTiming: () => ({ iterations: 1 }) },
+        finished: pendingPill,
+      }] : [],
+    });
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => void) => {
+        update();
+        return { finished: Promise.resolve(), skipTransition() {} };
+      },
+    });
+    let updates = 0;
+    listTransition(() => updates++);
+    await Promise.resolve();
+    await Promise.resolve();
+    listTransition(() => updates++);
+    assert.equal(updates, 1, "native completion alone must not unlock the pill");
+    playing = false;
+    finishPill();
+    await pendingPill;
+    await Promise.resolve();
+    listTransition(() => updates++);
+    assert.equal(updates, 2);
+  });
   it("releases the gate after a rejected browser animation", async () => {
     Object.defineProperty(document, "startViewTransition", {
       configurable: true,
