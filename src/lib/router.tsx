@@ -171,9 +171,16 @@ export function RouterProvider({
       // Preserve the shared list animation. A user-clicked query is ignored
       // during an active list animation, while browser Back/Forward always
       // completes to remain in sync with its already-updated history URL.
-      if (options.pop) change();
-      else listTransition(change);
-      release();
+      if (options.pop) {
+        change();
+        release();
+      } else {
+        // Hold same-target deduplication until the native and CSS animations
+        // have settled. A newer route supersedes this callback safely.
+        listTransition(() => {
+          if (serial === operation.current) change();
+        }, release);
+      }
     } else {
       change();
       release();
