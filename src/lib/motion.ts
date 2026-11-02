@@ -265,10 +265,16 @@ export function navigateWithMotion(
 // Only list-changing actions share this gate. Never lock typing, browser
 // navigation, dialog dismissal or assistive controls behind a global click timer.
 const activeListDocuments = new WeakSet<Document>();
-export function listTransition(change: () => void) {
+export function listTransition(change: () => void, onFinished?: () => void) {
   const doc = document as ViewTransitionDocument;
-  if (activeListDocuments.has(doc)) return;
-  if (!motionAllowed()) return change();
+  if (activeListDocuments.has(doc)) {
+    onFinished?.();
+    return;
+  }
+  if (!motionAllowed()) {
+    try { change(); } finally { onFinished?.(); }
+    return;
+  }
 
   const root = doc.documentElement;
   activeListDocuments.add(doc);
@@ -280,6 +286,7 @@ export function listTransition(change: () => void) {
     clearTimeout(watchdog);
     activeListDocuments.delete(doc);
     if (root.dataset.vt === "list") delete root.dataset.vt;
+    onFinished?.();
   };
   // A safety valve, not a debounce: normal release is driven by actual
   // animation completion. A stalled browser API must never freeze interaction.
