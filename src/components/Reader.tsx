@@ -1,6 +1,7 @@
 import { motionAllowed } from "../lib/motion";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import ReactMarkdown from "react-markdown";
+import { MarkdownTools } from "./MarkdownTools";
 import {
   ArrowDown,
   ArrowLeft,
@@ -119,6 +120,7 @@ function CommentItem({
     [editBody, setEditBody] = useState(comment.body),
     [busy, setBusy] = useState(false),
     [deleted, setDeleted] = useState(false);
+  const editArea = useRef<HTMLTextAreaElement>(null);
   const own = !!currentUser && currentUser.toLowerCase() === comment.author?.login.toLowerCase();
   useEffect(() => {
     if (!editing) setEditBody(comment.body);
@@ -215,6 +217,7 @@ function CommentItem({
       {editing ? (
         <div className="comment-inline-editor">
           <textarea
+            ref={editArea}
             aria-label="编辑评论"
             rows={4}
             maxLength={6000}
@@ -222,6 +225,7 @@ function CommentItem({
             disabled={busy}
             onChange={(e) => setEditBody(e.target.value)}
           />
+          <MarkdownTools area={editArea} value={editBody} onChange={setEditBody} disabled={busy} />
           <div className="comment-actions">
             <button className="text-button" onClick={() => manage("PUT")} disabled={busy || !editBody.trim()}>
               {busy ? "保存中…" : "保存修改"}
@@ -323,7 +327,8 @@ export default function Reader({ post }: { post: Post }) {
     viewCount = views.enabled ? views.views[post.id] : undefined;
   const router = useRouter(),
     prose = useRef<HTMLDivElement>(null),
-    article = useRef<HTMLElement>(null);
+    article = useRef<HTMLElement>(null),
+    composerArea = useRef<HTMLTextAreaElement>(null);
   const [progress, setProgress] = useState(0),
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
@@ -1554,6 +1559,7 @@ export default function Reader({ post }: { post: Post }) {
                 把你的想法，留在这里
               </label>
               <textarea
+                ref={composerArea}
                 id="echo-comment"
                 rows={5}
                 maxLength={6000}
@@ -1564,8 +1570,11 @@ export default function Reader({ post }: { post: Post }) {
                   setDraft((prev) => ({ ...prev, body: e.target.value }))
                 }
               />
+              <MarkdownTools area={composerArea} value={draft.body}
+                onChange={(body) => setDraft((prev) => ({ ...prev, body }))}
+                disabled={sending || draft.uncertain} />
               <div className="composer-hint">
-                <span>支持 Markdown · 评论公开可见</span>
+                <span>支持代码块与表情 · 评论公开可见</span>
                 <span>{draft.body.length} / 6000</span>
               </div>
               {sendError && (
