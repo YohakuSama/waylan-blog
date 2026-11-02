@@ -25,7 +25,7 @@ import {
   type Env,
   type DiscussionMap,
 } from "./types";
-import { hash, limit, readBody } from "./security";
+import { clientIP, hash, limit, readBody } from "./security";
 import { requireSession } from "./auth";
 export const emptyPage: CommentPage = {
   nodes: [],
@@ -409,6 +409,10 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   )
     throw new HttpError(400, "COMMENT_LENGTH", "请写下 1 到 6000 字的想法。");
   const body = data.body.trim();
+  // Public discussions invite spam. Cap outbound links without rejecting ordinary prose.
+  const links = body.match(/(?:https?:\/\/|www\.)[^\s<>()]+/gi) || [];
+  if (links.length > 2)
+    throw new HttpError(400, "LINK_LIMIT", "每条评论最多包含 2 个链接。");
   if (/<!--\s*echo:/i.test(body))
     throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
   if (
@@ -516,6 +520,16 @@ export async function writeComment(request: Request, env: Env, postId: string) {
     return json({ comment: cleanComment(found, postId) });
   }
   if (intent?.status === "sending") return recover();
+  // Duplicate submissions with fresh request IDs should not create more posts.
+  const recentDuplicate = await env.DB!.prepare(
+    "SELECT request_id FROM write_intents WHERE user_id=? AND payload_hash=? AND request_id<>? AND status IN (\x27sent\x27,\x27sending\x27) AND created_at>? LIMIT 1",
+  ).bind(session.row.user_id, payloadHash, requestId, now() - 600).first();
+  if (recentDuplicate)
+    throw new HttpError(429, "DUPLICATE_COMMENT", "相同内容刚刚发表过，请不要重复发送。");
+  const ip = clientIP(request);
+  await limit(env, `write:ip:${ip}`, 8, 60);
+  await limit(env, `write:ip-hour:${ip}`, 40, 3600);
+  await limit(env, `write:post-user:${session.row.user_id}:${postId}`, 12, 3600);
   await limit(env, `write:user:${session.row.user_id}`, 5, 60);
   await limit(env, `write:day:${session.row.user_id}`, 80, 86400);
   const reserved =
