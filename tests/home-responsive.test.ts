@@ -28,7 +28,7 @@ describe("home hero mobile and tablet layout", () => {
   });
 
   it("keeps all content types visible and uses one accessible button layer", () => {
-    const narrow = site.slice(site.indexOf("/* Five categories stay completely visible"));
+    const narrow = site.slice(site.indexOf("/* Six categories remain visible"));
     assert.ok(narrow.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
     assert.ok(narrow.includes("width: 100%;"));
     assert.ok(narrow.includes("flex: 1 1 100%;"));
