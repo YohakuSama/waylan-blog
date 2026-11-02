@@ -773,6 +773,33 @@ describe("OAuth, cryptography and rendering", () => {
     const response = await call("/api/notifications");
     assert.deepEqual(await response.json(), { enabled: false, unread: 0, items: [] });
   });
+  it("acknowledges signed GitHub App installation events without a repository", async () => {
+    const body = JSON.stringify({
+      action: "new_permissions_accepted",
+      installation: { id: 12345 },
+    });
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(env.GITHUB_WEBHOOK_SECRET!),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    );
+    const signature = "sha256=" + Array.from(new Uint8Array(
+      await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)),
+    ), (b) => b.toString(16).padStart(2, "0")).join("");
+    const deliver = (sig: string) => worker.fetch(
+      new Request("https://echo.test/api/webhook/github", {
+        method: "POST",
+        headers: {
+          "X-Hub-Signature-256": sig,
+          "X-GitHub-Event": "installation",
+        },
+        body,
+      }), env,
+    );
+    const response = await deliver(signature);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, ignored: true });
+    assert.equal((await deliver("sha256=invalid")).status, 403);
+  });
   it("validates GitHub webhook signatures and applies deletion", async () => {
     const created = (await (await send(requestBody())).json()) as any;
     const body = JSON.stringify({
