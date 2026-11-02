@@ -130,7 +130,7 @@ function Popular() {
   if (top.length < 2) return null;
   return (
     <section className="side-block popular-block">
-      <SideTitle icon={<Flame size={17} />} href="/archive" label="打开归档">
+      <SideTitle icon={<Flame size={17} />} href="/archive" label="打开年表">
         读得最多
       </SideTitle>
       <ol className="popular-list">
@@ -150,7 +150,7 @@ function Popular() {
   );
 }
 const siteLinks = [
-  { href: "/archive", label: "归档", hint: "按时间浏览全部内容" },
+  { href: "/archive", label: "年表", hint: "按年份回看记录" },
   { href: "/projects", label: "项目", hint: "实践项目与工具实验" },
   { href: "/feed?type=note", label: "笔记", hint: "短篇技术片段" },
   { href: "/about", label: "关于", hint: "写作方向与实践方式" },
