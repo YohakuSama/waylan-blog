@@ -1579,6 +1579,15 @@ h3 {
   .mobile-menu {
     display: inline-flex;
   }
+  /* The optional inbox must stay within the viewport even when its trigger
+     appears before the other header actions on a narrow phone. */
+  .notification-popover {
+    position: fixed;
+    top: calc(var(--header-height) + 8px);
+    right: var(--page-gutter);
+    width: calc(100vw - 2 * var(--page-gutter));
+    max-width: 360px;
+  }
   #site-nav {
     display: none;
     position: absolute;

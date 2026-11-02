@@ -35,7 +35,7 @@ function sameBox(actual, expected, label) {
     assert.ok(Math.abs(actual[key] - expected[key]) <= 1,
       `${label}: ${key} moved from ${expected[key]} to ${actual[key]}`);
 }
-const results = [], baselines = new Map();
+const results = [], notificationResults = [], baselines = new Map();
 let browser;
 try {
   await waitForServer();
@@ -162,12 +162,42 @@ try {
           }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
+        // Availability changes after the session request. Exercise the optional
+        // inbox independently, without inventing a signed-in user or messages.
+        if ([320, 768].includes(width)) {
+          await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
+          await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: true } }));
+          await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
+          const bell = page.getByRole("button", { name: "消息通知，0 条未读", exact: true });
+          await bell.waitFor();
+          await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
+          await bell.click();
+          const inbox = page.getByRole("region", { name: "消息通知", exact: true });
+          const bounds = await inbox.boundingBox();
+          const label = `inbox-${width}-${variant.skin}-${variant.theme}`;
+          await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
+          notificationResults.push({ width, ...variant, bounds });
+          assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 900,
+            `${label}: inbox escaped viewport`);
+          for (const [index, selector] of [[1, ".shelf-trigger"], [2, '.header-tools > button[aria-label="阅读设置"]']]) {
+            const box = await page.locator(selector).boundingBox();
+            sameBox(box && { left: box.x, top: box.y, width: box.width, height: box.height },
+              baselines.get(`${width}:/`).controls[index], `${label}: existing action moved when inbox appeared`);
+          }
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
+            `${label}: optional inbox introduced horizontal scrolling`);
+          assert.deepEqual(errors, [], `${label}: browser runtime error`);
+        }
       } finally { await context.close(); }
     }
   }
-  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations, including menu focus and theme position parity.`);
+  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} optional inbox cases, including menu focus and theme position parity.`);
+} catch (error) {
+  await writeFile(`${out}/failure.txt`, error.stack || String(error));
+  throw error;
 } finally {
   await writeFile(`${out}/geometry.json`, JSON.stringify(results, null, 2));
+  await writeFile(`${out}/notifications.json`, JSON.stringify(notificationResults, null, 2));
   await browser?.close();
   preview.kill("SIGTERM");
   preview.stdout.destroy(); preview.stderr.destroy();
