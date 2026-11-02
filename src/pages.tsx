@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Compass,
   Gauge,
-  Hash,
   Layers,
   Search,
   X,
@@ -44,7 +43,6 @@ import {
   SideTitle,
   Sidebar,
   SiteLinksBlock,
-  TopicsBlock,
 } from "./components/Sidebar";
 import { useViews, viewsLabel } from "./lib/views";
 import type { Post } from "../shared/types";
@@ -323,7 +321,7 @@ export function Feed() {
               {filtered.length} 条
             </span>
             <Link href="/archive">
-              时间归档
+              按年份回看
               <ArrowUpRight size={13} />
             </Link>
           </div>
@@ -343,7 +341,7 @@ export function Feed() {
                   <button
                     type="button"
                     className="quiet-button"
-                    onClick={() => router.navigate("/feed?type=all")}
+                    onClick={() => router.navigate("/feed")}
                   >
                     查看全部内容
                     <ArrowRight size={16} />
@@ -372,7 +370,7 @@ export function Projects() {
         <section className="feed-column" aria-label="项目列表">
           <div className="feed-result-line">
             <span>{items.length} 个项目</span>
-            <Link href="/feed?type=all">
+            <Link href="/feed">
               全部内容
               <ArrowUpRight size={13} />
             </Link>
@@ -394,121 +392,88 @@ export function Projects() {
   );
 }
 export function Archive() {
-  const [type, setType] = useState<TypeFilter>("all");
-  const matched = posts;
-  const items = matched
-    .filter((p) => type === "all" || p.type === type)
-    .sort(newestFirst);
-  const years = [...new Set(items.map((p) => p.date.slice(0, 4)))];
-  const oldest = [...posts].sort(newestFirst).at(-1);
-  const tags = [...new Set(posts.flatMap((p) => p.tags))]
-    .map((tag) => ({ tag, n: posts.filter((p) => p.tags.includes(tag)).length }))
-    .sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag, "zh-CN"));
-  const most = tags[0]?.n || 1;
-  const [listRef] = useReveal<HTMLElement>(".archive-row", [type]);
+  // An archive is a chronological index, not a second copy of /feed filters.
+  const entries = [...posts].sort(newestFirst);
+  const years = [...new Set(entries.map((p) => p.date.slice(0, 4)))];
+  const oldest = entries.at(-1);
+  const [listRef] = useReveal<HTMLElement>(".archive-row", []);
   return (
     <>
       <header className="page-heading">
-        <p className="eyebrow mono">WAYLAN / ARCHIVE</p>
-        <h1>归档</h1>
-        <p>按时间排列的全部内容。每篇文章的地址发布后保持不变。</p>
+        <p className="eyebrow mono">WAYLAN / TIMELINE</p>
+        <h1>写作年表</h1>
+        <p>沿着年月回看写过的内容。想按主题、类型或关键词查找，请前往内容页。</p>
       </header>
-      <div className="content-grid">
-        <section
-          className="feed-column archive-main"
-          aria-label="归档列表"
-          ref={listRef}
-        >
-          <div className="feed-controls">
-            <TypeTabs
-              active={type}
-              source={matched}
-              onSelect={setType}
-              label="按类型筛选归档"
-            />
+      <div className="content-grid timeline-layout">
+        <section className="feed-column archive-main" aria-label="写作时间线" ref={listRef}>
+          <div className="timeline-overview">
+            <div className="timeline-summary">
+              <span className="eyebrow mono">CHRONOLOGICAL INDEX</span>
+              <strong>{entries.length} <small>条记录</small></strong>
+              <span>{years.length} 个年份{oldest ? ` · 始于 ${oldest.date.slice(0, 4)} 年` : ""}</span>
+            </div>
+            <nav className="timeline-year-nav" aria-label="跳转到年份">
+              {years.map((year) => (
+                <a href={`#year-${year}`} key={year}>
+                  <span>{year}</span>
+                  <small>{entries.filter((p) => p.date.startsWith(year)).length}</small>
+                </a>
+              ))}
+            </nav>
           </div>
-          <div className="feed-result-line">
-            <span>
-              {items.length} 条内容
-              <span className="meta-dot">·</span>自{" "}
-              {oldest ? shortDate(oldest.date) : "今天"} 起
-            </span>
-            <Link href="/feed?type=all">
-              列表浏览
-              <ArrowUpRight size={13} />
+          <div className="feed-result-line timeline-result">
+            <span>从新到旧 · 按年份与月份整理</span>
+            <Link href="/feed">
+              按主题浏览 <ArrowUpRight size={13} aria-hidden="true" />
             </Link>
           </div>
-          {years.map((year) => (
-            <section className="archive-year" key={year}>
-              <h2 className="mono">
-                {year}
-                <span>
-                  {items.filter((p) => p.date.startsWith(year)).length} 条
-                </span>
-              </h2>
-              {items
-                .filter((p) => p.date.startsWith(year))
-                .map((p) => (
-                  <Link
-                    className="archive-row"
-                    key={p.id}
-                    href={`/post/${p.slug}`}
-                  >
-                    <time className="mono" dateTime={p.date}>
-                      {p.date.slice(5).replace("-", ".")}
-                    </time>
-                    <span>
-                      {p.title}
-                      <small>
-                        {typeLabels[p.type]} · {topicName(p.topic)}
-                        {p.type === "article" && ` · ${p.readingMinutes} 分钟`}
-                      </small>
-                    </span>
-                    <ArrowUpRight size={16} />
-                  </Link>
+          {years.map((year) => {
+            const annual = entries.filter((p) => p.date.startsWith(year));
+            const months = [...new Set(annual.map((p) => p.date.slice(5, 7)))];
+            return (
+              <section className="archive-year" id={`year-${year}`} key={year}>
+                <h2 className="mono">
+                  {year}
+                  <span>{annual.length} 条</span>
+                </h2>
+                {months.map((month) => (
+                  <div className="archive-month" key={month}>
+                    <h3 className="archive-month-label">{Number(month)} 月</h3>
+                    <div className="archive-month-list">
+                      {annual.filter((p) => p.date.slice(5, 7) === month).map((p) => (
+                        <Link className="archive-row" key={p.id} href={`/post/${p.slug}`}>
+                          <time className="mono" dateTime={p.date}>{p.date.slice(8, 10)} 日</time>
+                          <span>
+                            {p.title}
+                            <small>{typeLabels[p.type]} · {topicName(p.topic)}</small>
+                          </span>
+                          <ArrowUpRight size={16} aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-            </section>
-          ))}
-          {!items.length && (
-            <div className="empty-state">这个分类下暂时没有内容。</div>
+              </section>
+            );
+          })}
+          {!entries.length && (
+            <div className="empty-state">时间线还是空的，第一篇记录发布后会出现在这里。</div>
           )}
         </section>
-        <aside className="site-sidebar" aria-label="归档概览">
+        <aside className="site-sidebar timeline-sidebar" aria-label="写作概览">
           <section className="side-block">
-            <SideTitle
-              icon={<ChartColumn size={17} />}
-              href="/feed?type=all"
-              label="浏览全部内容"
-            >
-              内容概览
-            </SideTitle>
+            <SideTitle icon={<ChartColumn size={17} />}>写作足迹</SideTitle>
             <SiteStats />
             <Heatmap />
           </section>
-          <section className="side-block tag-cloud">
-            <SideTitle
-              icon={<Hash size={17} />}
-              href="/feed?type=all"
-              label="浏览全部内容"
-            >
-              按标签
-            </SideTitle>
-            <ul>
-              {tags.map(({ tag, n }) => (
-                <li key={tag}>
-                  <Link
-                    href={`/feed?tag=${encodeURIComponent(tag)}`}
-                    data-weight={n === most ? 3 : n > 1 ? 2 : 1}
-                  >
-                    {tag}
-                    <small>{n}</small>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          <section className="side-block timeline-side-note">
+            <span className="eyebrow mono">EXPLORE</span>
+            <h2>想找某个主题？</h2>
+            <p>年表用于回顾时间。类型筛选、标签与全文搜索统一放在内容页。</p>
+            <Link href="/feed" className="quiet-button">
+              探索内容 <ArrowRight size={15} aria-hidden="true" />
+            </Link>
           </section>
-          <TopicsBlock />
-          <SiteLinksBlock current="/archive" />
         </aside>
       </div>
     </>
