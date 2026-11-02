@@ -1,4 +1,5 @@
 import {
+  authProvider,
   authReady,
   HttpError,
   json,
@@ -34,9 +35,14 @@ export async function getSession(
     .first<SessionRow>();
   if (!row) return null;
   try {
+    const user = JSON.parse(row.user_json) as UserSession["user"] & {
+      authProvider?: "oauth-app" | "github-app";
+    };
+    // Legacy broad OAuth tokens must not remain usable after switching providers.
+    if ((user.authProvider || "oauth-app") !== authProvider(env)) return null;
     return {
       row,
-      user: JSON.parse(row.user_json),
+      user,
       token: await unseal(row.token_encrypted, env.SESSION_SECRET!),
     };
   } catch {
@@ -78,7 +84,8 @@ export async function startAuth(request: Request, env: Env) {
   Object.entries({
     client_id: env.GITHUB_CLIENT_ID!,
     redirect_uri: `${env.SITE_ORIGIN}/api/auth/callback`,
-    scope: "public_repo",
+    // GitHub Apps use their registered fine-grained permissions, not OAuth scopes.
+    ...(authProvider(env) === "oauth-app" ? { scope: "public_repo" } : {}),
     state,
     code_challenge: challenge,
     code_challenge_method: "S256",
@@ -196,6 +203,7 @@ export async function callback(request: Request, env: Env) {
           login: user.login,
           avatarUrl: user.avatar_url,
           url: user.html_url,
+          authProvider: authProvider(env),
         }),
         await seal(token.access_token, env.SESSION_SECRET!),
         csrf,
