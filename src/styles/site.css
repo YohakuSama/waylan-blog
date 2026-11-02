@@ -1564,6 +1564,26 @@ h3 {
     margin: 4px 0 -24px auto;
     order: 2;
   }
+  /* Below 860px the wave is no longer a desktop background. Keep it as
+     a shallow panorama instead of letting its 2:1 SVG consume half a screen. */
+  :root:not([data-skin="terminal"]) .home-hero .hero-visual {
+    width: 100%;
+    max-width: none;
+    height: clamp(114px, 18vw, 168px);
+    margin: 14px 0 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 19%, #000 78%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 19%, #000 78%, transparent);
+  }
+  :root:not([data-skin="terminal"]) .home-hero .hero-visual .network-wave {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: translateY(-50%);
+  }
   .feed-toolbar {
     align-items: flex-start;
   }
@@ -1603,15 +1623,28 @@ h3 {
   .view-toggle {
     display: none;
   }
+  /* A two-row wrap is easier to discover than clipping categories offscreen.
+     At exceptionally narrow widths more rows are allowed; never hide a type. */
   .type-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin-right: calc(-1 * var(--page-gutter));
-    padding-right: var(--page-gutter);
+    flex-wrap: wrap;
+    overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
+    gap: 8px;
   }
-  .type-tabs::-webkit-scrollbar {
+  /* The moving clip-path pill cannot interpolate across two flex rows:
+     let the selected tab use the site's existing color transition instead. */
+  .type-tabs[data-pill] .type-fill {
     display: none;
+  }
+  .type-tabs[data-pill] .type-tab.active {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .type-tabs[data-pill] .type-tab.active .tab-count {
+    background: color-mix(in srgb, var(--paper) 18%, transparent);
+    color: var(--paper);
   }
   .feed-search-row {
     flex-direction: column;
@@ -1653,6 +1686,10 @@ h3 {
   }
   .intro-description {
     font-size: 13.5px;
+  }
+  :root:not([data-skin="terminal"]) .home-hero .hero-visual {
+    height: clamp(94px, 25vw, 112px);
+    margin-top: 10px;
   }
   .type-tab,
   .type-fill-tab {
