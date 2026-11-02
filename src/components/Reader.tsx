@@ -75,6 +75,9 @@ const emptyPage: CommentPage = {
   discussionUrl: null,
   mapped: false,
 };
+// GitHub can retain an empty parent after deletion to preserve replies.
+// Hide that whole conversation on Waylan; do not erase other authors\x27 GitHub content.
+const visibleComment = (comment: Comment) => comment.body.trim().length > 0;
 const safeURL = (value: string) =>
   /^https:\/\/(github\.com|avatars\.githubusercontent\.com)\//.test(value)
     ? value
@@ -181,7 +184,7 @@ function CommentItem({
       setLoading(false);
     }
   }
-  if (deleted) return null;
+  if (deleted || !visibleComment(comment)) return null;
   return (
     <article className="comment-item" id={`comment-${comment.id}`}>
       <header>
@@ -263,7 +266,7 @@ function CommentItem({
       )}
       {(replies.length > 0 || page?.hasNextPage) && (
         <div className="comment-replies">
-          {replies.map((reply, index) => (
+          {replies.filter(visibleComment).map((reply, index) => (
             <CommentItem
               key={reply.id}
               comment={{ ...reply, parentId: comment.id }}
@@ -364,13 +367,15 @@ export default function Reader({ post }: { post: Post }) {
     return () => window.removeEventListener("waylan:highlights-changed", sync);
   }, [post.id]);
   const state = comments || commentState.data || emptyPage;
+  const visibleTopComments = state.nodes.filter(visibleComment);
+  const visibleCount = Math.max(0, state.totalCount - (state.nodes.length - visibleTopComments.length));
   const allAnnotations = [...annotations, ...localMarks];
   const allComments = [
     ...new Map(
       [
-        ...state.nodes.flatMap((c) => [
+        ...visibleTopComments.flatMap((c) => [
           c,
-          ...(c.replies?.nodes || []).map((reply) => ({
+          ...(c.replies?.nodes || []).filter(visibleComment).map((reply) => ({
             ...reply,
             parentId: c.id,
           })),
@@ -826,7 +831,7 @@ export default function Reader({ post }: { post: Post }) {
     }
   }
   const pageComments = panelIds.length
-    ? allComments.filter(
+    ? allComments.filter(visibleComment).filter(
         (c) =>
           panelIds.includes(c.id) ||
           (!!c.annotation && panelIds.includes(c.annotation.id)),
@@ -1144,7 +1149,7 @@ export default function Reader({ post }: { post: Post }) {
                     ? "…"
                     : commentState.error
                       ? "—"
-                      : state.totalCount}
+                      : visibleCount}
                 </span>
               </h2>
               {state.mapped && !offlinePreview() ? (
@@ -1184,14 +1189,14 @@ export default function Reader({ post }: { post: Post }) {
                   重新读取
                 </button>
               </div>
-            ) : state.nodes.length ? (
+            ) : visibleTopComments.length ? (
               <>
                 {state.stale && (
                   <p className="inline-notice">
                     GitHub 暂时没有回应，当前展示最近缓存的评论。
                   </p>
                 )}
-                {state.nodes.map((c, index) => (
+                {visibleTopComments.map((c, index) => (
                   <CommentItem
                     key={c.id}
                     comment={c}
@@ -1471,10 +1476,10 @@ export default function Reader({ post }: { post: Post }) {
               key={c.id}
               comment={c}
               floor={(() => {
-                const n = state.nodes.findIndex((top) => top.id === (c.parentId || c.id));
+                const n = visibleTopComments.findIndex((top) => top.id === (c.parentId || c.id));
                 if (n < 0) return undefined;
                 const sub = c.parentId
-                  ? state.nodes[n].replies?.nodes.findIndex((reply) => reply.id === c.id) ?? -1
+                  ? visibleTopComments[n].replies?.nodes.filter(visibleComment).findIndex((reply) => reply.id === c.id) ?? -1
                   : -1;
                 return sub >= 0 ? `${n}F-${sub + 1}` : `${n}F`;
               })()}
