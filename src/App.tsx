@@ -53,10 +53,7 @@ function Highlight({ text, needle }: { text: string; needle: string }) {
 function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const ReaderView = reader || getReader();
   const router = useRouter(),
-    pathname = router.path.split(/[?#]/)[0],
-    params = new URLSearchParams(
-      router.path.split("?")[1]?.split("#")[0] || "",
-    );
+    pathname = router.path.split(/[?#]/)[0];
   const [menu, setMenu] = useState(false),
     [search, setSearch] = useState(false),
     [query, setQuery] = useState(""),
@@ -205,7 +202,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
                 key={n.url}
                 href={n.url}
                 className={n.active ? "nav-link selected" : "nav-link"}
-                aria-current={n.active ? "page" : undefined}
+                aria-current={n.active && !post && pathname !== "/projects" ? "page" : undefined}
                 data-term={n.term}
               >
                 {n.active && <span className="nav-indicator" aria-hidden="true" />}
