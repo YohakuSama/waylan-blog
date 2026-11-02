@@ -1188,6 +1188,33 @@ h3 {
   padding-bottom: 0;
   border: 0;
 }
+.topic-select {
+  display: none;
+  position: relative;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.topic-select select {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 30px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.topic-select > svg {
+  position: absolute;
+  right: 11px;
+  pointer-events: none;
+  color: var(--muted);
+}
 .filter-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1712,9 +1739,33 @@ h3 {
     background: color-mix(in srgb, var(--paper) 18%, transparent);
     color: var(--paper);
   }
-  .feed-search-row {
-    flex-direction: column;
-    align-items: stretch;
+  /* Content types stay explicit; secondary filters become a compact pair.
+     Mobile Safari native selects are more usable than another button wall. */
+  .feed-controls .filter-tabs {
+    display: none;
+  }
+  .feed-controls .topic-select {
+    display: inline-flex;
+  }
+  .feed-controls .feed-search-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+  .feed-controls .feed-search-row .sort-control {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .feed-controls .feed-search-row .sort-control select {
+    width: 100%;
+    min-width: 0;
+  }
+  .feed-controls {
+    gap: 10px;
+    padding: 12px;
   }
   .sort-control select {
     width: 100%;
