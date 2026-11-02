@@ -222,6 +222,18 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".topic-select select"));
     assert.ok(document.querySelectorAll(".filter-tabs button").length > 1);
   });
+  it("retains old content-type URLs while making /feed the unfiltered destination", async () => {
+    await mount("/feed?type=note");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "笔记");
+    assert.ok([...document.querySelectorAll(".feed-item")]
+      .every((item) => item.classList.contains("is-note")));
+    const all = [...document.querySelectorAll(".type-tabs .type-tab")]
+      .find((item) => item.textContent?.startsWith("全部"))!;
+    await click(all);
+    assert.equal(location.pathname, "/feed");
+    assert.equal(location.search, "");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "全部内容");
+  });
   it("opens and closes the mobile navigation through the same accessible control", async () => {
     await mount();
     const button = document.querySelector(".mobile-menu")!;
