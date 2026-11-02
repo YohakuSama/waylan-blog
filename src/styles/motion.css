@@ -17,11 +17,8 @@
   --interactive-lift: -2px;
   --dialog-motion: pop;
 }
-/* Terminal: crisp, no overshoot. */
-:root[data-skin="terminal"] {
-  --ease-spring: var(--ease-out);
-  --interactive-lift: -1px;
-}
+/* Both skins share the same duration, easing and press feedback.
+   Square corners and mono typography supply the terminal identity. */
 
 /* ---------- Dialog styles (read by animateDialog) ---------- */
 .image-dialog { --dialog-motion: zoom; }
