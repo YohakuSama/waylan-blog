@@ -82,6 +82,8 @@ export type Comment = {
   author: Author | null;
   annotation?: Annotation;
   parentId?: string;
+  /** The specific reader addressed inside a GitHub Discussions reply thread. */
+  replyTarget?: { id: string; login: string };
   replies?: { nodes: Comment[]; totalCount: number; pageInfo: PageInfo };
 };
 export type PageInfo = { hasNextPage: boolean; endCursor: string | null };
