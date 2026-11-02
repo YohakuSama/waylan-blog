@@ -1693,6 +1693,19 @@ h3 {
     height: clamp(94px, 25vw, 112px);
     margin-top: 10px;
   }
+  /* Five categories stay completely visible as balanced 3+2 rows on phones,
+     instead of four pills and one orphan or an unmarked horizontal scroller. */
+  .type-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .type-tabs .type-tab {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding: 0 6px;
+  }
   .type-tab,
   .type-fill-tab {
     height: 32px;
