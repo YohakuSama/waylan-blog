@@ -17,8 +17,17 @@ if (root.dataset.prerender === "true")
     <App initialPath={location.pathname.replace(/\/$/, "") || "/"} />,
     {
       onRecoverableError(error, info) {
-        if ((window as Window & { __WAYLAN_HYDRATION_DIAGNOSTIC__?: boolean }).__WAYLAN_HYDRATION_DIAGNOSTIC__)
-          console.warn("WAYLAN_HYDRATION_TRACE", location.pathname, error instanceof Error ? error.message : String(error), info.componentStack);
+        const diagnostic = window as Window & {
+          __WAYLAN_HYDRATION_DIAGNOSTIC__?: boolean;
+          __WAYLAN_HYDRATION_TRACE__?: Array<{ route: string; detail: string; stack: string }>;
+        };
+        if (diagnostic.__WAYLAN_HYDRATION_DIAGNOSTIC__) {
+          (diagnostic.__WAYLAN_HYDRATION_TRACE__ ||= []).push({
+            route: location.pathname,
+            detail: error instanceof Error ? error.message : String(error),
+            stack: info.componentStack,
+          });
+        }
       },
     },
   );
