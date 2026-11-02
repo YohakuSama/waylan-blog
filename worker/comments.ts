@@ -460,7 +460,12 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   let replyTarget: { id: string; login: string } | undefined;
   if (data.replyToId) {
     const reply = await getSingle(env, postId, data.replyToId);
-    replyToId = reply.parentId || reply.id;
+    const root = reply.parentId
+      ? await getSingle(env, postId, reply.parentId)
+      : reply;
+    if (!root.body.trim())
+      throw new HttpError(409, "PARENT_DELETED", "原评论已删除，不能继续在该楼层回复。");
+    replyToId = root.id;
     if (reply.parentId && reply.author?.login)
       replyTarget = { id: reply.id, login: reply.author.login };
   }
