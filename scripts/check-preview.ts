@@ -194,7 +194,7 @@ try {
       (button) => button.textContent === "随笔",
     )!,
   );
-  assert.equal(doc.querySelectorAll(".post-card").length, 1);
+  assert.equal(doc.querySelectorAll(".post-card").length, posts.filter((post) => post.topic === "notes").length);
   assert(dom.window.location.hash.includes("topic=notes"));
   await click(dom, doc.querySelector(".header-search"));
   const input = doc.querySelector<HTMLInputElement>(".search-dialog input")!;
