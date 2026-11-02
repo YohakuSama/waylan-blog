@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   actor_login TEXT NOT NULL,
   post_id TEXT NOT NULL REFERENCES posts(id),
   comment_id TEXT NOT NULL,
+  root_comment_id TEXT,
   kind TEXT NOT NULL CHECK (kind IN ('reply','new_comment')),
   created_at INTEGER NOT NULL,
   read_at INTEGER,
@@ -15,6 +16,8 @@ CREATE INDEX IF NOT EXISTS notifications_inbox
 ON notifications(recipient_login, read_at, created_at DESC);
 CREATE INDEX IF NOT EXISTS notifications_comment
 ON notifications(comment_id);
+CREATE INDEX IF NOT EXISTS notifications_root
+ON notifications(root_comment_id);
 CREATE TABLE IF NOT EXISTS notification_settings (
   recipient_login TEXT PRIMARY KEY,
   enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0,1))
