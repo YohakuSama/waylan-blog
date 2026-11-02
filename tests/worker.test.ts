@@ -452,6 +452,21 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(((await result.json()) as any).code, "LINK_LIMIT");
     assert.equal(writeTokens.length, 0);
   });
+  it("allows pasted developer examples with several URLs inside code fences", async () => {
+    const example = "```js\nconst sites = ['https://a.example', 'https://b.example', 'https://c.example'];\n```";
+    const result = await send(requestBody({ body: example }));
+    assert.equal(result.status, 201);
+  });
+  it("applies anti-ad link limits when a comment is edited", async () => {
+    const created = (await (await send(requestBody())).json()) as any;
+    const result = await call(`/api/posts/${postId}/comments/${created.comment.id}`, {
+      method: "PUT",
+      headers: { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf },
+      body: JSON.stringify({ body: "https://a.example https://b.example https://c.example" }),
+    });
+    assert.equal(result.status, 400);
+    assert.equal(((await result.json()) as any).code, "LINK_LIMIT");
+  });
   it("limits comments across many GitHub accounts sharing one IP", async () => {
     for (let i = 0; i < 8; i++) {
       // Simulate different authenticated users, all behind the same client IP.
