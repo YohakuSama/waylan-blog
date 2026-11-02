@@ -51,13 +51,15 @@ async function webhook(request: Request, env: Env) {
   }
   const event = request.headers.get("X-GitHub-Event");
   if (event === "ping") return json({ ok: true });
+  // Installation and permission updates do not always include a repository.
+  // Once the HMAC is verified, acknowledge unsupported events without accessing D1.
+  if (!["discussion", "discussion_comment"].includes(event || ""))
+    return json({ ok: true, ignored: true });
   if (
     payload.repository?.full_name?.toLowerCase() !==
     `${env.GITHUB_REPO_OWNER}/${env.GITHUB_REPO_NAME}`.toLowerCase()
   )
     throw new HttpError(403, "REPOSITORY", "Webhook 仓库不匹配。");
-  if (!["discussion", "discussion_comment"].includes(event || ""))
-    return json({ ok: true, ignored: true });
   const discussionId = payload.discussion?.node_id;
   if (typeof discussionId !== "string")
     throw new HttpError(400, "DISCUSSION", "缺少讨论标识。");
