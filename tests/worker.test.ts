@@ -678,6 +678,55 @@ describe("OAuth, cryptography and rendering", () => {
     assert.ok(!html.includes("<script"));
     assert.ok(!html.includes("javascript:"));
   });
+  it("creates private idempotent reply notifications from signed GitHub webhooks", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    env.ADMIN_GITHUB_LOGINS = "test-reader";
+    const parent = (await (await send(requestBody({ anchor: undefined }))).json()) as any;
+    const replyId = "C_signed-reply";
+    actual.set(replyId, {
+      id: replyId, body: "来自另外一位读者的回复",
+      author: { ...user, login: "guest-reader" },
+      replyTo: { id: parent.comment.id, author: user },
+      url: "https://github.com/test-owner/test-blog/discussions/1",
+      createdAt: "2026-11-02T10:00:00Z", updatedAt: "2026-11-02T10:00:00Z",
+    });
+    const body = JSON.stringify({
+      action: "created",
+      repository: { full_name: "test-owner/test-blog" },
+      discussion: { node_id: "D_test" },
+      comment: { node_id: replyId },
+    });
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(env.GITHUB_WEBHOOK_SECRET!),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    );
+    const signature = "sha256=" + [...new Uint8Array(
+      await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)),
+    )].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const webhook = () => worker.fetch(new Request("https://echo.test/api/webhook/github", {
+      method: "POST",
+      headers: { "X-Hub-Signature-256": signature, "X-GitHub-Event": "discussion_comment" },
+      body,
+    }), env);
+    assert.equal((await webhook()).status, 200);
+    assert.equal((await webhook()).status, 200);
+    const headers = { Cookie: `__Host-echo_session=${rawSession}` };
+    const inbox = (await (await call("/api/notifications", { headers })).json()) as any;
+    assert.equal(inbox.unread, 1);
+    assert.equal(inbox.items[0].actor, "guest-reader");
+    assert.equal(inbox.items[0].kind, "reply");
+    assert.equal(JSON.stringify(inbox).includes("来自另外一位读者的回复"), false);
+    const mark = await call("/api/notifications", {
+      method: "POST", headers: { ...headers, "X-CSRF-Token": csrf },
+      body: JSON.stringify({ ids: [inbox.items[0].id] }),
+    });
+    assert.equal(mark.status, 200);
+    assert.equal(((await (await call("/api/notifications", { headers })).json()) as any).unread, 0);
+  });
+  it("keeps notifications disabled until migrations and webhook setup are enabled", async () => {
+    const response = await call("/api/notifications");
+    assert.deepEqual(await response.json(), { enabled: false, unread: 0, items: [] });
+  });
   it("validates GitHub webhook signatures and applies deletion", async () => {
     const created = (await (await send(requestBody())).json()) as any;
     const body = JSON.stringify({
