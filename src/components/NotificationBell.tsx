@@ -24,6 +24,7 @@ const empty: Inbox = { enabled: false, unread: 0, items: [] };
 export function NotificationBell() {
   const [box, setBox] = useState<Inbox>(empty);
   const [csrf, setCsrf] = useState("");
+  const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -36,13 +37,21 @@ export function NotificationBell() {
         if (!session.user || !session.csrf) {
           setBox(empty);
           setCsrf("");
+          const status = await api<{ notifications?: boolean }>("/api/status");
+          if (active) setAvailable(!!status.notifications);
           return;
         }
         setCsrf(session.csrf);
         const next = await api<Inbox>("/api/notifications");
-        if (active) setBox(next);
+        if (active) {
+          setBox(next);
+          setAvailable(next.enabled);
+        }
       } catch {
-        if (active) setBox(empty);
+        if (active) {
+          setBox(empty);
+          setAvailable(false);
+        }
       }
     }
     void refresh();
@@ -72,7 +81,12 @@ export function NotificationBell() {
       window.removeEventListener("keydown", esc);
     };
   }, [open]);
-  if (!box.enabled || !csrf) return null;
+  if (!available) return null;
+  const signedIn = box.enabled && !!csrf;
+  const login = () => {
+    const returnPath = location.pathname + location.search + location.hash;
+    location.assign(`/api/auth/github?return=${encodeURIComponent(returnPath)}`);
+  };
   const mark = async (ids: string[]) => {
     if (!ids.length || busy) return;
     setBusy(true);
@@ -125,6 +139,12 @@ export function NotificationBell() {
               <X size={16} />
             </button>
           </header>
+          {!signedIn ? (
+            <div className="notification-empty">
+              <p>登录后可查看别人对你的回复。</p>
+              <button type="button" className="quiet-button" onClick={login}>使用 GitHub 登录</button>
+            </div>
+          ) : <>
           <div className="notification-controls">
             <span>{box.unread} 条未读</span>
             <button type="button" className="text-button" disabled={busy || !box.unread}
@@ -151,6 +171,7 @@ export function NotificationBell() {
               {box.subscribed ? "关闭站内提醒" : "开启站内提醒"}
             </button>
           </div>
+          </>}
         </div>
       )}
     </div>
