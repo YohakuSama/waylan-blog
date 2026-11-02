@@ -33,6 +33,7 @@ export function RouterProvider({
     key = useRef(""),
     operation = useRef(0),
     transition = useRef<{ skipTransition?: () => void } | null>(null),
+    pendingTarget = useRef<{ route: string; serial: number } | null>(null),
     pathRef = useRef(path);
   const positions = useRef(new Map<string, number>()),
     lastList = useRef("/feed");
@@ -59,7 +60,22 @@ export function RouterProvider({
       location.assign(url);
       return;
     }
+    const next = target.pathname + target.search + target.hash;
+    // Repeated taps on the same link must share one in-flight load and
+    // transition. A different destination can still supersede a slow one.
+    if (!options.pop && pendingTarget.current?.route === next) return;
+    if (!options.pop && next === pathRef.current && !pendingTarget.current) {
+      if (target.hash) {
+        document.getElementById(decodeURIComponent(target.hash.slice(1)))
+          ?.scrollIntoView({ block: "start" });
+      }
+      return;
+    }
     const serial = ++operation.current;
+    pendingTarget.current = { route: next, serial };
+    const release = () => {
+      if (pendingTarget.current?.serial === serial) pendingTarget.current = null;
+    };
     if (target.pathname.startsWith("/post/")) {
       // Only indicate work when the reader chunk really needs loading.
       // Delay avoids a distracting flash on cached navigation.
@@ -70,12 +86,14 @@ export function RouterProvider({
       try {
         await loadReader();
       } catch {
-        if (serial === operation.current)
+        if (serial === operation.current) {
+          release();
           location.assign(
             offline
               ? routeHref(target.pathname + target.search + target.hash)
               : target.href,
           );
+        }
         return;
       } finally {
         window.clearTimeout(loading);
@@ -91,8 +109,7 @@ export function RouterProvider({
       lastList.current = prevPath;
       transient.set("last-list", prevPath);
     }
-    const next = target.pathname + target.search + target.hash,
-      nextKey = options.key || newId();
+    const nextKey = options.key || newId();
     // Re-clicking the current page must not stack duplicate history entries.
     if (next === prevPath && !options.pop)
       options = { ...options, replace: true };
@@ -148,10 +165,17 @@ export function RouterProvider({
         .catch(() => {})
         .finally(() => {
           if (operation.current === serial) transition.current = null;
+          release();
         });
-    } else if (target.search !== new URL(prevPath, "https://x.invalid").search)
-      listTransition(change);
-    else change();
+    } else if (target.search !== new URL(prevPath, "https://x.invalid").search) {
+      // Route changes must never be swallowed by a busy list-filter animation.
+      // Distinct route requests retain latest-intent-wins semantics.
+      change();
+      release();
+    } else {
+      change();
+      release();
+    }
     if (target.pathname !== prevPathname)
       requestAnimationFrame(() =>
         document
