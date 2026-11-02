@@ -9,6 +9,9 @@ export type Env = {
   GITHUB_AUTH_PROVIDER?: "oauth-app" | "github-app";
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  /** Staged GitHub App credentials; keep old OAuth secrets untouched until cutover. */
+  GITHUB_APP_CLIENT_ID?: string;
+  GITHUB_APP_CLIENT_SECRET?: string;
   GITHUB_READ_TOKEN?: string;
   SESSION_SECRET?: string;
   GITHUB_WEBHOOK_SECRET?: string;
@@ -54,13 +57,17 @@ export const readReady = (env: Env) =>
   present(env.GITHUB_REPO_OWNER) &&
   present(env.GITHUB_REPO_NAME);
 export const authProvider = (env: Env) => env.GITHUB_AUTH_PROVIDER || "oauth-app";
+export const authClientId = (env: Env) =>
+  authProvider(env) === "github-app" ? env.GITHUB_APP_CLIENT_ID : env.GITHUB_CLIENT_ID;
+export const authClientSecret = (env: Env) =>
+  authProvider(env) === "github-app" ? env.GITHUB_APP_CLIENT_SECRET : env.GITHUB_CLIENT_SECRET;
 export const authReady = (env: Env) =>
   (env.GITHUB_AUTH_PROVIDER === undefined ||
     env.GITHUB_AUTH_PROVIDER === "oauth-app" ||
     env.GITHUB_AUTH_PROVIDER === "github-app") &&
   !!env.DB &&
-  present(env.GITHUB_CLIENT_ID) &&
-  present(env.GITHUB_CLIENT_SECRET) &&
+  present(authClientId(env)) &&
+  present(authClientSecret(env)) &&
   present(env.SESSION_SECRET) &&
   !!env.SESSION_SECRET &&
   env.SESSION_SECRET.length >= 32 &&
