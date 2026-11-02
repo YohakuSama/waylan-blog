@@ -132,9 +132,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const nav = [
     { url: "/", label: "首页", term: "~", active: pathname === "/" },
     {
-      url: "/feed?type=all",
+      url: "/feed",
       label: "内容",
-      term: "posts",
+      term: "content",
       active: pathname === "/feed" || pathname === "/projects" || !!post,
     },
     {
@@ -153,7 +153,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const needle = query.trim().toLowerCase();
   const results = needle ? searchPosts(needle) : [];
   const shown = results.slice(0, SEARCH_LIMIT);
-  const allResults = `/feed?type=all&q=${encodeURIComponent(query.trim())}`;
+  const allResults = `/feed?q=${encodeURIComponent(query.trim())}`;
   function closeSearch() {
     setSearch(false);
     setQuery("");
