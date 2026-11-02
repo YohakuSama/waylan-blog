@@ -12,8 +12,8 @@ const out = "visual-report";
 await mkdir(out, { recursive: true });
 
 const preview = spawn(
-  process.platform === "win32" ? "npm.cmd" : "npm",
-  ["run", "preview", "--", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
+  process.execPath,
+  ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", "4173", "--strictPort"],
   { stdio: ["ignore", "pipe", "pipe"] },
 );
 let serverLog = "";
@@ -116,4 +116,6 @@ try {
   await writeFile(`${out}/geometry.json`, JSON.stringify(results, null, 2));
   await browser?.close();
   preview.kill("SIGTERM");
+  preview.stdout.destroy();
+  preview.stderr.destroy();
 }
