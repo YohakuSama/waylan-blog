@@ -263,6 +263,11 @@ const worker = {
   ) {
     if (!env.DB) return;
     const t = now();
+    if (env.NOTIFICATIONS_ENABLED === "true") {
+      // Keep a bounded, private inbox; notification metadata is not archived.
+      await env.DB.prepare("DELETE FROM notifications WHERE created_at<?")
+        .bind(t - 180 * 86400).run();
+    }
     await env.DB.batch([
       env.DB.prepare("DELETE FROM sessions WHERE expires_at<?").bind(t),
       env.DB.prepare("DELETE FROM oauth_states WHERE expires_at<?").bind(t),
