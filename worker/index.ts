@@ -15,6 +15,7 @@ import {
 } from "./comments";
 import { readViews, recordView } from "./views";
 import { admin } from "./admin";
+import { inbox, updateInbox, commentNotification } from "./notifications";
 async function webhook(request: Request, env: Env) {
   if (!env.DB || !env.GITHUB_WEBHOOK_SECRET)
     throw new HttpError(503, "WEBHOOK_DISABLED", "Webhook 尚未配置。");
@@ -86,6 +87,8 @@ async function webhook(request: Request, env: Env) {
       ),
     );
   await env.DB.batch(statements);
+  if (event === "discussion_comment")
+    await commentNotification(env, map.post_id, discussionId, payload);
   return json({ ok: true });
 }
 function secure(response: Response) {
@@ -152,6 +155,10 @@ const worker = {
         request.method === "POST"
       )
         response = await webhook(request, env);
+      else if (url.pathname === "/api/notifications" && request.method === "GET")
+        response = await inbox(request, env);
+      else if (url.pathname === "/api/notifications" && request.method === "POST")
+        response = await updateInbox(request, env);
       else if (url.pathname === "/api/echo" && request.method === "GET")
         response = await recentEcho(env);
       else if (
