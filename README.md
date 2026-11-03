@@ -344,6 +344,8 @@ tags: [Windows, 系统优化]
 
 ```bash
 npm run build
+# 仅在马上手动导入 Discussion 映射时，先同步新文章的 D1 外键目标
+npm run db:sync:remote
 npm run setup:github -- --write
 npx wrangler d1 execute echo-db --remote --file .echo/discussions.sql
 npm run deploy
