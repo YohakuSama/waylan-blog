@@ -480,6 +480,51 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(document.querySelector(".article-block-shell"));
     assert.equal(document.querySelector(".selection-toolbar"), null);
   });
+  it("closes selected text on the first touch pointerup even when Safari suppresses click", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    const blank = document.querySelector(".article-heading")!;
+    const pointer = (type: string, x: number) => {
+      const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        pointerType: { value: "touch" },
+        clientX: { value: x },
+        clientY: { value: 120 },
+      });
+      blank.dispatchEvent(event);
+    };
+    await act(async () => {
+      pointer("pointerdown", 18);
+      // The first touch clears the native range: WebKit may not fire click.
+      window.getSelection()!.removeAllRanges();
+      pointer("pointerup", 18);
+      await pause(30);
+    });
+    assert.equal(document.querySelector(".selection-toolbar"), null,
+      "the first pointerup must dismiss the custom tray without needing click");
+    await settle(320);
+    assert.equal(document.querySelector(".selection-toolbar"), null,
+      "a delayed selectionchange scan must not reopen the dismissed tray");
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    await act(async () => {
+      pointer("pointerdown", 18);
+      pointer("pointerup", 35);
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "touch selection-handle dragging must not count as a tap");
+  });
   it("deleting the final private mark closes its thread instead of opening the composer", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
@@ -1149,6 +1194,24 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(new URLSearchParams(location.search).get("q"), "D1");
     assert.equal(document.querySelector(".search-dialog[open]"), null);
     assert.equal(document.querySelector(".feed-search-row input"), null, "one search entry point only");
+  });
+  it("completes search dialog closing before navigating to an article result", async () => {
+    await mount("/feed");
+    await click(document.querySelector(".header-search"));
+    const input = document.querySelector<HTMLInputElement>(".search-dialog input")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!
+        .call(input, "D1");
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    const result = document.querySelector(".search-option") as HTMLAnchorElement;
+    assert.ok(result);
+    const destination = new URL(result.href).pathname;
+    await click(result);
+    await settle(100);
+    assert.equal(location.pathname, destination);
+    assert.equal(document.querySelector(".search-dialog[open]"), null);
+    assert.ok(document.querySelector(".reader-main"), "search navigates to a reader route");
   });
   it("closes a nonempty native search input on the first Escape and resets its next opening", async () => {
     await mount();
