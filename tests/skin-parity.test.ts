@@ -35,13 +35,20 @@ describe("both visual themes share home geometry and focus treatments", () => {
     assert.ok(editorial.includes("pointer-events: none;"));
   });
 
-  it("uses the same uncut two-row categories on narrow phones", () => {
-    const mobile = skin.slice(skin.indexOf("@media (max-width: 480px)"));
-    assert.ok(mobile.includes('grid-template-columns: repeat(3, minmax(0, 1fr));'));
-    assert.ok(mobile.includes("overflow: visible;"));
-    assert.ok(site.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
-    assert.ok(skin.includes(':root[data-skin="terminal"] .type-tab.active'));
-    assert.ok(skin.includes("border-color: var(--brand);"));
+  it("uses the same compact phone content-type selector for both skins", () => {
+    const phone = site.slice(site.lastIndexOf("@media (max-width: 700px)"));
+    assert.ok(phone.includes(".feed-controls .type-tabs { display: none; }"),
+      "the six desktop category links must not occupy two phone rows");
+    assert.ok(phone.includes(".feed-controls .mobile-type-select { display: inline-flex; }"),
+      "phone category picker must remain visible");
+    assert.ok(site.includes(".mobile-type-select select {"),
+      "the shared phone picker needs a real native select control");
+    assert.ok(site.includes("min-height: 44px;"),
+      "phone picker must retain a touch target");
+    assert.equal(skin.includes(':root[data-skin="terminal"] .type-tabs {'), false,
+      "terminal must not restore a legacy phone grid over the shared layout");
+    assert.ok(skin.includes(':root[data-skin="terminal"] .type-tab.active'),
+      "terminal desktop tabs must retain their own selected color");
     assert.equal(skin.includes(".type-tabs[data-pill]"), false);
   });
 
