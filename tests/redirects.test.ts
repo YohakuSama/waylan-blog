@@ -29,6 +29,12 @@ describe("Published article permalinks", () => {
     assert.throws(() => validatePostRedirects(history, ["article-a", "legacy"]), /冲突/);
     assert.throws(() => validatePostRedirects(history, ["article-b"]), /不存在/);
   });
+  it("removes dead aliases when the target article is deleted", () => {
+    const source = "/post/old /post/live 301\n/post/older /post/live 301\n/post/other /post/safe 301\n";
+    assert.equal(removePostRedirects(source, "live"),
+      "/post/other /post/safe 301\n");
+    assert.equal(removePostRedirects(source, "missing"), null);
+  });
   it("does not touch redirects when saving a post without changing its slug", () => {
     assert.equal(updatePostRedirects(initial, "article-a", "article-a"), null);
     assert.equal(updatePostRedirects(initial, null, "brand-new"), null);
