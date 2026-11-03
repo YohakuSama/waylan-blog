@@ -1034,6 +1034,29 @@ export default function Reader({ post }: { post: Post }) {
           </button>
         </div>
       </div>
+      {/* Keep this control in the reader's sticky tool rail, not over prose. */}
+      <div className="excerpt-access">
+        {!excerptMode && !selection && !panel && (
+          <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
+            title="摘录段落" onClick={() => {
+              setExcerptMode(true);
+              setSelection(null);
+              window.getSelection()?.removeAllRanges();
+            }}>
+            <Highlighter size={18} />
+            <span>摘录</span>
+          </button>
+        )}
+        {excerptMode && !selection && (
+          <div className="excerpt-mode-hint" role="status">
+            <Highlighter size={16} />
+            <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
+            <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
+              <X size={17} />
+            </button>
+          </div>
+        )}
+      </div>
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
@@ -1518,26 +1541,6 @@ export default function Reader({ post }: { post: Post }) {
           </div>
         </aside>
       </div>
-      {!excerptMode && !selection && !panel && (
-        <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
-          title="摘录段落" onClick={() => {
-            setExcerptMode(true);
-            setSelection(null);
-            window.getSelection()?.removeAllRanges();
-          }}>
-          <Highlighter size={18} />
-          <span>摘录</span>
-        </button>
-      )}
-      {excerptMode && !selection && (
-        <div className="excerpt-mode-hint" role="status">
-          <Highlighter size={16} />
-          <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
-          <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
-            <X size={17} />
-          </button>
-        </div>
-      )}
       {selection && (
         <div
           className="selection-toolbar"
