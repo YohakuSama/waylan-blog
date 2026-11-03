@@ -34,7 +34,7 @@ import {
   discussionTitle,
 } from "../shared/discussions";
 import { fromBase64, MAX_IMAGE, UPLOAD_PATH, uploadPath } from "../shared/uploads";
-import { updatePostRedirects, validatePostRedirects } from "../shared/redirects";
+import { updatePostRedirects, removePostRedirects, validatePostRedirects } from "../shared/redirects";
 
 const POSTS = "content/posts",
   SITE = "content/site.json",
