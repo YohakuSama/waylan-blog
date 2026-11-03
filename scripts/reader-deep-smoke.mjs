@@ -44,7 +44,7 @@ async function run(engine,name,width){
         });
         const route = async (selector, expected) => {
           await page.locator(selector).first().click();
-          await page.waitForURL(url => (url.pathname.replace(/\\/$/,"") || "/") === expected);
+          await page.waitForURL(url => (url.pathname.replace(/\/$/,"") || "/") === expected);
           await page.waitForTimeout(440);
         };
         await route(".hero-browse","/feed");           // home → content
@@ -56,7 +56,7 @@ async function run(engine,name,width){
         await page.locator(".header-search").click();
         await page.locator('.search-dialog input[type="search"]').fill("D1");
         await page.locator(".search-dialog .search-option").first().click();
-        await page.waitForURL(/\\/post\\/[^/]+/);
+        await page.waitForURL(/\/post\/[^/]+/);
         await page.waitForTimeout(440);
         const audit = await page.evaluate(() => window.__routeMotionAudit);
         observations.push({browser:name,width,scenario:"collection motion paths and search-close ordering",audit});
