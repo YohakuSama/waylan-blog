@@ -105,6 +105,14 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   }, []);
   useEffect(() => {
     if (!menu) return;
+    // The menu is rendered before its trigger; focus its first link so keyboard
+    // users can enter it in the same order as readers using touch.
+    header.current?.querySelector<HTMLElement>("#site-nav a")?.focus();
+    const desktop = window.matchMedia("(min-width: 861px)");
+    const resize = (event: MediaQueryListEvent) => {
+      if (event.matches) setMenu(false);
+    };
+    desktop.addEventListener("change", resize);
     const outside = (e: PointerEvent) => {
       if (header.current?.contains(e.target as Node)) return;
       // A tap on the veil only dismisses; it must not also follow a link below.
@@ -120,7 +128,10 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       setMenu(false);
     };
     document.addEventListener("pointerdown", outside);
-    return () => document.removeEventListener("pointerdown", outside);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      desktop.removeEventListener("change", resize);
+    };
   }, [menu]);
   useEffect(() => {
     setMenu(false);
@@ -130,22 +141,25 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   // Primary navigation is for destinations, not content-type filters.
   // Every type (article, note, thought, journal, project) lives in /feed.
   const nav = [
-    { url: "/", label: "首页", term: "~", active: pathname === "/" },
+    { url: "/", label: "首页", description: "从最近更新开始", term: "~", active: pathname === "/" },
     {
       url: "/feed",
       label: "内容",
+      description: "按类型与主题浏览",
       term: "content",
       active: pathname === "/feed" || pathname === "/projects" || !!post,
     },
     {
       url: "/archive",
-      label: "年表",
-      term: "years",
+      label: "归档",
+      description: "沿着年月回看记录",
+      term: "archive",
       active: pathname === "/archive",
     },
     {
       url: "/about",
       label: "关于",
+      description: "了解作者与本站",
       term: "about",
       active: pathname === "/about",
     },
@@ -204,6 +218,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
                 className={n.active ? "nav-link selected" : "nav-link"}
                 aria-current={n.active && !post && pathname !== "/projects" ? "page" : undefined}
                 data-term={n.term}
+                title={n.description}
               >
                 {n.active && <span className="nav-indicator" aria-hidden="true" />}
                 <span
@@ -213,10 +228,12 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
                 >
                   {n.label}
                 </span>
+                <span className="nav-description" aria-hidden="true">{n.description}</span>
               </Link>
             ))}
           </nav>
           <div className="header-tools">
+            <NotificationBell />
             <button
               type="button"
               className="header-search"
@@ -229,7 +246,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <kbd>{shortcut}</kbd>
             </button>
             <ShelfTrigger />
-            <NotificationBell />
             <Settings />
             <button
               ref={menuButton}
@@ -305,7 +321,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               </span>
             </span>
             <nav className="footer-links" aria-label="页脚导航">
-              <Link href="/archive">年表</Link>
+              <Link href="/archive">归档</Link>
               <Link href="/about">关于</Link>
               <a
                 href={assetURL("/rss.xml")}

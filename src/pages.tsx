@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  ChartColumn,
   ChevronDown,
   Compass,
   Gauge,
@@ -38,7 +37,6 @@ import {
   type TypeFilter,
 } from "./components/Feed";
 import {
-  Heatmap,
   RecentBlock,
   SideTitle,
   Sidebar,
@@ -129,15 +127,16 @@ export function Home() {
   // The home page is a reading doorway, not a second filtering interface.
   // Detailed type/topic/sort controls belong exclusively on the content page.
   const items = newestFirstList();
+  const sentenceEnd = site.intro.indexOf("。");
+  const introduction = sentenceEnd < 0 ? site.intro : site.intro.slice(0, sentenceEnd + 1);
   return (
     <div className="content-grid home-grid">
       <div className="feed-column">
         <section className="home-hero" aria-label="站点介绍">
           <div className="intro-copy">
-            <span className="hero-square" aria-hidden="true" />
             <HeroTitle />
-            <p className="intro-description">{site.intro}</p>
-            <Link className="primary-button" href="/feed">
+            <p className="intro-description">{introduction}</p>
+            <Link className="primary-button hero-browse" href="/feed">
               浏览全部内容
               <ArrowRight size={17} />
             </Link>
@@ -159,10 +158,7 @@ export function Home() {
           </div>
         </section>
         <section className="home-feed" aria-labelledby="latest-heading">
-          <div className="home-feed-heading">
-            <h2 id="latest-heading">最近更新</h2>
-            <span className="home-feed-count">{items.length} 篇记录</span>
-          </div>
+          <h2 id="latest-heading" className="sr-only">最新内容</h2>
           <FeedList
             items={items}
             resetKey="latest"
@@ -392,93 +388,55 @@ export function Projects() {
   );
 }
 export function Archive() {
-  // An archive is a chronological index, not a second copy of /feed filters.
   const entries = [...posts].sort(newestFirst);
   const years = [...new Set(entries.map((p) => p.date.slice(0, 4)))];
-  const oldest = entries.at(-1);
   const [listRef] = useReveal<HTMLElement>(".archive-row", []);
   return (
-    <>
-      <header className="page-heading">
-        <p className="eyebrow mono">WAYLAN / TIMELINE</p>
-        <h1>写作年表</h1>
-        <p>沿着年月回看写过的内容。想按主题、类型或关键词查找，请前往内容页。</p>
+    <div className="archive-page">
+      <header className="page-heading archive-heading">
+        <h1>归档</h1>
+        <div className="archive-summary">
+          <span>共 {entries.length} 篇记录</span>
+          <Link href="/feed">按主题浏览<ArrowUpRight size={14} aria-hidden="true" /></Link>
+        </div>
       </header>
-      <div className="content-grid timeline-layout">
-        <section className="feed-column archive-main" aria-label="写作时间线" ref={listRef}>
-          <div className="timeline-overview">
-            <div className="timeline-summary">
-              <span className="eyebrow mono">CHRONOLOGICAL INDEX</span>
-              <strong>{entries.length} <small>条记录</small></strong>
-              <span>{years.length} 个年份{oldest ? ` · 始于 ${oldest.date.slice(0, 4)} 年` : ""}</span>
-            </div>
-            <nav className="timeline-year-nav" aria-label="跳转到年份">
-              {years.map((year) => (
-                <a href={`#year-${year}`} key={year}>
-                  <span>{year}</span>
-                  <small>{entries.filter((p) => p.date.startsWith(year)).length}</small>
-                </a>
-              ))}
-            </nav>
-          </div>
-          <div className="feed-result-line timeline-result">
-            <span>从新到旧 · 按年份与月份整理</span>
-            <Link href="/feed">
-              按主题浏览 <ArrowUpRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-          {years.map((year) => {
-            const annual = entries.filter((p) => p.date.startsWith(year));
-            const months = [...new Set(annual.map((p) => p.date.slice(5, 7)))];
-            return (
-              <section className="archive-year" id={`year-${year}`} key={year}>
-                <h2 className="mono">
-                  {year}
-                  <span>{annual.length} 条</span>
-                </h2>
-                {months.map((month) => (
-                  <div className="archive-month" key={month}>
-                    <h3 className="archive-month-label">{Number(month)} 月</h3>
-                    <div className="archive-month-list">
-                      {annual.filter((p) => p.date.slice(5, 7) === month).map((p) => (
-                        <Link className="archive-row" key={p.id} href={`/post/${p.slug}`}>
+      <section className="archive-main" aria-label="归档列表" ref={listRef}>
+        {years.length > 1 && (
+          <nav className="archive-year-nav" aria-label="跳转到年份">
+            {years.map((year) => <a href={`#year-${year}`} key={year}>{year}</a>)}
+          </nav>
+        )}
+        {years.map((year) => {
+          const annual = entries.filter((p) => p.date.startsWith(year));
+          const months = [...new Set(annual.map((p) => p.date.slice(5, 7)))];
+          return (
+            <section className="archive-year" id={`year-${year}`} key={year}>
+              <h2 className="mono">{year}{years.length > 1 && <span>{annual.length} 篇</span>}</h2>
+              {months.map((month) => (
+                <div className="archive-month" key={month}>
+                  <h3 className="archive-month-label">{Number(month)} 月</h3>
+                  <ul className="archive-month-list">
+                    {annual.filter((p) => p.date.slice(5, 7) === month).map((p) => (
+                      <li key={p.id}>
+                        <Link className="archive-row" href={`/post/${p.slug}`}>
                           <time className="mono" dateTime={p.date}>{p.date.slice(8, 10)} 日</time>
-                          <span>
-                            {p.title}
-                            <small>{typeLabels[p.type]} · {topicName(p.topic)}</small>
-                          </span>
-                          <ArrowUpRight size={16} aria-hidden="true" />
+                          <span>{p.title}</span>
+                          <ArrowUpRight size={15} aria-hidden="true" />
                         </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </section>
-            );
-          })}
-          {!entries.length && (
-            <div className="empty-state">时间线还是空的，第一篇记录发布后会出现在这里。</div>
-          )}
-        </section>
-        <aside className="site-sidebar timeline-sidebar" aria-label="写作概览">
-          <section className="side-block">
-            <div className="side-head"><h2 className="side-title"><ChartColumn size={17} />写作足迹</h2></div>
-            <SiteStats />
-            <Heatmap />
-          </section>
-          <section className="side-block timeline-side-note">
-            <span className="eyebrow mono">EXPLORE</span>
-            <h2>想找某个主题？</h2>
-            <p>年表用于回顾时间。类型筛选、标签与全文搜索统一放在内容页。</p>
-            <Link href="/feed" className="quiet-button">
-              探索内容 <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </section>
-        </aside>
-      </div>
-    </>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          );
+        })}
+        {!entries.length && <div className="empty-state">第一篇记录发布后，会出现在这里。</div>}
+      </section>
+    </div>
   );
 }
+
 const stack = [
   ["站点界面", "React · TypeScript · Vite"],
   ["页面输出", "静态预渲染 · 客户端交互"],

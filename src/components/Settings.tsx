@@ -31,7 +31,7 @@ const skins: { value: Skin; title: string; description: string }[] = [
   {
     value: "terminal",
     title: "终端",
-    description: "等宽字体、命令行提示符与高对比配色，信息密度更高。",
+    description: "等宽字体、命令行提示符与高对比配色。",
   },
 ];
 const themes: { value: ThemePreference; title: string; icon: typeof Sun }[] = [

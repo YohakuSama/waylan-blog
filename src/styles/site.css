@@ -4,7 +4,9 @@
   --content-width: 1366px;
   --page-gutter: 40px;
   --header-height: 68px;
-  --sidebar-width: 316px;
+  --sidebar-width: 300px;
+  --header-control-size: 44px;
+  --nav-item-width: 64px;
 }
 
 body {
@@ -35,7 +37,7 @@ h3 {
   padding: 0 var(--page-gutter);
   height: var(--header-height);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-6);
 }
@@ -66,7 +68,7 @@ h3 {
 #site-nav {
   display: flex;
   align-items: center;
-  gap: clamp(20px, 3vw, 44px);
+  gap: 12px;
 }
 .nav-link {
   position: relative;
@@ -74,7 +76,10 @@ h3 {
   display: inline-flex;
   align-items: center;
   height: var(--header-height);
-  font-size: 16px;
+  width: var(--nav-item-width);
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 15px;
   color: var(--ink-soft);
 }
 .nav-link:hover {
@@ -83,6 +88,8 @@ h3 {
 .nav-link.selected {
   color: var(--ink);
 }
+/* Destination names and slots are identical in both skins. */
+.nav-description { display: none; }
 /* A real element, so view transitions can slide it between pages. */
 .nav-indicator {
   position: absolute;
@@ -105,7 +112,7 @@ h3 {
   align-items: center;
   gap: var(--space-2);
   width: 212px;
-  height: 36px;
+  height: var(--header-control-size);
   padding: 0 10px 0 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
@@ -170,13 +177,13 @@ h3 {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  min-height: 220px;
-  padding: 30px 0 20px;
+  min-height: 0;
+  padding: 28px 0 20px;
 }
 .intro-copy {
   position: relative;
   z-index: 1;
-  padding-left: 36px;
+  padding-left: 0;
   max-width: 640px;
 }
 .hero-square {
@@ -189,14 +196,14 @@ h3 {
 }
 .hero-title {
   font-family: var(--font-display);
-  font-size: clamp(32px, 3vw, 42px);
+  font-size: 32px;
   line-height: 1.3;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--ink);
 }
 .hero-line {
-  display: block;
+  display: inline-block;
 }
 .hero-highlight {
   font-style: normal;
@@ -211,27 +218,32 @@ h3 {
 }
 .intro-description {
   margin-top: 14px;
+  font-family: var(--font-cjk-sans);
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--muted);
-  max-width: 34em;
+  max-width: 36em;
 }
 .intro-copy > .primary-button {
-  margin-top: 18px;
-  min-height: 36px;
-  padding: 6px 16px;
-  gap: var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-  font-size: 13px;
+  margin-top: 6px;
+  min-height: 44px;
+  width: fit-content;
+  justify-content: flex-start;
+  padding: 0;
+  gap: 8px;
+  border-color: transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 14px/1.75 var(--font-cjk-sans);
 }
-.intro-copy > .primary-button:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-brand);
+.home-hero .intro-copy > .primary-button:hover {
+  background: none;
+  border-color: transparent;
+  color: var(--brand);
+  box-shadow: none;
 }
+
 .hero-about {
   margin-left: var(--space-4);
   color: var(--ink-soft);
@@ -285,32 +297,14 @@ h3 {
 .home-hero .resume-link:focus-visible {
   color: var(--accent);
 }
-.home-feed-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 0 14px;
-  border-bottom: 1px solid var(--line);
-}
-.home-feed-heading h2 {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: clamp(16px, 2vw, 19px);
-  font-weight: 600;
-  line-height: 1.5;
-}
-.home-feed-count {
-  flex: none;
-  color: var(--muted);
-  font: 11px var(--font-mono);
-}
+.home-feed { border-top: 1px solid var(--line); }
 .hero-visual {
   position: absolute;
-  right: -24px;
-  top: 14px;
-  width: min(58%, 520px);
+  right: 0;
+  top: 0;
+  width: min(52%, 420px);
+  height: 100%;
+  overflow: hidden;
   pointer-events: none;
   /* Soft edges so the mesh dissolves into the paper instead of ending in a box. */
   -webkit-mask-image: radial-gradient(
@@ -466,15 +460,15 @@ h3 {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0 34px;
+  gap: 0 24px;
   padding: 22px 0;
   border-bottom: 1px solid var(--line);
 }
 .feed-item.has-media {
-  grid-template-columns: 268px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr) 24px;
 }
 .feed-item.is-article.has-media {
-  grid-template-columns: 344px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 36%) minmax(0, 1fr) 24px;
 }
 .feed-media-link {
   display: block;
@@ -643,6 +637,9 @@ h3 {
   min-width: 0;
 }
 .entry-meta {
+  position: relative;
+  min-height: 40px;
+  padding-right: 44px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -693,7 +690,7 @@ h3 {
   text-wrap: pretty;
 }
 .is-article .feed-body h2 {
-  font-size: clamp(22px, 2vw, 27px);
+  font-size: clamp(22px, 1.8vw, 24px);
   margin-top: 12px;
 }
 .post-card-link:hover {
@@ -1237,7 +1234,7 @@ h3 {
   padding-bottom: 8px;
   font-size: 22px;
   font-weight: 500;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
 }
 .archive-year h2 span {
   font-size: 12px;
@@ -1463,12 +1460,6 @@ h3 {
   .site-sidebar {
     padding-left: 28px;
   }
-  .feed-item.is-article.has-media {
-    grid-template-columns: 290px minmax(0, 1fr) auto;
-  }
-  .feed-item.has-media {
-    grid-template-columns: 220px minmax(0, 1fr) auto;
-  }
   .header-search {
     width: 180px;
   }
@@ -1560,9 +1551,20 @@ h3 {
   }
   .header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
   }
+  .brand { max-width: 180px; }
   .mobile-menu {
     display: inline-flex;
+  }
+  /* The optional inbox must stay within the viewport even when its trigger
+     appears before the other header actions on a narrow phone. */
+  .notification-popover {
+    position: fixed;
+    top: calc(var(--header-height) + 8px);
+    right: var(--page-gutter);
+    width: calc(100vw - 2 * var(--page-gutter));
+    max-width: 360px;
   }
   #site-nav {
     display: none;
@@ -1582,9 +1584,16 @@ h3 {
     display: flex;
   }
   .nav-link {
-    height: 48px;
+    width: 100%;
+    min-height: 56px;
+    height: auto;
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 8px 20px 8px 0;
     border-bottom: 1px solid var(--line);
   }
+  .nav-description { display: inline; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .nav-label { min-width: 48px; }
   .nav-link:last-child {
     border-bottom: 0;
   }
@@ -1601,14 +1610,17 @@ h3 {
     margin-right: 0;
     border: 0;
     background: none;
-    padding: 0 10px;
+    padding: 0;
+    width: var(--header-control-size);
+    height: var(--header-control-size);
+    justify-content: center;
   }
   .header-search kbd {
     display: none;
   }
   .home-hero {
     min-height: 0;
-    padding: 28px 0 20px;
+    padding: 24px 0 18px;
     isolation: isolate;
   }
   .hero-visual {
@@ -1691,7 +1703,11 @@ h3 {
   }
   /* All six type filters remain visible; the single-layer selected state
      works across flex rows without an animated duplicate. */
-  .type-tabs { flex-wrap:wrap; overflow:visible; margin-right:0; padding-right:0; gap:8px; }
+  .type-tabs {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%; overflow: visible; margin-right: 0; padding-right: 0; gap: 8px;
+  }
+  .type-tabs .type-tab { width: 100%; padding-inline: 6px; }
   .sort-control select {
     width: 100%;
   }
@@ -1709,14 +1725,13 @@ h3 {
   :root {
     --page-gutter: 18px;
   }
-  .brand-name {
-    font-size: 21px;
-  }
+  .brand { max-width: 112px; overflow: hidden; }
+  .brand-wordmark { max-width: 100%; }
   .header-tools {
     gap: 0;
   }
   .intro-copy {
-    padding-left: 24px;
+    padding-left: 0;
   }
   .hero-square {
     top: 11px;
@@ -1724,7 +1739,7 @@ h3 {
     height: 9px;
   }
   .hero-title {
-    font-size: 27px;
+    font-size: 26px;
   }
   .intro-description {
     font-size: 13.5px;
@@ -1802,43 +1817,29 @@ h3 {
 
 @media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
 
-/* Archive is a time-oriented index rather than a duplicate feed. */
-.timeline-overview {
-  display:grid; grid-template-columns:minmax(150px, 220px) minmax(0,1fr);
-  align-items:center; gap:24px; padding:22px 24px;
-  border:1px solid var(--line); border-radius:var(--radius-lg);
-  background:var(--surface);
+/* Archive is a reading index: one title, quiet year headings, compact rows. */
+.archive-page { max-width: 960px; margin-inline: auto; }
+.archive-heading { padding: 32px 0 20px; border-bottom: 1px solid var(--line); }
+.archive-heading h1 { margin: 0; font-size: 32px; line-height: 1.3; }
+.archive-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 8px; color: var(--muted); font-size: 13px;
 }
-.timeline-summary { display:grid; gap:5px; min-width:0; }
-.timeline-summary strong { font:600 30px/1.2 var(--font-display); color:var(--ink); }
-.timeline-summary strong small { font:400 12px var(--font-sans); color:var(--muted); }
-.timeline-summary > span:last-child { font-size:12px; color:var(--muted); }
-.timeline-year-nav { display:flex; flex-wrap:wrap; align-items:center; gap:9px; min-width:0; }
-.timeline-year-nav a {
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:40px; padding:7px 13px;
-  border:1px solid var(--line); border-radius:var(--radius-full);
-  background:var(--paper); color:var(--ink-soft);
-  font:600 13px var(--font-mono);
-  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-}
-.timeline-year-nav a small { color:var(--muted); font:11px var(--font-mono); }
-.timeline-year-nav a:hover { background:var(--brand-soft); border-color:var(--accent); color:var(--brand); }
-.timeline-result { margin-top:4px; }
-.archive-main { min-width:0; }
-.archive-year { scroll-margin-top:calc(var(--header-height) + 20px); }
-.archive-month { display:grid; grid-template-columns:72px minmax(0,1fr); gap:20px; padding-top:16px; }
-.archive-month-label { padding-top:10px; font:500 13px var(--font-sans); color:var(--muted); white-space:nowrap; }
-.archive-month-list { min-width:0; }
-.archive-month .archive-row { grid-template-columns:54px minmax(0,1fr) 20px; }
-.archive-row { min-width:0; min-height:66px; }
-.archive-row > span { min-width:0; overflow-wrap:anywhere; }
-.timeline-side-note h2 { margin:12px 0 8px; font-size:17px; }
-.timeline-side-note p { font-size:13px; line-height:1.8; color:var(--muted); }
-.timeline-side-note .quiet-button { margin-top:16px; }
+.archive-summary a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.archive-year-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding-top: 16px; }
+.archive-year-nav a { display: inline-flex; align-items: center; min-height: 40px; font: 13px var(--font-mono); color: var(--muted); }
+.archive-year-nav a:hover { color: var(--brand); }
+.archive-main { min-width: 0; padding-top: 16px; }
+.archive-year { scroll-margin-top: calc(var(--header-height) + 20px); }
+.archive-month { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 20px; padding-top: 12px; }
+.archive-month-label { padding-top: 14px; font: 500 13px var(--font-sans); color: var(--muted); white-space: nowrap; }
+.archive-month-list { min-width: 0; margin: 0; padding: 0; list-style: none; }
+.archive-month .archive-row { grid-template-columns: 44px minmax(0,1fr) 16px; }
+.archive-row { min-width: 0; min-height: 54px; }
+.archive-row > span { min-width: 0; overflow-wrap: anywhere; }
 
-/* At 1025–1200px the fixed sidebar crushed desktop content and filter controls. */
-@media (min-width:1025px) and (max-width:1200px) {
+/* At 1025–1279px the sidebar follows the feed, preserving a comfortable reading column. */
+@media (min-width:1025px) and (max-width:1279px) {
   .content-grid { grid-template-columns:minmax(0,1fr); }
   .site-sidebar {
     display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
@@ -1851,18 +1852,17 @@ h3 {
 }
 /* Compact desktop header gets distinct space for brand, navigation and tools. */
 @media (min-width:861px) and (max-width:1279px) {
-  .header-inner { grid-template-columns:auto minmax(0,1fr) auto; gap:20px; }
-  #site-nav { justify-content:center; gap:clamp(12px,1.7vw,24px); min-width:0; }
+  .header-inner { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:20px; }
+  #site-nav { justify-content:center; gap:12px; min-width:0; }
   .brand-rule,.brand-tagline { display:none; }
   .header-tools { gap:4px; }
   .header-search {
-    width:40px; height:40px; justify-content:center;
+    width:var(--header-control-size); height:var(--header-control-size); justify-content:center;
     padding:0; margin-right:0; border-radius:var(--radius-md);
   }
   .header-search-text,.header-search kbd { display:none; }
 }
 @media (max-width:767px) {
-  .timeline-overview { grid-template-columns:minmax(0,1fr); padding:18px; gap:15px; }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
   .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
   .archive-month-label { font-size:12px; }
@@ -1878,10 +1878,6 @@ h3 {
 /* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
 .header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 .header-search:hover { background:var(--surface-muted); }
-.intro-copy > .primary-button {
-  min-height:44px; padding:9px 19px; border-radius:var(--radius-full);
-  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-}
 .feed-controls .sort-control select, .feed-controls .topic-select select { min-height:40px; }
 .feed-result-line a:hover, .timeline-result a:hover { color:var(--brand); }
 @media (hover:none) {
