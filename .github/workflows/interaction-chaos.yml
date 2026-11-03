@@ -1,0 +1,43 @@
+name: Interaction state-machine regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/interaction-state-smoke.mjs"
+      - ".github/workflows/interaction-chaos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  state-machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build real prerendered site
+        run: npm run build
+      - name: Install pinned browsers
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Search, random order, reverse, repeated taps and UI state
+        run: node scripts/interaction-state-smoke.mjs
+      - name: Upload state-machine observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interaction-state-qa
+          path: interaction-report/
+          if-no-files-found: ignore
+          retention-days: 7
