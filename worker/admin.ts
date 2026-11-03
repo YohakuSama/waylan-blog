@@ -522,15 +522,21 @@ async function deletePost(request: Request, env: Env, login: string) {
     throw invalid("文件名不正确。");
   const at = await head(env);
   const path = `${POSTS}/${input.file}`;
-  const blob = (await files(env, at.oid, [path]))[path];
+  const source = await files(env, at.oid, [path, "public/_redirects"]);
+  const blob = source[path];
   if (!blob) throw new HttpError(404, "POST_NOT_FOUND", "这篇文章已不在仓库里。");
   if (blob.oid !== input.oid) throw conflict();
   let title = input.file;
+  let slug = input.file.replace(/\.md$/, "");
   try {
-    title = String(parseFrontmatter(blob.text || "").data.title || title);
+    const data = parseFrontmatter(blob.text || "").data;
+    title = String(data.title || title);
+    slug = String(data.slug || slug);
   } catch {}
+  const redirects = removePostRedirects(source["public/_redirects"]?.text || "", slug);
   const sha = await commit(env, at, `删除：${title}${by(login)}`, [
     { path, remove: true },
+    ...(redirects !== null ? [{ path: "public/_redirects", text: redirects }] : []),
   ]);
   return json({ commit: sha });
 }
