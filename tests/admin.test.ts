@@ -491,6 +491,20 @@ describe("Admin: posts", () => {
     assert.match(repo.last().message, /^删除：/);
     assert.equal((await call("/api/admin/post", { method: "DELETE", json: { file, oid } })).status, 404);
   });
+  it("removes old URL aliases in the same commit when an article is deleted", async () => {
+    const file = "slow-tools.md";
+    const before = (await call(`/api/admin/post?file=${file}`)).body;
+    const renamed = await save({ file, oid: before.oid,
+      data: { ...before.data, slug: "slower-tools" }, body: before.body });
+    assert.equal(renamed.status, 200);
+    assert.match(repo.text("public/_redirects")!, /\/post\/slow-tools \/post\/slower-tools 301/);
+    const deleted = await call("/api/admin/post", {
+      method: "DELETE", json: { file, oid: renamed.body.oid },
+    });
+    assert.equal(deleted.status, 200);
+    assert.equal(repo.text(`content/posts/${file}`), undefined);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /\/post\/slow-tools/);
+  });
   it("rejects path tricks in file names", async () => {
     for (const file of ["../site.json", "a/b.md", ".hidden.md", "x.txt"]) {
       assert.equal((await call(`/api/admin/post?file=${encodeURIComponent(file)}`)).status, 422, file);
