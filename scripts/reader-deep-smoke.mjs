@@ -86,6 +86,43 @@ async function run(engine,name,width){
       assert.equal(tocPosition.focused,"h-hydration");
       assert.equal(tocPosition.active,"水合一致性");
       await page.screenshot({path:dir+"/"+name+"-"+width+"-toc-hydration.png",animations:"disabled"});
+      // Model iPhone Safari's visible viewport shrinking under browser chrome
+      // while a native fixed dialog remains anchored to the layout viewport.
+      if (width <= 600) {
+        await page.getByRole("button",{name:"开启摘录段落模式"}).click();
+        await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
+        await page.locator(".selection-toolbar-actions button").filter({hasText:"划线"}).click();
+        await page.getByRole("button",{name:"退出摘录模式"}).click();
+        await page.locator("mark.private-mark").first().click();
+        const thread = page.locator(".discussion-dialog.thread-dialog[open]");
+        await thread.waitFor({state:"visible"});
+        await page.waitForTimeout(420);
+        await page.evaluate(() => {
+          const viewport = window.visualViewport;
+          if (!viewport) throw Error("visualViewport missing in WebKit");
+          const height = Math.round(window.innerHeight * 0.69);
+          Object.defineProperty(viewport,"height",{configurable:true,value:height});
+          Object.defineProperty(viewport,"offsetTop",{configurable:true,value:0});
+          viewport.dispatchEvent(new Event("resize"));
+        });
+        const geometry = await page.evaluate(() => {
+          const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
+          const body = dialog.querySelector(".discussion-panel-body");
+          body.scrollTop = body.scrollHeight;
+          const action = dialog.querySelector(".panel-comment-entry");
+          const visibleBottom = window.visualViewport.offsetTop + window.visualViewport.height;
+          return {visibleBottom,dialogBottom:dialog.getBoundingClientRect().bottom,
+            actionBottom:action.getBoundingClientRect().bottom,
+            threadBottomStyle:getComputedStyle(dialog).bottom,
+            bodyScrollHeight:body.scrollHeight,bodyHeight:body.clientHeight};
+        });
+        observations.push({browser:name,width,scenario:"Safari thread sheet avoids obscured browser chrome",geometry});
+        assert.ok(geometry.dialogBottom <= geometry.visibleBottom + 3,
+          "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
+        assert.ok(geometry.actionBottom <= geometry.visibleBottom + 3,
+          "Thread action cannot be scrolled into the visible viewport: " + JSON.stringify(geometry));
+        await page.screenshot({path:dir+"/"+name+"-"+width+"-thread-viewport.png",animations:"disabled"});
+      }
       assert.deepEqual(errors,[], "runtime errors");
     }finally{await ctx.close()}
   }finally{await browser.close()}
