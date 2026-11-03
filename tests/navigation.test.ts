@@ -650,6 +650,16 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(tip.querySelector("summary"));
     assert.ok(tip.open, "the explanation remains accessible on demand");
   });
+  it("keeps an active search as a single removable result chip, not a third filter-row control", async () => {
+    await mount("/feed?q=D1");
+    assert.equal(document.querySelectorAll(".query-chip").length, 1);
+    const chip = document.querySelector<HTMLAnchorElement>(".feed-result-line .query-chip")!;
+    assert.ok(chip, "search status must stay next to the result count");
+    assert.match(chip.textContent || "", /D1/);
+    assert.equal(document.querySelectorAll(".feed-search-row .query-chip").length, 0);
+    await click(chip);
+    assert.equal(new URLSearchParams(location.search).has("q"), false);
+  });
   it("supports the same content types through the compact phone selector and desktop tabs", async () => {
     await mount("/feed");
     const select = document.querySelector<HTMLSelectElement>(".mobile-type-select select")!;

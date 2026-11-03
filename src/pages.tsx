@@ -311,12 +311,6 @@ export function Feed() {
                 </select>
                 <ChevronDown size={13} aria-hidden="true" />
               </label>
-              {query && (
-                <Link className="query-chip" href={href({ q: "" })}>
-                  <Search size={14} aria-hidden="true" />“{query}”
-                  <X size={13} aria-label="清除搜索" />
-                </Link>
-              )}
               <label className="sort-control">
                 <span className="sr-only">发布日期排序</span>
                 <select
@@ -332,8 +326,14 @@ export function Feed() {
           </div>
           <div className="feed-result-line" aria-live="polite">
             <span>
-              {query ? `“${query}” · ` : ""}
               {topic === "all" ? "全部主题" : topicName(topic)}
+              {query && (
+                <Link className="query-chip" href={href({ q: "" })}>
+                  <Search size={14} aria-hidden="true" />“{query}”
+                  <X size={13} aria-hidden="true" />
+                  <span className="sr-only">清除搜索</span>
+                </Link>
+              )}
               {tag && (
                 <Link className="tag-chip" href={href({ tag: "" })}>
                   #{tag}
