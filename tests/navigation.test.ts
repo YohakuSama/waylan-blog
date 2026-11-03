@@ -447,6 +447,52 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".discussion-dialog.composer-dialog[open]"), null);
     assert.equal(document.querySelector("mark.private-mark"), null);
   });
+  it("keeps mobile thread controls above a shrinking Safari visual viewport and reports failed mark deletion", async () => {
+    const viewport = Object.assign(new dom.window.EventTarget(), {
+      height: 540,
+      offsetTop: 0,
+    });
+    Object.defineProperty(dom.window, "innerHeight", { value: 900, configurable: true });
+    Object.defineProperty(dom.window, "visualViewport", { value: viewport, configurable: true });
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (button) => button.textContent === "划线",
+    )!);
+    await click(document.querySelector("mark.private-mark"));
+    assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"));
+    const rootStyle = document.documentElement.style;
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "360px");
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-height"), "540px");
+    viewport.height = 620;
+    viewport.dispatchEvent(new dom.window.Event("resize"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "280px");
+    viewport.offsetTop = 25;
+    viewport.dispatchEvent(new dom.window.Event("scroll"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "255px");
+    const blocked = mock.method(dom.window.Storage.prototype, "setItem", () => {
+      throw new Error("Storage access denied");
+    });
+    await click(document.querySelector('[aria-label="删除私人划线"]'));
+    assert.ok(document.querySelector("mark.private-mark"), "failed deletion must retain the highlight");
+    assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"),
+      "failed deletion must leave retry controls accessible");
+    assert.match(document.querySelector(".toast")?.textContent || "", /删除失败/);
+    blocked.mock.restore();
+    await click(document.querySelector('[aria-label="删除私人划线"]'));
+    await settle(280);
+    assert.equal(document.querySelector("mark.private-mark"), null);
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "");
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-height"), "");
+  });
   it("copies selected text on desktop without invoking the flashing system share sheet", async () => {
     await mount("/post/a-room-on-the-internet");
     let copied = "";
