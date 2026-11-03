@@ -528,6 +528,35 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"),
       "touch selection-handle dragging must not count as a tap");
   });
+  it("does not reselect the tapped paragraph while dismissing an excerpt-mode toolbar", async () => {
+    await mount("/post/a-room-on-the-internet");
+    await click(document.querySelector(".excerpt-fab"));
+    const paragraph = document.querySelector(".reader-prose .article-block[data-type='paragraph']")!;
+    await click(paragraph);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    const pointer = (type: string) => {
+      const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        pointerType: { value: "touch" },
+        clientX: { value: 180 },
+        clientY: { value: 270 },
+      });
+      paragraph.dispatchEvent(event);
+    };
+    await act(async () => {
+      pointer("pointerdown");
+      pointer("pointerup");
+      paragraph.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, detail: 1, cancelable: true,
+      }));
+      await pause(30);
+    });
+    assert.equal(document.querySelector(".selection-toolbar"), null,
+      "the same tap must not immediately select the paragraph again");
+    await click(paragraph);
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "a subsequent deliberate tap must still reselect the paragraph");
+  });
   it("deleting the final private mark closes its thread instead of opening the composer", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
