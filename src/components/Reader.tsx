@@ -460,6 +460,34 @@ export default function Reader({ post }: { post: Post }) {
       document.documentElement.style.removeProperty("--waylan-editor-view-top");
     };
   }, [panel, panelIds.length]);
+  // Native iOS browser chrome and keyboards can reduce the visual viewport
+  // without moving a fixed <dialog> anchored to the layout viewport bottom.
+  // Keep the thread sheet visible, without changing composer geometry.
+  useEffect(() => {
+    if (!panel || !panelIds.length) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const obscured = Math.max(
+        0,
+        window.innerHeight - viewport.offsetTop - viewport.height,
+      );
+      root.style.setProperty("--waylan-thread-view-bottom", `${Math.ceil(obscured)}px`);
+      root.style.setProperty("--waylan-thread-view-height", `${viewport.height}px`);
+    };
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      root.style.removeProperty("--waylan-thread-view-bottom");
+      root.style.removeProperty("--waylan-thread-view-height");
+    };
+  }, [panel, panelIds.length]);
   useEffect(() => {
     if (!panel || panelIds.length || !window.matchMedia("(pointer: fine)").matches)
       return;
@@ -1693,8 +1721,11 @@ export default function Reader({ post }: { post: Post }) {
                 aria-label="删除私人划线"
                 onClick={() => {
                   const next = localMarks.filter((x) => x.id !== a.id);
+                  if (!storage.set(`marks:${post.id}`, next)) {
+                    notify("私人划线删除失败，原记录仍然保留；请检查浏览器存储权限。");
+                    return;
+                  }
                   setLocalMarks(next);
-                  storage.set(`marks:${post.id}`, next);
                   // Keep the thread type during its closing animation.
                   // Empty panelIds with panel=true would open the composer.
                   const remaining = panelIds.filter((id) => id !== a.id);
