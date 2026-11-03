@@ -741,6 +741,35 @@ describe("OAuth, cryptography and rendering", () => {
     assert.equal(mark.status, 200);
     assert.equal(((await (await call("/api/notifications", { headers })).json()) as any).unread, 0);
   });
+  it("hides deleted or unpublished article notifications without deleting stored discussions", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    db.sqlite.prepare("INSERT INTO posts(id,slug,title,version) VALUES(?,?,?,?)")
+      .run("retired-story", "retired-slug", "原文章", "v1");
+    db.sqlite.prepare("INSERT INTO discussions(post_id,discussion_id,discussion_number,url) VALUES(?,?,?,?)")
+      .run("retired-story", "D_retired", 99, "https://github.com/test-owner/test-blog/discussions/99");
+    const insert = db.sqlite.prepare(
+      "INSERT INTO notifications(id,recipient_login,actor_login,post_id,comment_id,kind,created_at) VALUES(?,?,?,?,?,'new_comment',?)",
+    );
+    for (let i = 0; i < 32; i++)
+      insert.run(`stale:${i}`, user.login, "guest", "retired-story", `comment:${i}`, 3000 + i);
+    insert.run("live", user.login, "guest", postId, "active-comment", 1);
+    const headers = { Cookie: `__Host-echo_session=${rawSession}` };
+    const live = (await (await call("/api/notifications", { headers })).json()) as any;
+    assert.equal(live.unread, 1, "stale unread messages must not inflate the badge");
+    assert.equal(live.items.length, 1, "30 stale messages must not hide current notifications");
+    assert.equal(live.items[0].id, "live");
+    assert.equal(live.items[0].slug, manifest[0].slug);
+    assert.equal(live.items[0].title, manifest[0].title);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM notifications WHERE post_id='retired-story'").get()!.n, 32,
+      "keep historical notification metadata for possible restoration");
+    assert.equal(db.sqlite.prepare("SELECT discussion_id FROM discussions WHERE post_id='retired-story'").get()!.discussion_id,
+      "D_retired", "never delete actual GitHub Discussion mappings");
+    await commentNotification(env, "retired-story", "D_retired", {
+      action: "created", comment: { node_id: "C_retired_new" },
+    });
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM notifications WHERE post_id='retired-story'").get()!.n, 32,
+      "a removed article cannot create new dead-link alerts");
+  });
   it("marks all unread notifications including those outside the 30-item inbox window", async () => {
     env.NOTIFICATIONS_ENABLED = "true";
     const insert = db.sqlite.prepare(
