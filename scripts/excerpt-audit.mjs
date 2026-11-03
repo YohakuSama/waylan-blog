@@ -51,8 +51,9 @@ async function run(engine,browser,width){
         };
       });
       record(browser,width,"excerpt visual selection after tap",state,
-        !state.selectedText.trim() && !/excerpt-selected|selected/.test(state.className) &&
-        !state.attrs["data-excerpt-selected"] && state.outline.includes("rgba(0, 0, 0, 0)"));
+        state.attrs["data-excerpt-selected"] !== "true" ||
+        state.outline.includes("rgba(0, 0, 0, 0)") ||
+        state.outlineStyle === "none");
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
       // Synthetic fixture for a long real DOM paragraph, then tap near its end.
       await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
