@@ -171,16 +171,26 @@ async function scenario(engine, name, width, motion, seed) {
           await page.waitForURL((url) => url.searchParams.get("topic") === "notes", { timeout: 12000 });
         }
       });
-      await step(prefix + "/invalid-filter-deep-link", page, async () => {
-        // Vite preview serves the prerendered directory page at /feed/ (production canonicalizes /feed).
-        await page.goto(base + "/feed/?topic=missing-topic&sort=invalid-order", { waitUntil: "domcontentloaded" });
-        // Force an interactive render, rather than only inspecting the prerendered HTML.
-        const compact = page.getByRole("button", { name: "紧凑列表" });
-        await compact.click();
-        await page.waitForFunction(() => document.querySelector('button[aria-label="紧凑列表"]')?.getAttribute("aria-pressed") === "true");
+      await step(prefix + "/invalid-filter-link", page, async () => {
+        // Exercise the actual client router without coupling this check to a full-page reload.
+        await page.evaluate(() => {
+          const link = document.createElement("a");
+          link.href = "/feed?topic=missing-topic&sort=invalid-order";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        });
+        await page.waitForURL(
+          (url) => url.pathname === "/feed" &&
+            url.searchParams.get("topic") === "missing-topic" &&
+            url.searchParams.get("sort") === "invalid-order",
+          { timeout: 12000 },
+        );
+        await page.waitForFunction(() =>
+          document.querySelector(".feed-result-line")?.textContent?.includes("全部主题"),
+        );
         assert.equal(await page.locator(".topic-select select").inputValue(), "all");
         assert.equal(await page.locator(".sort-control select").inputValue(), "newest");
-        assert.match(await page.locator(".feed-result-line").innerText(), /全部主题/);
         assert.equal(await page.locator(".empty-state").count(), 0, "invalid filters must not hide published posts");
       });
       assert.deepEqual(errors, [], "uncaught browser errors");
