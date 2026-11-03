@@ -50,6 +50,15 @@ UI 的“条讨论”数量指 GitHub 顶层 DiscussionComment 数量；回复�
 
 每日定时清理过期会话、OAuth 状态、限流桶、过期缓存和超过 90 天的提交意图。永久批注不随清理删除。
 
+### 已发布文章、永久链接与 D1 自动对账
+
+- 发布后的 `post.id` 不变；后台更改 `slug` 时，与 Markdown 同次提交更新 `public/_redirects` 的 301 规则。重复更名将旧来源直接指向当前地址；旧来源不允许被另一篇文章占用。Workers Static Assets 原生执行这些规则，前端不拦截不存在于当前文章清单的链接。
+- GitHub/Cloudflare Workers Builds 仅负责构建和 Worker 部署，**不自动执行** `wrangler d1 execute`。Worker 在部署后首个具备 D1 的 API 请求、及每天的定时任务，以打包进 Worker 的 manifest 校准 `posts` 的 slug、title、version；变更在 D1 batch 中原子执行，允许两篇文章互换 slug。
+- 同步失败记录不含个人信息的 `post_catalog_sync_failed` 事件，评论 API 继续按现有数据服务，并在后续请求重试；运维需查看 Worker Logs。旧文章删除后 D1 的历史行暂时保留，以避免外键级联破坏讨论和批注；历史 slug 如需重新分配，应另做专门的归档/迁移操作，不应直接覆盖原数据。
+- 手动部署运行迁移后直接部署 Worker，自动对账取代部署前的 D1 SQL 写入。现有 `db:sync:remote` 命令只作为人工校验和恢复工具保留；手动进行 slug 互换时避免使用旧版单阶段 SQL。
+
+每日定时清理不会删除旧文章的讨论或批注。
+
 ## 发表评论与不确定结果
 
 1. 服务端确认同源、用户会话、CSRF、文章、原文定位、Discussion 公共仓库归属和回复对象。
