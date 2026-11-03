@@ -19,25 +19,30 @@ export async function reconcilePostCatalog(
     nextById.set(post.id, post);
     nextSlugs.add(post.slug);
   }
-  // Do not overwrite another post's historical metadata. A post being renamed
-  // in this same transaction can release its old slug; an unpublished post
-  // remains in D1 to preserve foreign keys and must be resolved separately.
+  // Unpublished/deleted posts stay in D1: their stable IDs preserve linked
+  // Discussions, annotations and notifications. A new live article may reclaim
+  // their old slug only after the historical row is atomically parked under an
+  // internal name. The public manifest remains the source of truth.
+  const retired = new Map<string, CatalogPost>();
   for (const post of published) {
     const holder = current.find((old) => old.slug === post.slug && old.id !== post.id);
     if (holder && nextById.get(holder.id)?.slug === holder.slug)
       throw new Error("A published slug belongs to another unchanged post.");
-    if (holder && !nextById.has(holder.id))
-      throw new Error("A published slug belongs to an unpublished historical post.");
+    if (holder && !nextById.has(holder.id)) retired.set(holder.id, holder);
   }
   const changed = published.filter((post) => {
     const old = byId.get(post.id);
     return !old || old.slug !== post.slug
       || old.title !== post.title || old.version !== post.version;
   });
-  if (!changed.length) return { changed: 0 };
+  if (!changed.length && !retired.size) return { changed: 0 };
 
   // Free all changed slugs first to permit A↔B swaps under posts.slug UNIQUE.
   // D1 batch is atomic: a failed upsert leaves original rows and foreign keys.
+  // Internal names use underscores, impossible for published slugs to match.
+  const archived = [...retired.values()].map((post) =>
+    db.prepare("UPDATE posts SET slug=? WHERE id=?")
+      .bind(`__retired__${post.id}`, post.id));
   const release = changed.flatMap((post) => {
     const old = byId.get(post.id);
     return old && old.slug !== post.slug
@@ -49,7 +54,7 @@ export async function reconcilePostCatalog(
     "INSERT INTO posts(id,slug,title,version) VALUES(?,?,?,?) " +
     "ON CONFLICT(id) DO UPDATE SET slug=excluded.slug,title=excluded.title,version=excluded.version",
   ).bind(post.id, post.slug, post.title, post.version));
-  await db.batch([...release, ...upserts]);
+  await db.batch([...archived, ...release, ...upserts]);
   return { changed: changed.length };
 }
 

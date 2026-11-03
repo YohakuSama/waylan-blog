@@ -27,7 +27,7 @@ jobs:
         run: npm run check
       - name: Install browser test runner
         run: |
-          npm install --no-save --no-package-lock playwright
+          npm install --no-save --no-package-lock playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Check real desktop, tablet and phone viewports
         run: node scripts/visual-smoke.mjs
@@ -37,5 +37,35 @@ jobs:
         with:
           name: waylan-viewport-smoke
           path: visual-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build static pages and admin
+        run: npm run build
+      - name: Install pinned Chromium Firefox and WebKit
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Cross-browser motion and admin regression
+        run: node scripts/quality-smoke.mjs
+      - name: Upload cross-browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-quality-smoke
+          path: quality-report/
           if-no-files-found: ignore
           retention-days: 7

@@ -42,15 +42,25 @@ describe("Deployed article catalog and D1 reconciliation", () => {
       assert.equal(sqlite.prepare("SELECT slug FROM posts WHERE id='echo-002'").get()!.slug, original);
     } finally { sqlite.close(); }
   });
-  it("refuses to claim historical data belonging to an unpublished post", async () => {
+  it("reclaims a retired slug without deleting the older post's discussions or annotations", async () => {
     const { db, sqlite } = database();
     try {
-      const before = sqlite.prepare("SELECT slug FROM posts WHERE id='echo-001'").get()!.slug;
-      await assert.rejects(
-        reconcilePostCatalog(db, [row("echo-001", "slow-tools")]),
-        /unpublished historical post/,
-      );
-      assert.equal(sqlite.prepare("SELECT slug FROM posts WHERE id='echo-001'").get()!.slug, before);
+      sqlite.prepare("INSERT INTO discussions VALUES(?,?,?,?)")
+        .run("echo-005", "D_retired", 55, "https://github.com/example/discussions/55");
+      sqlite.prepare("INSERT INTO annotations(comment_id,post_id,anchor_json,created_at) VALUES(?,?,?,?)")
+        .run("C_retired", "echo-005", "{}", 100);
+      const result = await reconcilePostCatalog(db, [row("echo-001", "slow-tools")]);
+      assert.equal(result.changed, 1);
+      assert.equal(sqlite.prepare("SELECT slug FROM posts WHERE id='echo-001'").get()!.slug, "slow-tools");
+      assert.equal(sqlite.prepare("SELECT slug FROM posts WHERE id='echo-005'").get()!.slug, "__retired__echo-005");
+      assert.equal(sqlite.prepare("SELECT discussion_id FROM discussions WHERE post_id='echo-005'").get()!.discussion_id, "D_retired");
+      assert.equal(sqlite.prepare("SELECT comment_id FROM annotations WHERE post_id='echo-005'").get()!.comment_id, "C_retired");
+      assert.equal((await reconcilePostCatalog(db, [row("echo-001", "slow-tools")])).changed, 0);
+      const republish = await reconcilePostCatalog(db, [
+        row("echo-001", "slow-tools"), row("echo-005", "reissued-story"),
+      ]);
+      assert.equal(republish.changed, 1);
+      assert.equal(sqlite.prepare("SELECT slug FROM posts WHERE id='echo-005'").get()!.slug, "reissued-story");
     } finally { sqlite.close(); }
   });
   it("reconciles on the first API request of a newly deployed build", async () => {

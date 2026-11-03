@@ -31,6 +31,12 @@ export function NotificationBell() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const dismiss = useRef<HTMLButtonElement>(null);
+  const close = (restoreFocus = false) => {
+    setOpen(false);
+    if (restoreFocus) window.requestAnimationFrame(() => trigger.current?.focus());
+  };
   const refreshInbox = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     let active = true;
@@ -77,11 +83,16 @@ export function NotificationBell() {
   }, []);
   useEffect(() => {
     if (!open) return;
+    // Non-modal dialog: move keyboard focus into the panel when opening.
+    dismiss.current?.focus();
     const outside = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node)) setOpen(false);
     };
     const esc = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+      }
     };
     document.addEventListener("pointerdown", outside);
     window.addEventListener("keydown", esc);
@@ -181,20 +192,24 @@ export function NotificationBell() {
       <button
         type="button"
         className="icon-button notification-trigger"
+        ref={trigger}
         aria-label={availability === "enabled" ? `消息通知，${box.unread} 条未读` : "消息通知"}
         data-tip="站内通知"
         aria-expanded={open}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
+        aria-controls="notification-panel"
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={18} />
         {availability === "enabled" && box.unread > 0 && <span className="notification-badge">{box.unread > 99 ? "99+" : box.unread}</span>}
       </button>
       {open && (
-        <div className="notification-popover" role="region" aria-label="消息通知">
+        <div id="notification-panel" className="notification-popover"
+          role="dialog" aria-modal="false" aria-labelledby="notification-heading">
           <header>
-            <strong>消息通知</strong>
-            <button type="button" className="icon-button" aria-label="关闭消息" onClick={() => setOpen(false)}>
+            <strong id="notification-heading">消息通知</strong>
+            <button type="button" className="icon-button" ref={dismiss}
+              aria-label="关闭消息" onClick={() => close(true)}>
               <X size={16} />
             </button>
           </header>

@@ -522,7 +522,7 @@ function PostEditor({
           label="链接名（slug）"
           hint={
             slugChanged ? (
-              <span className="warn">修改后旧链接会失效，已分享出去的地址将打不开。</span>
+              <span className="warn">保存后旧地址会自动通过 301 跳转到新链接。</span>
             ) : (
               <>文章地址是 /post/{form.slug || "…"}，只能用小写英文、数字和连字符。</>
             )
