@@ -248,6 +248,8 @@ h3 {
   font: 13px/1.75 var(--font-cjk-sans);
 }
 .home-links > a:hover { color: var(--brand); }
+/* On stacked layouts, expose the topic index before the six-post preview. */
+.home-links > .home-topic-link { display: none; }
 
 .resume-link {
   display: flex;
@@ -953,29 +955,43 @@ h3 {
   color: var(--ink);
 }
 .side-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
   margin-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
 .side-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin: 0;
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
 }
+.side-heading-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 5px 0;
+  border-radius: var(--radius-sm);
+  color: inherit;
+}
+.side-heading-link:hover { color: var(--brand); }
+.side-heading-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side-heading-icon { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.side-heading-text { flex: 1; min-width: 0; }
 .side-title svg {
   color: var(--accent);
 }
 .side-more {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
   padding: 4px;
   color: var(--ink);
 }
+.side-heading-link:hover .side-more { color: var(--brand); }
+.side-heading-link .side-more svg { color: currentColor; }
 .explore-list,
 .link-list,
 .recent-list {
@@ -1521,6 +1537,10 @@ h3 {
   }
 }
 /* Tablet: sidebar moves below the main column. */
+/* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
+@media (max-width: 1119px) {
+  .home-links > .home-topic-link { display: inline-flex; }
+}
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -1724,6 +1744,13 @@ h3 {
   .intro-copy {
     padding-left: 0;
   }
+  .home-hero { padding: 12px 0 7px; }
+  .home-identity { margin-bottom: 5px; }
+  .intro-description { margin-top: 9px; line-height: 1.75; }
+  .home-links { margin-top: 3px; gap: 0 12px; }
+  .home-resume { margin-bottom: 12px; }
+  .home-section-head { padding-top: 8px; }
+  .home-list .feed-item:first-child { padding-top: 14px; }
   .hero-square {
     top: 11px;
     width: 9px;
@@ -1829,8 +1856,8 @@ h3 {
 .archive-row { min-width: 0; min-height: 54px; }
 .archive-row > span { min-width: 0; overflow-wrap: anywhere; }
 
-/* At 1025–1279px the sidebar follows the feed, preserving a comfortable reading column. */
-@media (min-width:1025px) and (max-width:1279px) {
+/* At 1025–1119px the sidebar follows the feed; wider screens retain two columns. */
+@media (min-width:1025px) and (max-width:1119px) {
   .content-grid { grid-template-columns:minmax(0,1fr); }
   .site-sidebar {
     display:grid; grid-template-columns:repeat(2,minmax(0,1fr));

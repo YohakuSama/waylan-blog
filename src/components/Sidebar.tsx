@@ -109,12 +109,14 @@ export function SideTitle({
   return (
     <div className="side-head">
       <h2 className="side-title">
-        {icon}
-        {children}
+        <Link href={href} className="side-heading-link" title={label}>
+          <span className="side-heading-icon" aria-hidden="true">{icon}</span>
+          <span className="side-heading-text">{children}</span>
+          <span className="side-more" aria-hidden="true">
+            <ArrowRight size={16} />
+          </span>
+        </Link>
       </h2>
-      <Link href={href} className="side-more" aria-label={label}>
-        <ArrowRight size={16} />
-      </Link>
     </div>
   );
 }
@@ -161,7 +163,7 @@ export function TopicsBlock() {
     <section className="side-block">
       <SideTitle
         icon={<Layers size={17} />}
-        href="/feed?type=all"
+        href="/feed"
         label="浏览全部内容"
       >
         写作主题
@@ -171,7 +173,7 @@ export function TopicsBlock() {
           const count = posts.filter((p) => p.topic === t.id).length;
           return (
             <li key={t.id}>
-              <Link href={`/feed?type=all&topic=${t.id}`}>
+              <Link href={`/feed?topic=${t.id}`}>
                 <Layers size={15} className="explore-icon" aria-hidden="true" />
                 <span className="explore-name">{t.name}</span>
                 <span className="mono explore-count">{count}</span>
@@ -215,7 +217,7 @@ export function RecentBlock({ heatmap = true }: { heatmap?: boolean }) {
 export function SiteLinksBlock({ current }: { current?: string }) {
   return (
     <section className="side-block">
-      <SideTitle icon={<Link2 size={17} />} href="/feed?type=all" label="浏览全部内容">
+      <SideTitle icon={<Link2 size={17} />} href="/feed" label="浏览全部内容">
         站内导航
       </SideTitle>
       <ul className="link-list">

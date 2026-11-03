@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
-const widths = [1440, 1280, 1279, 1200, 1024, 861, 860, 768, 600, 390, 320];
+const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 600, 390, 320];
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", '.header-tools > button[aria-label="阅读设置"]'];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet"];
 const variants = [
@@ -109,6 +109,10 @@ try {
               latestHeading: select("#latest-heading"),
               identity: select(".home-identity"),
               homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
+              homeTopicLink: select(".home-topic-link"),
+              sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
+                ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
+              })),
               homeDensity: document.querySelector(".home-list")?.className,
               homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
               homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
@@ -137,7 +141,7 @@ try {
             assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
           }
           if (geometry.column && geometry.sidebar) {
-            assert.ok(width >= 1280
+            assert.ok(width >= 1120
               ? geometry.column.right <= geometry.sidebar.left + 1
               : geometry.column.bottom <= geometry.sidebar.top + 1, `${label}: sidebar overlaps content`);
           }
@@ -177,6 +181,13 @@ try {
             assert.ok(geometry.identity && geometry.identity.height > 10, `${label}: blog identity missing`);
             assert.ok(geometry.latestHeading && geometry.latestHeading.height > 20, `${label}: latest section heading hidden`);
             assert.ok(geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
+            assert.ok(geometry.sideHeadingLinks.length >= 2 &&
+              geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
+              `${label}: sidebar heading not fully tappable`);
+            if (width < 1120)
+              assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
+                geometry.homeLinks.includes("/feed"), `${label}: stacked sidebar buried topic discovery`);
+            else assert.equal(geometry.homeTopicLink, null, `${label}: redundant topic shortcut beside visible sidebar`);
             assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
             assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
@@ -250,6 +261,15 @@ try {
             await page.screenshot({ path: `${out}/${label}-settings.png`, animations: "disabled" });
             await close.click();
             await settings.waitFor({ state: "hidden" });
+          }
+          // On the phone, verify the heading text itself and the compact hero
+          // topic doorway navigate, not just the small arrow glyph.
+          if (route === "/" && width === 390 && variant.skin === "editorial" && variant.theme === "light") {
+            await page.locator(".home-sidebar .side-heading-link").first().click({ position: { x: 80, y: 22 } });
+            await page.waitForURL("**/feed");
+            await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
+            await page.locator(".home-topic-link").click();
+            await page.waitForURL("**/feed");
           }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
