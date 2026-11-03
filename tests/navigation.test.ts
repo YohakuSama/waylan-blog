@@ -457,7 +457,10 @@ describe("React navigation and reading interactions (DOM integration, not browse
     });
     assert.equal(document.querySelector(".selection-toolbar"), null);
     assert.equal(window.getSelection()?.toString(), "");
-    // A fresh long press/select still opens the toolbar normally.
+    // A fresh gesture must immediately re-arm selection, not wait for
+    // the old native range's suppression window to expire.
+    pointer("pointerdown", 18);
+    pointer("pointerup", 38);
     window.getSelection()!.addRange(range);
     document.dispatchEvent(new dom.window.Event("selectionchange"));
     await settle(360);
