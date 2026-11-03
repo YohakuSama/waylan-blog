@@ -1,0 +1,36 @@
+name: Excerpt functional and UI audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  excerpt-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install browsers
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Check excerpt mode, long paragraphs, scrolling and floating controls
+        run: node scripts/excerpt-audit.mjs
+      - name: Upload actual UI screenshots and failure observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: excerpt-interaction-evidence
+          path: excerpt-audit-report/
+          if-no-files-found: ignore
+          retention-days: 7
