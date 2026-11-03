@@ -207,7 +207,7 @@ npx wrangler secret put SESSION_SECRET
 npm run deploy
 ```
 
-这个命令先完成类型、测试、静态构建和配置校验，再应用迁移、同步文章并执行 Wrangler 部署。域名或数据库仍是占位符时会阻止部署。
+这个命令先完成类型、测试、静态构建和配置校验，再应用迁移并执行 Wrangler 部署。部署后的 Worker 会从本次构建生成的文章清单自动校准 D1 元数据（slug、标题、版本），不再需要在部署前手工执行文章同步。域名或数据库仍是占位符时会阻止部署。
 
 Cloudflare 控制台 → Workers & Pages → `echo-blog` → Settings → Domains & Routes → Add → Custom Domain，填入自己的完整域名。域名已由同一 Cloudflare 账户管理时，平台负责所需 DNS 和证书。已有同名 DNS 记录请先在控制台核对，避免误覆盖其他服务。
 
@@ -294,7 +294,7 @@ npx wrangler secret put GITHUB_CONTENT_TOKEN
 - **后台显示“后台还没有配置完成”**：页面会列出缺少的项目。通常是 `ADMIN_GITHUB_LOGINS` / `CONTENT_REPO` 仍是占位符、新的 `wrangler.jsonc` 还没部署，或没有录入 `GITHUB_CONTENT_TOKEN`。
 - **提示“无法访问源码仓库”**：检查 `GITHUB_CONTENT_TOKEN` 是否过期、是否勾选了源码仓库、Contents 是否为 Read and write。
 - **保存成功但网站一直没变**：到 Cloudflare → `echo-blog` → Deployments 查看构建日志。最常见的是文章内容不合法导致构建失败（后台会先做同样的检查，通常在保存时就会提示）。超过 10 分钟未更新时后台会给出提醒。
-- **改了文章链接名（slug）**：旧地址会失效，评论和划线不受影响（它们挂在不变的 `id` 上）。需要保留旧链接时，在 `public/_redirects` 加一行 301 跳转。
+- **改了文章链接名（slug）**：通过 `/admin` 保存时，会自动在同一次 Git 提交中生成旧地址的 301 跳转；评论和划线仍绑定不变的 `id`。直接编辑仓库 Markdown 时，请自行维护 `public/_redirects`；构建会检查旧地址不能与现行文章冲突、目标文章必须存在。
 - **图片限制**：PNG / JPEG / WebP / AVIF / GIF，单张 5 MB；出于安全原因不接受 SVG 上传。
 
 ## 完整本地联调
@@ -335,7 +335,7 @@ tags: [Windows, 系统优化]
 正文，标准 Markdown。
 ```
 
-- `slug` 默认等于文件名，`id` 默认等于 `slug`。**发布后 `id` 永久不变**（评论和划线挂在它上面）；改网址时保留 `id: 旧slug`，并在 `public/_redirects` 增加旧址的 301 跳转。
+- `slug` 默认等于文件名，`id` 默认等于 `slug`。**发布后 `id` 永久不变**（评论和划线挂在它上面）；手工改网址时保留 `id: 旧slug`，并在 `public/_redirects` 增加旧址的 301 跳转。网页后台会自动处理这一流程。
 - `topic` 取自 `content/site.json`；主题计数、列表、归档、搜索、RSS 和 Sitemap 自动生成。
 - 可以给重要段落写显式的 `<!-- block:... -->`，修改段落时保留 ID；未标注时使用内容哈希作为块 ID，仍可借助原文上下文重定位划线。
 - `src/generated/` 和 `worker/generated/` 由 `npm run content`/build 自动生成；重启开发命令可读取新增文章。
@@ -344,6 +344,7 @@ tags: [Windows, 系统优化]
 
 ```bash
 npm run build
+# 仅在马上手动导入 Discussion 映射时，先同步新文章的 D1 外键目标
 npm run db:sync:remote
 npm run setup:github -- --write
 npx wrangler d1 execute echo-db --remote --file .echo/discussions.sql

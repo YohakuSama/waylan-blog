@@ -14,7 +14,7 @@
     "dev:worker": "npm run build && wrangler dev",
     "db:local": "wrangler d1 migrations apply echo-db --local",
     "db:remote": "wrangler d1 migrations apply echo-db --remote",
-    "deploy": "npm run check && node --import tsx scripts/validate-deploy.ts && npm run db:remote && npm run db:sync:remote && wrangler deploy",
+    "deploy": "npm run check && node --import tsx scripts/validate-deploy.ts && npm run db:remote && wrangler deploy",
     "setup:github": "npm run content && node --import tsx scripts/setup-github.ts",
     "db:sync:local": "wrangler d1 execute echo-db --local --file .echo/posts.sql",
     "db:sync:remote": "wrangler d1 execute echo-db --remote --file .echo/posts.sql",

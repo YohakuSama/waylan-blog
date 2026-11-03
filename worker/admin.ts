@@ -34,6 +34,7 @@ import {
   discussionTitle,
 } from "../shared/discussions";
 import { fromBase64, MAX_IMAGE, UPLOAD_PATH, uploadPath } from "../shared/uploads";
+import { updatePostRedirects, removePostRedirects, validatePostRedirects } from "../shared/redirects";
 
 const POSTS = "content/posts",
   SITE = "content/site.json",
@@ -446,6 +447,8 @@ async function savePost(request: Request, env: Env, login: string) {
   const [all, meta] = await Promise.all([posts(env, at.oid), files(env, at.oid, [SITE])]);
   const topics = topicsOf(parseSite(meta[SITE]));
   let file: string;
+  let previousSlug: string | null = null;
+  let wasPublished = false;
   if (editing) {
     file = input.file as string;
     const current = all.find((p) => p.file === file);
@@ -455,6 +458,8 @@ async function savePost(request: Request, env: Env, login: string) {
     const before = parseFrontmatter(current.text).data,
       stem = file.replace(/\.md$/, ""),
       id = String(before.id || before.slug || stem);
+    previousSlug = String(before.slug || stem);
+    wasPublished = !before.draft;
     if (String(data.id || data.slug || stem) !== id) data.id = id;
   } else {
     const slug = text(data.slug, "链接名（slug）", 80, true);
@@ -480,6 +485,29 @@ async function savePost(request: Request, env: Env, login: string) {
   const uploads = await images(input.uploads, `${body}\n${post.cover || ""}`);
   if (post.cover)
     await requireFiles(env, at.oid, [post.cover], uploads.map((u) => u.path));
+  // Keep old article URLs alive. This asset rule is committed together with the
+  // markdown edit so Cloudflare can never publish the new slug without its 301.
+  let redirectText: string | null = null;
+  const priorPublicSlug = wasPublished ? previousSlug : null;
+  if ((!post.draft && priorPublicSlug !== post.slug) || (post.draft && wasPublished)) {
+    const old = (await files(env, at.oid, ["public/_redirects"]))["public/_redirects"];
+    try {
+      redirectText = post.draft
+        ? removePostRedirects(old?.text || "", previousSlug!)
+        : updatePostRedirects(old?.text || "", priorPublicSlug, post.slug);
+      if (redirectText) {
+        const active = all.filter((p) => p.file !== file && !parseFrontmatter(p.text).data.draft)
+          .map((p) => summary(p, topics));
+        validatePostRedirects(redirectText, [
+          ...active.filter((p): p is ReturnType<typeof summary> & { slug: string } => "slug" in p)
+            .map((p) => p.slug),
+          ...(post.draft ? [] : [post.slug]),
+        ]);
+      }
+    } catch (error) {
+      throw invalid((error as Error).message);
+    }
+  }
   const markdown = stringifyFrontmatter(data, body);
   const sha = await commit(
     env,
@@ -487,6 +515,7 @@ async function savePost(request: Request, env: Env, login: string) {
     `${editing ? "更新" : "发布"}：${post.title}${by(login)}`,
     [
       { path: `${POSTS}/${file}`, text: markdown },
+      ...(redirectText ? [{ path: "public/_redirects", text: redirectText }] : []),
       ...uploads.map((u) => ({ path: `public${u.path}`, base64: u.base64 })),
     ],
   );
@@ -499,15 +528,21 @@ async function deletePost(request: Request, env: Env, login: string) {
     throw invalid("文件名不正确。");
   const at = await head(env);
   const path = `${POSTS}/${input.file}`;
-  const blob = (await files(env, at.oid, [path]))[path];
+  const source = await files(env, at.oid, [path, "public/_redirects"]);
+  const blob = source[path];
   if (!blob) throw new HttpError(404, "POST_NOT_FOUND", "这篇文章已不在仓库里。");
   if (blob.oid !== input.oid) throw conflict();
   let title = input.file;
+  let slug = input.file.replace(/\.md$/, "");
   try {
-    title = String(parseFrontmatter(blob.text || "").data.title || title);
+    const data = parseFrontmatter(blob.text || "").data;
+    title = String(data.title || title);
+    slug = String(data.slug || slug);
   } catch {}
+  const redirects = removePostRedirects(source["public/_redirects"]?.text || "", slug);
   const sha = await commit(env, at, `删除：${title}${by(login)}`, [
     { path, remove: true },
+    ...(redirects !== null ? [{ path: "public/_redirects", text: redirects }] : []),
   ]);
   return json({ commit: sha });
 }

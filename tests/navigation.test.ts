@@ -141,7 +141,8 @@ describe("React navigation and reading interactions (DOM integration, not browse
       "/about", "/404", "/post/a-room-on-the-internet"])
       assert.equal(isAppRoute(path), true, path);
     for (const path of ["/feed/", "/admin", "/admin/", "/api/status",
-      "/art/room.svg", "/assets/index.js", "/images/photo.png", "/post/note.md"])
+      "/art/room.svg", "/assets/index.js", "/images/photo.png", "/post/note.md",
+      "/post/old-redirected-slug"])
       assert.equal(isAppRoute(path), false, path);
   });
   it("ignores malformed hash escapes instead of throwing during navigation", () => {

@@ -436,6 +436,9 @@ describe("Admin: posts", () => {
     const after = parseFrontmatter(repo.text(`content/posts/${file}`)!);
     assert.equal(after.data.id, "echo-001");
     assert.equal(after.data.slug, "static-first");
+    assert.match(repo.text("public/_redirects")!,
+      /^\/post\/a-room-on-the-internet \/post\/static-first 301$/m,
+      "the permalink redirect is committed atomically with the post");
     assert.equal(after.content, read.body.body, "body is kept byte for byte");
     assert.match(repo.last().message, /^更新：静态优先（修订）/);
     // Saving again with the returned oid works; the stale one conflicts.
@@ -446,6 +449,46 @@ describe("Admin: posts", () => {
     assert.equal(again.status, 200);
     const stale = await save({ file, oid: read.body.oid, data: reread.data, body: reread.body });
     assert.equal(stale.status, 409);
+  });
+  it("flattens successive renames and prevents reusing another article's old link", async () => {
+    const file = "a-room-on-the-internet.md";
+    const first = (await call(`/api/admin/post?file=${file}`)).body;
+    const one = await save({ file, oid: first.oid, data: { ...first.data, slug: "new-first" }, body: first.body });
+    assert.equal(one.status, 200);
+    const two = await save({ file, oid: one.body.oid, data: { ...first.data, slug: "new-second" }, body: first.body });
+    assert.equal(two.status, 200);
+    const rules = repo.text("public/_redirects")!;
+    assert.match(rules, /^\/post\/a-room-on-the-internet \/post\/new-second 301$/m);
+    assert.match(rules, /^\/post\/new-first \/post\/new-second 301$/m);
+    assert.doesNotMatch(rules, /\/post\/a-room-on-the-internet \/post\/new-first/);
+    const blocked = await save(draft({ slug: "new-first" }));
+    assert.equal(blocked.status, 422);
+    assert.match(blocked.body.message, /历史旧地址/);
+    const restored = await save({ file, oid: two.body.oid, data: { ...first.data, slug: "a-room-on-the-internet" }, body: first.body });
+    assert.equal(restored.status, 200);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /^\/post\/a-room-on-the-internet /m);
+  });
+  it("does not redirect unpublished drafts and clears aliases on unpublish", async () => {
+    const first = await save(draft({ slug: "unpublished-note", draft: true }));
+    assert.equal(first.status, 201);
+    assert.equal(repo.text("public/_redirects"), undefined);
+    const pending = await save({ file: "unpublished-note.md", oid: first.body.oid,
+      data: draft({ slug: "public-note", draft: true }).data, body: draft().body });
+    assert.equal(pending.status, 200);
+    assert.equal(repo.text("public/_redirects"), undefined);
+    const published = await save({ file: "unpublished-note.md", oid: pending.body.oid,
+      data: draft({ slug: "public-note", draft: false }).data, body: draft().body });
+    assert.equal(published.status, 200);
+    assert.equal(repo.text("public/_redirects"), undefined,
+      "first publication is not a rename of an already public URL");
+    const renamed = await save({ file: "unpublished-note.md", oid: published.body.oid,
+      data: draft({ slug: "renamed-public-note" }).data, body: draft().body });
+    assert.equal(renamed.status, 200);
+    assert.match(repo.text("public/_redirects")!, /\/post\/public-note \/post\/renamed-public-note 301/);
+    const unpublished = await save({ file: "unpublished-note.md", oid: renamed.body.oid,
+      data: draft({ slug: "renamed-public-note", draft: true }).data, body: draft().body });
+    assert.equal(unpublished.status, 200);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /\/post\/public-note/);
   });
   it("re-saving any existing post unchanged keeps its meaning and body", async () => {
     const topics = JSON.parse(readFileSync("content/site.json", "utf8")).topics.map((t: any) => t.id);
@@ -469,6 +512,20 @@ describe("Admin: posts", () => {
     assert.equal(repo.text(`content/posts/${file}`), undefined);
     assert.match(repo.last().message, /^删除：/);
     assert.equal((await call("/api/admin/post", { method: "DELETE", json: { file, oid } })).status, 404);
+  });
+  it("removes old URL aliases in the same commit when an article is deleted", async () => {
+    const file = "slow-tools.md";
+    const before = (await call(`/api/admin/post?file=${file}`)).body;
+    const renamed = await save({ file, oid: before.oid,
+      data: { ...before.data, slug: "slower-tools" }, body: before.body });
+    assert.equal(renamed.status, 200);
+    assert.match(repo.text("public/_redirects")!, /\/post\/slow-tools \/post\/slower-tools 301/);
+    const deleted = await call("/api/admin/post", {
+      method: "DELETE", json: { file, oid: renamed.body.oid },
+    });
+    assert.equal(deleted.status, 200);
+    assert.equal(repo.text(`content/posts/${file}`), undefined);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /\/post\/slow-tools/);
   });
   it("rejects path tricks in file names", async () => {
     for (const file of ["../site.json", "a/b.md", ".hidden.md", "x.txt"]) {

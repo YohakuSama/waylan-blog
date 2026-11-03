@@ -9,7 +9,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { currentRoute, offlinePreview, routeHref, newId } from "./runtime";
-import { metadata, site } from "./data";
+import { metadata, posts, site } from "./data";
 import { loadReader } from "./reader-loader";
 import { transient } from "./storage";
 import { listTransition, motionAllowed, navigateWithMotion } from "./motion";
@@ -26,7 +26,7 @@ export const motionOK = motionAllowed;
 // /admin and API links must use native browser navigation.
 export function isAppRoute(pathname: string) {
   return ["/", "/feed", "/archive", "/projects", "/about", "/404"].includes(pathname)
-    || /^\/post\/[a-z0-9-]+$/.test(pathname);
+    || posts.some((post) => pathname === `/post/${post.slug}`);
 }
 export function fragmentId(fragment: string): string | null {
   if (!fragment.startsWith("#")) return null;
