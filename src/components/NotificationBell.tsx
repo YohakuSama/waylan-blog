@@ -26,11 +26,12 @@ export function NotificationBell() {
   const [csrf, setCsrf] = useState("");
   const [moderator, setModerator] = useState(false);
   const [success, setSuccess] = useState("");
-  const [available, setAvailable] = useState(false);
+  const [availability, setAvailability] = useState<"checking" | "enabled" | "disabled" | "error">("checking");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
+  const refreshInbox = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     let active = true;
     async function refresh() {
@@ -42,7 +43,7 @@ export function NotificationBell() {
           setCsrf("");
           setModerator(false);
           const status = await api<{ notifications?: boolean }>("/api/status");
-          if (active) setAvailable(!!status.notifications);
+          if (active) setAvailability(status.notifications ? "enabled" : "disabled");
           return;
         }
         setCsrf(session.csrf);
@@ -50,15 +51,18 @@ export function NotificationBell() {
         const next = await api<Inbox>("/api/notifications");
         if (active) {
           setBox(next);
-          setAvailable(next.enabled);
+          setAvailability(next.enabled ? "enabled" : "disabled");
         }
       } catch {
         if (active) {
           setBox(empty);
-          setAvailable(false);
+          setCsrf("");
+          setModerator(false);
+          setAvailability("error");
         }
       }
     }
+    refreshInbox.current = refresh;
     void refresh();
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
@@ -86,8 +90,11 @@ export function NotificationBell() {
       window.removeEventListener("keydown", esc);
     };
   }, [open]);
-  if (!available) return null;
-  const signedIn = box.enabled && !!csrf;
+  const signedIn = availability === "enabled" && box.enabled && !!csrf;
+  const retry = () => {
+    setAvailability("checking");
+    void refreshInbox.current();
+  };
   const login = () => {
     const returnPath = location.pathname + location.search + location.hash;
     location.assign(`/api/auth/github?return=${encodeURIComponent(returnPath)}`);
@@ -153,13 +160,14 @@ export function NotificationBell() {
       <button
         type="button"
         className="icon-button notification-trigger"
-        aria-label={`消息通知，${box.unread} 条未读`}
+        aria-label={availability === "enabled" ? `消息通知，${box.unread} 条未读` : "消息通知"}
+        data-tip="站内通知"
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={18} />
-        {box.unread > 0 && <span className="notification-badge">{box.unread > 99 ? "99+" : box.unread}</span>}
+        {availability === "enabled" && box.unread > 0 && <span className="notification-badge">{box.unread > 99 ? "99+" : box.unread}</span>}
       </button>
       {open && (
         <div className="notification-popover" role="region" aria-label="消息通知">
@@ -169,7 +177,14 @@ export function NotificationBell() {
               <X size={16} />
             </button>
           </header>
-          {!signedIn ? (
+          {availability !== "enabled" ? (
+            <div className="notification-empty">
+              <p role="status">{availability === "checking" ? "正在读取通知…" : availability === "disabled" ? "本站暂未开启消息通知。" : "暂时无法读取通知，请重试。"}</p>
+              {availability !== "checking" && <button type="button" className="quiet-button" onClick={retry}>
+                {availability === "error" ? "重试" : "重新检查"}
+              </button>}
+            </div>
+          ) : !signedIn ? (
             <div className="notification-empty">
               <p>登录后可查看别人对你的回复。</p>
               <button type="button" className="quiet-button" onClick={login}>使用 GitHub 登录</button>
