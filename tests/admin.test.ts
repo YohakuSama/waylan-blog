@@ -468,6 +468,28 @@ describe("Admin: posts", () => {
     assert.equal(restored.status, 200);
     assert.doesNotMatch(repo.text("public/_redirects")!, /^\/post\/a-room-on-the-internet /m);
   });
+  it("does not redirect unpublished drafts and clears aliases on unpublish", async () => {
+    const first = await save(draft({ slug: "unpublished-note", draft: true }));
+    assert.equal(first.status, 201);
+    assert.equal(repo.text("public/_redirects"), undefined);
+    const pending = await save({ file: "unpublished-note.md", oid: first.body.oid,
+      data: draft({ slug: "public-note", draft: true }).data, body: draft().body });
+    assert.equal(pending.status, 200);
+    assert.equal(repo.text("public/_redirects"), undefined);
+    const published = await save({ file: "unpublished-note.md", oid: pending.body.oid,
+      data: draft({ slug: "public-note", draft: false }).data, body: draft().body });
+    assert.equal(published.status, 200);
+    assert.equal(repo.text("public/_redirects"), undefined,
+      "first publication is not a rename of an already public URL");
+    const renamed = await save({ file: "unpublished-note.md", oid: published.body.oid,
+      data: draft({ slug: "renamed-public-note" }).data, body: draft().body });
+    assert.equal(renamed.status, 200);
+    assert.match(repo.text("public/_redirects")!, /\/post\/public-note \/post\/renamed-public-note 301/);
+    const unpublished = await save({ file: "unpublished-note.md", oid: renamed.body.oid,
+      data: draft({ slug: "renamed-public-note", draft: true }).data, body: draft().body });
+    assert.equal(unpublished.status, 200);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /\/post\/public-note/);
+  });
   it("re-saving any existing post unchanged keeps its meaning and body", async () => {
     const topics = JSON.parse(readFileSync("content/site.json", "utf8")).topics.map((t: any) => t.id);
     for (const file of readdirSync("content/posts")) {
