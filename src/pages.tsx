@@ -607,8 +607,16 @@ export function NotFound() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const path = mounted ? router.path.split(/[?#]/)[0] : "/404";
-  const wanted = decodeURIComponent(path.split("/").filter(Boolean).at(-1) || "")
-    .toLowerCase();
+  const segment = path.split("/").filter(Boolean).at(-1) || "";
+  // Malformed percent escapes can appear in requested URLs; the 404 page must
+  // remain usable rather than crashing while suggesting a similar article.
+  let wanted = segment;
+  try {
+    wanted = decodeURIComponent(segment);
+  } catch {
+    // Keep the raw segment for a best-effort suggestion.
+  }
+  wanted = wanted.toLowerCase();
   const guess = wanted
     ? posts
         .map((p) => ({ p, score: similarity(wanted, p.slug) }))

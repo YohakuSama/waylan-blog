@@ -26,15 +26,15 @@ function read(): string[] {
 }
 
 function write(next: string[]) {
-  cache = next;
-  let ok = true;
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
-    ok = false;
+    // A rejected write must not make the UI claim an unsaved change succeeded.
+    return false;
   }
+  cache = next;
   listeners.forEach((l) => l());
-  return ok;
+  return true;
 }
 
 function subscribe(listener: () => void) {

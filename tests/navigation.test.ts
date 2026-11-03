@@ -151,6 +151,11 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(fragmentId("#%E0%A4%A"), null);
     assert.equal(fragmentId("#bad%"), null);
   });
+  it("keeps the 404 page usable for malformed percent-encoded URLs", async () => {
+    await mount("/post/%E0%A4%A");
+    assert.equal(document.querySelector(".not-found h1")?.textContent, "页面不存在");
+    assert.ok(document.querySelector('.not-found a[href="/"]'), "return-home link should remain available");
+  });
   it("opens the content world and filters real content by topic", async () => {
     await mount();
     await click(
@@ -691,6 +696,31 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(clear);
     assert.equal(document.querySelectorAll(".shelf-items li").length, 0);
     assert.equal(document.querySelector(".shelf-count"), null);
+  });
+  it("does not display unsaved bookmarks or silently discard saved items when storage writes fail", async () => {
+    await mount();
+    const bookmark = document.querySelector<HTMLButtonElement>(".card-bookmark")!;
+    const warning = mock.method(dom.window, "alert", () => {});
+    const failWrite = () => { throw new Error("Storage quota exceeded"); };
+    const blocked = mock.method(dom.window.Storage.prototype, "setItem", failWrite);
+    await click(bookmark);
+    assert.equal(bookmark.getAttribute("aria-pressed"), "false");
+    assert.equal(localStorage.getItem("waylan:reading-list:v1"), null);
+    assert.equal(document.querySelector(".shelf-count"), null);
+    assert.equal(warning.mock.callCount(), 1);
+    blocked.mock.restore();
+    await click(bookmark);
+    assert.equal(bookmark.getAttribute("aria-pressed"), "true");
+
+    mock.method(dom.window.Storage.prototype, "setItem", failWrite);
+    await click(document.querySelector(".shelf-trigger"));
+    await click(document.querySelector(".shelf-items li button"));
+    assert.equal(document.querySelectorAll(".shelf-items li").length, 1);
+    const clear = document.querySelector(".shelf-footer .confirm-button");
+    await click(clear);
+    await click(clear);
+    assert.equal(document.querySelectorAll(".shelf-items li").length, 1);
+    assert.equal(warning.mock.callCount(), 3, "failed add, remove and clear must all report the failure");
   });
   it("keeps the notification entry in its familiar slot when the service is disabled", async () => {
     await mount();
