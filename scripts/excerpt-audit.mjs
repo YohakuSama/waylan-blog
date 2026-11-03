@@ -24,6 +24,7 @@ async function run(engine,browser,width){
         localStorage.setItem("echo:skin",JSON.stringify("editorial"));
         localStorage.setItem("echo:theme",JSON.stringify("light"));
         Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async text=>{window.__qaCopiedText=text;}}});
+        Object.defineProperty(navigator,"share",{configurable:true,value:undefined});
       });
       const page=await context.newPage();
       await page.route("**/api/session",r=>r.fulfill({json:{user:null,configured:false}}));
@@ -55,8 +56,23 @@ async function run(engine,browser,width){
         state.outline.includes("rgba(0, 0, 0, 0)") ||
         state.outlineStyle === "none");
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
+      // Check every excerpt toolbar side effect independently, without an
+      // actual GitHub login or publishing any comment.
+      await page.locator(".selection-toolbar-actions button").filter({hasText:"分享"}).click();
+      const shareResult=await page.evaluate(()=>window.__qaCopiedText||"");
+      record(browser,width,"share copies the chosen quote and its article URL",{
+        shareHasURL:shareResult.includes("/post/"),hasExcerpt:shareResult.includes("这个博客")
+      },!shareResult.includes("/post/")||!shareResult.includes("这个博客"));
+      await page.locator(".selection-toolbar-actions button").filter({hasText:"评论"}).click();
+      const commentDialog=page.locator("dialog.discussion-dialog[open]");
+      await commentDialog.waitFor({state:"visible"});
+      const quote=await commentDialog.locator(".panel-original blockquote").innerText();
+      record(browser,width,"comment opens one matching quoted composer",{
+        dialogs:await page.locator("dialog[open]").count(),quote:quote.slice(0,45)
+      },!quote.includes("这个博客")||(await page.locator("dialog[open]").count())!==1);
+      await commentDialog.locator('.dialog-header button[aria-label="关闭"]').click();
+      await commentDialog.waitFor({state:"hidden"});
       // Synthetic fixture for a long real DOM paragraph, then tap near its end.
-      await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
       const long=page.locator(".reader-prose .article-block[data-type='paragraph']").last();
       const longText="摘录开头"+("甲".repeat(650))+"摘录结尾";
       await long.evaluate((el,text)=>{el.textContent=text;},longText);
