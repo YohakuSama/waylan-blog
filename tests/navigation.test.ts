@@ -4,6 +4,7 @@ import { JSDOM } from "jsdom";
 import { createElement, act } from "react";
 import type { Root } from "react-dom/client";
 import App from "../src/App";
+import { fragmentId, isAppRoute } from "../src/lib/router";
 import Reader from "../src/components/Reader";
 import worker from "../worker/index";
 import { posts } from "../src/lib/data";
@@ -135,6 +136,20 @@ afterEach(async () => {
   dom.window.close();
 });
 describe("React navigation and reading interactions (DOM integration, not browser layout)", () => {
+  it("routes pages but leaves static assets and admin URLs to the browser", () => {
+    for (const path of ["/", "/feed", "/feed/", "/archive", "/projects",
+      "/about", "/404", "/post/a-room-on-the-internet"])
+      assert.equal(isAppRoute(path), true, path);
+    for (const path of ["/admin", "/admin/", "/api/status", "/rss.xml",
+      "/art/room.svg", "/assets/index.js", "/images/photo.png", "/post/note.md"])
+      assert.equal(isAppRoute(path), false, path);
+  });
+  it("ignores malformed hash escapes instead of throwing during navigation", () => {
+    assert.equal(fragmentId("#year-2026"), "year-2026");
+    assert.equal(fragmentId("#hello%20world"), "hello world");
+    assert.equal(fragmentId("#%E0%A4%A"), null);
+    assert.equal(fragmentId("#bad%"), null);
+  });
   it("opens the content world and filters real content by topic", async () => {
     await mount();
     await click(
