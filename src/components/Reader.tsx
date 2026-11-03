@@ -1211,7 +1211,14 @@ export default function Reader({ post }: { post: Post }) {
                   target.matches("mark[data-echo-ids]")
                 ) {
                   e.preventDefault();
-                  openHighlights(target.dataset.echoIds!.split(" "));
+                  if (excerptMode) {
+                    // Keyboard activation must match tapping highlighted text
+                    // while choosing a new excerpt (no stray thread dialog).
+                    const block = target.closest<HTMLElement>("[data-block-id]");
+                    const found = block && prose.current
+                      ? captureBlockExcerpt(prose.current, post, block) : null;
+                    if (found) setSelection(found);
+                  } else openHighlights(target.dataset.echoIds!.split(" "));
                 }
               }}
             >
