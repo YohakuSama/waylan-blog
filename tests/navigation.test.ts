@@ -425,6 +425,61 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"),
       "Safari may collapse the native selection while the action tray is being tapped");
   });
+  it("dismisses the selected-text tray and native range on a deliberate blank tap", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // A real short touch tap outside the selection should close both UIs.
+    const blank = document.querySelector(".article-heading")!;
+    const pointer = (type: string, x: number) => {
+      const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        pointerType: { value: "touch" },
+        clientX: { value: x },
+        clientY: { value: 180 },
+      });
+      blank.dispatchEvent(event);
+    };
+    await act(async () => {
+      pointer("pointerdown", 15);
+      pointer("pointerup", 15);
+      blank.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 1,
+      }));
+      await pause(30);
+    });
+    assert.equal(document.querySelector(".selection-toolbar"), null);
+    assert.equal(window.getSelection()?.toString(), "");
+    // A fresh long press/select still opens the toolbar normally.
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // Selection-handle movement is not a short tap even if WebKit emits click.
+    await act(async () => {
+      pointer("pointerdown", 15);
+      pointer("pointerup", 38);
+      blank.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 1,
+      }));
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "dragging text-selection handles must not dismiss the toolbar");
+    // Touching the toolbar actions themselves should not dismiss it.
+    await click(document.querySelector(".selection-toolbar-context"));
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // Blank tap inside the article (not just above it) also dismisses.
+    await click(document.querySelector(".article-block-shell"));
+    assert.equal(document.querySelector(".selection-toolbar"), null);
+  });
   it("deleting the final private mark closes its thread instead of opening the composer", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
@@ -446,6 +501,54 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".discussion-dialog[open]"), null);
     assert.equal(document.querySelector(".discussion-dialog.composer-dialog[open]"), null);
     assert.equal(document.querySelector("mark.private-mark"), null);
+  });
+  it("keeps mobile thread controls above a shrinking Safari visual viewport and reports failed mark deletion", async () => {
+    const viewport = Object.assign(new dom.window.EventTarget(), {
+      height: 540,
+      offsetTop: 0,
+    });
+    Object.defineProperty(dom.window, "innerHeight", { value: 900, configurable: true });
+    Object.defineProperty(dom.window, "visualViewport", { value: viewport, configurable: true });
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (button) => button.textContent === "划线",
+    )!);
+    await click(document.querySelector("mark.private-mark"));
+    assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"));
+    assert.equal(document.activeElement, document.querySelector(".discussion-dialog.thread-dialog[open]"),
+      "opening a thread must focus the dialog rather than outlining its close button");
+    const rootStyle = document.documentElement.style;
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "360px");
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-height"), "540px");
+    viewport.height = 620;
+    viewport.dispatchEvent(new dom.window.Event("resize"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "280px");
+    viewport.offsetTop = 25;
+    viewport.dispatchEvent(new dom.window.Event("scroll"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "255px");
+    const blocked = mock.method(dom.window.Storage.prototype, "setItem", () => {
+      throw new Error("Storage access denied");
+    });
+    await click(document.querySelector('[aria-label="删除私人划线"]'));
+    assert.ok(document.querySelector("mark.private-mark"), "failed deletion must retain the highlight");
+    assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"),
+      "failed deletion must leave retry controls accessible");
+    assert.match(document.querySelector(".toast")?.textContent || "", /删除失败/);
+    blocked.mock.restore();
+    await click(document.querySelector('[aria-label="删除私人划线"]'));
+    await settle(280);
+    assert.equal(document.querySelector("mark.private-mark"), null);
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "");
+    assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-height"), "");
   });
   it("copies selected text on desktop without invoking the flashing system share sheet", async () => {
     await mount("/post/a-room-on-the-internet");

@@ -374,6 +374,10 @@ export default function Reader({ post }: { post: Post }) {
     [excerptMode, setExcerptMode] = useState(false),
     [localMarks, setLocalMarks] = useState<Annotation[]>([]),
     [orphans, setOrphans] = useState<string[]>([]);
+  // Document-level tap listeners need the latest selection without resetting
+  // the pointer gesture each time WebKit emits selectionchange.
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
   const [panel, setPanel] = useState(false),
     [panelIds, setPanelIds] = useState<string[]>([]),
     [image, setImage] = useState<Zoomed | null>(null),
@@ -458,6 +462,34 @@ export default function Reader({ post }: { post: Post }) {
       viewport.removeEventListener("scroll", sync);
       document.documentElement.style.removeProperty("--waylan-editor-view-height");
       document.documentElement.style.removeProperty("--waylan-editor-view-top");
+    };
+  }, [panel, panelIds.length]);
+  // Native iOS browser chrome and keyboards can reduce the visual viewport
+  // without moving a fixed <dialog> anchored to the layout viewport bottom.
+  // Keep the thread sheet visible, without changing composer geometry.
+  useEffect(() => {
+    if (!panel || !panelIds.length) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const obscured = Math.max(
+        0,
+        window.innerHeight - viewport.offsetTop - viewport.height,
+      );
+      root.style.setProperty("--waylan-thread-view-bottom", `${Math.ceil(obscured)}px`);
+      root.style.setProperty("--waylan-thread-view-height", `${viewport.height}px`);
+    };
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      root.style.removeProperty("--waylan-thread-view-bottom");
+      root.style.removeProperty("--waylan-thread-view-height");
     };
   }, [panel, panelIds.length]);
   useEffect(() => {
@@ -679,6 +711,8 @@ export default function Reader({ post }: { post: Post }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
+    let gesture: { x: number; y: number; start: number; selection: string } | null = null;
+    let completedTap = false;
     const scan = (dismissMissing: boolean) => {
       if (panel || !prose.current) return;
       const found = captureSelection(prose.current, post);
@@ -690,23 +724,45 @@ export default function Reader({ post }: { post: Post }) {
     };
     const onPointerDown = (event: PointerEvent) => {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
-      // Tapping other controls deliberately dismisses the selection; native
-      // selection handles and their system menu remain outside this event.
-      if (event.pointerType === "touch" && prose.current &&
-          !prose.current.contains(event.target as Node)) setSelection(null);
+      gesture = {
+        x: event.clientX, y: event.clientY, start: performance.now(),
+        selection: window.getSelection()?.toString() || "",
+      };
+      completedTap = false;
       pointerDown = true;
     };
     const onPointerUp = (event: PointerEvent) => {
       pointerDown = false;
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      const elapsed = gesture ? performance.now() - gesture.start : Infinity;
+      const moved = gesture ? Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) : Infinity;
+      // Long press/dragging selection handles must not count as a blank tap.
+      completedTap = elapsed < 450 && moved < 12;
+      const selectedNow = window.getSelection()?.toString() || "";
+      if (gesture && selectedNow && selectedNow !== gesture.selection) completedTap = false;
+      gesture = null;
       clearTimeout(timer);
-      // Selection handles and the native menu are asynchronous on iOS.
+      // Native selection can briefly collapse on iOS pointerup; only a
+      // completed click (not this pointerup) deliberately dismisses it.
       const touch = event.pointerType === "touch";
-      // Native selection can transiently collapse after a long-press pointerup.
-      // A missing range on touch is not proof the reader dismissed the tray.
       timer = setTimeout(() => scan(!touch), touch ? 420 : 140);
     };
-    const onPointerCancel = () => { pointerDown = false; };
+    const onPointerCancel = () => {
+      pointerDown = false;
+      gesture = null;
+      completedTap = false;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!selectionRef.current || panel) return;
+      if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      // The native edit menu and selection handles do not generate a regular
+      // short tap. Preserve their selection; dismiss on an intentional tap
+      // anywhere else, including a blank area within the article.
+      if (event.detail > 0 && !completedTap) return;
+      clearTimeout(timer);
+      setSelection(null);
+      window.getSelection()?.removeAllRanges();
+    };
     const onSelectionChange = () => {
       if (pointerDown) return;
       clearTimeout(timer);
@@ -715,12 +771,14 @@ export default function Reader({ post }: { post: Post }) {
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointercancel", onPointerCancel);
+    document.addEventListener("click", onClick, true);
     document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       clearTimeout(timer);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointercancel", onPointerCancel);
+      document.removeEventListener("click", onClick, true);
       document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [post, panel, excerptMode]);
@@ -1658,6 +1716,7 @@ export default function Reader({ post }: { post: Post }) {
               ? "继续这段对话"
               : "发表评论"
         }
+        focusContainer={panelIds.length > 0}
         className={`discussion-dialog ${panelIds.length ? "thread-dialog" : "composer-dialog"} ${composerFullscreen && !panelIds.length ? "composer-fullscreen" : ""}`}
         headerActions={!panelIds.length ? (
           <button type="button" className="icon-button composer-expand" title={composerFullscreen ? "退出沉浸模式" : "全屏沉浸编辑"}
@@ -1693,8 +1752,11 @@ export default function Reader({ post }: { post: Post }) {
                 aria-label="删除私人划线"
                 onClick={() => {
                   const next = localMarks.filter((x) => x.id !== a.id);
+                  if (!storage.set(`marks:${post.id}`, next)) {
+                    notify("私人划线删除失败，原记录仍然保留；请检查浏览器存储权限。");
+                    return;
+                  }
                   setLocalMarks(next);
-                  storage.set(`marks:${post.id}`, next);
                   // Keep the thread type during its closing animation.
                   // Empty panelIds with panel=true would open the composer.
                   const remaining = panelIds.filter((id) => id !== a.id);
