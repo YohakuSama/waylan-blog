@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { Post } from "../shared/types";
 import { getReader } from "./lib/reader-loader";
-import { ArrowUpRight, CornerDownLeft, Menu, Search, X } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Search, X } from "lucide-react";
 import { RouterProvider, Link, useRouter } from "./lib/router";
 import { posts, shortDate, site, stats, topicName, typeLabels, wordsLabel } from "./lib/data";
 import { BackToTop, ShelfTrigger } from "./components/Shelf";
@@ -54,14 +54,11 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const ReaderView = reader || getReader();
   const router = useRouter(),
     pathname = router.path.split(/[?#]/)[0];
-  const [menu, setMenu] = useState(false),
-    [search, setSearch] = useState(false),
+  const [search, setSearch] = useState(false),
     [query, setQuery] = useState(""),
     [active, setActive] = useState(-1),
     [shortcut, setShortcut] = useState("⌘K");
-  const searchInput = useRef<HTMLInputElement>(null),
-    menuButton = useRef<HTMLButtonElement>(null),
-    header = useRef<HTMLElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     markHydrated();
     if (!/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent))
@@ -76,7 +73,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
         )
           return;
         e.preventDefault();
-        setMenu(false);
         setSearch((s) => !s);
       }
       // "/" opens search too, unless the reader is typing somewhere.
@@ -91,50 +87,13 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
         !document.querySelector("dialog[open]")
       ) {
         e.preventDefault();
-        setMenu(false);
         setSearch(true);
       }
-      if (e.key === "Escape")
-        setMenu((open) => {
-          if (open) menuButton.current?.focus();
-          return false;
-        });
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
   useEffect(() => {
-    if (!menu) return;
-    // The menu is rendered before its trigger; focus its first link so keyboard
-    // users can enter it in the same order as readers using touch.
-    header.current?.querySelector<HTMLElement>("#site-nav a")?.focus();
-    const desktop = window.matchMedia("(min-width: 861px)");
-    const resize = (event: MediaQueryListEvent) => {
-      if (event.matches) setMenu(false);
-    };
-    desktop.addEventListener("change", resize);
-    const outside = (e: PointerEvent) => {
-      if (header.current?.contains(e.target as Node)) return;
-      // A tap on the veil only dismisses; it must not also follow a link below.
-      const swallow = (c: Event) => {
-        c.preventDefault();
-        c.stopPropagation();
-      };
-      document.addEventListener("click", swallow, { capture: true, once: true });
-      setTimeout(
-        () => document.removeEventListener("click", swallow, { capture: true }),
-        500,
-      );
-      setMenu(false);
-    };
-    document.addEventListener("pointerdown", outside);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      desktop.removeEventListener("change", resize);
-    };
-  }, [menu]);
-  useEffect(() => {
-    setMenu(false);
     setSearch(false);
   }, [router.path]);
   const post = posts.find((p) => pathname === `/post/${p.slug}`);
@@ -147,7 +106,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       label: "内容",
       description: "按类型与主题浏览",
       term: "content",
-      active: pathname === "/feed" || pathname === "/projects" || !!post,
+      active: pathname === "/feed" || (!!post && post.type !== "project"),
     },
     {
       url: "/archive",
@@ -155,6 +114,13 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       description: "沿着年月回看记录",
       term: "archive",
       active: pathname === "/archive",
+    },
+    {
+      url: "/projects",
+      label: "项目",
+      description: "项目、工具与实践成果",
+      term: "projects",
+      active: pathname === "/projects" || post?.type === "project",
     },
     {
       url: "/about",
@@ -188,7 +154,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       >
         跳到主要内容
       </a>
-      <header className="site-header" ref={header}>
+      <header className="site-header">
         <div className="header-inner">
           <Link href="/" className="brand" aria-label={`${site.name} 首页`}>
             <Wordmark className="brand-wordmark" />
@@ -205,18 +171,14 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
           </Link>
           <nav
             id="site-nav"
-            className={menu ? "nav-open" : ""}
             aria-label="主要导航"
-            onClick={(e) => {
-              if ((e.target as Element).closest("a")) setMenu(false);
-            }}
           >
             {nav.map((n, i) => (
               <Link
                 key={n.url}
                 href={n.url}
                 className={n.active ? "nav-link selected" : "nav-link"}
-                aria-current={n.active && !post && pathname !== "/projects" ? "page" : undefined}
+                aria-current={n.active && !post ? "page" : undefined}
                 data-term={n.term}
                 title={n.description}
               >
@@ -232,7 +194,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               </Link>
             ))}
           </nav>
-          <div className="header-tools">
+          <div className="header-tools" role="group" aria-label="阅读工具">
             <button
               type="button"
               className="header-search"
@@ -247,17 +209,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <ShelfTrigger />
             <NotificationBell />
             <Settings />
-            <button
-              ref={menuButton}
-              type="button"
-              className="mobile-menu icon-button"
-              aria-label={menu ? "关闭导航" : "打开导航"}
-              aria-expanded={menu}
-              aria-controls="site-nav"
-              onClick={() => setMenu(!menu)}
-            >
-              {menu ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </div>
         </div>
       </header>

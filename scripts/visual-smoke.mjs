@@ -51,6 +51,8 @@ try {
         localStorage.setItem("echo:skin", JSON.stringify(skin));
         localStorage.setItem("echo:theme", JSON.stringify(theme));
         localStorage.setItem("echo:motion", JSON.stringify("reduced"));
+        localStorage.setItem("echo:density", JSON.stringify("compact"));
+        localStorage.setItem("echo:reading", JSON.stringify({ slug: "a-room-on-the-internet", title: "静态优先：内容站的预渲染、水合与边缘 API", progress: 13 }));
       }, variant);
       const page = await context.newPage(), errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
@@ -82,7 +84,7 @@ try {
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
-              heroAction: select(".home-hero .primary-button"),
+              heroAction: select(".hero-browse"),
               types: [...document.querySelectorAll(".type-tab")].map(rect),
               meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
@@ -97,7 +99,10 @@ try {
               latestHeading: select("#latest-heading"),
               identity: select(".home-identity"),
               homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
-              topicLinks: document.querySelectorAll(".home-topics a").length,
+              homeDensity: document.querySelector(".home-list")?.className,
+              homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
+              homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
+              resume: select(".home-resume"),
               densityControls: [...document.querySelectorAll(".view-toggle button")].map(rect),
               homeHeadingBars: document.querySelectorAll(".home-feed-heading").length,
               archiveRows: document.querySelectorAll(".archive-row").length,
@@ -112,9 +117,11 @@ try {
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
-          assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "关于"], `${label}: destination names changed`);
-          assert.ok(geometry.brand.right <= (geometry.nav || geometry.tools).left + 1, `${label}: brand overlaps header`);
-          if (geometry.nav) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
+          assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
+          assert.ok(geometry.brand.right <= (width > 860 ? geometry.nav : geometry.tools).left + 1, `${label}: brand overlaps header`);
+          assert.ok(geometry.nav, `${label}: primary destinations are hidden`);
+          if (width > 860) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
+          else assert.ok(geometry.nav.top >= geometry.tools.bottom && geometry.nav.height >= 43, `${label}: destinations not separated from utilities`);
           for (const control of geometry.controls) {
             assert.ok(control && control.width >= 44 && control.height >= 44, `${label}: small header target`);
             assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
@@ -147,9 +154,12 @@ try {
             assert.ok(geometry.hero && geometry.hero.height <= 380, `${label}: introduction dominates the first screen`);
             assert.ok(geometry.identity && geometry.identity.height > 10, `${label}: blog identity missing`);
             assert.ok(geometry.latestHeading && geometry.latestHeading.height > 20, `${label}: latest section heading hidden`);
-            assert.ok(geometry.homeLinks.includes("/feed") && geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
-            assert.ok(geometry.topicLinks > 0, `${label}: topics buried in sidebar`);
-            if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 740, `${label}: first article pushed below the first screen`);
+            assert.ok(geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
+            assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
+            assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
+            assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
+            if (width <= 768) assert.ok(geometry.homeSecondEntry?.top < 820, `${label}: second entry is buried below the first screen`);
+            if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 660, `${label}: first article pushed below the first screen`);
           }
           if (width < 768 && geometry.entryHeading && geometry.firstMedia) {
             assert.ok(geometry.entryHeading.bottom < geometry.firstMedia.top, `${label}: cover precedes article identity on phone`);
@@ -163,27 +173,25 @@ try {
             if (geometry.readerFont) assert.equal(geometry.readerFont, baseline.readerFont, `${label}: reader font size changed with skin`);
           }
 
-          if (route === "/" && [320, 768, 860].includes(width)) {
-            await page.getByRole("button", { name: "打开导航", exact: true }).click();
-            await page.getByRole("button", { name: "关闭导航", exact: true }).waitFor();
-            assert.equal(await page.locator("#site-nav a").count(), 4);
-            assert.equal(await page.locator("#site-nav a").first().evaluate((el) => el === document.activeElement), true, `${label}: menu focus missing`);
-            const bounds = await page.locator("#site-nav").boundingBox();
-            assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 900, `${label}: menu outside viewport`);
-            await page.screenshot({ path: `${out}/${label}-menu.png`, animations: "disabled" });
-            await page.keyboard.press("Escape");
-            await page.getByRole("button", { name: "打开导航", exact: true }).waitFor();
-            assert.equal(await page.locator(".mobile-menu").evaluate((el) => el === document.activeElement), true, `${label}: Escape lost focus`);
-          }
           if (route === "/feed" && [320, 768, 1440].includes(width)) {
-            await page.getByRole("button", { name: "紧凑列表", exact: true }).click();
-            await page.locator(".feed-list.density-compact").waitFor();
-            assert.equal(await page.locator(".feed-media-link").first().isVisible(), false, `${label}: compact view still shows covers`);
-            await page.reload({ waitUntil: "domcontentloaded" });
-            await page.locator(".feed-list.density-compact").waitFor();
+            const newest = await page.locator(".feed-item time").first().getAttribute("datetime");
             await page.getByRole("button", { name: "详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
             assert.equal(await page.locator(".feed-media-link").first().isVisible(), true, `${label}: cannot restore detailed view`);
+            await page.locator(".sort-control select").selectOption("oldest");
+            await page.waitForURL("**sort=oldest");
+            assert.notEqual(await page.locator(".feed-item time").first().getAttribute("datetime"), newest, `${label}: sort not applied`);
+            await page.getByRole("button", { name: "紧凑列表", exact: true }).click();
+            await page.reload({ waitUntil: "domcontentloaded" });
+            await page.locator(".feed-list.density-compact").waitFor();
+            await page.locator('#site-nav a[href="/"]').click();
+            await page.locator(".home-list.density-full").waitFor();
+            assert.equal(await page.locator(".home-list time").first().getAttribute("datetime"), newest, `${label}: library sorting leaked into home`);
+            await page.locator('#site-nav a[href="/feed"]').click();
+            await page.locator(".feed-list.density-compact").waitFor();
+            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.locator(".feed-list.density-full").waitFor();
+            if ([320, 768, 1440].includes(width)) await page.screenshot({ path: `${out}/${label}-detailed.png`, animations: "disabled" });
           }
           if (route.startsWith("/post/") && [320, 768, 1024].includes(width)) {
             await page.setViewportSize({ width, height: 480 });
@@ -259,7 +267,7 @@ try {
       } finally { await context.close(); }
     }
   }
-  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including menu focus and theme position parity.`);
+  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including persistent navigation, page-state isolation and theme position parity.`);
 } catch (error) {
   await writeFile(`${out}/failure.txt`, error.stack || String(error));
   throw error;

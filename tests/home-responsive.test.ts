@@ -7,26 +7,6 @@ const feed = readFileSync("src/components/Feed.tsx", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
-  it("layers the dotted wave behind hero copy without taking a new row on touch devices", () => {
-    assert.ok(site.includes('@media (max-width: 860px)'));
-    const begin = site.indexOf('  /* The wave is a background, not a card');
-    assert.ok(begin > 0);
-    const region = site.slice(begin, begin + 1250);
-    assert.ok(region.includes("position: absolute;"));
-    assert.ok(region.includes("z-index: 0;"));
-    assert.ok(region.includes("height: 100%;"));
-    assert.ok(region.includes("margin: 0;"));
-    assert.ok(region.includes("pointer-events: none;"));
-    assert.ok(region.includes("mask-image: radial-gradient"));
-    assert.ok(region.includes(".home-hero .intro-copy"));
-    assert.ok(region.includes("z-index: 1;"));
-    const mobile = site.slice(site.indexOf('@media (max-width: 480px)'));
-    assert.ok(mobile.includes("opacity: .16;"));
-    assert.ok(mobile.includes("width: 100%;"));
-    assert.ok(mobile.includes("right: 0;"));
-    assert.equal(mobile.includes("height: clamp(94px, 25vw, 112px)"), false);
-  });
-
   it("keeps all content types visible and uses one accessible button layer", () => {
     const narrow = site.slice(site.indexOf("/* Five categories stay completely visible"));
     assert.ok(narrow.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
@@ -50,12 +30,12 @@ describe("home hero mobile and tablet layout", () => {
   it("keeps the homepage a single editorial feed rather than two filter panels", () => {
     assert.ok(site.includes(".home-feed { border-top:"));
     assert.equal(site.includes(".home-feed-heading"), false);
-    assert.ok(site.includes(".home-hero .resume-link"));
+    assert.ok(site.includes(".home-resume .resume-link"));
   });
   it("reduces tablet and phone content filtering to adjacent selects", () => {
     const start = site.indexOf("/* Tablets and phones use the same compact");
     assert.ok(start > 0);
-    const compact = site.slice(start, site.indexOf("/* Navigation collapses", start));
+    const compact = site.slice(start, site.indexOf("/* Narrow screens keep destinations", start));
     assert.ok(compact.includes("@media (max-width: 1024px)"));
     assert.ok(compact.includes(".feed-controls .filter-tabs"));
     assert.ok(compact.includes("display: none;"));
@@ -68,9 +48,9 @@ describe("home hero mobile and tablet layout", () => {
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = site.indexOf("@media (max-width: 1024px)");
     assert.ok(bp > 0);
-    const next = site.indexOf("/* Navigation collapses into a menu. */", bp);
+    const next = site.indexOf("/* Narrow screens keep destinations into a menu. */", bp);
     const tablet = site.slice(bp, next);
     assert.ok(tablet.includes("right: 0;"));
-    assert.ok(tablet.includes("width: min(56%, 480px);"));
+    assert.ok(tablet.includes("width: min(30%, 300px);"));
   });
 });

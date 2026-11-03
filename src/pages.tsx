@@ -43,31 +43,12 @@ import {
   SideTitle,
   Sidebar,
   SiteLinksBlock,
+  TopicsBlock,
 } from "./components/Sidebar";
 import { useViews, viewsLabel } from "./lib/views";
 import type { Post } from "../shared/types";
 function HeroTitle() {
-  const { lines, highlight } = site.hero;
-  return (
-    <h1 className="hero-title">
-      {lines.map((line, i) => {
-        const at = highlight ? line.indexOf(highlight) : -1;
-        return (
-          <span className="hero-line" key={i}>
-            {at < 0 ? (
-              line
-            ) : (
-              <>
-                {line.slice(0, at)}
-                <em className="hero-highlight">{highlight}</em>
-                {line.slice(at + highlight.length)}
-              </>
-            )}
-          </span>
-        );
-      })}
-    </h1>
-  );
+  return <h1 className="hero-title">{site.tagline}</h1>;
 }
 const newestFirstList = () => [...posts].sort(newestFirst);
 /** Terminal-skin hero: the same real data, printed as a shell session. */
@@ -112,7 +93,6 @@ function HeroTerminal() {
   );
 }
 export function Home() {
-  const [density] = useDensity();
   const [resume, setResume] = useState<{
     slug: string;
     title: string;
@@ -141,49 +121,40 @@ export function Home() {
             <HeroTitle />
             <p className="intro-description">{introduction}</p>
             <nav className="home-links" aria-label="博客导览">
-              <Link className="primary-button hero-browse" href="/feed">
-                浏览全部内容<ArrowRight size={17} aria-hidden="true" />
-              </Link>
               <Link href="/about">关于本站</Link>
               <a href={assetURL("/rss.xml")}
                 download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
                 <Rss size={15} aria-hidden="true" />订阅 RSS
               </a>
             </nav>
-            {resume && (
-              <Link
-                className="resume-link"
-                href={`/post/${resume.slug}?resume=1`}
-              >
-                <BookOpen size={15} aria-hidden="true" />
-                <span>继续阅读：{resume.title}</span>
-                <small>{resume.progress}%</small>
-                <ArrowRight size={14} aria-hidden="true" />
-              </Link>
-            )}
           </div>
           <div className="hero-visual" aria-hidden="true">
             <NetworkWave />
             <HeroTerminal />
+            <p className="home-motto">{site.hero.lines.join("")}</p>
           </div>
         </section>
+        {resume && (
+          <aside className="home-resume" aria-label="继续阅读">
+            <Link className="resume-link" href={`/post/${resume.slug}?resume=1`}>
+              <BookOpen size={17} aria-hidden="true" />
+              <span><small>继续阅读</small><strong>{resume.title}</strong></span>
+              <small className="resume-progress">{resume.progress}%</small>
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </aside>
+        )}
         <section className="home-feed" aria-labelledby="latest-heading">
           <div className="home-section-head">
             <h2 id="latest-heading">最新内容</h2>
-            <Link href="/archive">按时间归档<ArrowUpRight size={14} aria-hidden="true" /></Link>
+            <Link className="hero-browse" href="/feed">全部内容<ArrowRight size={15} aria-hidden="true" /></Link>
           </div>
-          {usedTopics.length > 0 && (
-            <nav className="home-topics" aria-label="按主题阅读">
-              <span>主题</span>
-              {usedTopics.map((topic) => (
-                <Link key={topic.id} href={`/feed?topic=${topic.id}`}>{topic.name}</Link>
-              ))}
-            </nav>
-          )}
           <FeedList
             items={items}
             resetKey="latest"
-            density={density}
+            variant="home"
+            batch={6}
+            density="full"
             empty={
               <div className="empty-state">
                 <h3>第一篇文字，正在路上。</h3>
@@ -193,7 +164,22 @@ export function Home() {
           />
         </section>
       </div>
-      <Sidebar />
+      <aside className="site-sidebar home-sidebar" aria-label="博客导览">
+        <TopicsBlock />
+        <section className="side-block">
+          <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
+          <ul className="home-projects">
+            {items.filter((p) => p.type === "project").slice(0, 3).map((p) => (
+              <li key={p.id}><Link href={`/post/${p.slug}`}><strong>{p.title}</strong><span>{p.project?.status}</span></Link></li>
+            ))}
+          </ul>
+        </section>
+        <section className="side-block home-reading-note">
+          <h2 className="side-title">阅读与收藏</h2>
+          <p className="side-text">点书签保存待读内容；选中文字可以划线。你的阅读进度会在下次访问时保留。</p>
+          <Link className="home-about-link" href="/about">了解本站<ArrowUpRight size={14} aria-hidden="true" /></Link>
+        </section>
+      </aside>
     </div>
   );
 }
@@ -337,10 +323,6 @@ export function Feed() {
               {filtered.length} 条
             </span>
             <ViewToggle density={density} onChange={setDensity} />
-            <Link href="/archive">
-              按年份回看
-              <ArrowUpRight size={13} />
-            </Link>
           </div>
           <FeedList
               items={filtered}

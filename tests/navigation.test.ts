@@ -180,7 +180,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       transitions++;
     };
     await mount();
-    await click(document.querySelector(".home-links>.primary-button"));
+    await click(document.querySelector(".hero-browse"));
     assert.equal(location.pathname, "/feed");
     assert.equal(transitions, 0);
   });
@@ -204,7 +204,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       return { finished: Promise.resolve(), skipTransition() {} };
     };
     await mount();
-    await click(document.querySelector(".home-links>.primary-button"));
+    await click(document.querySelector(".hero-browse"));
     assert.ok(common[0].includes("visual-echo-001"));
     await click(document.querySelector(".post-card-link"));
     assert.ok(common[1].includes("title-echo-001"));
@@ -215,9 +215,9 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount();
     const nav = [...document.querySelectorAll<HTMLAnchorElement>("#site-nav .nav-link")];
     assert.deepEqual(nav.map((link) => link.querySelector(".nav-label")?.textContent?.trim()),
-      ["首页", "内容", "归档", "关于"]);
+      ["首页", "内容", "归档", "项目", "关于"]);
     assert.deepEqual(nav.map((link) => link.getAttribute("href")),
-      ["/", "/feed", "/archive", "/about"]);
+      ["/", "/feed", "/archive", "/projects", "/about"]);
     assert.ok(!document.querySelector(".home-feed .type-tabs"));
     await click(nav[1]);
     assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
@@ -258,14 +258,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.search, "");
     assert.equal(document.querySelector(".page-heading h1")?.textContent, "全部内容");
   });
-  it("opens and closes the mobile navigation through the same accessible control", async () => {
+  it("keeps destinations and reading tools in separate navigation groups", async () => {
     await mount();
-    const button = document.querySelector(".mobile-menu")!;
-    await click(button);
-    assert.equal(button.getAttribute("aria-expanded"), "true");
-    assert.ok(document.querySelector(".nav-open"));
-    await click(button);
-    assert.equal(button.getAttribute("aria-expanded"), "false");
+    assert.equal(document.querySelectorAll("#site-nav a").length, 5);
+    assert.equal(document.querySelectorAll(".mobile-menu").length, 0);
+    assert.ok(document.querySelector('.header-tools[aria-label="阅读工具"]'));
+    await click(document.querySelector('#site-nav a[href="/projects"]'));
+    assert.equal(document.querySelector('#site-nav [aria-current="page"]')?.textContent?.includes("项目"), true);
+    assert.equal(document.querySelector('#site-nav a[href="/feed"]')?.getAttribute("aria-current"), null);
   });
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
@@ -534,14 +534,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.match(document.querySelector(".home-identity")?.textContent || "", /Waylan 的个人博客/);
     assert.ok(document.querySelector('.home-links a[href="/about"]'));
     assert.ok(document.querySelector('.home-links a[href="/rss.xml"]'));
-    const topicLink = document.querySelector<HTMLAnchorElement>('.home-topics a');
-    assert.ok(topicLink);
-    await click(topicLink);
-    const selectedTopic = new URL(topicLink.href).searchParams.get("topic");
-    assert.ok([...document.querySelectorAll('.feed-item')].every(item =>
-      posts.find(post => `card-${post.id}` === item.id)?.topic === selectedTopic));
-    await click(document.querySelector('.brand'));
-    await click(document.querySelector(".home-links>.primary-button"));
+    await click(document.querySelector(".hero-browse"));
     const tabs = [...document.querySelectorAll(".type-tabs .type-tab")];
     const count = (label: string) =>
       Number(
@@ -561,6 +554,22 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(items.length, posts.filter((p) => p.type === "note").length);
     assert.ok(items.every((i) => i.classList.contains("is-note")));
     assert.ok(document.querySelector(".is-note .code-thumb"));
+  });
+  it("keeps home newest-first and editorial after changing library sort and density", async () => {
+    await mount("/feed");
+    const newest = document.querySelector(".feed-item time")?.getAttribute("datetime");
+    await click(document.querySelector('button[aria-label="紧凑列表"]'));
+    const select = document.querySelector<HTMLSelectElement>('.sort-control select')!;
+    await act(async () => { select.value = "oldest"; select.dispatchEvent(new dom.window.Event("change", { bubbles: true })); await pause(30); });
+    assert.ok(location.search.includes("sort=oldest"));
+    assert.notEqual(document.querySelector(".feed-item time")?.getAttribute("datetime"), newest);
+    await click(document.querySelector('#site-nav a[href="/"]'));
+    assert.ok(document.querySelector(".home-list.density-full"));
+    assert.equal(document.querySelector(".home-list time")?.getAttribute("datetime"), newest);
+    assert.equal(document.querySelectorAll(".home-feed .feed-item").length, Math.min(6, posts.length));
+    assert.equal(document.querySelectorAll(".home-feed button.load-more").length, 0);
+    await click(document.querySelector('#site-nav a[href="/feed"]'));
+    assert.ok(document.querySelector(".feed-list.density-compact"));
   });
   it("lets readers restore the full list after a saved compact preference", async () => {
     localStorage.setItem("echo:density", JSON.stringify("compact"));
@@ -615,7 +624,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     );
     assert.equal(
       document.querySelector("#site-nav .selected .nav-label")?.textContent,
-      "内容",
+      "项目",
     );
   });
   it("allows full motion to be selected when the system preference reduces it", async () => {
