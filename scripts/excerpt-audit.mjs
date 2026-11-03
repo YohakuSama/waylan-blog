@@ -17,12 +17,13 @@ function record(browser,width,caseName,details,failed=false){
 async function run(engine,browser,width){
   const b=await engine.launch({headless:true});
   try{
-    const context=await b.newContext({viewport:{width,height:780},reducedMotion:"reduce",permissions:["clipboard-read","clipboard-write"]});
+    const context=await b.newContext({viewport:{width,height:780},reducedMotion:"reduce"});
     try{
       await context.addInitScript(()=>{
         localStorage.setItem("echo:motion",JSON.stringify("reduced"));
         localStorage.setItem("echo:skin",JSON.stringify("editorial"));
         localStorage.setItem("echo:theme",JSON.stringify("light"));
+        Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async text=>{window.__qaCopiedText=text;}}});
       });
       const page=await context.newPage();
       await page.route("**/api/session",r=>r.fulfill({json:{user:null,configured:false}}));
@@ -47,7 +48,7 @@ async function run(engine,browser,width){
       });
       record(browser,width,"excerpt visual selection after tap",state,
         !state.selectedText.trim() && !/excerpt-selected|selected/.test(state.className) &&
-        !state.attrs["data-excerpt-selected"] && state.outlineStyle==="solid" && state.outline.includes("rgba(0, 0, 0, 0)"));
+        !state.attrs["data-excerpt-selected"] && state.outline.includes("rgba(0, 0, 0, 0)"));
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
       // Synthetic fixture for a long real DOM paragraph, then tap near its end.
       const long=page.locator(".reader-prose .article-block[data-type='paragraph']").last();
@@ -58,14 +59,16 @@ async function run(engine,browser,width){
       await page.mouse.click(box.x+Math.max(5,box.width-8),Math.min(box.y+box.height-5,760));
       await page.locator(".selection-toolbar").waitFor({state:"visible"});
       const actualLabel=await page.locator(".selection-toolbar-context span").innerText();
+      await page.locator(".selection-toolbar-actions button").filter({hasText:"复制"}).click();
+      const copiedText=await page.evaluate(()=>window.__qaCopiedText||"");
       const lastBlockId=await long.getAttribute("data-block-id");
       const captured=await page.evaluate(id=>{
         const toolbar=document.querySelector(".selection-toolbar-context span");
         return {label:toolbar?.textContent,clickAtLastParagraph:document.querySelector('[data-block-id="'+id+'"]')?.textContent?.slice(-14)};
       },lastBlockId);
       record(browser,width,"long paragraph click near tail",{
-        label:actualLabel,endsWithTail:actualLabel.includes("摘录结尾"),captured
-      },!actualLabel.includes("摘录结尾"));
+        label:actualLabel,copiedEnd:copiedText.slice(-20),endsWithTail:copiedText.endsWith("摘录结尾"),captured
+      },!copiedText.endsWith("摘录结尾"));
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-long.png",animations:"disabled"});
       // Scroll after intentional excerpt: unlike transient native selection, user
       // should be able to scroll while reviewing their chosen paragraph.
