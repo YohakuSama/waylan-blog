@@ -91,6 +91,13 @@ async function run(engine,name,width){
       if (width <= 600) {
         await page.getByRole("button",{name:"开启摘录段落模式"}).click();
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
+        await page.locator(".selection-toolbar").waitFor({state:"visible"});
+        // Real WebKit tap on unused article space must dismiss the blog tray.
+        // Native selection handles are separate OS gestures, not document taps.
+        await page.locator(".article-heading").click({position:{x:8,y:8}});
+        await page.locator(".selection-toolbar").waitFor({state:"hidden"});
+        observations.push({browser:name,width,scenario:"tap empty article space dismisses excerpt toolbar",ok:true});
+        await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
         await page.locator(".selection-toolbar-actions button").filter({hasText:"划线"}).click();
         await page.getByRole("button",{name:"退出摘录模式"}).click();
         await page.locator("mark.private-mark").first().click();
