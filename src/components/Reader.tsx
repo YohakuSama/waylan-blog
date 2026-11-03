@@ -1035,7 +1035,7 @@ export default function Reader({ post }: { post: Post }) {
         </div>
       </div>
       {/* Keep this control in the reader's sticky tool rail, not over prose. */}
-      <div className="excerpt-access">
+      <div className={`excerpt-access${panel ? " excerpt-access-hidden" : ""}`}>
         {!excerptMode && !selection && !panel && (
           <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
             title="摘录段落" onClick={() => {
@@ -1055,6 +1055,12 @@ export default function Reader({ post }: { post: Post }) {
               <X size={17} />
             </button>
           </div>
+        )}
+        {selection && (
+          <span className="excerpt-access-selected">
+            <Highlighter size={16} />
+            已选 {anchorQuote(selection.anchor).length} 字 · 选择下方操作
+          </span>
         )}
       </div>
       <div className="reader-layout">
