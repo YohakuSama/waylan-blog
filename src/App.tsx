@@ -156,9 +156,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <Link href="/" className="brand" aria-label={`${site.name.toLowerCase()}@blog:~$ · ${site.name} ${site.tagline} 首页`}>
+          <Link href="/" className="brand">
             <Wordmark className="brand-wordmark" />
-            <span className="brand-term" aria-hidden="true">
+            <span className="brand-term">
               <b>{site.name.toLowerCase()}</b>
               <i>@</i>
               <span>blog</span>
@@ -168,6 +168,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <span className="brand-name">{site.name}</span>
             <span className="brand-rule" aria-hidden="true" />
             <small className="brand-tagline">{site.tagline}</small>
+            <span className="sr-only">首页</span>
           </Link>
           <nav
             id="site-nav"
