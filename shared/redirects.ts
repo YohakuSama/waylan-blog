@@ -25,6 +25,17 @@ export function validatePostRedirects(source: string, currentSlugs: Iterable<str
       throw new Error(`_redirects: /post/${rule.to} 不存在，旧链接目标必须是已发布文章。`);
   }
 }
+/** Remove aliases for a deleted article to avoid deployed 301 rules leading to 404. */
+export function removePostRedirects(source: string, removedSlug: string): string | null {
+  const { lines, rules } = scan(source);
+  const excluded = new Set(rules
+    .filter((rule) => rule.to === removedSlug || rule.from === removedSlug)
+    .map((rule) => rule.line));
+  if (!excluded.size) return null;
+  const updated = lines.filter((_, index) => !excluded.has(index));
+  while (updated.length && !updated[updated.length - 1].trim()) updated.pop();
+  return updated.join("\n") + "\n";
+}
 /** Null means no update is needed. previousSlug=null checks a new publication. */
 export function updatePostRedirects(
   source: string, previousSlug: string | null, nextSlug: string,
