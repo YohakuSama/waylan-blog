@@ -335,7 +335,7 @@ tags: [Windows, 系统优化]
 正文，标准 Markdown。
 ```
 
-- `slug` 默认等于文件名，`id` 默认等于 `slug`。**发布后 `id` 永久不变**（评论和划线挂在它上面）；改网址时保留 `id: 旧slug`，并在 `public/_redirects` 增加旧址的 301 跳转。
+- `slug` 默认等于文件名，`id` 默认等于 `slug`。**发布后 `id` 永久不变**（评论和划线挂在它上面）；手工改网址时保留 `id: 旧slug`，并在 `public/_redirects` 增加旧址的 301 跳转。网页后台会自动处理这一流程。
 - `topic` 取自 `content/site.json`；主题计数、列表、归档、搜索、RSS 和 Sitemap 自动生成。
 - 可以给重要段落写显式的 `<!-- block:... -->`，修改段落时保留 ID；未标注时使用内容哈希作为块 ID，仍可借助原文上下文重定位划线。
 - `src/generated/` 和 `worker/generated/` 由 `npm run content`/build 自动生成；重启开发命令可读取新增文章。
