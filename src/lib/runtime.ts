@@ -66,8 +66,12 @@ export function newId() {
 }
 
 export function articleHTML(html: string) {
-  if (!offlinePreview()) return html;
-  return html.replace(
+  // Allow keyboard users to scroll long code blocks horizontally. Apply to both
+  // SSR and client HTML so hydration produces the same accessible markup.
+  const accessible = html.replace(/<pre\\b([^>]*)>/gi, (tag, attrs: string) =>
+    /\\btabindex\\s*=/.test(attrs) ? tag : `<pre tabindex="0"${attrs}>`);
+  if (!offlinePreview()) return accessible;
+  return accessible.replace(
     /\bsrc=(["'])(\/[^"']+)\1/g,
     (attribute, quote: string, src: string) =>
       `src=${quote}${assetURL(src)}${quote}`,
