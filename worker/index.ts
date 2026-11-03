@@ -15,6 +15,7 @@ import {
 } from "./comments";
 import { readViews, recordView } from "./views";
 import { admin } from "./admin";
+import { ensurePostCatalog } from "./post-sync";
 import { inbox, updateInbox, testInbox, commentNotification, notificationsReady } from "./notifications";
 async function webhook(request: Request, env: Env) {
   if (!env.DB || !env.GITHUB_WEBHOOK_SECRET)
@@ -125,8 +126,17 @@ const worker = {
       const write = request.method !== "GET" && request.method !== "HEAD";
       if (write && url.pathname !== "/api/webhook/github")
         requireOrigin(request, env);
-      if (env.DB && readReady(env) && url.pathname !== "/api/webhook/github")
+      if (env.DB && readReady(env) && url.pathname !== "/api/webhook/github") {
         await limit(env, `api:${clientIP(request)}`, 180, 60);
+        // GitHub-triggered Workers Builds do not run db:sync:remote. Align D1
+        // from the deployed manifest before API reads, without taking comments
+        // offline if an unrelated historical slug conflict needs attention.
+        try {
+          await ensurePostCatalog(env);
+        } catch {
+          console.error(JSON.stringify({ event: "post_catalog_sync_failed" }));
+        }
+      }
       let response: Response;
       if (url.pathname === "/api/status" && request.method === "GET")
         response = json({ comments: readReady(env), login: authReady(env), notifications: notificationsReady(env) });
@@ -267,6 +277,11 @@ const worker = {
     _ctx: ExecutionContext,
   ) {
     if (!env.DB) return;
+    try {
+      await ensurePostCatalog(env, true);
+    } catch {
+      console.error(JSON.stringify({ event: "post_catalog_sync_failed", source: "scheduled" }));
+    }
     const t = now();
     if (env.NOTIFICATIONS_ENABLED === "true") {
       // Keep a bounded, private inbox; notification metadata is not archived.
