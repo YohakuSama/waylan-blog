@@ -120,6 +120,27 @@ export function NotificationBell() {
       setBusy(false);
     }
   };
+  const markAll = async () => {
+    if (!box.unread || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/notifications", {
+        method: "POST",
+        headers: { "X-CSRF-Token": csrf },
+        body: JSON.stringify({ all: true }),
+      });
+      setBox((prev) => ({
+        ...prev,
+        unread: 0,
+        items: prev.items.map((item) => ({ ...item, read: true })),
+      }));
+    } catch {
+      setError("消息状态保存失败，请重试。");
+    } finally {
+      setBusy(false);
+    }
+  };
   const testNotification = async (method: "POST" | "DELETE") => {
     if (busy) return;
     setBusy(true);
@@ -193,7 +214,7 @@ export function NotificationBell() {
           <div className="notification-controls">
             <span>{box.unread} 条未读</span>
             <button type="button" className="text-button" disabled={busy || !box.unread}
-              onClick={() => void mark(box.items.filter((item) => !item.read).map((item) => item.id))}>
+              onClick={() => void markAll()}>
               <Check size={13} /> 全部已读
             </button>
           </div>
