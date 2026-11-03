@@ -27,7 +27,7 @@ jobs:
         run: npm run check
       - name: Install browser test runner
         run: |
-          npm install --no-save --no-package-lock playwright@1.56.1
+          npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
           npx playwright install --with-deps chromium
       - name: Check real desktop, tablet and phone viewports
         run: node scripts/visual-smoke.mjs
@@ -61,6 +61,16 @@ jobs:
           npx playwright install --with-deps chromium firefox webkit
       - name: Cross-browser motion and admin regression
         run: node scripts/quality-smoke.mjs
+      - name: Automated WCAG accessibility audit
+        run: node scripts/a11y-smoke.mjs
+      - name: Upload WCAG findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-accessibility-audit
+          path: accessibility-report/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload cross-browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
