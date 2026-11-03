@@ -110,6 +110,14 @@ a:hover {
   animation-duration: 420ms;
   animation-timing-function: var(--ease-spring);
 }
+/* List pages can contain the same post at very different coordinates:
+   homepage cards, the full feed, and the project subset. Moving every title
+   and cover as a shared element makes them fly/flash independently of the
+   page. Keep shared post motion only for an actual reader transition. */
+:root[data-route-motion="collection"] .feed-item .feed-body h2,
+:root[data-route-motion="collection"] .feed-item .feed-media {
+  view-transition-name: none !important;
+}
 /* Forward: old page lifts away, new one rises in. Back mirrors it. */
 ::view-transition-old(root) { animation: var(--motion-fast) var(--ease-in) both vt-out; }
 ::view-transition-new(root) { animation: var(--motion-page) var(--ease-out) 40ms both vt-in; }
