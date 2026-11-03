@@ -60,6 +60,11 @@ async function publicBrowsers() {
             await page.route("**/api/status", (route) => route.fulfill({
               json: { notifications: false, comments: false, login: false },
             }));
+            // The Vite static preview has no Worker view-count endpoint.
+            // Intercept this best-effort POST so WebKit navigation is tested
+            // without an in-flight request to a nonexistent preview API.
+            await page.route("**/api/posts/*/view", (route) =>
+              route.fulfill({ json: { enabled: false, views: null } }));
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
             // The first navigation should exercise hydrated handlers, not a
             // click raced against downloading/starting the client bundle.
