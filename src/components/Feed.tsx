@@ -307,7 +307,7 @@ export function ViewToggle({
       <button
         type="button"
         aria-pressed={density === "full"}
-        aria-label="详细列表"
+        aria-label="图文 · 详细列表"
         data-tip="详细列表"
         onClick={() => listTransition(() => flushSync(() => onChange("full")))}
       >

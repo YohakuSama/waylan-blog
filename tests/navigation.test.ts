@@ -7,7 +7,7 @@ import App from "../src/App";
 import { fragmentId, isAppRoute } from "../src/lib/router";
 import Reader from "../src/components/Reader";
 import worker from "../worker/index";
-import { posts } from "../src/lib/data";
+import { metadata, posts, structuredData } from "../src/lib/data";
 import { invalidateComments } from "../src/lib/api";
 let dom: JSDOM,
   root: Root,
@@ -46,7 +46,7 @@ async function mount(path = "/") {
 beforeEach(async () => {
   invalidateComments();
   dom = new JSDOM(
-    '<!doctype html><html><head><meta name="description"><link rel="canonical"></head><body><div id="root"></div></body></html>',
+    '<!doctype html><html><head><meta name="description"><link rel="canonical"><script id="structured-data" type="application/ld+json"></script></head><body><div id="root"></div></body></html>',
     { url: "https://echo.test/", pretendToBeVisual: true },
   );
   y = 0;
@@ -703,7 +703,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     localStorage.setItem("echo:density", JSON.stringify("compact"));
     await mount("/feed");
     assert.ok(document.querySelector(".feed-list.density-compact"));
-    await click(document.querySelector('button[aria-label="详细列表"]'));
+    await click(document.querySelector('button[aria-label="图文 · 详细列表"]'));
     assert.ok(document.querySelector(".feed-list.density-full"));
     assert.equal(JSON.parse(localStorage.getItem("echo:density") || "null"), "full");
   });
@@ -878,6 +878,17 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(document.querySelector(".notification-trigger"));
     assert.match(document.querySelector(".notification-item")?.textContent || "", /friend 回复了你/);
   });
+  it("keeps article and website JSON-LD complete after client route changes", async () => {
+    await mount("/post/" + posts[0].slug);
+    const readData = () => JSON.parse(document.getElementById("structured-data")?.textContent || "{}");
+    assert.deepEqual(readData(), structuredData(metadata("/post/" + posts[0].slug)));
+    assert.equal(readData().dateModified, posts[0].updated || posts[0].date);
+    assert.equal(readData().inLanguage, "zh-CN");
+    assert.equal(readData().isAccessibleForFree, true);
+    await click(document.querySelector('#site-nav a[href="/feed"]'));
+    await settle(70);
+    assert.deepEqual(readData(), structuredData(metadata("/feed")));
+  });
   it("switches skin and colour mode from one settings panel and persists both", async () => {
     await mount();
     // Reading shelf + settings; everything else lives inside the settings panel.
@@ -895,6 +906,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     // "System" follows prefers-color-scheme, which this environment reports as dark.
     await click(document.querySelector('input[name="theme"][value="system"]'));
     assert.equal(document.documentElement.dataset.theme, "dark");
+    // A preference changed in another tab should refresh both the palette and settings controls.
+    await act(async () => {
+      localStorage.setItem("echo:theme", JSON.stringify("light"));
+      dom.window.dispatchEvent(new dom.window.StorageEvent("storage", { key: "echo:theme" }));
+      await pause(20);
+    });
+    assert.equal(document.documentElement.dataset.theme, "light");
+    assert.ok(document.querySelector<HTMLInputElement>('input[name="theme"][value="light"]')?.checked);
   });
   it("focuses the search field, navigates results by keyboard and opens the full result list", async () => {
     await mount();

@@ -9,7 +9,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { currentRoute, offlinePreview, routeHref, newId } from "./runtime";
-import { metadata, posts, site } from "./data";
+import { metadata, posts, structuredData } from "./data";
 import { loadReader } from "./reader-loader";
 import { transient } from "./storage";
 import { listTransition, motionAllowed, navigateWithMotion } from "./motion";
@@ -322,23 +322,7 @@ export function RouterProvider({
       document.querySelector(selector)?.setAttribute(attribute, value);
     const structured = document.getElementById("structured-data");
     if (structured)
-      structured.textContent = JSON.stringify(
-        m.post
-          ? {
-              "@context": "https://schema.org",
-              "@type": "BlogPosting",
-              headline: m.post.title,
-              datePublished: m.post.date,
-              author: { "@type": "Person", name: site.author },
-              url: m.canonical,
-            }
-          : {
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: site.name,
-              url: m.canonical,
-            },
-      );
+      structured.textContent = JSON.stringify(structuredData(m));
   }, [path]);
   return (
     <Context

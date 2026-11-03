@@ -1,6 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { JSDOM } from "jsdom";
-import { posts, site } from "../src/lib/data";
+import { metadata, posts, site, structuredData } from "../src/lib/data";
 import assert from "node:assert/strict";
 for (const path of [
   "index.html",
@@ -28,6 +28,16 @@ for (const path of [
     "h1",
   ])
     assert(doc.querySelector(selector), path + " missing " + selector);
+  const route = path === "index.html"
+    ? "/"
+    : path === "404.html"
+      ? "/404"
+      : "/" + path.replace(/\/index\.html$/, "");
+  assert.deepEqual(
+    JSON.parse(doc.querySelector('script[type="application/ld+json"]')!.textContent || "{}"),
+    structuredData(metadata(route)),
+    path + " structured data disagrees with the shared metadata builder",
+  );
   assert(
     doc.querySelector("main")!.textContent!.trim().length >
       (path === "404.html" ? 30 : 80),

@@ -43,6 +43,35 @@ export function metadata(path: string) {
     post,
   };
 }
+/** A single schema builder is used by static HTML and client-side navigation.
+ * Otherwise the article JSON-LD loses fields after the first SPA transition. */
+export function structuredData(m: ReturnType<typeof metadata>) {
+  const image = m.image.replace(".svg", ".png");
+  return m.post
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: m.post.title,
+        description: m.post.excerpt,
+        datePublished: m.post.date,
+        dateModified: m.post.updated || m.post.date,
+        author: { "@type": "Person", name: site.author },
+        mainEntityOfPage: m.canonical,
+        url: m.canonical,
+        image,
+        inLanguage: "zh-CN",
+        isAccessibleForFree: true,
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: site.name,
+        url: site.origin,
+        description: site.description,
+        inLanguage: "zh-CN",
+        image,
+      };
+}
 /** Sort comparator: newest date first, slug as a stable tie-breaker. */
 export const newestFirst = (a: Post, b: Post) =>
   b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug);

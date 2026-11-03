@@ -66,8 +66,12 @@ export function newId() {
 }
 
 export function articleHTML(html: string) {
-  if (!offlinePreview()) return html;
-  return html.replace(
+  // Keyboard users need a focusable region for long, horizontally scrolling code.
+  // Shared SSR/client markup prevents hydration from disagreeing on this attribute.
+  const accessible = html.replace(/<pre\b([^>]*)>/gi, (tag, attrs: string) =>
+    /\btabindex\s*=/.test(attrs) ? tag : `<pre tabindex="0"${attrs}>`);
+  if (!offlinePreview()) return accessible;
+  return accessible.replace(
     /\bsrc=(["'])(\/[^"']+)\1/g,
     (attribute, quote: string, src: string) =>
       `src=${quote}${assetURL(src)}${quote}`,

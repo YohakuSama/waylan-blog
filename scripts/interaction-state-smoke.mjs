@@ -94,7 +94,7 @@ async function scenario(engine, name, width, motion, seed) {
       await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: false, comments: false } }));
       await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
       await page.goto(base + "/", { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: "搜索（Ctrl K）" }).waitFor();
+      await page.getByRole("button", { name: "搜索 Ctrl K" }).waitFor();
       await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait"));
       await step(prefix + "/search-submit-no-extra-actions", page, async () => {
         const before = await page.evaluate(() => window.__qaHistory.length);
