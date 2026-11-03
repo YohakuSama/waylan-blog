@@ -19,8 +19,8 @@ describe("Deployed article catalog and D1 reconciliation", () => {
         row("added-article", "new-article"),
       ]);
       assert.equal(changed.changed, 3);
-      assert.deepEqual(sqlite.prepare("SELECT slug,title,version FROM posts WHERE id='echo-001'")
-        .get(), { slug: "new-permalink", title: "修改后的标题", version: "v2" });
+      assert.deepEqual({ ...sqlite.prepare("SELECT slug,title,version FROM posts WHERE id='echo-001'")
+        .get() }, { slug: "new-permalink", title: "修改后的标题", version: "v2" });
       assert.equal(sqlite.prepare("SELECT discussion_id FROM discussions WHERE post_id='echo-001'")
         .get()!.discussion_id, "D1");
       assert.equal((await reconcilePostCatalog(db, [
