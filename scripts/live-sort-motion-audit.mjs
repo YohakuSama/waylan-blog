@@ -130,12 +130,19 @@ async function audit(engine, name, width, seed) {
       // Randomize harmless route order and return to the feed after each cycle.
       // There is no random sort option on Waylan; this tests random *actions*.
       for (const route of shuffled(["/projects", "/archive", "/", "/feed"], seed)) {
-        const href = route === "/" ? "/" : route + "/";
-        const navigated = await page.goto(origin + href, {
-          waitUntil: "domcontentloaded", timeout: 20000,
+        // Trigger the site's own React router, not a new-document reload.
+        // Hidden mobile-nav links can still be activated programmatically.
+        await page.evaluate((destination) => {
+          const link = [...document.querySelectorAll("#site-nav a")].find((a) =>
+            a.getAttribute("href") === destination);
+          if (!link) throw new Error("Missing internal route link " + destination);
+          link.click();
+        }, route);
+        await page.waitForURL((u) => u.pathname.replace(/\\/$/, "") === (route === "/" ? "" : route), {
+          timeout: 12000,
         });
-        assert.ok(navigated?.ok(), prefix + ": route " + route + " HTTP failure");
-        await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait"));
+        await page.waitForFunction(() => !document.documentElement.hasAttribute("data-navigation"));
+        await page.waitForTimeout(500);
         const overflow = await page.evaluate(() =>
           document.documentElement.scrollWidth - document.documentElement.clientWidth);
         assert.ok(overflow <= 1, prefix + ": route " + route + " overflow " + overflow);
