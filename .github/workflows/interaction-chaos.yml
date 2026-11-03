@@ -3,9 +3,6 @@ name: Interaction state-machine regression
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "scripts/interaction-state-smoke.mjs"
-      - ".github/workflows/interaction-chaos.yml"
   workflow_dispatch:
 
 permissions:
