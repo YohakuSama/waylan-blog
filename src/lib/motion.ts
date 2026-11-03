@@ -264,11 +264,18 @@ export function navigateWithMotion(
  */
 // Only list-changing actions share this gate. Never lock typing, browser
 // navigation, dialog dismissal or assistive controls behind a global click timer.
-const activeListDocuments = new WeakSet<Document>();
+type QueuedListChange = { change: () => void; onFinished?: () => void };
+type ListTransaction = { queued: QueuedListChange | null };
+const activeListDocuments = new WeakMap<Document, ListTransaction>();
 export function listTransition(change: () => void, onFinished?: () => void) {
   const doc = document as ViewTransitionDocument;
-  if (activeListDocuments.has(doc)) {
-    onFinished?.();
+  const active = activeListDocuments.get(doc);
+  if (active) {
+    // The browser may still be animating a previous sort. Never silently drop
+    // the latest user choice; execute it once the current snapshot settles.
+    // Superseded pending route callbacks must still release their locks.
+    active.queued?.onFinished?.();
+    active.queued = { change, onFinished };
     return;
   }
   if (!motionAllowed()) {
@@ -277,7 +284,8 @@ export function listTransition(change: () => void, onFinished?: () => void) {
   }
 
   const root = doc.documentElement;
-  activeListDocuments.add(doc);
+  const transaction: ListTransaction = { queued: null };
+  activeListDocuments.set(doc, transaction);
   root.dataset.listBusy = "true";
   let changed = false;
   let settled = false;
@@ -289,6 +297,13 @@ export function listTransition(change: () => void, onFinished?: () => void) {
     if (root.dataset.vt === "list") delete root.dataset.vt;
     delete root.dataset.listBusy;
     onFinished?.();
+    const next = transaction.queued;
+    if (next) {
+      // Allow the completed View Transition to release its top-layer snapshot
+      // before launching the final requested update. The router's serial guard
+      // prevents a stale queued destination from overwriting a newer route.
+      queueMicrotask(() => listTransition(next.change, next.onFinished));
+    }
   };
   // A safety valve, not a debounce: normal release is driven by actual
   // animation completion. A stalled browser API must never freeze interaction.
