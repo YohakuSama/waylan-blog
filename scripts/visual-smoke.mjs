@@ -182,7 +182,7 @@ try {
 
           if (route === "/feed" && [320, 768, 1440].includes(width)) {
             const newest = await page.locator(".feed-item time").first().getAttribute("datetime");
-            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.getByRole("button", { name: "图文 · 详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
             assert.equal(await page.locator(".feed-media-link").first().isVisible(), true, `${label}: cannot restore detailed view`);
             await page.locator(".sort-control select").selectOption("oldest");
@@ -201,7 +201,7 @@ try {
             assert.equal(await page.locator(".home-list time").first().getAttribute("datetime"), newest, `${label}: library sorting leaked into home`);
             await page.locator('#site-nav a[href="/feed"]').click();
             await page.locator(".feed-list.density-compact").waitFor();
-            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.getByRole("button", { name: "图文 · 详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
             if ([320, 768, 1440].includes(width)) await page.screenshot({ path: `${out}/${label}-detailed.png`, animations: "disabled" });
           }
