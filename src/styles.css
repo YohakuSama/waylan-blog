@@ -2196,6 +2196,9 @@ body,
   .discussion-dialog.thread-dialog .discussion-panel-body {
     max-height: none;
   }
+  /* Programmatic initial focus belongs to the sheet, not the close button.
+     Tab navigation still shows the normal focus ring on interactive controls. */
+  .discussion-dialog.thread-dialog:focus-visible { outline: none; }
 }
 @media (max-width: 767px) {
   .discussion-dialog.composer-dialog .discussion-panel-body {
