@@ -34,6 +34,7 @@ import {
   discussionTitle,
 } from "../shared/discussions";
 import { fromBase64, MAX_IMAGE, UPLOAD_PATH, uploadPath } from "../shared/uploads";
+import { updatePostRedirects, validatePostRedirects } from "../shared/redirects";
 
 const POSTS = "content/posts",
   SITE = "content/site.json",
@@ -446,6 +447,7 @@ async function savePost(request: Request, env: Env, login: string) {
   const [all, meta] = await Promise.all([posts(env, at.oid), files(env, at.oid, [SITE])]);
   const topics = topicsOf(parseSite(meta[SITE]));
   let file: string;
+  let previousSlug: string | null = null;
   if (editing) {
     file = input.file as string;
     const current = all.find((p) => p.file === file);
@@ -455,6 +457,7 @@ async function savePost(request: Request, env: Env, login: string) {
     const before = parseFrontmatter(current.text).data,
       stem = file.replace(/\.md$/, ""),
       id = String(before.id || before.slug || stem);
+    previousSlug = String(before.slug || stem);
     if (String(data.id || data.slug || stem) !== id) data.id = id;
   } else {
     const slug = text(data.slug, "链接名（slug）", 80, true);
@@ -480,6 +483,25 @@ async function savePost(request: Request, env: Env, login: string) {
   const uploads = await images(input.uploads, `${body}\n${post.cover || ""}`);
   if (post.cover)
     await requireFiles(env, at.oid, [post.cover], uploads.map((u) => u.path));
+  // Keep old article URLs alive. This asset rule is committed together with the
+  // markdown edit so Cloudflare can never publish the new slug without its 301.
+  let redirectText: string | null = null;
+  if (previousSlug !== post.slug) {
+    const old = (await files(env, at.oid, ["public/_redirects"]))["public/_redirects"];
+    try {
+      redirectText = updatePostRedirects(old?.text || "", previousSlug, post.slug);
+      if (redirectText) {
+        const active = all.filter((p) => p.file !== file).map((p) => summary(p, topics));
+        validatePostRedirects(redirectText, [
+          ...active.filter((p): p is ReturnType<typeof summary> & { slug: string } => "slug" in p)
+            .map((p) => p.slug),
+          post.slug,
+        ]);
+      }
+    } catch (error) {
+      throw invalid((error as Error).message);
+    }
+  }
   const markdown = stringifyFrontmatter(data, body);
   const sha = await commit(
     env,
@@ -487,6 +509,7 @@ async function savePost(request: Request, env: Env, login: string) {
     `${editing ? "更新" : "发布"}：${post.title}${by(login)}`,
     [
       { path: `${POSTS}/${file}`, text: markdown },
+      ...(redirectText ? [{ path: "public/_redirects", text: redirectText }] : []),
       ...uploads.map((u) => ({ path: `public${u.path}`, base64: u.base64 })),
     ],
   );
