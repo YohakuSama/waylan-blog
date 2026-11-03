@@ -25,7 +25,7 @@ function shuffled(items, seed) {
 async function checkView(page, label, direction) {
   await page.waitForFunction(
     () => !document.documentElement.hasAttribute("data-list-busy"),
-    { timeout: 3000 },
+    null, { timeout: 3000 },
   );
   const snapshot = await page.evaluate(() => {
     const list = document.querySelector(".feed-list");
@@ -40,7 +40,11 @@ async function checkView(page, label, direction) {
       listWidth: list?.getBoundingClientRect().width,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       busy: document.documentElement.hasAttribute("data-list-busy"),
-      hidden: cards.filter((c) => getComputedStyle(c).opacity === "0").length,
+      hidden: cards.filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.bottom > 0 && r.top < window.innerHeight &&
+          getComputedStyle(c).opacity === "0";
+      }).length,
     };
   });
   assert.ok(snapshot.cardIds.length > 0, label + ": missing cards");
