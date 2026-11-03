@@ -649,7 +649,11 @@ export default function Reader({ post }: { post: Post }) {
     const scroll = () => {
       // Native drag-selection may be transient; explicit tap-to-excerpt is a
       // deliberate choice and must survive small scrolls while taking action.
-      if (!excerptMode) setSelection(null);
+      // WebKit may dispatch scroll as the native selection handles and
+      // visual viewport settle. Keep the touch action tray until explicit
+      // dismissal instead of making it flash and vanish after a long press.
+      if (!excerptMode && !window.matchMedia("(any-pointer: coarse)").matches)
+        setSelection(null);
       if (!frame) frame = requestAnimationFrame(update);
     };
     // Read the saved position before the first update() can overwrite it.
@@ -686,6 +690,10 @@ export default function Reader({ post }: { post: Post }) {
     };
     const onPointerDown = (event: PointerEvent) => {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      // Tapping other controls deliberately dismisses the selection; native
+      // selection handles and their system menu remain outside this event.
+      if (event.pointerType === "touch" && prose.current &&
+          !prose.current.contains(event.target as Node)) setSelection(null);
       pointerDown = true;
     };
     const onPointerUp = (event: PointerEvent) => {
@@ -693,7 +701,10 @@ export default function Reader({ post }: { post: Post }) {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
       clearTimeout(timer);
       // Selection handles and the native menu are asynchronous on iOS.
-      timer = setTimeout(() => scan(true), event.pointerType === "touch" ? 420 : 140);
+      const touch = event.pointerType === "touch";
+      // Native selection can transiently collapse after a long-press pointerup.
+      // A missing range on touch is not proof the reader dismissed the tray.
+      timer = setTimeout(() => scan(!touch), touch ? 420 : 140);
     };
     const onPointerCancel = () => { pointerDown = false; };
     const onSelectionChange = () => {
@@ -841,13 +852,19 @@ export default function Reader({ post }: { post: Post }) {
         await navigator.clipboard.writeText(
           `${anchor ? text + "\n" : ""}${url}`,
         );
-        notify("系统分享不可用，分享内容和链接已复制。");
+        notify("分享内容和链接已复制，可以粘贴发送。");
       } catch {
         notify("系统分享未完成，请复制文章地址栏链接。");
       }
     };
     try {
-      if (navigator.share && (!navigator.canShare || navigator.canShare(payload))) {
+      // Desktop OS share sheets can appear and immediately close without
+      // delivering anything, sometimes resolving the Promise. On fine-pointer
+      // desktops, provide a reliable copy action rather than a false success.
+      // Keep the native share sheet on touch devices that support it.
+      const desktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (!desktop && navigator.share &&
+          (!navigator.canShare || navigator.canShare(payload))) {
         await navigator.share(payload);
       } else await fallback();
     } catch (e) {
@@ -1499,13 +1516,29 @@ export default function Reader({ post }: { post: Post }) {
                     }
                     onClick={(e) => {
                       e.preventDefault();
-                      const destination = document.getElementById(t.id);
-                      destination?.scrollIntoView({
-                        behavior: motionAllowed() ? "smooth" : "instant",
-                        block: "start",
-                      });
-                      destination?.focus({ preventScroll: true });
+                      const targetId = t.id;
                       setTocOpen(false);
+                      // Resolve the exact rendered block *after* closing the
+                      // mobile TOC. Use its physical position, avoiding a
+                      // browser smooth-scroll that can land in the next section.
+                      window.requestAnimationFrame(() => {
+                        const destination = prose.current?.querySelector<HTMLElement>(
+                          `[data-block-id="${targetId}"]`,
+                        );
+                        if (!destination) return;
+                        const margin = Number.parseFloat(
+                          window.getComputedStyle(destination).scrollMarginTop,
+                        ) || 0;
+                        window.scrollTo({
+                          top: Math.max(
+                            0,
+                            window.scrollY + destination.getBoundingClientRect().top - margin,
+                          ),
+                          behavior: "instant",
+                        });
+                        destination.focus({ preventScroll: true });
+                        setActiveSection(targetId);
+                      });
                     }}
                   >
                     {t.title}

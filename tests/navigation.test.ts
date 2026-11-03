@@ -447,12 +447,13 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".discussion-dialog.composer-dialog[open]"), null);
     assert.equal(document.querySelector("mark.private-mark"), null);
   });
-  it("copies selected text and a permalink if the native share sheet fails", async () => {
+  it("copies selected text on desktop without invoking the flashing system share sheet", async () => {
     await mount("/post/a-room-on-the-internet");
     let copied = "";
+    let nativeCalls = 0;
     Object.defineProperty(navigator, "share", {
       configurable: true,
-      value: async () => { throw new Error("NotAllowedError: share unavailable"); },
+      value: async () => { nativeCalls++; throw new Error("NotAllowedError: share unavailable"); },
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -471,6 +472,39 @@ describe("React navigation and reading interactions (DOM integration, not browse
     )!);
     assert.ok(copied.includes("/post/a-room-on-the-internet"));
     assert.ok(copied.includes(p.textContent!.slice(0, 12)));
+    assert.equal(nativeCalls, 0, "desktop must not open the unreliable native share sheet");
+  });
+  it("anchors 水合一致性 to its own heading rather than 稳定的标识", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const links = [...document.querySelectorAll<HTMLAnchorElement>(".reader-toc nav a")];
+    const hydration = links.find((a) => a.textContent === "水合一致性")!;
+    const stable = links.find((a) => a.textContent === "稳定的标识")!;
+    assert.ok(hydration && stable);
+    assert.notEqual(hydration.hash, stable.hash, "separate headings need distinct anchors");
+    await click(hydration);
+    await settle(60);
+    assert.equal(document.activeElement?.id, "h-hydration");
+    assert.equal(document.querySelector(".reader-toc nav a.active")?.textContent, "水合一致性");
+  });
+  it("keeps a long-press tray after WebKit's touch pointerup and viewport scroll", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    window.getSelection()!.removeAllRanges();
+    const up = new dom.window.Event("pointerup", { bubbles: true });
+    Object.defineProperty(up, "pointerType", { value: "touch" });
+    p.dispatchEvent(up);
+    window.dispatchEvent(new dom.window.Event("scroll"));
+    await settle(520);
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "long-press selection must survive the native menu's transient collapse and scroll");
   });
   it("opens a genuine selection in the composer and clearly disables unavailable GitHub login", async () => {
     await mount("/post/a-room-on-the-internet");

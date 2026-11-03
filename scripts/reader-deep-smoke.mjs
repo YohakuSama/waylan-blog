@@ -61,6 +61,31 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"article reading → reading settings → light-to-dark theme segment",sampled,intermediate,settled});
       assert.equal(settled.thumbContent,"none", "the selected background must stay attached to its label, not lag behind on a separate animated thumb");
       assert.notEqual(settled.activeBackground,"rgba(0, 0, 0, 0)", "selected label must show a real background");
+      // End-to-end TOC regression: the original report was a jump from
+      // "水合一致性" into the later "稳定的标识" section. DOM-only
+      // title/ID checks cannot catch a bad physical scroll landing.
+      await page.goto(origin+"/post/a-room-on-the-internet/",{waitUntil:"domcontentloaded"});
+      await page.locator('.reader-prose [data-block-id="h-hydration"]').waitFor();
+      await page.evaluate(()=>document.fonts.ready);
+      if(width<=1040) await page.locator(".mobile-toc").click();
+      await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
+      await page.waitForTimeout(120);
+      const tocPosition=await page.evaluate(()=>{
+        const hydration=document.getElementById("h-hydration");
+        const stable=document.getElementById("h-ids");
+        const top=hydration.getBoundingClientRect().top;
+        const expected=parseFloat(getComputedStyle(hydration).scrollMarginTop)||0;
+        return {top,expected,stableTop:stable.getBoundingClientRect().top,
+          focused:document.activeElement?.id,active:document.querySelector(".reader-toc nav a.active")?.textContent?.trim()};
+      });
+      observations.push({browser:name,width,scenario:"TOC 水合一致性 jumps to its own heading",tocPosition});
+      assert.ok(Math.abs(tocPosition.top-tocPosition.expected)<22,
+        `TOC landed at ${tocPosition.top}px instead of ${tocPosition.expected}px: ${JSON.stringify(tocPosition)}`);
+      assert.ok(tocPosition.stableTop>tocPosition.top+100,
+        "TOC jumped to 稳定的标识 instead of 水合一致性");
+      assert.equal(tocPosition.focused,"h-hydration");
+      assert.equal(tocPosition.active,"水合一致性");
+      await page.screenshot({path:dir+"/"+name+"-"+width+"-toc-hydration.png",animations:"disabled"});
       assert.deepEqual(errors,[], "runtime errors");
     }finally{await ctx.close()}
   }finally{await browser.close()}
