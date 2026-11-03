@@ -6,7 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { chromium, firefox, webkit } from "playwright";
 
 const origin = (process.env.WAYLAN_AUDIT_ORIGIN || "https://waylan.org").replace(/\/$/, "");
-const output = "live-motion-report";
+const output = process.env.WAYLAN_AUDIT_OUTPUT || "live-motion-report";
 await mkdir(output, { recursive: true });
 const observations = [];
 const failures = [];
