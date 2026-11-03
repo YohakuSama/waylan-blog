@@ -142,7 +142,7 @@ async function audit(engine, name, width, seed) {
           if (!link) throw new Error("Missing internal route link " + destination);
           link.click();
         }, route);
-        await page.waitForURL((u) => u.pathname.replace(/\\/$/, "") === (route === "/" ? "" : route), {
+        await page.waitForURL((u) => (u.pathname.endsWith("/") ? u.pathname.slice(0, -1) : u.pathname) === (route === "/" ? "" : route), {
           timeout: 12000,
         });
         await page.waitForFunction(() => !document.documentElement.hasAttribute("data-navigation"));
