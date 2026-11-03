@@ -662,7 +662,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("supports the same content types through the compact phone selector and desktop tabs", async () => {
     await mount("/feed");
-    const select = document.querySelector<HTMLSelectElement>(".mobile-type-select select")!;
+    const select = document.querySelector(".mobile-type-select select") as unknown as HTMLSelectElement;
     assert.equal(select.options.length, 6);
     assert.equal(select.value, "all");
     await act(async () => {
