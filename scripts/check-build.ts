@@ -103,6 +103,7 @@ for (const file of [
   "robots.txt",
   "404.html",
   "_headers",
+  "_redirects",
   "theme.js",
 ])
   await readFile("dist/" + file);
