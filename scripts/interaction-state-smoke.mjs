@@ -157,8 +157,12 @@ async function scenario(engine, name, width, motion, seed) {
         await page.locator(".sort-control select").selectOption("oldest");
         await page.waitForURL((url) => url.searchParams.get("sort") === "oldest", { timeout: 12000 });
         const notes = page.locator(".filter-tabs button").filter({ hasText: "随笔" });
-        if (await notes.count()) {
-          await notes.first().click();
+        const topicSelect = page.locator(".topic-select select");
+        if ((await notes.count()) || (await topicSelect.count())) {
+          // The theme tabs are intentionally hidden at narrow widths.
+          // Exercise the actual mobile select rather than clicking hidden UI.
+          if (await notes.first().isVisible()) await notes.first().click();
+          else await topicSelect.selectOption("notes");
           await page.waitForURL((url) => url.searchParams.get("topic") === "notes", { timeout: 12000 });
           assert.equal(new URL(page.url()).searchParams.get("sort"), "oldest");
           await page.goBack();
