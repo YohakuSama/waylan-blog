@@ -1175,8 +1175,9 @@ html {
     font-size: 13px;
     min-width: 0;
   }
-  :root[data-skin="terminal"] .brand-term > i:first-of-type,
-  :root[data-skin="terminal"] .brand-term > span:not(.term-cursor) { display: none; }
+  /* Reserve the same narrow brand slot as editorial when all tools are visible. */
+  :root[data-skin="terminal"] .brand-term > i,
+  :root[data-skin="terminal"] .brand-term > span { display: none; }
   :root[data-skin="terminal"] .home-hero .hero-visual {
     opacity: 0.12;
   }

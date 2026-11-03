@@ -1557,8 +1557,7 @@ h3 {
   .mobile-menu {
     display: inline-flex;
   }
-  /* The optional inbox must stay within the viewport even when its trigger
-     appears before the other header actions on a narrow phone. */
+  /* Keep the inbox panel within the viewport on phones and tablets. */
   .notification-popover {
     position: fixed;
     top: calc(var(--header-height) + 8px);
@@ -1725,7 +1724,7 @@ h3 {
   :root {
     --page-gutter: 18px;
   }
-  .brand { max-width: 112px; overflow: hidden; }
+  .brand { max-width: min(112px, 100%); overflow: hidden; }
   .brand-wordmark { max-width: 100%; }
   .header-tools {
     gap: 0;
