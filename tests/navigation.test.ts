@@ -425,6 +425,61 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"),
       "Safari may collapse the native selection while the action tray is being tapped");
   });
+  it("dismisses the selected-text tray and native range on a deliberate blank tap", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // A real short touch tap outside the selection should close both UIs.
+    const blank = document.querySelector(".article-heading")!;
+    const pointer = (type: string, x: number) => {
+      const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(event, {
+        pointerType: { value: "touch" },
+        clientX: { value: x },
+        clientY: { value: 180 },
+      });
+      blank.dispatchEvent(event);
+    };
+    await act(async () => {
+      pointer("pointerdown", 15);
+      pointer("pointerup", 15);
+      blank.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 1,
+      }));
+      await pause(30);
+    });
+    assert.equal(document.querySelector(".selection-toolbar"), null);
+    assert.equal(window.getSelection()?.toString(), "");
+    // A fresh long press/select still opens the toolbar normally.
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // Selection-handle movement is not a short tap even if WebKit emits click.
+    await act(async () => {
+      pointer("pointerdown", 15);
+      pointer("pointerup", 38);
+      blank.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 1,
+      }));
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "dragging text-selection handles must not dismiss the toolbar");
+    // Touching the toolbar actions themselves should not dismiss it.
+    await click(document.querySelector(".selection-toolbar-context"));
+    assert.ok(document.querySelector(".selection-toolbar"));
+    // Blank tap inside the article (not just above it) also dismisses.
+    await click(document.querySelector(".article-block-shell"));
+    assert.equal(document.querySelector(".selection-toolbar"), null);
+  });
   it("deleting the final private mark closes its thread instead of opening the composer", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
