@@ -22,6 +22,7 @@ import {
   wordsLabel,
   topicName,
   typeLabels,
+  typeOrder,
   usedTopics,
 } from "./lib/data";
 import { Link, useRouter } from "./lib/router";
@@ -174,11 +175,10 @@ export function Home() {
             ))}
           </ul>
         </section>
-        <section className="side-block home-reading-note">
-          <h2 className="side-title">阅读与收藏</h2>
-          <p className="side-text">点书签保存待读内容；选中文字可以划线。你的阅读进度会在下次访问时保留。</p>
-          <Link className="home-about-link" href="/about">了解本站<ArrowUpRight size={14} aria-hidden="true" /></Link>
-        </section>
+        <details className="sidebar-note home-reading-note">
+          <summary>阅读与收藏小技巧</summary>
+          <p>点书签可保存待读内容，选中文字可以划线。阅读进度保存在当前浏览器，方便下次继续。</p>
+        </details>
       </aside>
     </div>
   );
@@ -251,6 +251,25 @@ export function Feed() {
                 source={scoped}
                 hrefFor={(t) => href({ type: t })}
               />
+              <label className="mobile-type-select">
+                <span className="sr-only">按内容类型筛选</span>
+                <select
+                  value={type}
+                  onChange={(event) => update({ type: event.target.value })}
+                >
+                  {(["all", ...typeOrder] as TypeFilter[]).map((item) => {
+                    const count = item === "all"
+                      ? scoped.length
+                      : scoped.filter((post) => post.type === item).length;
+                    return (
+                      <option key={item} value={item}>
+                        {item === "all" ? "全部内容" : typeLabels[item]}（{count}）
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown size={14} aria-hidden="true" />
+              </label>
             </div>
             <div className="filter-tabs" role="group" aria-label="按主题筛选">
               <button
@@ -292,12 +311,6 @@ export function Feed() {
                 </select>
                 <ChevronDown size={13} aria-hidden="true" />
               </label>
-              {query && (
-                <Link className="query-chip" href={href({ q: "" })}>
-                  <Search size={14} aria-hidden="true" />“{query}”
-                  <X size={13} aria-label="清除搜索" />
-                </Link>
-              )}
               <label className="sort-control">
                 <span className="sr-only">发布日期排序</span>
                 <select
@@ -313,8 +326,14 @@ export function Feed() {
           </div>
           <div className="feed-result-line" aria-live="polite">
             <span>
-              {query ? `“${query}” · ` : ""}
               {topic === "all" ? "全部主题" : topicName(topic)}
+              {query && (
+                <Link className="query-chip" href={href({ q: "" })}>
+                  <Search size={14} aria-hidden="true" />“{query}”
+                  <X size={13} aria-hidden="true" />
+                  <span className="sr-only">清除搜索</span>
+                </Link>
+              )}
               {tag && (
                 <Link className="tag-chip" href={href({ tag: "" })}>
                   #{tag}

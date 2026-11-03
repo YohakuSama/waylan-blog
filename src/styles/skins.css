@@ -1156,18 +1156,6 @@ html {
   :root[data-skin="terminal"] .home-hero .hero-visual {
     opacity: 0.12;
   }
-  /* Mirror editorial's 3+2 category layout instead of clipping right tabs. */
-  :root[data-skin="terminal"] .type-tabs {
-    display: grid;
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    overflow: visible;
-  }
-  :root[data-skin="terminal"] .type-tabs .type-tab {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
-  }
 }
 @media print {
   .code-bar,
