@@ -461,7 +461,7 @@ describe("Admin: posts", () => {
     assert.match(rules, /^\/post\/a-room-on-the-internet \/post\/new-second 301$/m);
     assert.match(rules, /^\/post\/new-first \/post\/new-second 301$/m);
     assert.doesNotMatch(rules, /\/post\/a-room-on-the-internet \/post\/new-first/);
-    const blocked = await save(draft({ slug: "a-room-on-the-internet" }));
+    const blocked = await save(draft({ slug: "new-first" }));
     assert.equal(blocked.status, 422);
     assert.match(blocked.body.message, /历史旧地址/);
     const restored = await save({ file, oid: two.body.oid, data: { ...first.data, slug: "a-room-on-the-internet" }, body: first.body });
