@@ -7,6 +7,7 @@ import { chromium } from "playwright";
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
 const widths = [1440, 1280, 1279, 1200, 1024, 861, 860, 768, 600, 390, 320];
+const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", '.header-tools > button[aria-label="阅读设置"]'];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet"];
 const variants = [
   { skin: "editorial", theme: "light" },
@@ -53,6 +54,8 @@ try {
       }, variant);
       const page = await context.newPage(), errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
+      await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
+      await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: false } }));
       try {
         for (const route of routes) {
           const target = origin + (route === "/" ? "/" : route + "/");
@@ -63,7 +66,7 @@ try {
           await page.getByRole("button", { name: "搜索（Ctrl K）", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
-          const geometry = await page.evaluate(() => {
+          const geometry = await page.evaluate((headerControls) => {
             const rect = (element) => {
               if (!element || getComputedStyle(element).display === "none") return null;
               const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
@@ -77,7 +80,7 @@ try {
               theme: document.documentElement.dataset.theme,
               brand: select(".brand"), nav: select("#site-nav"), tools: select(".header-tools"),
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
-              controls: [".header-search", ".shelf-trigger", '.header-tools > button[aria-label="阅读设置"]'].map(select),
+              controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
               heroAction: select(".home-hero .primary-button"),
               types: [...document.querySelectorAll(".type-tab")].map(rect),
@@ -94,7 +97,7 @@ try {
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
-          });
+          }, headerControls);
           results.push({ route, width, ...variant, ...geometry });
           // Capture before assertions so a failing state is available to review.
           if ([1440, 768, 390, 320].includes(width))
@@ -176,10 +179,9 @@ try {
           }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
-        // Availability changes after the session request. Exercise the optional
-        // inbox independently, without inventing a signed-in user or messages.
+        // All four header actions stay in place when the service is enabled,
+        // disabled or unavailable. No signed-in user or messages are invented.
         if ([320, 768].includes(width)) {
-          await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
           await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: true } }));
           await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
           const bell = page.getByRole("button", { name: "消息通知，0 条未读", exact: true });
@@ -190,22 +192,35 @@ try {
           const bounds = await inbox.boundingBox();
           const label = `inbox-${width}-${variant.skin}-${variant.theme}`;
           await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
-          notificationResults.push({ width, ...variant, bounds });
+          notificationResults.push({ width, ...variant, state: "enabled", bounds });
           assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y + bounds.height <= 900,
             `${label}: inbox escaped viewport`);
-          for (const [index, selector] of [[1, ".shelf-trigger"], [2, '.header-tools > button[aria-label="阅读设置"]']]) {
+          for (const [index, selector] of headerControls.entries()) {
             const box = await page.locator(selector).boundingBox();
             sameBox(box && { left: box.x, top: box.y, width: box.width, height: box.height },
-              baselines.get(`${width}:/`).controls[index], `${label}: existing action moved when inbox appeared`);
+              baselines.get(`${width}:/`).controls[index], `${label}: header action ${index} moved with service state`);
           }
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
-            `${label}: optional inbox introduced horizontal scrolling`);
+            `${label}: inbox introduced horizontal scrolling`);
+          await inbox.getByRole("button", { name: "关闭消息", exact: true }).click();
+          await page.route("**/api/status", (route) => route.fulfill({ status: 503, json: { error: "unavailable" } }));
+          await page.reload({ waitUntil: "domcontentloaded" });
+          const retryBell = page.getByRole("button", { name: "消息通知", exact: true });
+          await retryBell.click();
+          await page.getByText("暂时无法读取通知，请重试。", { exact: true }).waitFor();
+          const errorBounds = await inbox.boundingBox();
+          notificationResults.push({ width, ...variant, state: "error", bounds: errorBounds });
+          assert.ok(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= width && errorBounds.y + errorBounds.height <= 900,
+            `${label}: error panel escaped viewport`);
+          await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: true } }));
+          await inbox.getByRole("button", { name: "重试", exact: true }).click();
+          await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor();
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
       } finally { await context.close(); }
     }
   }
-  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} optional inbox cases, including menu focus and theme position parity.`);
+  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including menu focus and theme position parity.`);
 } catch (error) {
   await writeFile(`${out}/failure.txt`, error.stack || String(error));
   throw error;
