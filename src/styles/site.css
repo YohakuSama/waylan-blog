@@ -573,7 +573,7 @@ h3 {
   right: 14px;
   top: 8px;
   font-size: 10px;
-  color: color-mix(in srgb, var(--code-ink) 50%, transparent);
+  color: color-mix(in srgb, var(--code-ink) 65%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
