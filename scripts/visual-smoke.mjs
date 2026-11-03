@@ -51,7 +51,8 @@ try {
         localStorage.setItem("echo:skin", JSON.stringify(skin));
         localStorage.setItem("echo:theme", JSON.stringify(theme));
         localStorage.setItem("echo:motion", JSON.stringify("reduced"));
-        localStorage.setItem("echo:density", JSON.stringify("compact"));
+        if (localStorage.getItem("echo:density") === null)
+          localStorage.setItem("echo:density", JSON.stringify("compact"));
         localStorage.setItem("echo:reading", JSON.stringify({ slug: "a-room-on-the-internet", title: "静态优先：内容站的预渲染、水合与边缘 API", progress: 13 }));
       }, variant);
       const page = await context.newPage(), errors = [];
@@ -68,6 +69,12 @@ try {
           await page.getByRole("button", { name: "搜索（Ctrl K）", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
+          // The initial saved preference exercises homepage isolation. Inspect
+          // the full library layout at every width before testing compact mode.
+          if (route === "/feed") {
+            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.locator(".feed-list.density-full").waitFor();
+          }
           const geometry = await page.evaluate((headerControls) => {
             const rect = (element) => {
               if (!element || getComputedStyle(element).display === "none") return null;
@@ -182,7 +189,12 @@ try {
             await page.waitForURL("**sort=oldest");
             assert.notEqual(await page.locator(".feed-item time").first().getAttribute("datetime"), newest, `${label}: sort not applied`);
             await page.getByRole("button", { name: "紧凑列表", exact: true }).click();
-            await page.reload({ waitUntil: "domcontentloaded" });
+            // Vite preview resolves prerendered directory indexes with a
+            // trailing slash; use that existing page for the full reload.
+            // The production Worker canonicalizes these same routes itself.
+            const reloadURL = new URL(page.url());
+            reloadURL.pathname = "/feed/";
+            await page.goto(reloadURL.href, { waitUntil: "domcontentloaded" });
             await page.locator(".feed-list.density-compact").waitFor();
             await page.locator('#site-nav a[href="/"]').click();
             await page.locator(".home-list.density-full").waitFor();
