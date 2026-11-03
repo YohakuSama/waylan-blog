@@ -190,6 +190,27 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".post-card").length,
       posts.filter((p) => p.topic === "notes").length);
   });
+  it("returns to the original filtered list after visiting neighboring articles", async () => {
+    await mount("/feed?topic=notes");
+    const first = document.querySelector<HTMLAnchorElement>(".post-card-link")!;
+    assert.ok(first, "filtered list should contain a post");
+    await click(first);
+    const firstPath = location.pathname;
+    assert.ok(firstPath.startsWith("/post/"));
+    const neighbor = document.querySelector<HTMLAnchorElement>(
+      '.article-neighbors a[href^="/post/"]',
+    )!;
+    assert.ok(neighbor, "article has a previous/next article");
+    await click(neighbor);
+    assert.ok(location.pathname.startsWith("/post/"));
+    assert.notEqual(location.pathname, firstPath);
+    await click(document.querySelector(".reader-topbar > button"));
+    await settle(100);
+    assert.equal(location.pathname, "/feed",
+      "the Return to list control must skip already-read neighboring articles");
+    assert.equal(location.search, "?topic=notes",
+      "return-to-list should preserve the originating filter");
+  });
   it("keeps the native reduced-motion preference usable without View Transitions", async () => {
     let transitions = 0;
     (document as any).startViewTransition = () => {
