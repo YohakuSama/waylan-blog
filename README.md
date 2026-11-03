@@ -294,7 +294,7 @@ npx wrangler secret put GITHUB_CONTENT_TOKEN
 - **后台显示“后台还没有配置完成”**：页面会列出缺少的项目。通常是 `ADMIN_GITHUB_LOGINS` / `CONTENT_REPO` 仍是占位符、新的 `wrangler.jsonc` 还没部署，或没有录入 `GITHUB_CONTENT_TOKEN`。
 - **提示“无法访问源码仓库”**：检查 `GITHUB_CONTENT_TOKEN` 是否过期、是否勾选了源码仓库、Contents 是否为 Read and write。
 - **保存成功但网站一直没变**：到 Cloudflare → `echo-blog` → Deployments 查看构建日志。最常见的是文章内容不合法导致构建失败（后台会先做同样的检查，通常在保存时就会提示）。超过 10 分钟未更新时后台会给出提醒。
-- **改了文章链接名（slug）**：旧地址会失效，评论和划线不受影响（它们挂在不变的 `id` 上）。需要保留旧链接时，在 `public/_redirects` 加一行 301 跳转。
+- **改了文章链接名（slug）**：通过 `/admin` 保存时，会自动在同一次 Git 提交中生成旧地址的 301 跳转；评论和划线仍绑定不变的 `id`。直接编辑仓库 Markdown 时，请自行维护 `public/_redirects`；构建会检查旧地址不能与现行文章冲突、目标文章必须存在。
 - **图片限制**：PNG / JPEG / WebP / AVIF / GIF，单张 5 MB；出于安全原因不接受 SVG 上传。
 
 ## 完整本地联调
