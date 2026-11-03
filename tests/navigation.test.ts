@@ -703,7 +703,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     localStorage.setItem("echo:density", JSON.stringify("compact"));
     await mount("/feed");
     assert.ok(document.querySelector(".feed-list.density-compact"));
-    await click(document.querySelector('button[aria-label="详细列表"]'));
+    await click(document.querySelector('button[aria-label="图文 · 详细列表"]'));
     assert.ok(document.querySelector(".feed-list.density-full"));
     assert.equal(JSON.parse(localStorage.getItem("echo:density") || "null"), "full");
   });
