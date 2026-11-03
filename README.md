@@ -207,7 +207,7 @@ npx wrangler secret put SESSION_SECRET
 npm run deploy
 ```
 
-这个命令先完成类型、测试、静态构建和配置校验，再应用迁移、同步文章并执行 Wrangler 部署。域名或数据库仍是占位符时会阻止部署。
+这个命令先完成类型、测试、静态构建和配置校验，再应用迁移并执行 Wrangler 部署。部署后的 Worker 会从本次构建生成的文章清单自动校准 D1 元数据（slug、标题、版本），不再需要在部署前手工执行文章同步。域名或数据库仍是占位符时会阻止部署。
 
 Cloudflare 控制台 → Workers & Pages → `echo-blog` → Settings → Domains & Routes → Add → Custom Domain，填入自己的完整域名。域名已由同一 Cloudflare 账户管理时，平台负责所需 DNS 和证书。已有同名 DNS 记录请先在控制台核对，避免误覆盖其他服务。
 
