@@ -408,6 +408,70 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount("/post/a-room-on-the-internet");
     assert.equal(document.querySelectorAll("mark.private-mark").length, 1);
   });
+  it("does not dismiss the touch selection toolbar on transient selectionchange", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"));
+    window.getSelection()!.removeAllRanges();
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(240);
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "Safari may collapse the native selection while the action tray is being tapped");
+  });
+  it("deleting the final private mark closes its thread instead of opening the composer", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (button) => button.textContent === "划线",
+    )!);
+    const mark = document.querySelector("mark.private-mark")!;
+    await click(mark);
+    assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"));
+    await click(document.querySelector('[aria-label="删除私人划线"]'));
+    await settle(220);
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
+    assert.equal(document.querySelector(".discussion-dialog.composer-dialog[open]"), null);
+    assert.equal(document.querySelector("mark.private-mark"), null);
+  });
+  it("copies selected text and a permalink if the native share sheet fails", async () => {
+    await mount("/post/a-room-on-the-internet");
+    let copied = "";
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async () => { throw new Error("NotAllowedError: share unavailable"); },
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (value: string) => { copied = value; } },
+    });
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (button) => button.textContent === "分享",
+    )!);
+    assert.ok(copied.includes("/post/a-room-on-the-internet"));
+    assert.ok(copied.includes(p.textContent!.slice(0, 12)));
+  });
   it("opens a genuine selection in the composer and clearly disables unavailable GitHub login", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!,
