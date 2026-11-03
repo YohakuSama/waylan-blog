@@ -32,8 +32,12 @@ async function run(engine,browser,width){
       await page.locator(".post-card-link").first().click();
       await page.waitForURL(/\/post\/[^/?]+$/,{timeout:15000});
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor({state:"visible",timeout:15000});
+      // The new article may still be inside a View Transition; avoid clicking
+      // through an outgoing snapshot instead of the hydrated reader.
+      await page.waitForTimeout(650);
       const fab=page.getByRole("button",{name:"开启摘录段落模式"});
       await fab.click();
+      await page.locator(".excerpt-mode-hint").waitFor({state:"visible"});
       const paragraph=page.locator(".reader-prose .article-block[data-type='paragraph']").first();
       await paragraph.click();
       await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:10000});
