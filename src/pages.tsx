@@ -123,6 +123,7 @@ export function Home() {
             <p className="intro-description">{introduction}</p>
             <nav className="home-links" aria-label="博客导览">
               <Link href="/about">关于本站</Link>
+              <Link href="/feed" className="home-topic-link">浏览主题</Link>
               <a href={assetURL("/rss.xml")}
                 download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
                 <Rss size={15} aria-hidden="true" />订阅 RSS
@@ -524,7 +525,7 @@ export function About() {
           <section className="side-block">
             <SideTitle
               icon={<Compass size={17} />}
-              href="/feed?type=all"
+              href="/feed"
               label="浏览全部内容"
             >
               从这里开始
@@ -535,7 +536,7 @@ export function About() {
             <ul className="explore-list">
               {usedTopics.map((t) => (
                 <li key={t.id}>
-                  <Link href={`/feed?type=all&topic=${t.id}`}>
+                  <Link href={`/feed?topic=${t.id}`}>
                     <Layers size={15} className="explore-icon" aria-hidden="true" />
                     <span className="explore-name">{t.name}</span>
                     <span className="mono explore-count">

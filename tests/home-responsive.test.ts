@@ -4,33 +4,46 @@ import { readFileSync } from "node:fs";
 
 const site = readFileSync("src/styles/site.css", "utf8");
 const feed = readFileSync("src/components/Feed.tsx", "utf8");
+const pages = readFileSync("src/pages.tsx", "utf8");
+const sidebarComponent = readFileSync("src/components/Sidebar.tsx", "utf8");
+const skins = readFileSync("src/styles/skins.css", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
-  it("keeps all content types visible and uses one accessible button layer", () => {
-    const narrow = site.slice(site.indexOf("/* Five categories stay completely visible"));
-    assert.ok(narrow.includes("grid-template-columns: repeat(3, minmax(0, 1fr));"));
-    assert.ok(narrow.includes("width: 100%;"));
-    assert.ok(narrow.includes("flex: 1 1 100%;"));
-    assert.ok(site.includes(".type-tab.active"));
-    assert.ok(site.includes("min-height:40px"));
-    assert.equal(feed.includes('className="type-fill"'), false);
-    assert.equal(feed.includes("ResizeObserver"), false);
+  it("uses one native type picker on phones and accessible tabs on wider screens", () => {
+    assert.ok(site.includes(".feed-controls .type-tabs { display: none; }"));
+    assert.ok(site.includes(".feed-controls .mobile-type-select { display: inline-flex; }"));
+    assert.ok(pages.includes('className="mobile-type-select"'));
+    assert.ok(pages.includes('value={type}'));
+    assert.ok(site.includes("min-height: 44px;"));
     assert.ok(feed.includes("aria-pressed={selected}"));
+    assert.equal(feed.includes('className="type-fill"'), false);
   });
-  it("reflows compact desktop content before fixed sidebars squeeze the feed", () => {
-    const sidebar = site.slice(site.indexOf("/* At 1025–1279px"));
-    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1279px)"));
+  it("keeps two columns from 1120px and stacks the sidebar below that width", () => {
+    const sidebar = site.slice(site.indexOf("/* At 1025–1119px"));
+    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1119px)"));
     assert.ok(sidebar.includes(".content-grid { grid-template-columns:minmax(0,1fr); }"));
     assert.ok(sidebar.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
     assert.ok(sidebar.includes("@media (min-width:861px) and (max-width:1279px)"));
     assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
     assert.ok(sidebar.includes("grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)"));
   });
-  it("keeps the homepage a single editorial feed rather than two filter panels", () => {
+  it("keeps the homepage a single editorial feed with a compact topic doorway", () => {
     assert.ok(site.includes(".home-feed { border-top:"));
     assert.equal(site.includes(".home-feed-heading"), false);
     assert.ok(site.includes(".home-resume .resume-link"));
+    assert.ok(pages.includes('href="/feed" className="home-topic-link"'));
+    assert.ok(site.includes("@media (max-width: 1119px)"));
+  });
+  it("makes the entire sidebar heading a keyboard-reachable 44px link", () => {
+    assert.ok(sidebarComponent.includes('className="side-heading-link"'));
+    assert.ok(sidebarComponent.includes('className="side-heading-text"'));
+    assert.ok(site.includes(".side-heading-link:focus-visible"));
+    assert.ok(site.includes("min-height: 44px;"));
+    assert.ok(sidebarComponent.includes('href={`/feed?topic=${t.id}`}'));
+    assert.equal(sidebarComponent.includes("/feed?type=all"), false);
+    assert.ok(skins.includes('.side-heading-link::before { content: "##"'));
+    assert.ok(skins.includes(".side-heading-link .side-more svg { display: block; }"));
   });
   it("reduces tablet and phone content filtering to adjacent selects", () => {
     const start = site.indexOf("/* Tablets and phones use the same compact");
