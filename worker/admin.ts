@@ -448,6 +448,7 @@ async function savePost(request: Request, env: Env, login: string) {
   const topics = topicsOf(parseSite(meta[SITE]));
   let file: string;
   let previousSlug: string | null = null;
+  let wasPublished = false;
   if (editing) {
     file = input.file as string;
     const current = all.find((p) => p.file === file);
@@ -458,6 +459,7 @@ async function savePost(request: Request, env: Env, login: string) {
       stem = file.replace(/\.md$/, ""),
       id = String(before.id || before.slug || stem);
     previousSlug = String(before.slug || stem);
+    wasPublished = !before.draft;
     if (String(data.id || data.slug || stem) !== id) data.id = id;
   } else {
     const slug = text(data.slug, "链接名（slug）", 80, true);
@@ -486,16 +488,20 @@ async function savePost(request: Request, env: Env, login: string) {
   // Keep old article URLs alive. This asset rule is committed together with the
   // markdown edit so Cloudflare can never publish the new slug without its 301.
   let redirectText: string | null = null;
-  if (previousSlug !== post.slug) {
+  const priorPublicSlug = wasPublished ? previousSlug : null;
+  if ((!post.draft && priorPublicSlug !== post.slug) || (post.draft && wasPublished)) {
     const old = (await files(env, at.oid, ["public/_redirects"]))["public/_redirects"];
     try {
-      redirectText = updatePostRedirects(old?.text || "", previousSlug, post.slug);
+      redirectText = post.draft
+        ? removePostRedirects(old?.text || "", previousSlug!)
+        : updatePostRedirects(old?.text || "", priorPublicSlug, post.slug);
       if (redirectText) {
-        const active = all.filter((p) => p.file !== file).map((p) => summary(p, topics));
+        const active = all.filter((p) => p.file !== file && !parseFrontmatter(p.text).data.draft)
+          .map((p) => summary(p, topics));
         validatePostRedirects(redirectText, [
           ...active.filter((p): p is ReturnType<typeof summary> & { slug: string } => "slug" in p)
             .map((p) => p.slug),
-          post.slug,
+          ...(post.draft ? [] : [post.slug]),
         ]);
       }
     } catch (error) {
