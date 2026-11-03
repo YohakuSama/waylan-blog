@@ -95,6 +95,7 @@ try {
               types: [...document.querySelectorAll(".type-tab")].filter((el) => el.getClientRects().length).map(rect),
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
+              feedControls: select(".feed-controls"),
               meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
               years: document.querySelectorAll(".archive-year").length,
@@ -150,6 +151,8 @@ try {
             if (width <= 700) {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
+              assert.ok(geometry.feedControls && geometry.feedControls.height < 150,
+                `${label}: phone filters consume too much of the first screen`);
               assert.ok(geometry.mobileType && geometry.mobileType.height >= 44 &&
                 geometry.mobileType.left >= 0 && geometry.mobileType.right <= geometry.viewport,
                 `${label}: missing/clipped phone type picker`);
