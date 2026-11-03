@@ -366,6 +366,18 @@ describe("React navigation and reading interactions (DOM integration, not browse
       "retapping a marked paragraph while excerpt mode is active should not open a separate discussion");
     assert.ok(document.querySelector(".selection-toolbar"),
       "retapping the marked text should select its paragraph again");
+    await click(document.querySelector<HTMLButtonElement>(
+      '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
+    ));
+    await act(async () => {
+      highlighted.dispatchEvent(new dom.window.KeyboardEvent("keydown", {
+        key: "Enter", bubbles: true, cancelable: true,
+      }));
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "Enter on a saved mark in excerpt mode must reselect instead of opening a thread");
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
   });
   it("stores a private highlight and restores it on a fresh React mount", async () => {
     await mount("/post/a-room-on-the-internet");
