@@ -105,17 +105,20 @@ async function run(engine,browser,width){
       record(browser,width,"excerpt survives scroll for action",{
         retained,hintVisible:await page.locator(".excerpt-mode-hint").isVisible()
       },!retained);
-      // Re-select and check actual highlight persistence.
+      // The first tap away from an active quote now deliberately dismisses
+      // that selection and the tray together. Start a different excerpt with
+      // an explicit close, then prove its highlight is actually persisted.
+      await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
+      await page.locator(".selection-toolbar").waitFor({state:"hidden"});
       await paragraph.scrollIntoViewIfNeeded();
       await paragraph.click();
       const markButton=page.locator(".selection-toolbar-actions button").filter({hasText:"划线"});
-      if(await markButton.isVisible()){
-        await markButton.click();
-        await page.locator("mark.private-mark").first().waitFor();
-        record(browser,width,"mark current excerpt persists",{
-          marked:true,stored:await page.evaluate(()=>Object.keys(localStorage).filter(x=>x.startsWith("echo:marks:")).length)
-        });
-      }
+      await markButton.waitFor({state:"visible"});
+      await markButton.click();
+      await page.locator("mark.private-mark").first().waitFor({state:"visible"});
+      record(browser,width,"mark current excerpt persists",{
+        marked:true,stored:await page.evaluate(()=>Object.keys(localStorage).filter(x=>x.startsWith("echo:marks:")).length)
+      });
       // Re-tapping existing highlighted text in excerpt mode should select it,
       // not trigger the normal-mode historical discussion panel.
       await page.locator("mark.private-mark").first().click();
