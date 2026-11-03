@@ -51,7 +51,8 @@ async function publicBrowsers() {
             }, motion);
             const page = await context.newPage();
             const errors = [];
-            page.on("pageerror", (error) => errors.push(String(error)));
+            let stage = "home hydration";
+            page.on("pageerror", (error) => errors.push(stage + " @ " + page.url() + ": " + String(error)));
             page.on("console", (event) => {
               if (event.type() === "error" && /Uncaught|Unhandled/i.test(event.text()))
                 errors.push(event.text());
@@ -60,12 +61,19 @@ async function publicBrowsers() {
               json: { notifications: false, comments: false, login: false },
             }));
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
+            // The first navigation should exercise hydrated handlers, not a
+            // click raced against downloading/starting the client bundle.
+            await page.waitForTimeout(500);
+            stage = "feed navigation";
             await page.locator("a[href='/feed']").first().click();
             await page.waitForURL(/\/feed(?:\?.*)?$/, { timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/feed");
+            stage = "article hydration";
             await page.goto(origin + "/post/a-room-on-the-internet", { waitUntil: "domcontentloaded" });
+            await page.waitForTimeout(500);
             await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/post");
+            stage = "article settings";
             const settingsButton = page.locator('.header-tools > button[aria-label="阅读设置"]');
             await settingsButton.click();
             const dialog = page.getByRole("dialog", { name: "阅读设置", exact: true });
@@ -73,7 +81,9 @@ async function publicBrowsers() {
             await page.keyboard.press("Escape");
             await dialog.waitFor({ state: "hidden" });
             // Simulate navigation churn with real (not reduced) transitions.
+            stage = "archive navigation";
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
+            await page.waitForTimeout(500);
             await page.locator("a[href='/archive']").first().click();
             await page.waitForURL(/\/archive$/, { timeout: 15000 });
             await page.screenshot({
