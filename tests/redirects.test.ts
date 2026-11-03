@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { updatePostRedirects, validatePostRedirects } from "../shared/redirects";
+import { updatePostRedirects, removePostRedirects, validatePostRedirects } from "../shared/redirects";
 
 describe("Published article permalinks", () => {
   const initial = "# Custom routes stay untouched\n/old-home / 301\n";
