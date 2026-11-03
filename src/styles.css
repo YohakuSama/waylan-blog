@@ -935,26 +935,47 @@ textarea::placeholder {
   width: 15px;
   height: 15px;
 }
+.excerpt-access,
 .excerpt-fab,
 .excerpt-mode-hint { display: none; }
 @media (max-width: 1024px), (pointer: coarse) {
+  .excerpt-access {
+    position: sticky;
+    top: var(--header-height);
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 54px;
+    padding: 6px 0;
+    margin-bottom: var(--space-3);
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .excerpt-access.excerpt-access-hidden { display: none; }
+  .excerpt-access-selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    color: var(--brand);
+    font-size: 12px;
+  }
   .excerpt-fab {
-    position: fixed;
-    z-index: 55;
+    position: static;
+    z-index: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: calc(20px + env(safe-area-inset-bottom));
     min-width: 82px;
-    min-height: 46px;
+    min-height: 42px;
     padding: 9px 13px;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-full);
     background: var(--surface);
     color: var(--ink);
-    box-shadow: 0 8px 24px #0003;
+    box-shadow: none;
     font-size: 12px;
     touch-action: manipulation;
   }
@@ -970,6 +991,17 @@ textarea::placeholder {
   }
   .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]):active {
     outline-color: var(--brand);
+  }
+  /* Keep the chosen paragraph visibly tied to the fixed action tray.
+     Previously the only outline was :active; after release there was no
+     visible selection, even though the toolbar claimed "已选". */
+  .reader-prose.excerpt-mode .article-block[data-type][data-excerpt-selected="true"]:not([data-type="code"]) {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+    background: color-mix(in srgb, var(--brand) 7%, transparent);
+    /* WebKit otherwise animates from transparent :active outline and the
+       freshly tapped excerpt briefly looks unselected. Feedback is immediate. */
+    transition: none;
   }
   .selection-toolbar {
     position: fixed;
@@ -993,23 +1025,21 @@ textarea::placeholder {
   }
   .selection-toolbar-actions svg { width: 19px; height: 19px; }
   .excerpt-mode-hint {
-    position: fixed;
-    z-index: 60;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
+    position: static;
+    z-index: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 9px;
-    max-width: 510px;
-    margin-inline: auto;
-    padding: 12px 14px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 8px 10px;
     border-radius: var(--radius-md);
     border: 1px solid var(--line-strong);
     background: var(--surface);
     color: var(--ink);
-    box-shadow: 0 10px 30px #0003;
+    box-shadow: none;
     font-size: 12px;
   }
   .excerpt-mode-hint > span { flex: 1; }

@@ -81,6 +81,26 @@ describe("real DOM selection and overlapping marks", () => {
     assert.equal(result.anchor.segments[0].quote.exact.length, 400);
     assert.equal(result.anchor.segments[0].quote.suffix.length, 32);
   });
+  it("captures text around a tap near the end of a long paragraph, not the unrelated opening", () => {
+    const root = document.getElementById("prose")!;
+    const block = root.querySelector<HTMLElement>('[data-block-id="p1"]')!;
+    block.textContent = "开头" + "甲".repeat(650) + "结尾";
+    const node = block.firstChild!;
+    Object.defineProperty(document, "caretPositionFromPoint", {
+      configurable: true,
+      value: () => ({ offsetNode: node, offset: node.textContent!.length - 1 }),
+    });
+    try {
+      const result = captureBlockExcerpt(root, post, block, { x: 60, y: 100 })!;
+      assert.ok(result);
+      assert.equal(result.anchor.segments[0].quote.exact.length, 400);
+      assert.ok(result.anchor.segments[0].position.start > 200,
+        "tap near the end must not silently select only the start");
+      assert.ok(result.anchor.segments[0].quote.exact.endsWith("结尾"));
+    } finally {
+      Reflect.deleteProperty(document, "caretPositionFromPoint");
+    }
+  });
   it("captures a selection spanning inline emphasis", () => {
     const root = document.getElementById("prose")!,
       p = root.firstChild!,

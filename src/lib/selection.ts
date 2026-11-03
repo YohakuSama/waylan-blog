@@ -74,15 +74,43 @@ export function captureBlockExcerpt(
   root: HTMLElement,
   post: Post,
   element: HTMLElement,
+  point?: { x: number; y: number },
 ): { anchor: Anchor; rect: DOMRect } | null {
   if (!root.contains(element) || !element.matches("[data-block-id]")) return null;
   if (["code", "image", "media"].includes(element.dataset.type || "")) return null;
   const text = element.textContent || "";
-  const from = text.search(/\S/);
-  if (from < 0) return null;
-  const length = Math.min(400, text.length - from);
-  const to = from + length;
+  const first = text.search(/\S/);
+  if (first < 0) return null;
+  const length = Math.min(400, text.length - first);
   if (length < 2 || !element.dataset.blockId) return null;
+  // A long paragraph is a 400-character excerpt, *around the place the reader
+  // tapped*. Previously every tap, even at its end, silently selected its first
+  // 400 characters. Keep the old first-part fallback for synthetic/no-point calls.
+  let from = first;
+  if (point && text.length - first > length) {
+    const doc = element.ownerDocument as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => {
+        offsetNode: Node; offset: number
+      } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    const pos = doc.caretPositionFromPoint?.(point.x, point.y);
+    const range = !pos ? doc.caretRangeFromPoint?.(point.x, point.y) : null;
+    const node = pos?.offsetNode || range?.startContainer;
+    const offset = pos?.offset ?? range?.startOffset;
+    if (node && typeof offset === "number" && element.contains(node)) {
+      try {
+        const before = doc.createRange();
+        before.selectNodeContents(element);
+        before.setEnd(node, offset);
+        const caret = before.toString().length;
+        from = Math.max(first, Math.min(caret - Math.floor(length / 2), text.length - length));
+      } catch {
+        // An unsupported caret API must never prevent paragraph excerpting.
+      }
+    }
+  }
+  const to = from + length;
   return {
     anchor: {
       schema: 1,

@@ -646,7 +646,9 @@ export default function Reader({ post }: { post: Post }) {
         });
     };
     const scroll = () => {
-      setSelection(null);
+      // Native drag-selection may be transient; explicit tap-to-excerpt is a
+      // deliberate choice and must survive small scrolls while taking action.
+      if (!excerptMode) setSelection(null);
       if (!frame) frame = requestAnimationFrame(update);
     };
     // Read the saved position before the first update() can overwrite it.
@@ -668,7 +670,7 @@ export default function Reader({ post }: { post: Post }) {
       window.removeEventListener("scroll", scroll);
       cancelAnimationFrame(frame);
     };
-  }, [post]);
+  }, [post, excerptMode]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
@@ -1032,6 +1034,35 @@ export default function Reader({ post }: { post: Post }) {
           </button>
         </div>
       </div>
+      {/* Keep this control in the reader's sticky tool rail, not over prose. */}
+      <div className={`excerpt-access${panel ? " excerpt-access-hidden" : ""}`}>
+        {!excerptMode && !selection && !panel && (
+          <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
+            title="摘录段落" onClick={() => {
+              setExcerptMode(true);
+              setSelection(null);
+              window.getSelection()?.removeAllRanges();
+            }}>
+            <Highlighter size={18} />
+            <span>摘录</span>
+          </button>
+        )}
+        {excerptMode && !selection && (
+          <div className="excerpt-mode-hint" role="status">
+            <Highlighter size={16} />
+            <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
+            <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
+              <X size={17} />
+            </button>
+          </div>
+        )}
+        {selection && (
+          <span className="excerpt-access-selected">
+            <Highlighter size={16} />
+            已选 {anchorQuote(selection.anchor).length} 字 · 选择下方操作
+          </span>
+        )}
+      </div>
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
@@ -1144,15 +1175,23 @@ export default function Reader({ post }: { post: Post }) {
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 const mark = target.closest<HTMLElement>("mark[data-echo-ids]");
-                if (mark) {
+                // A saved mark opens its thread in normal reading. In excerpt
+                // mode the reader's explicit tap should select the paragraph,
+                // not unexpectedly open a different discussion dialog.
+                if (mark && !excerptMode) {
                   openHighlights(mark.dataset.echoIds!.split(" "));
                   return;
                 }
+                const interactive = target.closest<HTMLElement>(
+                  "a, button, input, textarea, pre, code, [role='button']",
+                );
                 if (excerptMode && !window.getSelection()?.toString().trim() &&
-                  !target.closest("a, button, input, textarea, pre, code, [role='button']")) {
+                    (!interactive || interactive === mark)) {
                   const block = target.closest<HTMLElement>("[data-block-id]");
                   const found = block && prose.current
-                    ? captureBlockExcerpt(prose.current, post, block) : null;
+                    ? captureBlockExcerpt(prose.current, post, block, {
+                        x: e.clientX, y: e.clientY,
+                      }) : null;
                   if (found) {
                     setSelection(found);
                     return;
@@ -1172,7 +1211,14 @@ export default function Reader({ post }: { post: Post }) {
                   target.matches("mark[data-echo-ids]")
                 ) {
                   e.preventDefault();
-                  openHighlights(target.dataset.echoIds!.split(" "));
+                  if (excerptMode) {
+                    // Keyboard activation must match tapping highlighted text
+                    // while choosing a new excerpt (no stray thread dialog).
+                    const block = target.closest<HTMLElement>("[data-block-id]");
+                    const found = block && prose.current
+                      ? captureBlockExcerpt(prose.current, post, block) : null;
+                    if (found) setSelection(found);
+                  } else openHighlights(target.dataset.echoIds!.split(" "));
                 }
               }}
             >
@@ -1214,6 +1260,7 @@ export default function Reader({ post }: { post: Post }) {
                     className="article-block"
                     data-block-id={block.id}
                     data-type={block.type}
+                    data-excerpt-selected={excerptMode && selection?.anchor.segments.some((s) => s.blockId === block.id) ? "true" : undefined}
                     id={block.id}
                     tabIndex={block.type === "heading" ? -1 : undefined}
                     dangerouslySetInnerHTML={{
@@ -1507,26 +1554,6 @@ export default function Reader({ post }: { post: Post }) {
           </div>
         </aside>
       </div>
-      {!excerptMode && !selection && !panel && (
-        <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
-          title="摘录段落" onClick={() => {
-            setExcerptMode(true);
-            setSelection(null);
-            window.getSelection()?.removeAllRanges();
-          }}>
-          <Highlighter size={18} />
-          <span>摘录</span>
-        </button>
-      )}
-      {excerptMode && !selection && (
-        <div className="excerpt-mode-hint" role="status">
-          <Highlighter size={16} />
-          <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
-          <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
-            <X size={17} />
-          </button>
-        </div>
-      )}
       {selection && (
         <div
           className="selection-toolbar"

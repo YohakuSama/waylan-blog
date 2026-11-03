@@ -341,6 +341,49 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(mark);
     assert.ok(document.querySelector("mark.private-mark"), "tap mode retains the usual persisted quote");
   });
+  it("keeps a visible excerpt selected on scroll and allows retapping an already marked passage", async () => {
+    await mount("/post/a-room-on-the-internet");
+    await click(document.querySelector<HTMLButtonElement>(".excerpt-fab"));
+    const paragraph = document.querySelector<HTMLElement>(
+      '.reader-prose .article-block[data-type="paragraph"]',
+    )!;
+    assert.ok(paragraph);
+    await click(paragraph);
+    assert.equal(paragraph.dataset.excerptSelected, "true",
+      "selected paragraph must have a persistent, visible UI state");
+    await act(async () => {
+      window.dispatchEvent(new dom.window.Event("scroll"));
+      await pause(80);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "explicit excerpt selection must remain available after scrolling");
+    const mark = [...document.querySelectorAll<HTMLButtonElement>(
+      ".selection-toolbar-actions button",
+    )].find(button => button.textContent === "划线")!;
+    await click(mark);
+    assert.equal(paragraph.dataset.excerptSelected, undefined);
+    const highlighted = document.querySelector<HTMLElement>(
+      ".reader-prose mark.private-mark",
+    )!;
+    assert.ok(highlighted);
+    await click(highlighted);
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null,
+      "retapping a marked paragraph while excerpt mode is active should not open a separate discussion");
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "retapping the marked text should select its paragraph again");
+    await click(document.querySelector<HTMLButtonElement>(
+      '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
+    ));
+    await act(async () => {
+      highlighted.dispatchEvent(new dom.window.KeyboardEvent("keydown", {
+        key: "Enter", bubbles: true, cancelable: true,
+      }));
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "Enter on a saved mark in excerpt mode must reselect instead of opening a thread");
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
+  });
   it("stores a private highlight and restores it on a fresh React mount", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!,
