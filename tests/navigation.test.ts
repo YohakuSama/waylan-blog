@@ -4,7 +4,7 @@ import { JSDOM } from "jsdom";
 import { createElement, act } from "react";
 import type { Root } from "react-dom/client";
 import App from "../src/App";
-import { fragmentId, isAppRoute } from "../src/lib/router";
+import { fragmentId, isAppRoute, routeMotionDirection } from "../src/lib/router";
 import Reader from "../src/components/Reader";
 import worker from "../worker/index";
 import { metadata, posts, structuredData } from "../src/lib/data";
@@ -136,6 +136,16 @@ afterEach(async () => {
   dom.window.close();
 });
 describe("React navigation and reading interactions (DOM integration, not browser layout)", () => {
+  it("reverses top-navigation motion when going from projects to content or home", () => {
+    assert.equal(routeMotionDirection("/", "/projects"), "forward");
+    assert.equal(routeMotionDirection("/feed", "/projects"), "forward");
+    assert.equal(routeMotionDirection("/projects", "/feed"), "back");
+    assert.equal(routeMotionDirection("/feed", "/"), "back");
+    assert.equal(routeMotionDirection("/projects", "/"), "back");
+    assert.equal(routeMotionDirection("/feed", "/post/a-room-on-the-internet"), "forward");
+    assert.equal(routeMotionDirection("/post/a-room-on-the-internet", "/feed"), "back");
+    assert.equal(routeMotionDirection("/feed", "/projects", true), "back");
+  });
   it("routes pages but leaves static assets and admin URLs to the browser", () => {
     for (const path of ["/", "/feed", "/archive", "/projects",
       "/about", "/404", "/post/a-room-on-the-internet"])
