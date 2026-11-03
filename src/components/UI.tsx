@@ -106,6 +106,7 @@ export function Dialog({
   initialFocus,
   origin,
   headerActions,
+  focusContainer = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -114,6 +115,8 @@ export function Dialog({
   className?: string;
   initialFocus?: RefObject<HTMLElement | null>;
   headerActions?: ReactNode;
+  /** Keep focus on the modal surface initially, rather than its close button. */
+  focusContainer?: boolean;
   /** Where the dialog grows from and returns to; defaults to its trigger. */
   origin?: Element | null;
 }) {
@@ -147,7 +150,8 @@ export function Dialog({
         openedAt.current = location.href;
         dialog.showModal();
         document.documentElement.classList.add("dialog-open");
-        initialFocus?.current?.focus();
+        if (focusContainer) dialog.focus({ preventScroll: true });
+        else initialFocus?.current?.focus();
       }
       if (motionOK()) {
         fadeBackdrop(0, 1, 240);
@@ -197,6 +201,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
+      tabIndex={focusContainer ? -1 : undefined}
       className={`echo-dialog ${className}`}
       aria-label={label}
       onCancel={(e) => {
