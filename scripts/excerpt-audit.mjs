@@ -51,13 +51,19 @@ async function run(engine,browser,width){
         !state.attrs["data-excerpt-selected"] && state.outline.includes("rgba(0, 0, 0, 0)"));
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
       // Synthetic fixture for a long real DOM paragraph, then tap near its end.
+      await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
       const long=page.locator(".reader-prose .article-block[data-type='paragraph']").last();
       const longText="摘录开头"+("甲".repeat(650))+"摘录结尾";
       await long.evaluate((el,text)=>{el.textContent=text;},longText);
-      await long.scrollIntoViewIfNeeded();
+      await long.evaluate(el=>{el.scrollIntoView({block:"end"});window.scrollBy(0,160);});
+      await page.waitForTimeout(90);
       const box=await long.boundingBox();
-      await page.mouse.click(box.x+Math.max(5,box.width-8),Math.min(box.y+box.height-5,760));
-      await page.locator(".selection-toolbar").waitFor({state:"visible"});
+      assert.ok(box,"long DOM fixture needs a bounding box");
+      const x=box.x+Math.max(12,Math.min(box.width/2,box.width-12)), y=Math.max(40,Math.min(box.y+box.height-15,575));
+      const realTarget=await page.evaluate(([x,y])=>document.elementFromPoint(x,y)?.closest("[data-block-id]")?.getAttribute("data-block-id"),[x,y]);
+      assert.equal(realTarget,await long.getAttribute("data-block-id"),"test must click target paragraph, not the floating toolbar");
+      await page.mouse.click(x,y);
+      await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:8000});
       const actualLabel=await page.locator(".selection-toolbar-context span").innerText();
       await page.locator(".selection-toolbar-actions button").filter({hasText:"复制"}).click();
       const copiedText=await page.evaluate(()=>window.__qaCopiedText||"");
