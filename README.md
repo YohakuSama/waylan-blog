@@ -344,7 +344,6 @@ tags: [Windows, 系统优化]
 
 ```bash
 npm run build
-npm run db:sync:remote
 npm run setup:github -- --write
 npx wrangler d1 execute echo-db --remote --file .echo/discussions.sql
 npm run deploy
