@@ -1215,6 +1215,7 @@ export default function Reader({ post }: { post: Post }) {
                     data-block-id={block.id}
                     data-type={block.type}
                     id={block.id}
+                    tabIndex={block.type === "heading" ? -1 : undefined}
                     dangerouslySetInnerHTML={{
                       __html: articleHTML(block.html),
                     }}
@@ -1442,10 +1443,12 @@ export default function Reader({ post }: { post: Post }) {
                     }
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(t.id)?.scrollIntoView({
+                      const destination = document.getElementById(t.id);
+                      destination?.scrollIntoView({
                         behavior: motionAllowed() ? "smooth" : "instant",
                         block: "start",
                       });
+                      destination?.focus({ preventScroll: true });
                       setTocOpen(false);
                     }}
                   >

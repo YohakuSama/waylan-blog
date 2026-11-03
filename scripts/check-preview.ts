@@ -185,7 +185,7 @@ try {
       .textContent!.toLowerCase()
       .includes(site.name.toLowerCase()),
   );
-  await click(dom, doc.querySelector(".intro-copy>.primary-button"));
+  await click(dom, doc.querySelector(".hero-browse"));
   await until(() => dom.window.location.hash === "#/feed" && doc.querySelector(".page-heading"), "homepage to feed");
   assert.equal(doc.querySelectorAll(".post-card").length, Math.min(8, posts.length));
   await click(
@@ -339,11 +339,11 @@ try {
   await until(
     () =>
       Object.keys(
-        doc.querySelector(".intro-copy>.primary-button") || {},
+        doc.querySelector(".hero-browse") || {},
       ).some((key) => key.startsWith("__reactProps")),
     "motion app mount",
   );
-  await click(dom, doc.querySelector(".intro-copy>.primary-button"));
+  await click(dom, doc.querySelector(".hero-browse"));
   await until(() => doc.querySelector(".page-heading .eyebrow"), "motion feed");
   assert(
     moving.animations.some(

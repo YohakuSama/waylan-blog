@@ -585,6 +585,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(document.querySelector('button[aria-label="关闭目录"]'));
     assert.equal(trigger.getAttribute("aria-expanded"), "false");
     assert.equal(document.activeElement, trigger);
+    await click(trigger);
+    const sectionLink = document.querySelector<HTMLAnchorElement>('.reader-toc nav a')!;
+    const section = document.getElementById(sectionLink.hash.slice(1));
+    await click(sectionLink);
+    assert.equal(trigger.getAttribute("aria-expanded"), "false");
+    assert.equal(document.activeElement, section);
   });
   it("filters by tag across content types and keeps permalinks stable", async () => {
     const tag = posts.find((p) => p.type !== "article" && p.tags.length)!.tags[0];
