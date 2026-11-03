@@ -559,7 +559,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount("/feed");
     const newest = document.querySelector(".feed-item time")?.getAttribute("datetime");
     await click(document.querySelector('button[aria-label="紧凑列表"]'));
-    const select = document.querySelector<HTMLSelectElement>('.sort-control select')!;
+    const select = document.querySelector('.sort-control select') as unknown as HTMLSelectElement;
     await act(async () => { select.value = "oldest"; select.dispatchEvent(new dom.window.Event("change", { bubbles: true })); await pause(30); });
     assert.ok(location.search.includes("sort=oldest"));
     assert.notEqual(document.querySelector(".feed-item time")?.getAttribute("datetime"), newest);
