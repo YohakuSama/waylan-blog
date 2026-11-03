@@ -151,6 +151,11 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(fragmentId("#%E0%A4%A"), null);
     assert.equal(fragmentId("#bad%"), null);
   });
+  it("keeps the 404 page usable for malformed percent-encoded URLs", async () => {
+    await mount("/post/%E0%A4%A");
+    assert.equal(document.querySelector(".not-found h1")?.textContent, "页面不存在");
+    assert.ok(document.querySelector('.not-found a[href="/"]'), "return-home link should remain available");
+  });
   it("opens the content world and filters real content by topic", async () => {
     await mount();
     await click(
@@ -335,6 +340,49 @@ describe("React navigation and reading interactions (DOM integration, not browse
       .find((b) => b.textContent === "划线")!;
     await click(mark);
     assert.ok(document.querySelector("mark.private-mark"), "tap mode retains the usual persisted quote");
+  });
+  it("keeps a visible excerpt selected on scroll and allows retapping an already marked passage", async () => {
+    await mount("/post/a-room-on-the-internet");
+    await click(document.querySelector<HTMLButtonElement>(".excerpt-fab"));
+    const paragraph = document.querySelector<HTMLElement>(
+      '.reader-prose .article-block[data-type="paragraph"]',
+    )!;
+    assert.ok(paragraph);
+    await click(paragraph);
+    assert.equal(paragraph.dataset.excerptSelected, "true",
+      "selected paragraph must have a persistent, visible UI state");
+    await act(async () => {
+      window.dispatchEvent(new dom.window.Event("scroll"));
+      await pause(80);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "explicit excerpt selection must remain available after scrolling");
+    const mark = [...document.querySelectorAll<HTMLButtonElement>(
+      ".selection-toolbar-actions button",
+    )].find(button => button.textContent === "划线")!;
+    await click(mark);
+    assert.equal(paragraph.dataset.excerptSelected, undefined);
+    const highlighted = document.querySelector<HTMLElement>(
+      ".reader-prose mark.private-mark",
+    )!;
+    assert.ok(highlighted);
+    await click(highlighted);
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null,
+      "retapping a marked paragraph while excerpt mode is active should not open a separate discussion");
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "retapping the marked text should select its paragraph again");
+    await click(document.querySelector<HTMLButtonElement>(
+      '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
+    ));
+    await act(async () => {
+      highlighted.dispatchEvent(new dom.window.KeyboardEvent("keydown", {
+        key: "Enter", bubbles: true, cancelable: true,
+      }));
+      await pause(30);
+    });
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "Enter on a saved mark in excerpt mode must reselect instead of opening a thread");
+    assert.equal(document.querySelector(".discussion-dialog[open]"), null);
   });
   it("stores a private highlight and restores it on a fresh React mount", async () => {
     await mount("/post/a-room-on-the-internet");
@@ -692,6 +740,53 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".shelf-items li").length, 0);
     assert.equal(document.querySelector(".shelf-count"), null);
   });
+  it("does not display unsaved bookmarks or silently discard saved items when storage writes fail", async () => {
+    await mount();
+    const bookmark = document.querySelector<HTMLButtonElement>(".card-bookmark")!;
+    const warning = mock.method(dom.window, "alert", () => {});
+    const failWrite = () => { throw new Error("Storage quota exceeded"); };
+    const blocked = mock.method(dom.window.Storage.prototype, "setItem", failWrite);
+    await click(bookmark);
+    assert.equal(bookmark.getAttribute("aria-pressed"), "false");
+    assert.equal(localStorage.getItem("waylan:reading-list:v1"), null);
+    assert.equal(document.querySelector(".shelf-count"), null);
+    assert.equal(warning.mock.callCount(), 1);
+    blocked.mock.restore();
+    await click(bookmark);
+    assert.equal(bookmark.getAttribute("aria-pressed"), "true");
+
+    mock.method(dom.window.Storage.prototype, "setItem", failWrite);
+    await click(document.querySelector(".shelf-trigger"));
+    await click(document.querySelector(".shelf-items li button"));
+    assert.equal(document.querySelectorAll(".shelf-items li").length, 1);
+    const clear = document.querySelector(".shelf-footer .confirm-button");
+    await click(clear);
+    await click(clear);
+    assert.equal(document.querySelectorAll(".shelf-items li").length, 1);
+    assert.equal(warning.mock.callCount(), 3, "failed add, remove and clear must all report the failure");
+  });
+  it("keeps private highlights visible when browser storage rejects clearing them", async () => {
+    const post = posts[0];
+    localStorage.setItem("echo:marks:" + post.id, JSON.stringify([{ id: "saved-test-mark" }]));
+    await mount();
+    await click(document.querySelector(".settings-button"));
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /共 1 处/);
+    const warning = mock.method(dom.window, "alert", () => {});
+    const blocked = mock.method(dom.window.Storage.prototype, "removeItem", () => {
+      throw new Error("Storage access denied");
+    });
+    const clear = document.querySelector(".settings-highlights .confirm-button");
+    await click(clear);
+    await click(clear);
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /共 1 处/);
+    assert.ok(localStorage.getItem("echo:marks:" + post.id));
+    assert.equal(warning.mock.callCount(), 1);
+    blocked.mock.restore();
+    await click(clear);
+    await click(clear);
+    assert.equal(localStorage.getItem("echo:marks:" + post.id), null);
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /尚未保存私人划线/);
+  });
   it("keeps the notification entry in its familiar slot when the service is disabled", async () => {
     await mount();
     const controls = [...document.querySelectorAll(".header-tools .shelf-trigger, .header-tools .notification-trigger, .header-tools .settings-button")];
@@ -822,6 +917,23 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(shell.querySelector(".code-bar-lang")?.textContent);
     assert.ok(document.querySelector(".reader-prose .code-prompt"));
     assert.ok(document.querySelector(".reader-prose .hljs"));
+  });
+  it("resets a copied code button if a subsequent clipboard write fails", async () => {
+    const post = posts.find((p) => p.blocks.some((b) => b.lang === "bash"))!;
+    const clipboard = { writeText: async (_value: string) => {} };
+    Object.defineProperty(dom.window.navigator, "clipboard", {
+      configurable: true,
+      value: clipboard,
+    });
+    await mount("/post/" + post.slug);
+    const button = document.querySelector<HTMLButtonElement>(".code-copy")!;
+    await click(button);
+    assert.match(button.textContent || "", /已复制/);
+    clipboard.writeText = async () => { throw new Error("Clipboard access revoked"); };
+    await click(button);
+    assert.match(button.textContent || "", /复制代码/);
+    assert.doesNotMatch(button.textContent || "", /已复制/);
+    assert.match(document.querySelector(".small-error")?.textContent || "", /复制未完成/);
   });
   it("does not execute repeated same-target route clicks while a transition is in flight", async () => {
     await mount("/");

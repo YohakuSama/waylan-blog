@@ -252,9 +252,13 @@ export function Settings() {
                   label="清空所有私人划线"
                   confirmLabel="再按一次，永久清空"
                   onConfirm={() => {
-                    for (const item of highlights) storage.remove(`marks:${item.id}`);
-                    setHighlights([]);
+                    let failed = false;
+                    for (const item of highlights)
+                      if (!storage.remove(`marks:${item.id}`)) failed = true;
+                    // Failed removals must remain visible and available to retry.
+                    setHighlights(savedHighlights());
                     window.dispatchEvent(new window.Event("waylan:highlights-changed"));
+                    if (failed) window.alert("部分私人划线未能删除，请检查浏览器的本地存储权限后重试。");
                   }}
                 />
               </>

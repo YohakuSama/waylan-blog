@@ -124,7 +124,10 @@ export function ShelfTrigger() {
                   className="icon-button"
                   aria-label={`移除：${p.title}`}
                   data-tip="移除"
-                  onClick={() => shelf.remove(p.slug)}
+                  onClick={() => {
+                    if (!shelf.remove(p.slug))
+                      window.alert("无法更新阅读清单：浏览器未能保存更改。");
+                  }}
                 >
                   <X size={16} />
                 </button>
@@ -156,7 +159,10 @@ export function ShelfTrigger() {
               className="text-button"
               label="清空清单"
               confirmLabel="再按一次清空"
-              onConfirm={() => shelf.clear()}
+              onConfirm={() => {
+                if (!shelf.clear())
+                  window.alert("无法清空阅读清单：浏览器未能保存更改。");
+              }}
             />
           )}
         </footer>

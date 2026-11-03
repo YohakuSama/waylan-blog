@@ -171,6 +171,30 @@ async function scenario(engine, name, width, motion, seed) {
           await page.waitForURL((url) => url.searchParams.get("topic") === "notes", { timeout: 12000 });
         }
       });
+      await step(prefix + "/invalid-filter-link", page, async () => {
+        // The previous sort navigation may still be animating; filter clicks are intentionally ignored until it settles.
+        await page.waitForFunction(() => !document.documentElement.hasAttribute("data-list-busy"));
+        // Exercise the actual client router without coupling this check to a full-page reload.
+        await page.evaluate(() => {
+          const link = document.createElement("a");
+          link.href = "/feed?topic=missing-topic&sort=invalid-order";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        });
+        await page.waitForURL(
+          (url) => url.pathname === "/feed" &&
+            url.searchParams.get("topic") === "missing-topic" &&
+            url.searchParams.get("sort") === "invalid-order",
+          { timeout: 12000 },
+        );
+        await page.waitForFunction(() =>
+          document.querySelector(".feed-result-line")?.textContent?.includes("全部主题"),
+        );
+        assert.equal(await page.locator(".topic-select select").inputValue(), "all");
+        assert.equal(await page.locator(".sort-control select").inputValue(), "newest");
+        assert.equal(await page.locator(".empty-state").count(), 0, "invalid filters must not hide published posts");
+      });
       assert.deepEqual(errors, [], "uncaught browser errors");
       assert.deepEqual(popups, [], "no extra windows were created");
       results.push({ label: prefix + "/all", pass: true });

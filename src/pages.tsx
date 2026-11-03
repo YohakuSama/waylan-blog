@@ -197,10 +197,12 @@ export function Feed() {
       router.path.split("?")[1]?.split("#")[0] || "",
     );
   const rawType = params.get("type"),
-    topic = params.get("topic") || "all",
+    rawTopic = params.get("topic"),
+    // Old or manually edited links must not leave the filter controls in an invalid state.
+    topic = rawTopic && site.topics.some((t) => t.id === rawTopic) ? rawTopic : "all",
     query = params.get("q") || "",
     tag = params.get("tag") || "",
-    sort = params.get("sort") || "newest";
+    sort = params.get("sort") === "oldest" ? "oldest" : "newest";
   const type: TypeFilter =
     rawType === "all" || isContentType(rawType) ? rawType : "all";
   const [density, setDensity] = useDensity();
@@ -605,8 +607,16 @@ export function NotFound() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const path = mounted ? router.path.split(/[?#]/)[0] : "/404";
-  const wanted = decodeURIComponent(path.split("/").filter(Boolean).at(-1) || "")
-    .toLowerCase();
+  const segment = path.split("/").filter(Boolean).at(-1) || "";
+  // Malformed percent escapes can appear in requested URLs; the 404 page must
+  // remain usable rather than crashing while suggesting a similar article.
+  let wanted = segment;
+  try {
+    wanted = decodeURIComponent(segment);
+  } catch {
+    // Keep the raw segment for a best-effort suggestion.
+  }
+  wanted = wanted.toLowerCase();
   const guess = wanted
     ? posts
         .map((p) => ({ p, score: similarity(wanted, p.slug) }))

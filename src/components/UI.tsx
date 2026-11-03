@@ -267,6 +267,8 @@ export function CopyButton({
             clearTimeout(timer.current);
             timer.current = setTimeout(() => set(false), 2000);
           } catch {
+            clearTimeout(timer.current);
+            set(false);
             setError("复制未完成，请手动选择文字。");
           }
         }}
