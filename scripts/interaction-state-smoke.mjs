@@ -172,7 +172,8 @@ async function scenario(engine, name, width, motion, seed) {
         }
       });
       await step(prefix + "/invalid-filter-deep-link", page, async () => {
-        await page.goto(base + "/feed?topic=missing-topic&sort=invalid-order", { waitUntil: "domcontentloaded" });
+        // Vite preview serves the prerendered directory page at /feed/ (production canonicalizes /feed).
+        await page.goto(base + "/feed/?topic=missing-topic&sort=invalid-order", { waitUntil: "domcontentloaded" });
         // Force an interactive render, rather than only inspecting the prerendered HTML.
         const compact = page.getByRole("button", { name: "紧凑列表" });
         await compact.click();
