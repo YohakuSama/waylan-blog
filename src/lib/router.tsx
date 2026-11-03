@@ -18,7 +18,10 @@ type Router = {
   path: string;
   navigate: (url: string, options?: NavigationOptions) => void;
   back: () => void;
+  backToList: () => void;
 };
+type VisitedRoute = { route: string; fromKey: string | null };
+const isContentListRoute = (route: string) => /^\/(feed|archive|projects)(?:[?#]|$)/.test(route);
 const Context = createContext<Router>(null!);
 export const useRouter = () => useContext(Context);
 export const motionOK = motionAllowed;
@@ -50,7 +53,8 @@ export function RouterProvider({
     pendingTarget = useRef<{ route: string; serial: number } | null>(null),
     pathRef = useRef(path);
   const positions = useRef(new Map<string, number>()),
-    lastList = useRef("/feed");
+    lastList = useRef(transient.get("last-list", "/feed")),
+    visitedRoutes = useRef(new Map<string, VisitedRoute>());
   const fileHistory = useRef({
     entries: [{ route: initialPath, key: "" }],
     index: 0,
@@ -117,7 +121,7 @@ export function RouterProvider({
     transition.current?.skipTransition?.();
     save();
     const prevPath = pathRef.current;
-    if (/^\/(feed|archive)/.test(prevPath)) {
+    if (isContentListRoute(prevPath)) {
       lastList.current = prevPath;
       transient.set("last-list", prevPath);
     }
@@ -126,6 +130,7 @@ export function RouterProvider({
     if (next === prevPath && !options.pop)
       options = { ...options, replace: true };
     const change = () => {
+      const priorKey = key.current;
       if (!options.pop) {
         if (offline) {
           const trail = fileHistory.current,
@@ -150,6 +155,10 @@ export function RouterProvider({
           );
       }
       key.current = nextKey;
+      visitedRoutes.current.set(nextKey, {
+        route: next,
+        fromKey: options.pop ? (history.state?.echoFrom || null) : priorKey,
+      });
       flushSync(() => setPath(next));
       const y = options.pop
         ? (positions.current.get(nextKey) ??
@@ -219,6 +228,10 @@ export function RouterProvider({
         "",
         location.href,
       );
+    visitedRoutes.current.set(key.current, {
+      route: currentRoute(),
+      fromKey: offlinePreview() ? null : (history.state?.echoFrom || null),
+    });
     if (currentRoute() !== initialPath) setPath(currentRoute());
     if (!location.hash) {
       const y = transient.get(`scroll:${key.current}`, 0);
@@ -338,6 +351,36 @@ export function RouterProvider({
             else void navigate(lastList.current);
           } else if (history.state?.echoFrom) history.back();
           else void navigate(transient.get("last-list", "/feed"));
+        },
+        backToList: () => {
+          // The reader promises the last content list, not the prior article.
+          // Native history also restores its filters and saved scroll position.
+          if (offlinePreview()) {
+            const trail = fileHistory.current;
+            for (let i = trail.index - 1; i >= 0; i--) {
+              if (isContentListRoute(trail.entries[i].route)) {
+                history.go(i - trail.index);
+                return;
+              }
+            }
+          } else {
+            let fromKey: string | null = history.state?.echoFrom || null;
+            let steps = 1;
+            const seen = new Set<string>();
+            while (fromKey && !seen.has(fromKey) && steps < 100) {
+              seen.add(fromKey);
+              const entry = visitedRoutes.current.get(fromKey);
+              if (!entry) break;
+              if (isContentListRoute(entry.route)) {
+                history.go(-steps);
+                return;
+              }
+              fromKey = entry.fromKey;
+              steps++;
+            }
+          }
+          // A deep link or reloaded tab lacks the in-session list history.
+          void navigate(lastList.current);
         },
       }}
     >
