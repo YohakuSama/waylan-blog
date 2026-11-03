@@ -331,6 +331,8 @@ export default function Reader({ post }: { post: Post }) {
   const router = useRouter(),
     prose = useRef<HTMLDivElement>(null),
     article = useRef<HTMLElement>(null),
+    toc = useRef<HTMLElement>(null),
+    tocButton = useRef<HTMLButtonElement>(null),
     composerArea = useRef<HTMLTextAreaElement>(null),
     composerGeometry = useRef<{ from: DOMRect; radius: string } | null>(null),
     composerResizeAnimation = useRef<Animation | null>(null);
@@ -338,6 +340,33 @@ export default function Reader({ post }: { post: Post }) {
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
     [tocOpen, setTocOpen] = useState(false);
+  useEffect(() => {
+    if (!tocOpen) return;
+    (toc.current?.querySelector<HTMLElement>("nav a") ||
+      toc.current?.querySelector<HTMLElement>("button"))?.focus({ preventScroll: true });
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setTocOpen(false);
+      tocButton.current?.focus({ preventScroll: true });
+    };
+    const outside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!toc.current?.contains(target) && !tocButton.current?.contains(target)) setTocOpen(false);
+    };
+    const desktop = window.matchMedia("(min-width: 1041px)");
+    const resize = (event: MediaQueryListEvent) => {
+      if (event.matches) setTocOpen(false);
+    };
+    document.addEventListener("keydown", keydown);
+    document.addEventListener("pointerdown", outside);
+    desktop.addEventListener("change", resize);
+    return () => {
+      document.removeEventListener("keydown", keydown);
+      document.removeEventListener("pointerdown", outside);
+      desktop.removeEventListener("change", resize);
+    };
+  }, [tocOpen]);
   const [selection, setSelection] = useState<{
       anchor: Anchor;
       rect: DOMRect;
@@ -992,10 +1021,12 @@ export default function Reader({ post }: { post: Post }) {
             <Share2 size={17} />
           </button>
           <button
+            ref={tocButton}
             className="icon-button mobile-toc"
             onClick={() => setTocOpen(!tocOpen)}
-            aria-label="展开文章目录"
+            aria-label={tocOpen ? "收起文章目录" : post.toc.length ? "展开文章目录" : "查看阅读进度"}
             aria-expanded={tocOpen}
+            aria-controls="reader-toc"
           >
             <List size={20} />
           </button>
@@ -1184,6 +1215,7 @@ export default function Reader({ post }: { post: Post }) {
                     data-block-id={block.id}
                     data-type={block.type}
                     id={block.id}
+                    tabIndex={block.type === "heading" ? -1 : undefined}
                     dangerouslySetInnerHTML={{
                       __html: articleHTML(block.html),
                     }}
@@ -1386,13 +1418,14 @@ export default function Reader({ post }: { post: Post }) {
             )}
           </nav>
         </div>
-        <aside className={`reader-toc ${tocOpen ? "toc-visible" : ""}`}>
+        <aside id="reader-toc" ref={toc} aria-label={post.toc.length ? "本文目录" : "阅读进度"}
+          className={`reader-toc ${tocOpen ? "toc-visible" : ""}`}>
           <div className="toc-inner">
             <div className="eyebrow">
               {post.toc.length ? "本文目录" : "阅读进度"}
               <button
                 className="icon-button"
-                onClick={() => setTocOpen(false)}
+                onClick={() => { setTocOpen(false); tocButton.current?.focus({ preventScroll: true }); }}
                 aria-label="关闭目录"
               >
                 <X size={16} />
@@ -1410,10 +1443,12 @@ export default function Reader({ post }: { post: Post }) {
                     }
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(t.id)?.scrollIntoView({
+                      const destination = document.getElementById(t.id);
+                      destination?.scrollIntoView({
                         behavior: motionAllowed() ? "smooth" : "instant",
                         block: "start",
                       });
+                      destination?.focus({ preventScroll: true });
                       setTocOpen(false);
                     }}
                   >

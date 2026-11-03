@@ -1579,16 +1579,16 @@ textarea::placeholder {
   .reader-toc.toc-visible {
     display: block;
     position: fixed;
-    top: 100px;
-    right: var(--space-6);
-    width: 280px;
+    top: calc(var(--header-height) + 12px);
+    right: var(--page-gutter);
+    width: min(280px, calc(100vw - 2 * var(--page-gutter)));
     background: var(--surface);
     border: 1px solid var(--line-strong);
     box-shadow: var(--shadow);
     border-radius: var(--radius-lg);
     padding: var(--space-5);
     z-index: 60;
-    max-height: calc(100dvh - 140px);
+    max-height: calc(100dvh - var(--header-height) - 24px - env(safe-area-inset-bottom));
     overflow: auto;
   }
   .toc-visible .toc-inner {
@@ -1762,12 +1762,6 @@ textarea::placeholder {
   }
   .article-neighbors > a > small {
     font-size: 11px;
-  }
-  .reader-toc.toc-visible {
-    top: 116px;
-    right: var(--space-5);
-    width: 270px;
-    max-height: calc(100dvh - 150px);
   }
   .selection-toolbar {
     border-radius: var(--radius-md);

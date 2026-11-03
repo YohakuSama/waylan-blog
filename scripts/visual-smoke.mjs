@@ -92,6 +92,13 @@ try {
               archiveTitle: document.querySelector(".archive-heading h1")?.textContent,
               hero: select(".home-hero"),
               firstHeading: select(".home-feed .feed-body h2"),
+              firstMedia: select(".feed-list .feed-media-link"),
+              entryHeading: select(".feed-list .feed-body h2"),
+              latestHeading: select("#latest-heading"),
+              identity: select(".home-identity"),
+              homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
+              topicLinks: document.querySelectorAll(".home-topics a").length,
+              densityControls: [...document.querySelectorAll(".view-toggle button")].map(rect),
               homeHeadingBars: document.querySelectorAll(".home-feed-heading").length,
               archiveRows: document.querySelectorAll(".archive-row").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
@@ -126,6 +133,7 @@ try {
           if (route === "/feed") {
             assert.equal(geometry.types.length, 6, `${label}: missing type filters`);
             assert.ok(geometry.types.every((tab) => tab && tab.left >= 0 && tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
+            assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= 40), `${label}: density preference cannot be changed`);
           }
           if (route === "/archive") {
             assert.equal(geometry.archiveFilters, 0, `${label}: duplicated archive filters`);
@@ -136,8 +144,15 @@ try {
           }
           if (route === "/") {
             assert.equal(geometry.homeHeadingBars, 0, `${label}: detached update bar returned`);
-            assert.ok(geometry.hero && geometry.hero.height <= 300, `${label}: introduction dominates the first screen`);
+            assert.ok(geometry.hero && geometry.hero.height <= 380, `${label}: introduction dominates the first screen`);
+            assert.ok(geometry.identity && geometry.identity.height > 10, `${label}: blog identity missing`);
+            assert.ok(geometry.latestHeading && geometry.latestHeading.height > 20, `${label}: latest section heading hidden`);
+            assert.ok(geometry.homeLinks.includes("/feed") && geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
+            assert.ok(geometry.topicLinks > 0, `${label}: topics buried in sidebar`);
             if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 740, `${label}: first article pushed below the first screen`);
+          }
+          if (width < 768 && geometry.entryHeading && geometry.firstMedia) {
+            assert.ok(geometry.entryHeading.bottom < geometry.firstMedia.top, `${label}: cover precedes article identity on phone`);
           }
           const key = `${width}:${route}`, baseline = baselines.get(key);
           if (!baseline) baselines.set(key, geometry);
@@ -159,6 +174,30 @@ try {
             await page.keyboard.press("Escape");
             await page.getByRole("button", { name: "打开导航", exact: true }).waitFor();
             assert.equal(await page.locator(".mobile-menu").evaluate((el) => el === document.activeElement), true, `${label}: Escape lost focus`);
+          }
+          if (route === "/feed" && [320, 768, 1440].includes(width)) {
+            await page.getByRole("button", { name: "紧凑列表", exact: true }).click();
+            await page.locator(".feed-list.density-compact").waitFor();
+            assert.equal(await page.locator(".feed-media-link").first().isVisible(), false, `${label}: compact view still shows covers`);
+            await page.reload({ waitUntil: "domcontentloaded" });
+            await page.locator(".feed-list.density-compact").waitFor();
+            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.locator(".feed-list.density-full").waitFor();
+            assert.equal(await page.locator(".feed-media-link").first().isVisible(), true, `${label}: cannot restore detailed view`);
+          }
+          if (route.startsWith("/post/") && [320, 768, 1024].includes(width)) {
+            await page.setViewportSize({ width, height: 480 });
+            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            const toc = page.locator(".reader-toc.toc-visible");
+            await toc.waitFor();
+            const bounds = await toc.boundingBox();
+            assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 60 && bounds.y + bounds.height <= 480, `${label}: directory escapes a short viewport`);
+            assert.equal(await toc.locator("nav a").first().evaluate((el) => el === document.activeElement), true, `${label}: directory focus missing`);
+            await page.screenshot({ path: `${out}/${label}-directory.png`, animations: "disabled" });
+            await page.keyboard.press("Escape");
+            await toc.waitFor({ state: "hidden" });
+            assert.equal(await page.locator(".mobile-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
+            await page.setViewportSize({ width, height: 900 });
           }
           if (route === "/" && [320, 768, 1440].includes(width)) {
             await page.getByRole("button", { name: "阅读设置", exact: true }).click();

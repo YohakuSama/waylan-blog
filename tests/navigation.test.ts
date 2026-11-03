@@ -180,7 +180,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       transitions++;
     };
     await mount();
-    await click(document.querySelector(".intro-copy>.primary-button"));
+    await click(document.querySelector(".home-links>.primary-button"));
     assert.equal(location.pathname, "/feed");
     assert.equal(transitions, 0);
   });
@@ -204,7 +204,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       return { finished: Promise.resolve(), skipTransition() {} };
     };
     await mount();
-    await click(document.querySelector(".intro-copy>.primary-button"));
+    await click(document.querySelector(".home-links>.primary-button"));
     assert.ok(common[0].includes("visual-echo-001"));
     await click(document.querySelector(".post-card-link"));
     assert.ok(common[1].includes("title-echo-001"));
@@ -530,9 +530,18 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".home-feed .type-tabs").length, 0);
     assert.equal(document.querySelectorAll(".home-feed-heading").length, 0);
     assert.equal(document.querySelector("#latest-heading")?.textContent, "最新内容");
-    assert.ok(document.querySelector("#latest-heading")?.classList.contains("sr-only"));
-    assert.equal(document.querySelectorAll(".hero-about").length, 0);
-    await click(document.querySelector(".intro-copy>.primary-button"));
+    assert.equal(document.querySelector("#latest-heading")?.classList.contains("sr-only"), false);
+    assert.match(document.querySelector(".home-identity")?.textContent || "", /Waylan 的个人博客/);
+    assert.ok(document.querySelector('.home-links a[href="/about"]'));
+    assert.ok(document.querySelector('.home-links a[href="/rss.xml"]'));
+    const topicLink = document.querySelector<HTMLAnchorElement>('.home-topics a');
+    assert.ok(topicLink);
+    await click(topicLink);
+    const selectedTopic = new URL(topicLink.href).searchParams.get("topic");
+    assert.ok([...document.querySelectorAll('.feed-item')].every(item =>
+      posts.find(post => `card-${post.id}` === item.id)?.topic === selectedTopic));
+    await click(document.querySelector('.brand'));
+    await click(document.querySelector(".home-links>.primary-button"));
     const tabs = [...document.querySelectorAll(".type-tabs .type-tab")];
     const count = (label: string) =>
       Number(
@@ -552,6 +561,36 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(items.length, posts.filter((p) => p.type === "note").length);
     assert.ok(items.every((i) => i.classList.contains("is-note")));
     assert.ok(document.querySelector(".is-note .code-thumb"));
+  });
+  it("lets readers restore the full list after a saved compact preference", async () => {
+    localStorage.setItem("echo:density", JSON.stringify("compact"));
+    await mount("/feed");
+    assert.ok(document.querySelector(".feed-list.density-compact"));
+    await click(document.querySelector('button[aria-label="详细列表"]'));
+    assert.ok(document.querySelector(".feed-list.density-full"));
+    assert.equal(JSON.parse(localStorage.getItem("echo:density") || "null"), "full");
+  });
+  it("focuses the touch reading directory and restores its trigger on dismissal", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const trigger = document.querySelector<HTMLButtonElement>('.mobile-toc')!;
+    await click(trigger);
+    assert.equal(trigger.getAttribute("aria-expanded"), "true");
+    assert.equal(document.activeElement, document.querySelector('.reader-toc nav a'));
+    await act(async () => {
+      document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    assert.equal(trigger.getAttribute("aria-expanded"), "false");
+    assert.equal(document.activeElement, trigger);
+    await click(trigger);
+    await click(document.querySelector('button[aria-label="关闭目录"]'));
+    assert.equal(trigger.getAttribute("aria-expanded"), "false");
+    assert.equal(document.activeElement, trigger);
+    await click(trigger);
+    const sectionLink = document.querySelector<HTMLAnchorElement>('.reader-toc nav a')!;
+    const section = document.getElementById(sectionLink.hash.slice(1));
+    await click(sectionLink);
+    assert.equal(trigger.getAttribute("aria-expanded"), "false");
+    assert.equal(document.activeElement, section);
   });
   it("filters by tag across content types and keeps permalinks stable", async () => {
     const tag = posts.find((p) => p.type !== "article" && p.tags.length)!.tags[0];
