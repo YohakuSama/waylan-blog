@@ -44,7 +44,7 @@ async function run(engine,name,width){
         });
         const route = async (selector, expected) => {
           await page.locator(selector).first().click();
-          await page.waitForURL(url => url.pathname.replace(/\\/$/,"") === expected);
+          await page.waitForURL(url => (url.pathname.replace(/\\/$/,"") || "/") === expected);
           await page.waitForTimeout(440);
         };
         await route(".hero-browse","/feed");           // home → content
