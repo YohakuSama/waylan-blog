@@ -99,17 +99,30 @@ async function run(engine,browser,width){
           marked:true,stored:await page.evaluate(()=>Object.keys(localStorage).filter(x=>x.startsWith("echo:marks:")).length)
         });
       }
-      // UI overlay: while article text occupies the lower right, does the
-      // always-on trigger intercept touches that visually belong to prose?
+      // Re-tapping existing highlighted text in excerpt mode should select it,
+      // not trigger the normal-mode historical discussion panel.
+      await page.locator("mark.private-mark").first().click();
+      await page.waitForTimeout(80);
+      const unintendedDialog=await page.locator("dialog.thread-dialog[open]").count();
+      const canReselect=await page.locator(".selection-toolbar").isVisible();
+      record(browser,width,"retapping a saved mark in excerpt mode",{
+        canReselect,unintendedDialog:unintendedDialog>0
+      },!canReselect||unintendedDialog>0);
+      if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
+      if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
+      // UI overlay: a reader-mode control belongs in the reserved rail, not
+      // over arbitrary words near the bottom-right of the viewport.
       await page.locator(".excerpt-mode-hint button").click();
       const overlapping=await page.evaluate(()=>{
         const fab=document.querySelector(".excerpt-fab"),paras=[...document.querySelectorAll(".reader-prose [data-block-id]")];
         if(!fab)return{visible:false};
         const f=fab.getBoundingClientRect(),x=f.left+f.width/2,y=f.top+f.height/2;
         const before=paras.filter(p=>{const r=p.getBoundingClientRect();return r.top<=y&&r.bottom>=y&&r.left<=x&&r.right>=x}).map(p=>p.dataset.blockId);
-        return{visible:true,rect:{x:f.x,y:f.y,w:f.width,h:f.height},coveredBlocks:before,atTop:document.elementFromPoint(x,y)?.className};
+        const headerBottom=document.querySelector(".site-header")?.getBoundingClientRect().bottom||0;
+        const inRail=!!fab.closest(".excerpt-access") && f.top>=headerBottom-1 && f.bottom<=headerBottom+85;
+        return{visible:true,rect:{x:f.x,y:f.y,w:f.width,h:f.height},coveredBlocks:before,inRail,headerBottom,atTop:document.elementFromPoint(x,y)?.className};
       });
-      record(browser,width,"floating trigger obscures prose or controls",overlapping,overlapping.coveredBlocks?.length>0);
+      record(browser,width,"floating trigger obscures prose or controls",overlapping,!overlapping.inRail);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-floating.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
