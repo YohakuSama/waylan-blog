@@ -918,6 +918,23 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".reader-prose .code-prompt"));
     assert.ok(document.querySelector(".reader-prose .hljs"));
   });
+  it("resets a copied code button if a subsequent clipboard write fails", async () => {
+    const post = posts.find((p) => p.blocks.some((b) => b.lang === "bash"))!;
+    const clipboard = { writeText: async (_value: string) => {} };
+    Object.defineProperty(dom.window.navigator, "clipboard", {
+      configurable: true,
+      value: clipboard,
+    });
+    await mount("/post/" + post.slug);
+    const button = document.querySelector<HTMLButtonElement>(".code-copy")!;
+    await click(button);
+    assert.match(button.textContent || "", /已复制/);
+    clipboard.writeText = async () => { throw new Error("Clipboard access revoked"); };
+    await click(button);
+    assert.match(button.textContent || "", /复制代码/);
+    assert.doesNotMatch(button.textContent || "", /已复制/);
+    assert.match(document.querySelector(".small-error")?.textContent || "", /复制未完成/);
+  });
   it("does not execute repeated same-target route clicks while a transition is in flight", async () => {
     await mount("/");
     const link = document.querySelector<HTMLAnchorElement>('#site-nav a[href="/feed"]');
