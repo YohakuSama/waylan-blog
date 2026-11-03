@@ -436,6 +436,9 @@ describe("Admin: posts", () => {
     const after = parseFrontmatter(repo.text(`content/posts/${file}`)!);
     assert.equal(after.data.id, "echo-001");
     assert.equal(after.data.slug, "static-first");
+    assert.match(repo.text("public/_redirects")!,
+      /^\/post\/a-room-on-the-internet \/post\/static-first 301$/m,
+      "the permalink redirect is committed atomically with the post");
     assert.equal(after.content, read.body.body, "body is kept byte for byte");
     assert.match(repo.last().message, /^更新：静态优先（修订）/);
     // Saving again with the returned oid works; the stale one conflicts.
@@ -446,6 +449,24 @@ describe("Admin: posts", () => {
     assert.equal(again.status, 200);
     const stale = await save({ file, oid: read.body.oid, data: reread.data, body: reread.body });
     assert.equal(stale.status, 409);
+  });
+  it("flattens successive renames and prevents reusing another article's old link", async () => {
+    const file = "a-room-on-the-internet.md";
+    const first = (await call(`/api/admin/post?file=${file}`)).body;
+    const one = await save({ file, oid: first.oid, data: { ...first.data, slug: "new-first" }, body: first.body });
+    assert.equal(one.status, 200);
+    const two = await save({ file, oid: one.body.oid, data: { ...first.data, slug: "new-second" }, body: first.body });
+    assert.equal(two.status, 200);
+    const rules = repo.text("public/_redirects")!;
+    assert.match(rules, /^\/post\/a-room-on-the-internet \/post\/new-second 301$/m);
+    assert.match(rules, /^\/post\/new-first \/post\/new-second 301$/m);
+    assert.doesNotMatch(rules, /\/post\/a-room-on-the-internet \/post\/new-first/);
+    const blocked = await save(draft({ slug: "a-room-on-the-internet" }));
+    assert.equal(blocked.status, 422);
+    assert.match(blocked.body.message, /历史旧地址/);
+    const restored = await save({ file, oid: two.body.oid, data: { ...first.data, slug: "a-room-on-the-internet" }, body: first.body });
+    assert.equal(restored.status, 200);
+    assert.doesNotMatch(repo.text("public/_redirects")!, /^\/post\/a-room-on-the-internet /m);
   });
   it("re-saving any existing post unchanged keeps its meaning and body", async () => {
     const topics = JSON.parse(readFileSync("content/site.json", "utf8")).topics.map((t: any) => t.id);
