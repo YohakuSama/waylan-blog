@@ -92,11 +92,17 @@ export function Settings() {
     sync();
     const dark = matchMedia("(prefers-color-scheme: dark)"),
       reduce = matchMedia("(prefers-reduced-motion: reduce)");
+    const changedInAnotherTab = (event: StorageEvent) => {
+      if (event.key === null || ["echo:skin", "echo:theme", "echo:motion"].includes(event.key))
+        sync();
+    };
     dark.addEventListener?.("change", sync);
     reduce.addEventListener?.("change", sync);
+    window.addEventListener("storage", changedInAnotherTab);
     return () => {
       dark.removeEventListener?.("change", sync);
       reduce.removeEventListener?.("change", sync);
+      window.removeEventListener("storage", changedInAnotherTab);
     };
   }, []);
   useEffect(() => setOpen(false), [router.path]);

@@ -906,6 +906,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     // "System" follows prefers-color-scheme, which this environment reports as dark.
     await click(document.querySelector('input[name="theme"][value="system"]'));
     assert.equal(document.documentElement.dataset.theme, "dark");
+    // A preference changed in another tab should refresh both the palette and settings controls.
+    await act(async () => {
+      localStorage.setItem("echo:theme", JSON.stringify("light"));
+      dom.window.dispatchEvent(new dom.window.StorageEvent("storage", { key: "echo:theme" }));
+      await pause(20);
+    });
+    assert.equal(document.documentElement.dataset.theme, "light");
+    assert.ok(document.querySelector<HTMLInputElement>('input[name="theme"][value="light"]')?.checked);
   });
   it("focuses the search field, navigates results by keyboard and opens the full result list", async () => {
     await mount();
