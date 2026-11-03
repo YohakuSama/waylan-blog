@@ -35,24 +35,29 @@ async function run(engine,name,width){
       await page.locator(".reader-topbar > button").first().click();
       await page.waitForTimeout(400);
       const returned=new URL(page.url()).pathname;
-      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → button 返回列表",first,second:secondHref,returned,historyBefore,expected:"/feed",defect:returned!=="/feed"});
+      const canonical=returned.replace(/\/$/,"");
+      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → button 返回列表",first,second:secondHref,returned,canonical,historyBefore,expected:"/feed",defect:canonical!=="/feed"});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-return.png",animations:"disabled"});
 
       // Use a genuine client-side article navigation; WebKit can stall a
       // second document-level navigation during a just-finished View Transition.
       await page.locator(".post-card-link").first().click();
       await page.waitForURL(/\/post\/[^/?]+$/,{timeout:12000});
+      // Let any prior page View Transition settle before measuring a new widget.
+      await page.waitForTimeout(650);
       await page.getByRole("button",{name:"阅读设置",exact:true}).click();
       const dialog=page.getByRole("dialog",{name:"阅读设置",exact:true});
       await dialog.waitFor({state:"visible"});
       const radio=dialog.locator('.segmented input[value="dark"]');
       await radio.check();
+      await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
       const sampled=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");const labels=[...box.querySelectorAll("label")];return {chosen:labels.findIndex(el=>el.classList.contains("selected")),thumb: getComputedStyle(box,"::before").transform,colors:labels.map(el=>getComputedStyle(el).color),motion:document.documentElement.dataset.motion}});
       await page.waitForTimeout(80);
       const intermediate=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {thumb:getComputedStyle(box,"::before").transform,colors:[...box.querySelectorAll("label")].map(el=>getComputedStyle(el).color)}});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-theme-mid.png"});
-      await page.waitForTimeout(400);
-      const settled=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {thumb:getComputedStyle(box,"::before").transform,thumbContent:getComputedStyle(box,"::before").content,colors:[...box.querySelectorAll("label")].map(el=>getComputedStyle(el).color),activeBackground:getComputedStyle(box.querySelector("label.selected")).backgroundColor}});
+      await page.waitForTimeout(750);
+      const settled=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {theme:document.documentElement.dataset.theme,thumb:getComputedStyle(box,"::before").transform,thumbContent:getComputedStyle(box,"::before").content,labels:[...box.querySelectorAll("label")].map(el=>({text:el.textContent,selected:el.classList.contains("selected"),background:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color})),activeBackground:getComputedStyle(box.querySelector("label.selected")).backgroundColor}});
+      await page.screenshot({path:dir+"/"+name+"-"+width+"-theme-settled.png"});
       observations.push({browser:name,width,scenario:"article reading → reading settings → light-to-dark theme segment",sampled,intermediate,settled});
       assert.equal(settled.thumbContent,"none", "the selected background must stay attached to its label, not lag behind on a separate animated thumb");
       assert.notEqual(settled.activeBackground,"rgba(0, 0, 0, 0)", "selected label must show a real background");
