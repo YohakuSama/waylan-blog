@@ -999,6 +999,9 @@ textarea::placeholder {
     outline: 2px solid var(--brand);
     outline-offset: 3px;
     background: color-mix(in srgb, var(--brand) 7%, transparent);
+    /* WebKit otherwise animates from transparent :active outline and the
+       freshly tapped excerpt briefly looks unselected. Feedback is immediate. */
+    transition: none;
   }
   .selection-toolbar {
     position: fixed;
