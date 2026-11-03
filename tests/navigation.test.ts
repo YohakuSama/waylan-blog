@@ -722,6 +722,28 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".shelf-items li").length, 1);
     assert.equal(warning.mock.callCount(), 3, "failed add, remove and clear must all report the failure");
   });
+  it("keeps private highlights visible when browser storage rejects clearing them", async () => {
+    const post = posts[0];
+    localStorage.setItem("echo:marks:" + post.id, JSON.stringify([{ id: "saved-test-mark" }]));
+    await mount();
+    await click(document.querySelector(".settings-button"));
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /共 1 处/);
+    const warning = mock.method(dom.window, "alert", () => {});
+    const blocked = mock.method(dom.window.Storage.prototype, "removeItem", () => {
+      throw new Error("Storage access denied");
+    });
+    const clear = document.querySelector(".settings-highlights .confirm-button");
+    await click(clear);
+    await click(clear);
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /共 1 处/);
+    assert.ok(localStorage.getItem("echo:marks:" + post.id));
+    assert.equal(warning.mock.callCount(), 1);
+    blocked.mock.restore();
+    await click(clear);
+    await click(clear);
+    assert.equal(localStorage.getItem("echo:marks:" + post.id), null);
+    assert.match(document.querySelector(".settings-highlights")?.textContent || "", /尚未保存私人划线/);
+  });
   it("keeps the notification entry in its familiar slot when the service is disabled", async () => {
     await mount();
     const controls = [...document.querySelectorAll(".header-tools .shelf-trigger, .header-tools .notification-trigger, .header-tools .settings-button")];
