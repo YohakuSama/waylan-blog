@@ -172,6 +172,8 @@ async function scenario(engine, name, width, motion, seed) {
         }
       });
       await step(prefix + "/invalid-filter-link", page, async () => {
+        // The previous sort navigation may still be animating; filter clicks are intentionally ignored until it settles.
+        await page.waitForFunction(() => !document.documentElement.hasAttribute("data-list-busy"));
         // Exercise the actual client router without coupling this check to a full-page reload.
         await page.evaluate(() => {
           const link = document.createElement("a");
