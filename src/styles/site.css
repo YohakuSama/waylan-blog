@@ -6,7 +6,8 @@
   --header-height: 68px;
   --sidebar-width: 300px;
   --header-control-size: 44px;
-  --nav-item-width: 64px;
+  --nav-item-width: 56px;
+  --header-bar-height: 68px;
 }
 
 body {
@@ -35,7 +36,7 @@ h3 {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 var(--page-gutter);
-  height: var(--header-height);
+  height: var(--header-bar-height);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
@@ -75,7 +76,8 @@ h3 {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  height: var(--header-height);
+  height: 44px;
+  border-radius: 6px;
   width: var(--nav-item-width);
   justify-content: center;
   flex: 0 0 auto;
@@ -86,7 +88,8 @@ h3 {
   color: var(--ink);
 }
 .nav-link.selected {
-  color: var(--ink);
+  color: var(--accent);
+  background: var(--brand-soft);
 }
 /* Destination names and slots are identical in both skins. */
 .nav-description { display: none; }
@@ -94,14 +97,16 @@ h3 {
 .nav-indicator {
   position: absolute;
   left: 50%;
-  bottom: 12px;
-  width: 30px;
+  bottom: 3px;
+  width: 20px;
   height: 2px;
   border-radius: 2px;
   background: var(--accent);
   transform: translateX(-50%);
 }
 .header-tools {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -142,9 +147,6 @@ h3 {
 .header-tools .icon-button:hover {
   color: var(--ink);
 }
-.mobile-menu {
-  display: none;
-}
 /* ---------- Page frame ---------- */
 .site-body {
   min-height: calc(100vh - var(--header-height));
@@ -178,13 +180,13 @@ h3 {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
-  padding: 28px 0 20px;
+  padding: 24px 0 18px;
 }
 .intro-copy {
   position: relative;
   z-index: 1;
   padding-left: 0;
-  max-width: 640px;
+  max-width: 540px;
 }
 .hero-square {
   position: absolute;
@@ -196,8 +198,8 @@ h3 {
 }
 .hero-title {
   font-family: var(--font-display);
-  font-size: 32px;
-  line-height: 1.3;
+  font-size: 30px;
+  line-height: 1.35;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--ink);
@@ -245,25 +247,7 @@ h3 {
   color: var(--ink-soft);
   font: 13px/1.75 var(--font-cjk-sans);
 }
-.home-links > .primary-button {
-  min-height: 44px;
-  width: fit-content;
-  justify-content: flex-start;
-  padding: 0;
-  gap: 8px;
-  border-color: transparent;
-  border-radius: 0;
-  background: none;
-  color: var(--ink-soft);
-  font: 14px/1.75 var(--font-cjk-sans);
-}
-.home-links > a:hover,
-.home-links > .primary-button:hover {
-  background: none;
-  border-color: transparent;
-  color: var(--brand);
-  box-shadow: none;
-}
+.home-links > a:hover { color: var(--brand); }
 
 .resume-link {
   display: flex;
@@ -282,37 +266,18 @@ h3 {
   color: var(--muted);
   font-size: 11px;
 }
-/* Home has one primary action. Resume is a quiet continuation affordance,
-   not another full-width card between the introduction and newest posts. */
-.home-hero .resume-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(100%, 510px);
-  min-width: 0;
-  margin-top: 12px;
-  padding: 3px 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  color: var(--muted);
-  font-size: 12px;
+/* A remembered reading position is secondary to the current publication list. */
+.home-resume { margin: 0 0 16px; }
+.home-resume .resume-link {
+  display: grid; grid-template-columns: 20px minmax(0,1fr) auto 16px;
+  width: 100%; min-height: 56px; margin: 0; gap: 10px;
+  padding: 9px 12px; background: var(--surface); border: 1px solid var(--line);
 }
-.home-hero .resume-link > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-hero .resume-link small {
-  flex: none;
-  display: inline;
-  font-size: 11px;
-}
-.home-hero .resume-link:hover,
-.home-hero .resume-link:focus-visible {
-  color: var(--accent);
-}
+.home-resume .resume-link > span { min-width: 0; }
+.home-resume .resume-link strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+.home-resume .resume-link small { font-size: 11px; color: var(--muted); }
+.home-resume .resume-progress { font-family: var(--font-mono); }
+.home-resume .resume-link:hover { border-color: var(--brand); }
 .home-feed { border-top: 1px solid var(--line); }
 .home-section-head {
   display: flex;
@@ -333,27 +298,36 @@ h3 {
   font-size: 12px;
   white-space: nowrap;
 }
-.home-topics {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 18px;
-  padding-bottom: 2px;
-  font-size: 13px;
+/* The homepage has a stable editorial presentation, independent of the library. */
+.home-list .feed-item { padding: 20px 0; grid-template-columns: minmax(0,1fr); grid-template-areas: "body"; }
+.home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,30%) minmax(0,1fr); grid-template-areas: "media body"; }
+.home-list .feed-arrow { display: none; }
+.home-list .feed-item:not(:first-child), .home-list .feed-item.is-thought {
+  grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
 }
-.home-topics > span { color: var(--muted); }
-.home-topics > a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  text-underline-offset: 4px;
-}
-.home-topics > a:hover { color: var(--accent); text-decoration: underline; }
+.home-list .feed-item:first-child .feed-body h2 { font-size: 27px; line-height: 1.4; margin-top: 5px; }
+.home-list .feed-item:not(:first-child) .feed-body h2 { font-size: 21px; margin-top: 4px; }
+.home-list .feed-item .feed-body { border: 0; padding-left: 0; }
+.home-list .thought-mark, .home-list .project-facts, .home-list .feed-item:not(:first-child) .tag-list { display: none; }
+.home-list .tag-list li:nth-child(n+3) { display: none; }
+.home-list .feed-excerpt { margin-top: 7px; }
+.home-list .entry-meta { font-size: 12px; min-height: 32px; }
+.home-list .entry-meta .card-bookmark { width: 40px; height: 40px; top: -4px; }
+.home-list .entry-views { display: none; }
+.home-list .thought-text { font-size: 18px; line-height: 1.75; }
+.home-motto { position: absolute; bottom: 12px; right: 8px; color: var(--muted); font-size: 12px; background: var(--paper); }
+.home-sidebar { padding-top: 24px; }
+.home-projects { list-style: none; margin: 0; padding: 0; }
+.home-projects li + li { border-top: 1px solid var(--line); }
+.home-projects a { display: grid; gap: 4px; padding: 14px 0; }
+.home-projects strong { font-weight: 500; font-size: 14px; }
+.home-projects span { color: var(--muted); font-size: 12px; }
+.home-about-link { display: inline-flex; align-items: center; min-height: 44px; gap: 5px; font-size: 13px; }
 .hero-visual {
   position: absolute;
   right: 0;
   top: 0;
-  width: min(52%, 420px);
+  width: min(27%, 270px);
   height: 100%;
   overflow: hidden;
   pointer-events: none;
@@ -479,8 +453,10 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  width: 68px;
   height: 40px;
+  gap: 5px;
+  font-size: 12px;
   border-radius: var(--radius-full);
   color: var(--muted);
 }
@@ -493,14 +469,14 @@ h3 {
   z-index: -1;
   top: 3px;
   left: 3px;
-  width: 40px;
+  width: 68px;
   height: 40px;
   border-radius: var(--radius-full);
   background: var(--tag-bg);
   transition: transform var(--motion-base) var(--ease-spring);
 }
 .view-toggle:has(button:last-child[aria-pressed="true"])::before {
-  transform: translateX(40px);
+  transform: translateX(68px);
 }
 /* ---------- Feed entries ---------- */
 .feed-list {
@@ -1569,7 +1545,7 @@ h3 {
     padding: 0 0 32px;
   }
   .hero-visual {
-    width: min(56%, 480px);
+    width: min(30%, 300px);
     /* At tablet width the feed takes the entire row; a negative right offset
        would add horizontal document overflow and a phantom side gutter. */
     right: 0;
@@ -1608,67 +1584,28 @@ h3 {
     grid-column: 1 / -1;
   }
 }
-/* Navigation collapses into a menu. */
+/* Narrow screens keep destinations in a separate, always-visible row. */
 @media (max-width: 860px) {
-  :root {
-    --header-height: 60px;
-    --page-gutter: 24px;
-  }
+  :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
   .header-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
+    height: auto; min-height: var(--header-height);
+    grid-template-columns: minmax(0,1fr) auto;
+    grid-template-rows: var(--header-bar-height) 44px;
+    column-gap: 10px; row-gap: 0;
   }
-  .brand { max-width: 180px; }
-  .mobile-menu {
-    display: inline-flex;
-  }
-  /* Keep the inbox panel within the viewport on phones and tablets. */
-  .notification-popover {
-    position: fixed;
-    top: calc(var(--header-height) + 8px);
-    right: var(--page-gutter);
-    width: calc(100vw - 2 * var(--page-gutter));
-    max-width: 360px;
-  }
+  .brand { grid-row: 1; grid-column: 1; max-width: 160px; }
+  .header-tools { grid-row: 1; grid-column: 2; padding-left: 6px; gap: 0; }
   #site-nav {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 8px var(--page-gutter) 16px;
-    background: var(--paper);
-    border-bottom: 1px solid var(--line);
-    box-shadow: var(--shadow);
+    display: flex; grid-row: 2; grid-column: 1 / -1;
+    position: static; align-items: center; gap: 0;
+    width: 100%; min-width: 0; border-top: 1px solid var(--line);
   }
-  #site-nav.nav-open {
-    display: flex;
-  }
-  .nav-link {
-    width: 100%;
-    min-height: 56px;
-    height: auto;
-    justify-content: flex-start;
-    gap: 16px;
-    padding: 8px 20px 8px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .nav-description { display: inline; font-size: 12px; font-weight: 400; color: var(--muted); }
-  .nav-label { min-width: 48px; }
-  .nav-link:last-child {
-    border-bottom: 0;
-  }
-  .nav-indicator {
-    left: auto;
-    right: 0;
-    bottom: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 0;
-    transform: translateY(50%);
+  .nav-link { flex: 1; width: auto; min-width: 0; height: 43px; font-size: 13px; }
+  .nav-description { display: none; }
+  .nav-indicator { bottom: 3px; }
+  .notification-popover {
+    position: fixed; top: calc(var(--header-height) + 8px); right: var(--page-gutter);
+    width: calc(100vw - 2 * var(--page-gutter)); max-width: 360px;
   }
   .header-search {
     margin-right: 0;
@@ -1684,7 +1621,7 @@ h3 {
   }
   .home-hero {
     min-height: 0;
-    padding: 24px 0 18px;
+    padding: 20px 0 14px;
     isolation: isolate;
   }
   .hero-visual {
@@ -1695,37 +1632,7 @@ h3 {
     margin: 4px 0 -24px auto;
     order: 2;
   }
-  /* The wave is a background, not a card or a second hero row.
-     Keep the original mesh behind the introduction so mobile readers reach
-     articles sooner. Text and links remain on their own higher layer. */
-  :root:not([data-skin="terminal"]) .home-hero .hero-visual {
-    position: absolute;
-    z-index: 0;
-    inset: 0 0 auto auto;
-    right: 0;
-    width: min(100%, 650px);
-    max-width: none;
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    opacity: .32;
-    pointer-events: none;
-    -webkit-mask-image: radial-gradient(ellipse 72% 75% at 72% 45%, #000 15%, transparent 100%);
-    mask-image: radial-gradient(ellipse 72% 75% at 72% 45%, #000 15%, transparent 100%);
-  }
-  :root:not([data-skin="terminal"]) .home-hero .hero-visual .network-wave {
-    position: absolute;
-    display: block;
-    top: 18%;
-    left: 10%;
-    width: 122%;
-    height: auto;
-    transform: none;
-  }
-  :root:not([data-skin="terminal"]) .home-hero .intro-copy {
-    position: relative;
-    z-index: 1;
-  }
+  .home-hero .hero-visual { display: none; }
   .feed-toolbar {
     align-items: flex-start;
   }
@@ -1768,6 +1675,16 @@ h3 {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "body arrow";
   }
+  .home-list .feed-item, .home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
+    gap: 0 8px; padding: 16px 0;
+  }
+  .home-list .feed-media-link { display: none; }
+  .home-list .feed-item:first-child .feed-body h2 { font-size: 24px; }
+  .home-list .feed-item:not(:first-child) .feed-body h2 { font-size: 20px; }
+  .home-list .feed-excerpt { font-size: 14px; }
+  .home-list .tag-list { margin-top: 10px; }
+  .feed-item.is-article .feed-media { aspect-ratio: 2.25 / 1; }
   /* All six type filters remain visible; the single-layer selected state
      works across flex rows without an animated duplicate. */
   .type-tabs {
@@ -1806,7 +1723,7 @@ h3 {
     height: 9px;
   }
   .hero-title {
-    font-size: 26px;
+    font-size: 24px;
   }
   .intro-description {
     font-size: 13.5px;

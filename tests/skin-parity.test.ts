@@ -30,7 +30,7 @@ describe("both visual themes share home geometry and focus treatments", () => {
     assert.ok(copy.includes("z-index: 1;"));
     assert.equal(visual.includes("mask-image: none;"), false);
     assert.equal(skin.includes("grid-template-columns: minmax(0, 1fr) minmax(0, 440px)"), false);
-    const editorial = rule(site, ':root:not([data-skin="terminal"]) .home-hero .hero-visual');
+    const editorial = rule(site, ".hero-visual");
     assert.ok(editorial.includes("position: absolute;"));
     assert.ok(editorial.includes("pointer-events: none;"));
   });

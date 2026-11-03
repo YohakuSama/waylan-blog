@@ -54,7 +54,7 @@ for (const path of [
       doc.querySelector(".home-hero svg.network-wave"),
       "hero network wave",
     );
-    assert(doc.querySelector(".site-sidebar .heatmap-grid"), "sidebar heatmap");
+    assert(doc.querySelector(".home-sidebar .explore-list"), "homepage topic guide");
   }
   if (path.startsWith("post/")) {
     const post = posts.find((p) => path.includes(p.slug))!;

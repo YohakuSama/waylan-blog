@@ -918,15 +918,7 @@ html {
   font: 600 14px var(--font-mono);
   color: var(--brand);
 }
-:root[data-skin="terminal"] .nav-link .nav-label::before {
-  content: "~/";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  font: 10px var(--font-mono);
-  color: var(--ink-soft);
-}
+:root[data-skin="terminal"] .nav-link .nav-label::before { content: none; }
 :root[data-skin="terminal"] .nav-link:hover .nav-label::before {
   color: var(--brand);
 }
@@ -967,7 +959,7 @@ html {
   position: absolute;
   z-index: 0;
   inset: 0 0 auto auto;
-  width: min(58%, 520px);
+  width: min(27%, 270px);
   max-width: none;
   height: 100%;
   margin: 0;
@@ -1108,7 +1100,7 @@ html {
 @media (max-width: 1100px) {
   /* Tablet: don't stack a large console panel below the introduction. */
   :root[data-skin="terminal"] .home-hero .hero-visual {
-    width: min(100%, 650px);
+    width: min(30%, 300px);
     opacity: 0.23;
   }
 }
@@ -1225,7 +1217,7 @@ html {
   -webkit-backdrop-filter: saturate(1.4) blur(10px);
 }
 :root[data-skin="terminal"] .nav-link[data-term="~"] .nav-label::before {
-  content: "~/";
+  content: none;
 }
 /* The toast is a manual popover; undo the UA popover box so it keeps its pill shape. */
 .toast[popover] {
@@ -1275,12 +1267,6 @@ html {
 }
 @keyframes reading-pulse { 50% { box-shadow:0 0 0 5px color-mix(in srgb,var(--amber) 8%,transparent); } }
 :root[data-skin="terminal"] .reading-progress > span { background:repeating-linear-gradient(90deg,var(--brand) 0 11px,transparent 11px 15px); }
-@media (max-width: 860px) {
-  #site-nav.nav-open { animation: mobile-nav-in 200ms var(--ease-out) both; transform-origin: top center;
-    /* Veil the page below the open menu without an extra element. */
-    box-shadow: var(--shadow), 0 0 0 100vmax var(--veil); clip-path: inset(0 0 -100vmax 0); }
-  @keyframes mobile-nav-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-}
 :root[data-motion="reduced"] .site-header::after { animation:none; width:100%; transform:none; }
 @media(prefers-reduced-motion: reduce){:root:not([data-motion="full"]) .site-header::after { animation:none; width:100%; transform:none; opacity:.6; }}
 

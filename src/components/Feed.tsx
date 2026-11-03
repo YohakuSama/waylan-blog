@@ -137,14 +137,16 @@ export function FeedEntry({
   post,
   discussion,
   priority = false,
+  showMedia = true,
 }: {
   post: Post;
   discussion?: Discussion;
   priority?: boolean;
+  showMedia?: boolean;
 }) {
   const href = `/post/${post.slug}`;
   let media: ReactNode = null;
-  if (post.cover)
+  if (showMedia && post.cover)
     media = (
       <Media post={post}>
         <div
@@ -162,7 +164,7 @@ export function FeedEntry({
         </div>
       </Media>
     );
-  else if (post.type === "note" && post.snippet)
+  else if (showMedia && post.type === "note" && post.snippet)
     media = (
       <Media post={post}>
         <div className="feed-media code-thumb">
@@ -183,7 +185,7 @@ export function FeedEntry({
         </div>
       </Media>
     );
-  else if (post.type === "project")
+  else if (showMedia && post.type === "project")
     media = (
       <Media post={post}>
         <div className="feed-media project-thumb">
@@ -310,6 +312,7 @@ export function ViewToggle({
         onClick={() => listTransition(() => flushSync(() => onChange("full")))}
       >
         <LayoutList size={16} />
+        <span>图文</span>
       </button>
       <button
         type="button"
@@ -321,6 +324,7 @@ export function ViewToggle({
         }
       >
         <List size={16} />
+        <span>列表</span>
       </button>
     </div>
   );
@@ -331,12 +335,14 @@ export function FeedList({
   resetKey,
   empty,
   density = "full",
+  variant = "index",
 }: {
   items: Post[];
   batch?: number;
   resetKey: string;
   empty: ReactNode;
   density?: Density;
+  variant?: "index" | "home";
 }) {
   const [limit, setLimit] = useState(batch);
   const loadingMore = useRef(false);
@@ -381,18 +387,21 @@ export function FeedList({
   if (!items.length) return <>{empty}</>;
   return (
     <>
-      <div className={`feed-list density-${density}`} ref={listRef}>
+      <div className={`feed-list density-${density}${variant === "home" ? " home-list" : ""}`} ref={listRef}>
         {visible.map((p, i) => (
           <FeedEntry
             key={p.id}
             post={p}
             priority={i < 2}
+            showMedia={variant !== "home" || i === 0}
             discussion={previews.data?.posts[p.id]}
           />
         ))}
       </div>
       <div className="feed-footer">
-        {limit < items.length ? (
+        {variant === "home" ? (
+          <Link className="load-more" href="/feed">浏览全部内容<span className="mono">{items.length} 条</span><ArrowRight size={16} aria-hidden="true" /></Link>
+        ) : limit < items.length ? (
           <button
             type="button"
             className="load-more"
