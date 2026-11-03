@@ -49,8 +49,10 @@ async function run(engine,name,width){
       const intermediate=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {thumb:getComputedStyle(box,"::before").transform,colors:[...box.querySelectorAll("label")].map(el=>getComputedStyle(el).color)}});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-theme-mid.png"});
       await page.waitForTimeout(400);
-      const settled=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {thumb:getComputedStyle(box,"::before").transform,colors:[...box.querySelectorAll("label")].map(el=>getComputedStyle(el).color)}});
+      const settled=await page.evaluate(()=>{const box=document.querySelector(".settings-dialog .segmented");return {thumb:getComputedStyle(box,"::before").transform,thumbContent:getComputedStyle(box,"::before").content,colors:[...box.querySelectorAll("label")].map(el=>getComputedStyle(el).color),activeBackground:getComputedStyle(box.querySelector("label.selected")).backgroundColor}});
       observations.push({browser:name,width,scenario:"article reading → reading settings → light-to-dark theme segment",sampled,intermediate,settled});
+      assert.equal(settled.thumbContent,"none", "the selected background must stay attached to its label, not lag behind on a separate animated thumb");
+      assert.notEqual(settled.activeBackground,"rgba(0, 0, 0, 0)", "selected label must show a real background");
       assert.deepEqual(errors,[], "runtime errors");
     }finally{await ctx.close()}
   }finally{await browser.close()}
