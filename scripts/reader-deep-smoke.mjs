@@ -21,6 +21,59 @@ async function run(engine,name,width){
       const errors=[];page.on("pageerror",e=>errors.push(String(e)));
       await page.route("**/api/status",route=>route.fulfill({json:{comments:false,notifications:false}}));
       await page.route("**/api/session",route=>route.fulfill({json:{user:null}}));
+      if (width <= 600) {
+        await page.goto(origin+"/",{waitUntil:"domcontentloaded"});
+        await page.locator(".hero-browse").waitFor();
+        await page.evaluate(() => {
+          window.__routeMotionAudit = [];
+          const start = document.startViewTransition?.bind(document);
+          if (!start) return;
+          const capture = () => [...document.querySelectorAll(
+            ".feed-item .feed-body h2, .feed-item .feed-media",
+          )].map(el => getComputedStyle(el).viewTransitionName);
+          document.startViewTransition = update => {
+            const kind = document.documentElement.dataset.routeMotion || "";
+            const before = capture();
+            const modalOpen = !!document.querySelector("dialog.search-dialog[open]");
+            return start(() => {
+              const result = update();
+              window.__routeMotionAudit.push({kind,before,after:capture(),modalOpen});
+              return result;
+            });
+          };
+        });
+        const route = async (selector, expected) => {
+          await page.locator(selector).first().click();
+          await page.waitForURL(url => url.pathname.replace(/\\/$/,"") === expected);
+          await page.waitForTimeout(440);
+        };
+        await route(".hero-browse","/feed");           // home → content
+        await route('#site-nav a[href="/projects"]',"/projects");
+        await route('#site-nav a[href="/feed"]',"/feed");
+        await route('#site-nav a[href="/"]',"/");      // content → home
+        await route('#site-nav a[href="/projects"]',"/projects"); // home → projects
+        await route('#site-nav a[href="/"]',"/");
+        await page.locator(".header-search").click();
+        await page.locator('.search-dialog input[type="search"]').fill("D1");
+        await page.locator(".search-dialog .search-option").first().click();
+        await page.waitForURL(/\\/post\\/[^/]+/);
+        await page.waitForTimeout(440);
+        const audit = await page.evaluate(() => window.__routeMotionAudit);
+        observations.push({browser:name,width,scenario:"collection motion paths and search-close ordering",audit});
+        const collection = audit.filter(x => x.kind === "collection");
+        if (audit.length) {
+          assert.ok(collection.length >= 5,"expected routed collection transitions: "+JSON.stringify(audit));
+          for (const snapshot of collection) {
+            assert.ok([...snapshot.before,...snapshot.after].every(name => name === "none"),
+              "collection transition may not fly individual titles/covers: "+JSON.stringify(snapshot));
+          }
+          const readerRoute = audit.find(x => x.kind === "reader");
+          assert.ok(readerRoute,"search should begin reader transition");
+          assert.equal(readerRoute.modalOpen,false,
+            "search dialog must close before capturing the article route");
+        }
+        await page.screenshot({path:dir+"/"+name+"-"+width+"-search-to-article.png",animations:"disabled"});
+      }
       await page.goto(origin+"/feed/",{waitUntil:"domcontentloaded"});
       await page.locator(".post-card-link").first().click();
       await page.waitForURL(/\/post\/[^/?]+$/,{timeout:12000});
