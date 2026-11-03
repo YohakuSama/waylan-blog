@@ -741,6 +741,33 @@ describe("OAuth, cryptography and rendering", () => {
     assert.equal(mark.status, 200);
     assert.equal(((await (await call("/api/notifications", { headers })).json()) as any).unread, 0);
   });
+  it("marks all unread notifications including those outside the 30-item inbox window", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    const insert = db.sqlite.prepare(
+      "INSERT INTO notifications(id,recipient_login,actor_login,post_id,comment_id,kind,created_at) VALUES(?,?,?,?,?,'new_comment',?)",
+    );
+    for (let i = 0; i < 35; i++)
+      insert.run(`bulk:${i}`, user.login, "guest-reader", postId, `comment:${i}`, 1000 + i);
+    insert.run("another-user", "someone-else", "guest-reader", postId, "outside", 2000);
+    const auth = { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf };
+    const before = (await (await call("/api/notifications", { headers: auth })).json()) as any;
+    assert.equal(before.unread, 35);
+    assert.equal(before.items.length, 30);
+    const sendAll = (headers: HeadersInit, body: unknown = { all: true }) =>
+      call("/api/notifications", { method: "POST", headers, body: JSON.stringify(body) });
+    assert.equal((await sendAll({})).status, 401);
+    assert.equal((await sendAll({ Cookie: `__Host-echo_session=${rawSession}` })).status, 403);
+    assert.equal((await sendAll(auth, { all: true, ids: [] })).status, 400);
+    assert.equal((await sendAll(auth)).status, 200);
+    const after = (await (await call("/api/notifications", { headers: auth })).json()) as any;
+    assert.equal(after.unread, 0);
+    assert.equal(after.items.length, 30);
+    assert.ok(after.items.every((item: { read: boolean }) => item.read));
+    const other = db.sqlite.prepare(
+      "SELECT read_at FROM notifications WHERE id='another-user'",
+    ).get() as { read_at: number | null };
+    assert.equal(other.read_at, null, "must not mark another account's notifications");
+  });
   it("notifies the site author of new comments and respects opt-out", async () => {
     env.NOTIFICATIONS_ENABLED = "true";
     env.ADMIN_GITHUB_LOGINS = user.login;

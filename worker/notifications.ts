@@ -62,9 +62,19 @@ export async function updateInbox(request: Request, env: Env) {
   const body = (await readBody(request, 2048)) as {
     ids?: unknown;
     subscribed?: unknown;
+    all?: unknown;
   };
   if (!body || typeof body !== "object" || Array.isArray(body))
     throw new HttpError(400, "BODY", "请求格式不正确。");
+  // Mark every unread notification, not just the latest 30 returned by inbox().
+  if (body.all === true) {
+    if (body.ids !== undefined || body.subscribed !== undefined)
+      throw new HttpError(400, "NOTIFICATION_IDS", "通知操作不能混合提交。");
+    await env.DB!.prepare(
+      "UPDATE notifications SET read_at=? WHERE recipient_login=? AND read_at IS NULL",
+    ).bind(now(), login).run();
+    return json({ ok: true });
+  }
   if (typeof body.subscribed === "boolean") {
     await env.DB!.prepare(
       "INSERT INTO notification_settings(recipient_login,enabled) VALUES(?,?) ON CONFLICT(recipient_login) DO UPDATE SET enabled=excluded.enabled",

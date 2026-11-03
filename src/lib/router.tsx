@@ -22,6 +22,20 @@ type Router = {
 const Context = createContext<Router>(null!);
 export const useRouter = () => useContext(Context);
 export const motionOK = motionAllowed;
+// Only public application pages belong to the client router. Static files,
+// /admin and API links must use native browser navigation.
+export function isAppRoute(pathname: string) {
+  return ["/", "/feed", "/archive", "/projects", "/about", "/404"].includes(pathname)
+    || /^\/post\/[a-z0-9-]+$/.test(pathname);
+}
+export function fragmentId(fragment: string): string | null {
+  if (!fragment.startsWith("#")) return null;
+  try {
+    return decodeURIComponent(fragment.slice(1));
+  } catch {
+    return null;
+  }
+}
 export function RouterProvider({
   initialPath,
   children,
@@ -65,10 +79,8 @@ export function RouterProvider({
     // transition. A different destination can still supersede a slow one.
     if (!options.pop && pendingTarget.current?.route === next) return;
     if (!options.pop && next === pathRef.current && !pendingTarget.current) {
-      if (target.hash) {
-        document.getElementById(decodeURIComponent(target.hash.slice(1)))
-          ?.scrollIntoView({ block: "start" });
-      }
+      const id = fragmentId(target.hash);
+      if (id) document.getElementById(id)?.scrollIntoView({ block: "start" });
       return;
     }
     const serial = ++operation.current;
@@ -145,11 +157,10 @@ export function RouterProvider({
         : 0;
       if (target.pathname !== prevPath.split(/[?#]/)[0] || options.pop)
         window.scrollTo({ top: y, behavior: "instant" });
-      if (target.hash && !target.hash.startsWith("#echo-"))
+      const id = target.hash.startsWith("#echo-") ? null : fragmentId(target.hash);
+      if (id)
         requestAnimationFrame(() =>
-          document
-            .getElementById(decodeURIComponent(target.hash.slice(1)))
-            ?.scrollIntoView({ block: "start" }),
+          document.getElementById(id)?.scrollIntoView({ block: "start" }),
         );
     };
     const prevPathname = prevPath.split(/[?#]/)[0];
@@ -266,11 +277,7 @@ export function RouterProvider({
         return;
       }
       const target = new URL(link.href, location.href);
-      if (
-        target.origin !== location.origin ||
-        target.pathname.endsWith(".xml") ||
-        target.pathname.startsWith("/api/")
-      )
+      if (target.origin !== location.origin || !isAppRoute(target.pathname))
         return;
       event.preventDefault();
       void navigate(target.pathname + target.search + target.hash);
@@ -380,7 +387,8 @@ export function Link({
         );
         if (
           target.origin !==
-          (offlinePreview() ? "https://preview.invalid" : location.origin)
+          (offlinePreview() ? "https://preview.invalid" : location.origin) ||
+          !isAppRoute(target.pathname)
         )
           return;
         event.preventDefault();
