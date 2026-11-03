@@ -8,6 +8,7 @@ import {
   Compass,
   Gauge,
   Layers,
+  Rss,
   Search,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { Link, useRouter } from "./lib/router";
 import { useReveal } from "./lib/reveal";
 import { SocialList } from "./components/Socials";
 import { storage } from "./lib/storage";
+import { assetURL, offlinePreview } from "./lib/runtime";
 import { EchoMark } from "./components/UI";
 import { NetworkWave } from "./components/Network";
 import {
@@ -122,24 +124,32 @@ export function Home() {
       title: string;
       progress: number;
     } | null>("reading", null);
-    if (last && posts.some((p) => p.slug === last.slug)) setResume(last);
+    if (last && last.progress > 0 && last.progress < 100 &&
+        posts.some((p) => p.slug === last.slug)) setResume(last);
   }, []);
   // The home page is a reading doorway, not a second filtering interface.
   // Detailed type/topic/sort controls belong exclusively on the content page.
   const items = newestFirstList();
-  const sentenceEnd = site.intro.indexOf("。");
-  const introduction = sentenceEnd < 0 ? site.intro : site.intro.slice(0, sentenceEnd + 1);
+  const sentenceEnd = site.description.indexOf("。");
+  const introduction = sentenceEnd < 0 ? site.description : site.description.slice(0, sentenceEnd + 1);
   return (
     <div className="content-grid home-grid">
       <div className="feed-column">
         <section className="home-hero" aria-label="站点介绍">
           <div className="intro-copy">
+            <p className="home-identity">{site.author} 的个人博客</p>
             <HeroTitle />
             <p className="intro-description">{introduction}</p>
-            <Link className="primary-button hero-browse" href="/feed">
-              浏览全部内容
-              <ArrowRight size={17} />
-            </Link>
+            <nav className="home-links" aria-label="博客导览">
+              <Link className="primary-button hero-browse" href="/feed">
+                浏览全部内容<ArrowRight size={17} aria-hidden="true" />
+              </Link>
+              <Link href="/about">关于本站</Link>
+              <a href={assetURL("/rss.xml")}
+                download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
+                <Rss size={15} aria-hidden="true" />订阅 RSS
+              </a>
+            </nav>
             {resume && (
               <Link
                 className="resume-link"
@@ -152,13 +162,24 @@ export function Home() {
               </Link>
             )}
           </div>
-          <div className="hero-visual">
+          <div className="hero-visual" aria-hidden="true">
             <NetworkWave />
             <HeroTerminal />
           </div>
         </section>
         <section className="home-feed" aria-labelledby="latest-heading">
-          <h2 id="latest-heading" className="sr-only">最新内容</h2>
+          <div className="home-section-head">
+            <h2 id="latest-heading">最新内容</h2>
+            <Link href="/archive">按时间归档<ArrowUpRight size={14} aria-hidden="true" /></Link>
+          </div>
+          {usedTopics.length > 0 && (
+            <nav className="home-topics" aria-label="按主题阅读">
+              <span>主题</span>
+              {usedTopics.map((topic) => (
+                <Link key={topic.id} href={`/feed?topic=${topic.id}`}>{topic.name}</Link>
+              ))}
+            </nav>
+          )}
           <FeedList
             items={items}
             resetKey="latest"
@@ -242,7 +263,6 @@ export function Feed() {
                 source={scoped}
                 hrefFor={(t) => href({ type: t })}
               />
-              <ViewToggle density={density} onChange={setDensity} />
             </div>
             <div className="filter-tabs" role="group" aria-label="按主题筛选">
               <button
@@ -316,6 +336,7 @@ export function Feed() {
               <span className="meta-dot">·</span>
               {filtered.length} 条
             </span>
+            <ViewToggle density={density} onChange={setDensity} />
             <Link href="/archive">
               按年份回看
               <ArrowUpRight size={13} />

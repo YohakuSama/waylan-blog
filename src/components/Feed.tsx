@@ -235,7 +235,6 @@ export function FeedEntry({
       className={`feed-item post-card is-${post.type}${media ? " has-media" : ""}`}
       id={`card-${post.id}`}
     >
-      {media}
       <div className="feed-body">
         <EntryMeta post={post} discussion={discussion} />
         <h2 style={{ viewTransitionName: `title-${post.id}` }}>
@@ -267,6 +266,7 @@ export function FeedEntry({
         )}
         <TagList tags={post.tags} />
       </div>
+      {media}
       <Link
         className="feed-arrow"
         href={href}
