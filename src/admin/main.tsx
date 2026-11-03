@@ -20,19 +20,21 @@ import {
 } from "../../shared/types";
 import { MAX_IMAGE, toBase64, uploadPath } from "../../shared/uploads";
 import { list, str, toData, toForm, type Form } from "./form";
+import { applyAppearance } from "../lib/appearance";
 import "./admin.css";
 
-try {
-  const theme = JSON.parse(localStorage.getItem("echo:theme") || "null");
-  document.documentElement.dataset.theme =
-    theme === "light" || theme === "dark"
-      ? theme
-      : matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-} catch {
-  document.documentElement.dataset.theme = "light";
-}
+// The admin keeps its own CSS, but shares the public site's theme preference.
+// Follow OS changes while "system" is selected and preferences changed in another tab.
+const syncAdminAppearance = () => applyAppearance();
+syncAdminAppearance();
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.(
+  "change",
+  syncAdminAppearance,
+);
+window.addEventListener("storage", (event) => {
+  if (event.key === "echo:theme" || event.key === "echo:skin" || event.key === null)
+    syncAdminAppearance();
+});
 
 // ---------------------------------------------------------------- API
 

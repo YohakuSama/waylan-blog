@@ -160,6 +160,30 @@ async function adminBrowsers() {
         await page.goto(origin + "/admin/", { waitUntil: "domcontentloaded" });
         await page.getByRole("heading", { name: "登录后台" }).waitFor();
         await noOverflow(page, "admin/guest/" + width);
+        if (width === 390) {
+          // The independent admin page should follow OS changes unless a
+          // persisted theme was explicitly chosen in another browser tab.
+          await page.emulateMedia({ colorScheme: "light" });
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+          await page.emulateMedia({ colorScheme: "dark" });
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+          await page.evaluate(() => {
+            localStorage.setItem("echo:theme", JSON.stringify("light"));
+            window.dispatchEvent(new StorageEvent("storage", { key: "echo:theme" }));
+          });
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+          await page.emulateMedia({ colorScheme: "light" });
+          await page.emulateMedia({ colorScheme: "dark" });
+          assert.equal(await page.evaluate(() => document.documentElement.dataset.theme),
+            "light", "explicit light preference must override the dark OS setting");
+          await page.evaluate(() => {
+            localStorage.removeItem("echo:theme");
+            window.dispatchEvent(new StorageEvent("storage", { key: "echo:theme" }));
+          });
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+          await page.emulateMedia({ colorScheme: "light" });
+          await page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+        }
         mode = "unconfigured";
         await page.reload({ waitUntil: "domcontentloaded" });
         await page.getByRole("heading", { name: "后台还没有配置完成" }).waitFor();
