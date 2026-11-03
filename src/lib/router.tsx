@@ -179,7 +179,13 @@ export function RouterProvider({
         options.pop ||
         (prevPathname.startsWith("/post/") &&
           !target.pathname.startsWith("/post/"));
-      const active = navigateWithMotion(change, back ? "back" : "forward");
+      const collectionToCollection =
+        !prevPathname.startsWith("/post/") &&
+        !target.pathname.startsWith("/post/");
+      const active = navigateWithMotion(
+        change, back ? "back" : "forward",
+        collectionToCollection ? "collection" : "reader",
+      );
       transition.current = active;
       active.finished
         .catch(() => {})
