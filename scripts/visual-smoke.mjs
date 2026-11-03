@@ -66,13 +66,13 @@ try {
           const label = `${route === "/" ? "home" : route.slice(1).replaceAll("/", "-")}-${width}-${variant.skin}-${variant.theme}`;
           assert.ok(response?.ok(), `${label}: HTTP response failed`);
           // This state change is made by the first React effect, after hydration.
-          await page.getByRole("button", { name: "搜索（Ctrl K）", exact: true }).waitFor();
+          await page.getByRole("button", { name: "搜索 Ctrl K", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
           // The initial saved preference exercises homepage isolation. Inspect
           // the full library layout at every width before testing compact mode.
           if (route === "/feed") {
-            await page.getByRole("button", { name: "详细列表", exact: true }).click();
+            await page.getByRole("button", { name: "图文 · 详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
           }
           const geometry = await page.evaluate((headerControls) => {
