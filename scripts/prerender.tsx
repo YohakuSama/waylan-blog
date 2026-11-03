@@ -4,6 +4,7 @@ import StaticReader from "../src/components/Reader";
 import App from "../src/App";
 import { Boot } from "../src/components/Boot";
 import { posts, site, metadata } from "../src/lib/data";
+import { visibleFontText } from "./visible-font-text";
 
 const boot = renderToString(<Boot />);
 const escape = (s: string) =>
@@ -45,10 +46,7 @@ for (const c of entry.css || []) {
   }
 }
 const fontPreloads = (html: string) => {
-  const text = html
-    .replace(/<(script|svg|style)[\s\S]*?<\/>/g, "")
-    .replace(/<[^>]+>/g, "")
-    .slice(0, 1600);
+  const text = visibleFontText(html);
   const pick = (family: string, n: number) =>
     faces
       .filter((f) => f.family === family)
