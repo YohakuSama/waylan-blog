@@ -447,12 +447,13 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".discussion-dialog.composer-dialog[open]"), null);
     assert.equal(document.querySelector("mark.private-mark"), null);
   });
-  it("copies selected text and a permalink if the native share sheet fails", async () => {
+  it("copies selected text on desktop without invoking the flashing system share sheet", async () => {
     await mount("/post/a-room-on-the-internet");
     let copied = "";
+    let nativeCalls = 0;
     Object.defineProperty(navigator, "share", {
       configurable: true,
-      value: async () => { throw new Error("NotAllowedError: share unavailable"); },
+      value: async () => { nativeCalls++; throw new Error("NotAllowedError: share unavailable"); },
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -471,6 +472,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     )!);
     assert.ok(copied.includes("/post/a-room-on-the-internet"));
     assert.ok(copied.includes(p.textContent!.slice(0, 12)));
+    assert.equal(nativeCalls, 0, "desktop must not open the unreliable native share sheet");
   });
   it("anchors 水合一致性 to its own heading rather than 稳定的标识", async () => {
     await mount("/post/a-room-on-the-internet");
