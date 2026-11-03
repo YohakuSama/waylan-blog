@@ -101,6 +101,7 @@ async function audit(engine, name, width, seed) {
         });
       }
       const afterLoad = await page.locator(".feed-list .feed-item").count();
+      const beforeSortY = await page.evaluate(() => window.scrollY);
       // Record child-list changes at the moment we switch sort. A regression
       // used to display the prior loaded item count in the new order for one
       // render, then truncate it after useEffect during the animation.
@@ -115,6 +116,17 @@ async function audit(engine, name, width, seed) {
       await page.locator(".sort-control select").selectOption("oldest");
       await page.waitForURL((u) => u.searchParams.get("sort") === "oldest", { timeout: 12000 });
       const reversed = await checkView(page, prefix + "/oldest", "oldest");
+      const scrolled = await page.evaluate(() => {
+        const r = document.querySelector(".feed-list .feed-item")?.getBoundingClientRect();
+        return { y: window.scrollY, firstTop: r?.top, firstBottom: r?.bottom, height: window.innerHeight };
+      });
+      if (beforeSortY > 40) {
+        assert.ok(scrolled.y <= 5,
+          prefix + ": sorting at the footer must return to top (scrollY=" + scrolled.y + ")");
+        assert.ok(scrolled.firstBottom > 0 && scrolled.firstTop < scrolled.height,
+          prefix + ": first newly sorted card must be visible");
+      }
+      observations.push({ label: prefix + "/sort-scroll", beforeSortY, after: scrolled });
       const samples = await page.evaluate(() => {
         window.__sortObserver.disconnect();
         return window.__sortCounts;
