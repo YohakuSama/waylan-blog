@@ -247,7 +247,10 @@ try {
           await bell.waitFor();
           await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
           await bell.click();
-          const inbox = page.getByRole("region", { name: "消息通知", exact: true });
+          const inbox = page.getByRole("dialog", { name: "消息通知", exact: true });
+          assert.equal(await bell.getAttribute("aria-haspopup"), "dialog");
+          assert.equal(await bell.getAttribute("aria-controls"), "notification-panel");
+          await page.waitForFunction(() => document.activeElement?.getAttribute("aria-label") === "关闭消息");
           const bounds = await inbox.boundingBox();
           const label = `inbox-${width}-${variant.skin}-${variant.theme}`;
           await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
@@ -262,6 +265,12 @@ try {
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1),
             `${label}: inbox introduced horizontal scrolling`);
           await inbox.getByRole("button", { name: "关闭消息", exact: true }).click();
+          await page.waitForFunction(() => document.activeElement?.classList.contains("notification-trigger"));
+          await bell.press("Enter");
+          await inbox.waitFor({ state: "visible" });
+          await page.keyboard.press("Escape");
+          await inbox.waitFor({ state: "hidden" });
+          await page.waitForFunction(() => document.activeElement?.classList.contains("notification-trigger"));
           await page.route("**/api/status", (route) => route.fulfill({ status: 503, json: { error: "unavailable" } }));
           await page.reload({ waitUntil: "domcontentloaded" });
           const retryBell = page.getByRole("button", { name: "消息通知", exact: true });
