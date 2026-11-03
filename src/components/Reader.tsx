@@ -992,7 +992,7 @@ export default function Reader({ post }: { post: Post }) {
         <span style={{ width: `${progress}%` }} />
       </div>
       <div className="reader-topbar">
-        <button className="text-button" onClick={router.back}>
+        <button className="text-button" onClick={router.backToList}>
           <ArrowLeft size={16} />
           返回列表
         </button>
