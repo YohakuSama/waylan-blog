@@ -15,7 +15,7 @@
 4. Open GitHub Settings → Developer settings → GitHub Apps → Waylan Comments Login. Activate Webhook and set URL `https://waylan.org/api/webhook/github`, Content type JSON, and the generated secret. In Permissions & events subscribe to `Discussion comment` and `Discussion` events. Leave Repository permissions = Discussions Read and write. Ensure installation remains only `waylan-comments`.
 5. Cloudflare → Worker `waylan-blog` → Settings → **Runtime variables and secrets** → Production: add `GITHUB_WEBHOOK_SECRET` as **Secret** containing the same value.
 6. Finally add `NOTIFICATIONS_ENABLED` as **Variable** with value `true`. Deploy.
-7. Test: as a second GitHub user, reply to an existing comment or post a new comment. The recipient/admin must be logged into waylan.org to see the notification bell. Check mark-read and opt-out; check GitHub webhook recent deliveries for response 200.
+7. Test: as a second GitHub user, reply to an existing comment or post a new comment. The notification bell is always visible between the reading shelf and settings. Sign in to read private notifications; disabled services and network failures are shown inside the panel, with retry. Check mark-read and opt-out; check GitHub webhook recent deliveries for response 200.
 
 ## Rollback
 Delete `NOTIFICATIONS_ENABLED` or set it to `false`, redeploy. The comment system is unaffected. The optional notification tables may remain in D1 without being read.

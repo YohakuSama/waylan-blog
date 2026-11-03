@@ -607,6 +607,54 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".shelf-items li").length, 0);
     assert.equal(document.querySelector(".shelf-count"), null);
   });
+  it("keeps the notification entry in its familiar slot when the service is disabled", async () => {
+    await mount();
+    const controls = [...document.querySelectorAll(".header-tools .shelf-trigger, .header-tools .notification-trigger, .header-tools .settings-button")];
+    assert.ok(controls[0]?.classList.contains("shelf-trigger"));
+    assert.ok(controls[1]?.classList.contains("notification-trigger"));
+    assert.ok(controls[2]?.classList.contains("settings-button"));
+    await click(controls[1]);
+    assert.match(document.querySelector(".notification-popover")?.textContent || "", /本站暂未开启消息通知/);
+    assert.equal(document.querySelector(".notification-badge"), null);
+    assert.equal([...document.querySelectorAll(".notification-popover button")].some((button) => button.textContent?.includes("GitHub 登录")), false);
+  });
+  it("keeps notifications visible after a failed request and recovers through retry", async () => {
+    const fallback = globalThis.fetch;
+    let unavailable = true;
+    mock.method(globalThis, "fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/session")) return Response.json({ user: null });
+      if (url.endsWith("/api/status")) {
+        if (unavailable) throw new Error("temporary network failure");
+        return Response.json({ notifications: true });
+      }
+      return fallback(input, init);
+    });
+    await mount();
+    const trigger = document.querySelector(".notification-trigger");
+    await click(trigger);
+    assert.match(document.querySelector(".notification-popover")?.textContent || "", /暂时无法读取通知/);
+    unavailable = false;
+    await click(document.querySelector(".notification-popover .quiet-button"));
+    await settle(40);
+    assert.equal(document.querySelector(".notification-trigger"), trigger);
+    assert.match(document.querySelector(".notification-popover")?.textContent || "", /使用 GitHub 登录/);
+  });
+  it("displays unread replies when notifications are enabled", async () => {
+    const fallback = globalThis.fetch;
+    mock.method(globalThis, "fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/session")) return Response.json({ user: { login: "reader" }, csrf: "test-session-csrf" });
+      if (url.endsWith("/api/notifications")) return Response.json({ enabled: true, unread: 1, subscribed: true, items: [
+        { id: "reply-1", actor: "friend", slug: posts[0].slug, title: posts[0].title, commentId: "comment-1", kind: "reply", time: 1762000000, read: false },
+      ] });
+      return fallback(input, init);
+    });
+    await mount();
+    assert.equal(document.querySelector(".notification-badge")?.textContent, "1");
+    await click(document.querySelector(".notification-trigger"));
+    assert.match(document.querySelector(".notification-item")?.textContent || "", /friend 回复了你/);
+  });
   it("switches skin and colour mode from one settings panel and persists both", async () => {
     await mount();
     // Reading shelf + settings; everything else lives inside the settings panel.

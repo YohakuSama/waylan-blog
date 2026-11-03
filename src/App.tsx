@@ -233,7 +233,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             ))}
           </nav>
           <div className="header-tools">
-            <NotificationBell />
             <button
               type="button"
               className="header-search"
@@ -246,6 +245,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <kbd>{shortcut}</kbd>
             </button>
             <ShelfTrigger />
+            <NotificationBell />
             <Settings />
             <button
               ref={menuButton}
