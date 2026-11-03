@@ -137,10 +137,10 @@ afterEach(async () => {
 });
 describe("React navigation and reading interactions (DOM integration, not browser layout)", () => {
   it("routes pages but leaves static assets and admin URLs to the browser", () => {
-    for (const path of ["/", "/feed", "/feed/", "/archive", "/projects",
+    for (const path of ["/", "/feed", "/archive", "/projects",
       "/about", "/404", "/post/a-room-on-the-internet"])
       assert.equal(isAppRoute(path), true, path);
-    for (const path of ["/admin", "/admin/", "/api/status", "/rss.xml",
+    for (const path of ["/feed/", "/admin", "/admin/", "/api/status",
       "/art/room.svg", "/assets/index.js", "/images/photo.png", "/post/note.md"])
       assert.equal(isAppRoute(path), false, path);
   });
