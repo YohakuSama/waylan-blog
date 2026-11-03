@@ -60,6 +60,16 @@ async function publicBrowsers() {
             await page.route("**/api/status", (route) => route.fulfill({
               json: { notifications: false, comments: false, login: false },
             }));
+            // This is a visual/motion test against a static Vite preview, not
+            // a Worker. Never send a view-count POST to the missing backend;
+            // WebKit can report the resulting network rejection as a pageerror
+            // after navigating away, unrelated to the visual assertions.
+            await page.route("**/api/views", (route) => route.fulfill({
+              json: { enabled: false, views: {} },
+            }));
+            await page.route("**/api/posts/*/view", (route) => route.fulfill({
+              json: { enabled: false, views: null },
+            }));
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
             // The first navigation should exercise hydrated handlers, not a
             // click raced against downloading/starting the client bundle.

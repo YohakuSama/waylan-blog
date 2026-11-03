@@ -185,7 +185,7 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
 });
 
 describe("list animation single-flight and safe recovery", () => {
-  it("ignores a thousand repeated clicks until native transition completion", async () => {
+  it("coalesces a thousand rapid sort choices into the first and final state", async () => {
     let resolve!: () => void;
     const finished = new Promise<void>((done) => { resolve = done; });
     let transitions = 0;
@@ -197,17 +197,17 @@ describe("list animation single-flight and safe recovery", () => {
         return { finished, skipTransition() {} };
       },
     });
-    let updates = 0;
-    for (let i = 0; i < 1000; i++) listTransition(() => updates++);
-    assert.equal(updates, 1);
+    const choices: number[] = [];
+    for (let i = 0; i < 1000; i++) listTransition(() => choices.push(i));
+    assert.deepEqual(choices, [0], "only the first snapshot should run immediately");
     assert.equal(transitions, 1);
     assert.equal(document.documentElement.dataset.listBusy, "true");
     resolve();
     await finished;
-    await Promise.resolve();
+    await new Promise<void>((done) => setTimeout(done, 0));
+    assert.deepEqual(choices, [0, 999], "the latest requested order must win");
+    assert.equal(transitions, 2);
     assert.equal(document.documentElement.dataset.listBusy, undefined);
-    listTransition(() => updates++);
-    assert.equal(updates, 2);
   });
   it("waits for the category-pill animation after the native transition ends", async () => {
     const pill = document.createElement("div");
@@ -241,8 +241,32 @@ describe("list animation single-flight and safe recovery", () => {
     finishPill();
     await pendingPill;
     await new Promise<void>((done) => setTimeout(done, 0));
+    assert.equal(updates, 2, "queued order starts after the pill settles");
     listTransition(() => updates++);
-    assert.equal(updates, 2);
+    assert.equal(updates, 3);
+  });
+  it("releases superseded callbacks without applying their stale navigation", async () => {
+    let resolve!: () => void;
+    const pending = new Promise<void>((done) => { resolve = done; });
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => void) => {
+        update();
+        return { finished: pending, skipTransition() {} };
+      },
+    });
+    const changes: string[] = [];
+    const completed: string[] = [];
+    listTransition(() => changes.push("newest"));
+    listTransition(() => changes.push("oldest"), () => completed.push("oldest"));
+    listTransition(() => changes.push("newest-again"), () => completed.push("newest-again"));
+    assert.deepEqual(completed, ["oldest"],
+      "replaced pending route must release its duplicate-navigation lock");
+    resolve();
+    await pending;
+    await new Promise<void>((done) => setTimeout(done, 0));
+    assert.deepEqual(changes, ["newest", "newest-again"]);
+    assert.deepEqual(completed, ["oldest", "newest-again"]);
   });
   it("releases the gate after a rejected browser animation", async () => {
     Object.defineProperty(document, "startViewTransition", {

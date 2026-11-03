@@ -188,6 +188,16 @@ export function RouterProvider({
           release();
         });
     } else if (target.search !== new URL(prevPath, "https://x.invalid").search) {
+      // A fresh sort/filter is a new ordering, not a continuation of the
+      // expanded list. When initiated from the footer, preserving its old
+      // scroll position lands the reader below the new eight-item page.
+      // Save the previous history position above, then align the *old* page
+      // before taking View Transition snapshots to avoid a giant vertical
+      // crossfade. Browser Back/Forward keeps its own restored position.
+      if (!options.pop && target.pathname === "/feed" &&
+          prevPathname === "/feed" && window.scrollY > 0) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
       // Preserve the shared list animation. A user-clicked query is ignored
       // during an active list animation, while browser Back/Forward always
       // completes to remain in sync with its already-updated history URL.
