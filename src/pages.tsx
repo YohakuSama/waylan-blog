@@ -197,10 +197,12 @@ export function Feed() {
       router.path.split("?")[1]?.split("#")[0] || "",
     );
   const rawType = params.get("type"),
-    topic = params.get("topic") || "all",
+    rawTopic = params.get("topic"),
+    // Old or manually edited links must not leave the filter controls in an invalid state.
+    topic = rawTopic && site.topics.some((t) => t.id === rawTopic) ? rawTopic : "all",
     query = params.get("q") || "",
     tag = params.get("tag") || "",
-    sort = params.get("sort") || "newest";
+    sort = params.get("sort") === "oldest" ? "oldest" : "newest";
   const type: TypeFilter =
     rawType === "all" || isContentType(rawType) ? rawType : "all";
   const [density, setDensity] = useDensity();
