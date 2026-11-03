@@ -171,6 +171,17 @@ async function scenario(engine, name, width, motion, seed) {
           await page.waitForURL((url) => url.searchParams.get("topic") === "notes", { timeout: 12000 });
         }
       });
+      await step(prefix + "/invalid-filter-deep-link", page, async () => {
+        await page.goto(base + "/feed?topic=missing-topic&sort=invalid-order", { waitUntil: "domcontentloaded" });
+        // Force an interactive render, rather than only inspecting the prerendered HTML.
+        const compact = page.getByRole("button", { name: "紧凑列表" });
+        await compact.click();
+        await page.waitForFunction(() => document.querySelector('button[aria-label="紧凑列表"]')?.getAttribute("aria-pressed") === "true");
+        assert.equal(await page.locator(".topic-select select").inputValue(), "all");
+        assert.equal(await page.locator(".sort-control select").inputValue(), "newest");
+        assert.match(await page.locator(".feed-result-line").innerText(), /全部主题/);
+        assert.equal(await page.locator(".empty-state").count(), 0, "invalid filters must not hide published posts");
+      });
       assert.deepEqual(errors, [], "uncaught browser errors");
       assert.deepEqual(popups, [], "no extra windows were created");
       results.push({ label: prefix + "/all", pass: true });
