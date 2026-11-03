@@ -971,6 +971,14 @@ textarea::placeholder {
   .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]):active {
     outline-color: var(--brand);
   }
+  /* Keep the chosen paragraph visibly tied to the fixed action tray.
+     Previously the only outline was :active; after release there was no
+     visible selection, even though the toolbar claimed "已选". */
+  .reader-prose.excerpt-mode .article-block[data-excerpt-selected="true"] {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+    background: color-mix(in srgb, var(--brand) 7%, transparent);
+  }
   .selection-toolbar {
     position: fixed;
     inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50% !important;
