@@ -1,7 +1,11 @@
+import manifest from "./generated/manifest.json";
 import { getSession, requireSession } from "./auth";
 import { github, parseMarker } from "./github";
 import { HttpError, json, now, type Env } from "./types";
 import { limit, readBody } from "./security";
+
+const published = new Map(manifest.map((post) => [post.id, post]));
+const publishedIds = JSON.stringify(manifest.map((post) => post.id));
 
 export const notificationsReady = (env: Env) =>
   env.NOTIFICATIONS_ENABLED === "true" && !!env.DB;
@@ -11,8 +15,6 @@ type NotificationRow = {
   recipient_login: string;
   actor_login: string;
   post_id: string;
-  slug: string;
-  title: string;
   comment_id: string;
   kind: "reply" | "new_comment";
   created_at: number;
@@ -29,14 +31,14 @@ export async function inbox(request: Request, env: Env) {
     "SELECT enabled FROM notification_settings WHERE recipient_login=?",
   ).bind(login).first<{ enabled: number }>())?.enabled !== 0;
   const unread = (await env.DB!.prepare(
-    "SELECT COUNT(*) AS count FROM notifications WHERE recipient_login=? AND read_at IS NULL",
-  ).bind(login).first<{ count: number }>())?.count || 0;
+    "SELECT COUNT(*) AS count FROM notifications WHERE recipient_login=? AND read_at IS NULL AND post_id IN (SELECT value FROM json_each(?))",
+  ).bind(login, publishedIds).first<{ count: number }>())?.count || 0;
   const rows = (await env.DB!.prepare(
-    `SELECT n.*, p.slug, p.title
-     FROM notifications n JOIN posts p ON p.id=n.post_id
-     WHERE n.recipient_login=?
+    `SELECT n.*
+     FROM notifications n
+     WHERE n.recipient_login=? AND n.post_id IN (SELECT value FROM json_each(?))
      ORDER BY n.created_at DESC LIMIT 30`,
-  ).bind(login).all<NotificationRow>()).results;
+  ).bind(login, publishedIds).all<NotificationRow>()).results;
   return json({
     enabled: true,
     subscribed: enabled,
@@ -44,8 +46,8 @@ export async function inbox(request: Request, env: Env) {
     items: rows.map((row) => ({
       id: row.id,
       actor: row.actor_login,
-      slug: row.slug,
-      title: row.title,
+      slug: published.get(row.post_id)!.slug,
+      title: published.get(row.post_id)!.title,
       commentId: row.comment_id,
       kind: row.kind,
       time: row.created_at,
@@ -123,8 +125,8 @@ export async function testInbox(request: Request, env: Env) {
   if (!subscribed)
     throw new HttpError(409, "NOTIFICATION_MUTED", "请先开启站内提醒。");
   const post = await env.DB!.prepare(
-    "SELECT id FROM posts ORDER BY id LIMIT 1",
-  ).first<{ id: string }>();
+    "SELECT id FROM posts WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id LIMIT 1",
+  ).bind(publishedIds).first<{ id: string }>();
   if (!post)
     throw new HttpError(503, "NO_POSTS", "没有可用的文章来测试消息跳转。");
   const id = `test:${crypto.randomUUID()}`;
@@ -159,7 +161,8 @@ export async function commentNotification(
       .bind(commentId, commentId).run();
     return;
   }
-  if (payload.action !== "created") return;
+  if (payload.action !== "created" || !published.has(postId)) return;
+  // A removed or unpublished article must never create a fresh dead-link alert.
   // Trust the GitHub API for the author, parent and discussion, not webhook free text.
   const result = await github<{ node: GitHubComment | null }>(
     env.GITHUB_READ_TOKEN,
