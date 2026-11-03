@@ -374,6 +374,10 @@ export default function Reader({ post }: { post: Post }) {
     [excerptMode, setExcerptMode] = useState(false),
     [localMarks, setLocalMarks] = useState<Annotation[]>([]),
     [orphans, setOrphans] = useState<string[]>([]);
+  // Document-level tap listeners need the latest selection without resetting
+  // the pointer gesture each time WebKit emits selectionchange.
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
   const [panel, setPanel] = useState(false),
     [panelIds, setPanelIds] = useState<string[]>([]),
     [image, setImage] = useState<Zoomed | null>(null),
@@ -749,7 +753,7 @@ export default function Reader({ post }: { post: Post }) {
       completedTap = false;
     };
     const onClick = (event: MouseEvent) => {
-      if (!selection || panel) return;
+      if (!selectionRef.current || panel) return;
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
       // The native edit menu and selection handles do not generate a regular
       // short tap. Preserve their selection; dismiss on an intentional tap
