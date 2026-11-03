@@ -278,7 +278,7 @@ describe("immersive composer viewport and motion contract", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const compact = cssRule(css, ".discussion-dialog.composer-dialog");
     const fullscreen = cssRule(css, ".discussion-dialog.composer-dialog.composer-fullscreen");
-    assert.ok(compact.includes("inset: auto 0 18px;"));
+    assert.ok(compact.includes("inset: auto 0 0;"));
     for (const fragment of [
       "inset: 0 auto auto 0;",
       "margin: 0;",
@@ -328,6 +328,12 @@ describe("immersive composer viewport and motion contract", () => {
         ["420px", "240px", "760px", "680px"],
       ],
     );
+    for (const call of calls) for (const frame of call.frames) {
+      assert.equal(frame.minWidth, "0");
+      assert.equal(frame.minHeight, "0");
+      assert.equal(frame.maxInlineSize, "none");
+      assert.equal(frame.maxBlockSize, "none");
+    }
     assert.equal(calls[0].options.duration, calls[1].options.duration);
     assert.equal(calls[0].options.easing, calls[1].options.easing);
     assert.equal(calls[0].options.duration, 320);
