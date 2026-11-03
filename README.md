@@ -1,5 +1,7 @@
 # Waylan / 系统、软件与技术实践
 
+**当前源码版本：2.3.0**（以 `package.json` 为准）。下面的 2.0 和 2.2 章节是历史版本更新说明；当前工程在仓库根目录，不需要额外进入 `source/`。
+
 一个可以自行部署到 Cloudflare 的个人博客工程。采用 **React + TypeScript + Vite 静态预渲染 + Workers Static Assets + D1 + GitHub Discussions**。
 
 这次重建沿用了旧工程中值得保留的“静态内容优先”思路，重新设计了页面结构、内容流、阅读器、转场与评论系统。没有继续使用固定视口逐条切换的信息流。
@@ -8,11 +10,11 @@
 
 本站写的是**系统配置、软件使用、网络服务、脚本自动化和新技术实践**；React 等仅是建站所用工具，不代表作者职业或写作方向。
 
-## 2.2：网页后台
+## 历史更新记录：2.2 网页后台
 
 新增 `/admin` 网页后台：在浏览器里发布、修改、删除文章，上传图片，修改站点名、作者名、头像和联系方式，并一键为新文章开启评论区。启用方法见下文“网页后台 /admin”。另修复了“全部 / 文章 / 笔记”等分区切换时，黑色滑块先到、文字后出现的闪烁。
 
-## 2.0 正式版
+## 历史更新记录：2.0 正式版
 
 2.0 是 1.x 系列的收官版本，重点是“稳”和“满”：
 
@@ -24,9 +26,9 @@
 - **新头像与站标**：杂志与终端两套形态，随明暗自动换色；favicon / ICO / Apple Touch Icon 同源导出。详见 `docs/BRAND.md`。
 - **清理**：移除 1.6 的外挂脚本 `reading-tools.js/css`（已并入 React 组件）、被皮肤覆盖的旧 Token 和无引用的样式。
 
-## 先看网站：直接双击，无需安装
+## 2.0 历史离线压缩包说明
 
-压缩包目录：
+以下是旧版离线发行包的目录结构示例，并不是当前 GitHub 仓库的目录结构：
 
 ```text
 Waylan-v2.0/
@@ -39,9 +41,9 @@ Waylan-v2.0/
 
 **直接浏览网站：解压后双击最外层的 `index.html`。** 所有脚本、样式、中文/等宽字体和配图已经装进一个 HTML 文件，不需要 Node、不需要安装依赖、不依赖 CDN。预览中可以切换页面、筛选、搜索、阅读、打开图片、切换主题和进行私人划线。GitHub 公开评论显示尚未连接，不会模拟读者或伪造登录。
 
-本地独立浏览文件放在压缩包最外层的 `index.html`；运行 `npm run build` 会在 `source/preview/index.html` 重新生成。`source/index.html` 是 Vite 入口，不能双击当作完整网站。某些浏览器不允许本地文件保存数据，此时私人划线可能仅保留到本次阅读。
+旧压缩包的离线文件位于其最外层 `index.html`。**当前仓库**运行 `npm run build` 后，会在根目录的 `preview/index.html` 生成可直接打开的离线预览；仓库根目录的 `index.html` 是 Vite 入口，不能直接双击当作完整网站。某些浏览器不允许本地文件保存数据，此时私人划线可能仅保留到本次阅读。
 
-正式部署使用 `source/` 内的工程。下面的命令都在 **source 目录** 执行。
+当前仓库的开发、构建及部署命令均在**仓库根目录**执行。旧压缩包的 `source/` 只适用于历史发行版本。
 
 ## 开发调试
 
@@ -60,7 +62,7 @@ npm run build        # 生成 dist/ 完整 HTML、JS、CSS、RSS、Sitemap
 npm run preview      # 预览静态构建；API 需完整 Worker 模式
 ```
 
-`dist/` 是正式 HTTP 部署产物，必须经由 Web 服务器访问；请勿双击 `dist/index.html` 测试站内链接。只有最外层的 `index.html` 可直接本地打开。`source/index.html` 是 Vite 开发入口；运行 `npm run build` 会在 `source/preview/index.html` 生成新的独立浏览文件。
+`dist/` 是正式 HTTP 部署产物，必须经由 Web 服务器访问；请勿双击 `dist/index.html` 测试站内链接。只有生成的 `preview/index.html` 可直接本地打开。根目录的 `index.html` 是 Vite 开发入口；运行 `npm run build` 会重新生成 `preview/index.html`。
 
 重新生成独立浏览文件可运行 `npm run build`，或在已有 dist/RSS 后执行 `npm run build:preview`。离线构建使用单一普通脚本和 fragment 路由；正式网站仍使用独立 URL、预渲染和真实 API。
 
@@ -83,7 +85,7 @@ npm run preview      # 预览静态构建；API 需完整 Worker 模式
 ## 目录
 
 ```text
-source/
+仓库根目录/
 ├── content/
 │   ├── site.json                 站名、作者、头像、分类、简介和联系方式
 │   ├── about.md                  「关于」页正文
