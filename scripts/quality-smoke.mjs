@@ -69,7 +69,9 @@ async function publicBrowsers() {
             await page.waitForURL(/\/feed(?:\?.*)?$/, { timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/feed");
             stage = "article hydration";
-            await page.goto(origin + "/post/a-room-on-the-internet", { waitUntil: "domcontentloaded" });
+            // Vite preview serves prerendered /post/:slug/index.html at trailing-slash
+            // URLs. Cloudflare production canonicalizes back to /post/:slug.
+            await page.goto(origin + "/post/a-room-on-the-internet/", { waitUntil: "domcontentloaded" });
             await page.waitForTimeout(500);
             await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/post");
@@ -155,7 +157,7 @@ async function adminBrowsers() {
             code: "TEST_NOT_MOCKED", message: "测试未模拟此接口",
           } });
         });
-        await page.goto(origin + "/admin", { waitUntil: "domcontentloaded" });
+        await page.goto(origin + "/admin/", { waitUntil: "domcontentloaded" });
         await page.getByRole("heading", { name: "登录后台" }).waitFor();
         await noOverflow(page, "admin/guest/" + width);
         mode = "unconfigured";
