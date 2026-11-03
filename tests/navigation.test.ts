@@ -468,6 +468,8 @@ describe("React navigation and reading interactions (DOM integration, not browse
     )!);
     await click(document.querySelector("mark.private-mark"));
     assert.ok(document.querySelector(".discussion-dialog.thread-dialog[open]"));
+    assert.equal(document.activeElement, document.querySelector(".discussion-dialog.thread-dialog[open]"),
+      "opening a thread must focus the dialog rather than outlining its close button");
     const rootStyle = document.documentElement.style;
     assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-bottom"), "360px");
     assert.equal(rootStyle.getPropertyValue("--waylan-thread-view-height"), "540px");
