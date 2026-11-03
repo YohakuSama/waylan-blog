@@ -26,6 +26,8 @@ Delete `NOTIFICATIONS_ENABLED` or set it to `false`, redeploy. The comment syste
 - The `/api/notifications` inbox requires the authenticated current GitHub session. Changing notification settings and marking read require the session CSRF token. Every SQL read/update is scoped to the authenticated GitHub login.
 - GitHub webhook signatures and repository full name are checked. A claimed reply target is confirmed against the GitHub GraphQL API before notifying.
 - Notifications expire automatically after 180 days.
+- Inbox visibility and unread count are restricted to post IDs in the **currently deployed public article manifest**, not merely historical D1 `posts` rows. Deleted/unpublished articles cannot generate new notification dead links. Historical notification metadata and GitHub Discussion mappings are not automatically deleted; republishing with the same stable post ID restores the association. Displayed article slug/title come from the deployed manifest so readers never see stale D1 URLs.
+- The bell is a labeled non-modal dialog. Keyboard focus enters on open; Escape and the close button return focus to the bell. Browser QA checks focus behavior at mobile and tablet widths.
 - The feature is opt-in until database and webhook configuration are complete, preventing missing-table errors during automatic deployments.
 
 
