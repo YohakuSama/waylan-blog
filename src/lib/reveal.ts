@@ -19,6 +19,10 @@ export function useReveal<T extends HTMLElement>(
     grown.current = false;
     if (!root || !motionAllowed() || typeof IntersectionObserver === "undefined")
       return;
+    // Safari's visual viewport changes when its bottom browser chrome moves.
+    // Delaying near-fold text on a touch device makes it flash into view after
+    // a route change. Keep navigation content visible; retain load-more reveals.
+    if (!all && window.matchMedia?.("(pointer: coarse)").matches) return;
     const fresh = [...root.querySelectorAll<HTMLElement>(selector)].filter(
       (el) => !("revealed" in el.dataset),
     );

@@ -454,8 +454,15 @@ export function animateDialogResize(
     boxSizing: "border-box",
     width: `${rect.width}px`,
     height: `${rect.height}px`,
+    // The resting composer has min-height and max-inline-size constraints.
+    // Suspend all of them during FLIP so a desktop resize cannot snap once
+    // before the animation starts or when it crosses a responsive threshold.
+    minWidth: "0",
+    minHeight: "0",
     maxWidth: "none",
     maxHeight: "none",
+    maxInlineSize: "none",
+    maxBlockSize: "none",
     borderRadius: radius,
   });
   const timing = token("--motion-page", "320ms", dialog);

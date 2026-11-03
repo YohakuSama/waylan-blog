@@ -882,9 +882,9 @@ textarea::placeholder {
   z-index: 70;
   width: 290px;
   padding: 5px;
-  background: var(--ink);
-  color: var(--paper);
-  border: 1px solid var(--ink-soft);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 30px #0003, 0 2px 6px #0002;
   animation: toolbar-in var(--motion-fast) var(--ease-out);
@@ -895,7 +895,7 @@ textarea::placeholder {
   justify-content: space-between;
   padding: 0 6px 2px 10px;
   font-size: 10px;
-  color: color-mix(in srgb, var(--paper) 65%, transparent);
+  color: var(--muted);
 }
 .selection-toolbar-context > span {
   flex: 1;
@@ -929,7 +929,7 @@ textarea::placeholder {
 }
 .selection-toolbar button:hover,
 .selection-toolbar button:focus-visible {
-  background: color-mix(in srgb, var(--paper) 12%, transparent);
+  background: var(--surface-muted);
 }
 .selection-toolbar svg {
   width: 15px;
@@ -1397,11 +1397,21 @@ textarea::placeholder {
   z-index: 2;
 }
 .discussion-dialog {
-  margin: var(--space-4) var(--space-4) var(--space-4) auto;
-  width: min(480px, calc(100vw - 32px));
-  height: calc(100dvh - 32px);
-  max-height: none;
-  border-radius: var(--radius-lg);
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0 auto;
+  width: min(760px, calc(100vw - 32px));
+  height: auto;
+  max-height: min(85dvh, 740px);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.discussion-dialog.thread-dialog { --dialog-motion: sheet; }
+.discussion-dialog.thread-dialog .discussion-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(min(85dvh, 740px) - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .discussion-panel-body {
   padding: var(--space-6);
@@ -2071,7 +2081,7 @@ body,
   /* Only the layout keyframe helper moves between sizes; no competing CSS
      width/height transitions or native-dialog auto-margin interpolation. */
   position: fixed;
-  inset: auto 0 18px;
+  inset: auto 0 0;
   margin: 0 auto;
   box-sizing: border-box;
   width: min(760px, calc(100vw - 32px));
@@ -2080,7 +2090,7 @@ body,
   height: min(76dvh, 740px);
   min-height: min(460px, calc(100dvh - 36px));
   max-height: calc(100dvh - 36px);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   transition:
     background-color var(--motion-base) var(--ease),
     color var(--motion-base) var(--ease),
