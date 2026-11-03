@@ -646,7 +646,9 @@ export default function Reader({ post }: { post: Post }) {
         });
     };
     const scroll = () => {
-      setSelection(null);
+      // Native drag-selection may be transient; explicit tap-to-excerpt is a
+      // deliberate choice and must survive small scrolls while taking action.
+      if (!excerptMode) setSelection(null);
       if (!frame) frame = requestAnimationFrame(update);
     };
     // Read the saved position before the first update() can overwrite it.
@@ -668,7 +670,7 @@ export default function Reader({ post }: { post: Post }) {
       window.removeEventListener("scroll", scroll);
       cancelAnimationFrame(frame);
     };
-  }, [post]);
+  }, [post, excerptMode]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
@@ -1144,15 +1146,23 @@ export default function Reader({ post }: { post: Post }) {
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 const mark = target.closest<HTMLElement>("mark[data-echo-ids]");
-                if (mark) {
+                // A saved mark opens its thread in normal reading. In excerpt
+                // mode the reader's explicit tap should select the paragraph,
+                // not unexpectedly open a different discussion dialog.
+                if (mark && !excerptMode) {
                   openHighlights(mark.dataset.echoIds!.split(" "));
                   return;
                 }
+                const interactive = target.closest<HTMLElement>(
+                  "a, button, input, textarea, pre, code, [role='button']",
+                );
                 if (excerptMode && !window.getSelection()?.toString().trim() &&
-                  !target.closest("a, button, input, textarea, pre, code, [role='button']")) {
+                    (!interactive || interactive === mark)) {
                   const block = target.closest<HTMLElement>("[data-block-id]");
                   const found = block && prose.current
-                    ? captureBlockExcerpt(prose.current, post, block) : null;
+                    ? captureBlockExcerpt(prose.current, post, block, {
+                        x: e.clientX, y: e.clientY,
+                      }) : null;
                   if (found) {
                     setSelection(found);
                     return;
@@ -1214,6 +1224,7 @@ export default function Reader({ post }: { post: Post }) {
                     className="article-block"
                     data-block-id={block.id}
                     data-type={block.type}
+                    data-excerpt-selected={excerptMode && selection?.anchor.segments.some((s) => s.blockId === block.id) ? "true" : undefined}
                     id={block.id}
                     tabIndex={block.type === "heading" ? -1 : undefined}
                     dangerouslySetInnerHTML={{
