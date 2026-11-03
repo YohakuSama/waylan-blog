@@ -231,7 +231,8 @@ export function navigateWithMotion(
     });
     return t;
   };
-  const snapshots = level === "shared" ? coverSnapshots() : [];
+  const sharedReader = level === "shared" && kind === "reader";
+  const snapshots = sharedReader ? coverSnapshots() : [];
   const doc = document as ViewTransitionDocument;
   if (level === "shared" && doc.startViewTransition) {
     let changed = false,
@@ -249,7 +250,7 @@ export function navigateWithMotion(
         finished: native.finished.catch(() => {
           if (cancelled) return;
           update();
-          later = fallback(snapshots, true, direction);
+          later = fallback(snapshots, sharedReader, direction);
           return later.finished;
         }),
         skipTransition: () => {
@@ -260,11 +261,11 @@ export function navigateWithMotion(
       });
     } catch {
       update();
-      return settle(fallback(snapshots, true, direction));
+      return settle(fallback(snapshots, sharedReader, direction));
     }
   }
   change();
-  return settle(fallback(snapshots, level === "shared", direction));
+  return settle(fallback(snapshots, sharedReader, direction));
 }
 
 /**
