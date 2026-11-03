@@ -38,7 +38,10 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → button 返回列表",first,second:secondHref,returned,historyBefore,expected:"/feed",defect:returned!=="/feed"});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-return.png",animations:"disabled"});
 
-      await page.goto(origin+"/post/a-room-on-the-internet/",{waitUntil:"domcontentloaded"});
+      // Use a genuine client-side article navigation; WebKit can stall a
+      // second document-level navigation during a just-finished View Transition.
+      await page.locator(".post-card-link").first().click();
+      await page.waitForURL(/\/post\/[^/?]+$/,{timeout:12000});
       await page.getByRole("button",{name:"阅读设置",exact:true}).click();
       const dialog=page.getByRole("dialog",{name:"阅读设置",exact:true});
       await dialog.waitFor({state:"visible"});
