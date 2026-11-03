@@ -1651,7 +1651,7 @@ h3 {
     grid-template-areas: "body" "media";
     gap: 0;
   }
-  .feed-item:not(.has-media) { grid-template-areas: "body"; }
+  .feed-item:not(.has-media):not(.is-thought) { grid-template-areas: "body"; }
   .feed-item .feed-arrow { display: none; }
   .feed-media-link {
     margin-top: 16px;
