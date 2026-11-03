@@ -25,9 +25,8 @@ export const motionOK = motionAllowed;
 // Only public application pages belong to the client router. Static files,
 // /admin and API links must use native browser navigation.
 export function isAppRoute(pathname: string) {
-  const path = pathname.replace(/\/$/, "") || "/";
-  return ["/", "/feed", "/archive", "/projects", "/about", "/404"].includes(path)
-    || /^\/post\/[a-z0-9-]+$/.test(path);
+  return ["/", "/feed", "/archive", "/projects", "/about", "/404"].includes(pathname)
+    || /^\/post\/[a-z0-9-]+$/.test(pathname);
 }
 export function fragmentId(fragment: string): string | null {
   if (!fragment.startsWith("#")) return null;
