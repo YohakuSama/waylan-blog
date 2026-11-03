@@ -12,6 +12,7 @@ import {
   social,
 } from "../shared/content-rules";
 import hljs from "highlight.js";
+import { validatePostRedirects } from "../shared/redirects";
 const escapeHTML = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const shells = new Set(["bash", "sh", "shell", "zsh", "console"]);
@@ -216,6 +217,11 @@ for (const file of (await readdir("content/posts"))
     text,
   } as Post);
 }
+// A typo in permanent redirects must fail the build before going live.
+validatePostRedirects(
+  await readFile("public/_redirects", "utf8").catch(() => ""),
+  slugs,
+);
 posts.sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
 await mkdir("src/generated", { recursive: true });
 await mkdir("worker/generated", { recursive: true });
