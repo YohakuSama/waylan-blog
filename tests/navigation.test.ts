@@ -640,6 +640,39 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(items.every((i) => i.classList.contains("is-note")));
     assert.ok(document.querySelector(".is-note .code-thumb"));
   });
+  it("keeps reading tips available without an always-expanded home sidebar panel", async () => {
+    await mount("/");
+    const tip = document.querySelector<HTMLDetailsElement>(".home-reading-note")!;
+    assert.ok(tip && !tip.open, "help should be collapsed until requested");
+    assert.match(tip.textContent || "", /书签/);
+    assert.ok(document.querySelector('.home-links a[href="/about"]'),
+      "about remains visible in the primary introduction");
+    await click(tip.querySelector("summary"));
+    assert.ok(tip.open, "the explanation remains accessible on demand");
+  });
+  it("supports the same content types through the compact phone selector and desktop tabs", async () => {
+    await mount("/feed");
+    const select = document.querySelector<HTMLSelectElement>(".mobile-type-select select")!;
+    assert.equal(select.options.length, 6);
+    assert.equal(select.value, "all");
+    await act(async () => {
+      select.value = "note";
+      select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+      await pause(30);
+    });
+    assert.equal(new URLSearchParams(location.search).get("type"), "note");
+    assert.equal(select.value, "note");
+    assert.ok([...document.querySelectorAll(".feed-item")].every((x) => x.classList.contains("is-note")));
+    await act(async () => {
+      select.value = "all";
+      select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+      await pause(30);
+    });
+    assert.equal(location.pathname, "/feed");
+    assert.equal(new URLSearchParams(location.search).has("type"), false);
+    assert.equal(select.value, "all");
+    assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
+  });
   it("keeps home newest-first and editorial after changing library sort and density", async () => {
     await mount("/feed");
     const newest = document.querySelector(".feed-item time")?.getAttribute("datetime");

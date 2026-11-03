@@ -92,7 +92,9 @@ try {
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
               heroAction: select(".hero-browse"),
-              types: [...document.querySelectorAll(".type-tab")].map(rect),
+              types: [...document.querySelectorAll(".type-tab")].filter((el) => el.getClientRects().length).map(rect),
+              mobileType: select(".mobile-type-select"),
+              mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
               years: document.querySelectorAll(".archive-year").length,
@@ -145,8 +147,18 @@ try {
               `${label}: save target escaped its metadata row`);
           }
           if (route === "/feed") {
-            assert.equal(geometry.types.length, 6, `${label}: missing type filters`);
-            assert.ok(geometry.types.every((tab) => tab && tab.left >= 0 && tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
+            if (width <= 700) {
+              assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
+              assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
+              assert.ok(geometry.mobileType && geometry.mobileType.height >= 44 &&
+                geometry.mobileType.left >= 0 && geometry.mobileType.right <= geometry.viewport,
+                `${label}: missing/clipped phone type picker`);
+            } else {
+              assert.equal(geometry.types.length, 6, `${label}: missing tablet/desktop type filters`);
+              assert.equal(geometry.mobileType, null, `${label}: duplicated type filter on wider screen`);
+              assert.ok(geometry.types.every((tab) => tab && tab.left >= 0 &&
+                tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
+            }
             assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= 40), `${label}: density preference cannot be changed`);
           }
           if (route === "/archive") {
