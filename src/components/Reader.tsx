@@ -628,7 +628,7 @@ export default function Reader({ post }: { post: Post }) {
       for (const heading of post.toc) {
         if (
           (prose.current?.querySelector<HTMLElement>(
-            `[data-block-id="${CSS.escape(heading.id)}"]`,
+            `[data-block-id="${heading.id}"]`,
           )?.getBoundingClientRect().top ?? Infinity) < 170
         )
           current = heading.id;
