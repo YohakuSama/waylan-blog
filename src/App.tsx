@@ -156,7 +156,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <Link href="/" className="brand" aria-label={`${site.name} ${site.tagline} 首页`}>
+          <Link href="/" className="brand" aria-label={`${site.name.toLowerCase()}@blog:~$ · ${site.name} ${site.tagline} 首页`}>
             <Wordmark className="brand-wordmark" />
             <span className="brand-term" aria-hidden="true">
               <b>{site.name.toLowerCase()}</b>
