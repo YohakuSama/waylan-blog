@@ -1686,6 +1686,7 @@ export default function Reader({ post }: { post: Post }) {
               ? "继续这段对话"
               : "发表评论"
         }
+        focusContainer={panelIds.length > 0}
         className={`discussion-dialog ${panelIds.length ? "thread-dialog" : "composer-dialog"} ${composerFullscreen && !panelIds.length ? "composer-fullscreen" : ""}`}
         headerActions={!panelIds.length ? (
           <button type="button" className="icon-button composer-expand" title={composerFullscreen ? "退出沉浸模式" : "全屏沉浸编辑"}
