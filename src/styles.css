@@ -2184,6 +2184,19 @@ body,
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
 }
+/* Keep mobile highlight threads above Safari's browser toolbar / keyboard.
+   The content stays a bottom sheet; only its bottom and available height
+   follow visualViewport, rather than making the composer fullscreen. */
+@media (max-width: 1024px) {
+  .discussion-dialog.thread-dialog {
+    bottom: var(--waylan-thread-view-bottom, 0px);
+    box-sizing: border-box;
+    max-height: min(88dvh, 740px, calc(var(--waylan-thread-view-height, 100dvh) - 12px));
+  }
+  .discussion-dialog.thread-dialog .discussion-panel-body {
+    max-height: none;
+  }
+}
 @media (max-width: 767px) {
   .discussion-dialog.composer-dialog .discussion-panel-body {
     padding: 16px;
