@@ -58,6 +58,8 @@ type Snapshot = {
 };
 type Transition = { finished: Promise<void>; skipTransition: () => void };
 export type Direction = "forward" | "back";
+export type RouteMotion = "collection" | "reader";
+let routeMotionSerial = 0;
 type ViewTransitionDocument = Document & {
   startViewTransition?: (change: () => void) => {
     finished: Promise<void>;
@@ -207,6 +209,7 @@ function fallback(
 export function navigateWithMotion(
   change: () => void,
   direction: Direction = "forward",
+  kind: RouteMotion = "reader",
 ): Transition {
   const level = motionLevel();
   if (level === "off") {
@@ -214,14 +217,22 @@ export function navigateWithMotion(
     return { finished: Promise.resolve(), skipTransition() {} };
   }
   const root = document.documentElement;
+  const serial = ++routeMotionSerial;
   root.dataset.navDir = direction;
+  // A collection-to-collection route morphs as one coherent page. Only
+  // reader transitions are allowed to share individual post titles/covers.
+  root.dataset.routeMotion = kind;
   const settle = (t: Transition): Transition => {
-    t.finished.finally(() => {
-      if (root.dataset.navDir === direction) delete root.dataset.navDir;
+    void t.finished.finally(() => {
+      // Stale/cancelled transitions must not erase the newer route's state.
+      if (serial !== routeMotionSerial) return;
+      delete root.dataset.navDir;
+      delete root.dataset.routeMotion;
     });
     return t;
   };
-  const snapshots = level === "shared" ? coverSnapshots() : [];
+  const sharedReader = level === "shared" && kind === "reader";
+  const snapshots = sharedReader ? coverSnapshots() : [];
   const doc = document as ViewTransitionDocument;
   if (level === "shared" && doc.startViewTransition) {
     let changed = false,
@@ -239,7 +250,7 @@ export function navigateWithMotion(
         finished: native.finished.catch(() => {
           if (cancelled) return;
           update();
-          later = fallback(snapshots, true, direction);
+          later = fallback(snapshots, sharedReader, direction);
           return later.finished;
         }),
         skipTransition: () => {
@@ -250,11 +261,11 @@ export function navigateWithMotion(
       });
     } catch {
       update();
-      return settle(fallback(snapshots, true, direction));
+      return settle(fallback(snapshots, sharedReader, direction));
     }
   }
   change();
-  return settle(fallback(snapshots, level === "shared", direction));
+  return settle(fallback(snapshots, sharedReader, direction));
 }
 
 /**

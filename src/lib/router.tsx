@@ -22,6 +22,14 @@ type Router = {
 };
 type VisitedRoute = { route: string; fromKey: string | null };
 const isContentListRoute = (route: string) => /^\/(feed|archive|projects)(?:[?#]|$)/.test(route);
+/** Top-level navigation follows the visual header order in both directions. */
+export function routeMotionDirection(from: string, to: string, pop = false): "forward" | "back" {
+  if (pop || (from.startsWith("/post/") && !to.startsWith("/post/"))) return "back";
+  const sections = ["/", "/feed", "/archive", "/projects", "/about"];
+  const previous = sections.indexOf(from);
+  const next = sections.indexOf(to);
+  return previous !== -1 && next !== -1 && next < previous ? "back" : "forward";
+}
 const Context = createContext<Router>(null!);
 export const useRouter = () => useContext(Context);
 export const motionOK = motionAllowed;
@@ -174,12 +182,16 @@ export function RouterProvider({
     };
     const prevPathname = prevPath.split(/[?#]/)[0];
     if (target.pathname !== prevPathname) {
-      // Leaving an article, or going back in history, plays the route in reverse.
-      const back =
-        options.pop ||
-        (prevPathname.startsWith("/post/") &&
-          !target.pathname.startsWith("/post/"));
-      const active = navigateWithMotion(change, back ? "back" : "forward");
+      // Collection sections follow the header order, while leaving an
+      // article and browser Back reverse the journey.
+      const direction = routeMotionDirection(prevPathname, target.pathname, !!options.pop);
+      const collectionToCollection =
+        !prevPathname.startsWith("/post/") &&
+        !target.pathname.startsWith("/post/");
+      const active = navigateWithMotion(
+        change, direction,
+        collectionToCollection ? "collection" : "reader",
+      );
       transition.current = active;
       active.finished
         .catch(() => {})

@@ -105,6 +105,43 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
       ),
     );
   });
+  it("scopes shared post titles and covers away from collection-to-collection routes", async () => {
+    const stylesheet = readFileSync("src/styles/motion.css", "utf8");
+    assert.match(stylesheet, /data-route-motion="collection"/);
+    assert.match(stylesheet, /\.feed-item \.feed-body h2/);
+    assert.match(stylesheet, /\.feed-item \.feed-media/);
+    assert.match(stylesheet, /view-transition-name: none !important/);
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    const observed: string[] = [];
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => void) => {
+        observed.push(document.documentElement.dataset.routeMotion || "");
+        update();
+        return { finished: pending, skipTransition() {} };
+      },
+    });
+    const first = navigateWithMotion(() => {}, "forward", "collection");
+    assert.deepEqual(observed, ["collection"]);
+    assert.equal(document.documentElement.dataset.routeMotion, "collection");
+    const next = navigateWithMotion(() => {}, "back", "reader");
+    assert.equal(document.documentElement.dataset.routeMotion, "reader");
+    release();
+    await Promise.all([first.finished, next.finished]);
+    await Promise.resolve();
+    assert.equal(document.documentElement.dataset.routeMotion, undefined,
+      "a stale route must not delete the newer route's transition marker");
+  });
+  it("never creates floating shared-cover ghosts when moving between collection pages in fallback mode", async () => {
+    const t = navigateWithMotion(sharedScene(), "back", "collection");
+    assert.equal(document.querySelector(".shared-cover-ghost"), null,
+      "collection-to-collection transitions should animate the page, not individual covers");
+    assert.ok(calls.some((call) => call.element.tagName === "MAIN"),
+      "the collection itself still has an entry transition");
+    await t.finished;
+    assert.equal(document.querySelector(".shared-cover-ghost"), null);
+  });
   it("moves the shared image from its original geometry when native transitions are unavailable", async () => {
     const transition = navigateWithMotion(sharedScene());
     assert.equal(document.getElementById("target")!.style.visibility, "hidden");

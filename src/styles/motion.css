@@ -98,6 +98,33 @@ a:hover {
 }
 
 /* ---------- Route transitions ---------- */
+/* Router shows this only after an actual delayed reader-chunk load. Quick
+   cached navigation has no loading flash, but a slow first open has feedback. */
+:root[data-navigation="loading"] .site-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 30%;
+  height: 2px;
+  background: var(--brand);
+  pointer-events: none;
+  animation: waylan-reader-loading 1050ms var(--ease) infinite alternate;
+}
+@keyframes waylan-reader-loading {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(335%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"])[data-navigation="loading"] .site-header::after {
+    animation: none;
+    transform: none;
+  }
+}
+:root[data-motion="reduced"][data-navigation="loading"] .site-header::after {
+  animation: none;
+  transform: none;
+}
 /* The header holds still; the indicator under the nav slides to the new page. */
 .site-header { view-transition-name: site-header; }
 .nav-indicator { view-transition-name: nav-indicator; }
@@ -109,6 +136,14 @@ a:hover {
 ::view-transition-group(nav-indicator) {
   animation-duration: 420ms;
   animation-timing-function: var(--ease-spring);
+}
+/* List pages can contain the same post at very different coordinates:
+   homepage cards, the full feed, and the project subset. Moving every title
+   and cover as a shared element makes them fly/flash independently of the
+   page. Keep shared post motion only for an actual reader transition. */
+:root[data-route-motion="collection"] .feed-item .feed-body h2,
+:root[data-route-motion="collection"] .feed-item .feed-media {
+  view-transition-name: none !important;
 }
 /* Forward: old page lifts away, new one rises in. Back mirrors it. */
 ::view-transition-old(root) { animation: var(--motion-fast) var(--ease-in) both vt-out; }

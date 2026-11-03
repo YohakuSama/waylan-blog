@@ -107,6 +107,7 @@ export function Dialog({
   origin,
   headerActions,
   focusContainer = false,
+  onClosed,
 }: {
   open: boolean;
   onClose: () => void;
@@ -117,6 +118,8 @@ export function Dialog({
   headerActions?: ReactNode;
   /** Keep focus on the modal surface initially, rather than its close button. */
   focusContainer?: boolean;
+  /** Fires only after the native close animation and dialog.close() complete. */
+  onClosed?: () => void;
   /** Where the dialog grows from and returns to; defaults to its trigger. */
   origin?: Element | null;
 }) {
@@ -127,8 +130,10 @@ export function Dialog({
     generation = useRef(0),
     animation = useRef<Animation | null>(null),
     veil = useRef<Animation | null>(null),
-    onCloseRef = useRef(onClose);
+    onCloseRef = useRef(onClose),
+    onClosedRef = useRef(onClosed);
   onCloseRef.current = onClose;
+  onClosedRef.current = onClosed;
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -174,6 +179,7 @@ export function Dialog({
           priorFocus.current?.isConnected
         )
           priorFocus.current.focus({ preventScroll: true });
+        onClosedRef.current?.();
       };
       if (motionOK()) {
         fadeBackdrop(1, 0, 200);

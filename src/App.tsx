@@ -59,6 +59,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     [active, setActive] = useState(-1),
     [shortcut, setShortcut] = useState("⌘K");
   const searchInput = useRef<HTMLInputElement>(null);
+  const pendingSearchRoute = useRef<string | null>(null);
   useEffect(() => {
     markHydrated();
     if (!/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent))
@@ -94,6 +95,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     return () => window.removeEventListener("keydown", key);
   }, []);
   useEffect(() => {
+    pendingSearchRoute.current = null;
     setSearch(false);
   }, [router.path]);
   const post = posts.find((p) => pathname === `/post/${p.slug}`);
@@ -135,9 +137,26 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const shown = results.slice(0, SEARCH_LIMIT);
   const allResults = `/feed?q=${encodeURIComponent(query.trim())}`;
   function closeSearch() {
+    pendingSearchRoute.current = null;
     setSearch(false);
     setQuery("");
     setActive(-1);
+  }
+  function navigateFromSearch(href: string) {
+    // Search is a native top-layer modal. Starting the route snapshot before
+    // its closing animation ends captures a dimmed/blurred old page, causing
+    // the post to flash or appear under the backdrop during navigation.
+    pendingSearchRoute.current = href;
+    setSearch(false);
+  }
+  function onSearchClosed() {
+    const href = pendingSearchRoute.current;
+    pendingSearchRoute.current = null;
+    if (href) {
+      setQuery("");
+      setActive(-1);
+      void router.navigate(href);
+    }
   }
   return (
     <>
@@ -290,6 +309,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       <Dialog
         open={search}
         onClose={closeSearch}
+        onClosed={onSearchClosed}
         label="搜索"
         className="search-dialog"
         initialFocus={searchInput}
@@ -339,8 +359,8 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               } else if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 if (active >= 0 && shown[active])
-                  router.navigate(`/post/${shown[active].slug}`);
-                else if (needle) router.navigate(allResults);
+                  navigateFromSearch(`/post/${shown[active].slug}`);
+                else if (needle) navigateFromSearch(allResults);
               }
             }}
           />
@@ -385,6 +405,12 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               key={p.id}
               id={`search-option-${i}`}
               href={`/post/${p.slug}`}
+              onClick={(event) => {
+                if (event.button || event.metaKey || event.ctrlKey ||
+                    event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                navigateFromSearch(`/post/${p.slug}`);
+              }}
               role="option"
               aria-selected={i === active}
               className={
@@ -409,7 +435,13 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             </Link>
           ))}
           {results.length > 0 && (
-            <Link className="search-all" href={allResults}>
+            <Link className="search-all" href={allResults}
+              onClick={(event) => {
+                if (event.button || event.metaKey || event.ctrlKey ||
+                    event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                navigateFromSearch(allResults);
+              }}>
               在列表中查看全部 {results.length} 条结果
               <ArrowUpRight size={14} />
             </Link>
