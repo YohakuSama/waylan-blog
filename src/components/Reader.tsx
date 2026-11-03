@@ -707,6 +707,8 @@ export default function Reader({ post }: { post: Post }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
+    let gesture: { x: number; y: number; start: number; selection: string } | null = null;
+    let completedTap = false;
     const scan = (dismissMissing: boolean) => {
       if (panel || !prose.current) return;
       const found = captureSelection(prose.current, post);
@@ -718,23 +720,45 @@ export default function Reader({ post }: { post: Post }) {
     };
     const onPointerDown = (event: PointerEvent) => {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
-      // Tapping other controls deliberately dismisses the selection; native
-      // selection handles and their system menu remain outside this event.
-      if (event.pointerType === "touch" && prose.current &&
-          !prose.current.contains(event.target as Node)) setSelection(null);
+      gesture = {
+        x: event.clientX, y: event.clientY, start: performance.now(),
+        selection: window.getSelection()?.toString() || "",
+      };
+      completedTap = false;
       pointerDown = true;
     };
     const onPointerUp = (event: PointerEvent) => {
       pointerDown = false;
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      const elapsed = gesture ? performance.now() - gesture.start : Infinity;
+      const moved = gesture ? Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) : Infinity;
+      // Long press/dragging selection handles must not count as a blank tap.
+      completedTap = elapsed < 450 && moved < 12;
+      const selectedNow = window.getSelection()?.toString() || "";
+      if (gesture && selectedNow && selectedNow !== gesture.selection) completedTap = false;
+      gesture = null;
       clearTimeout(timer);
-      // Selection handles and the native menu are asynchronous on iOS.
+      // Native selection can briefly collapse on iOS pointerup; only a
+      // completed click (not this pointerup) deliberately dismisses it.
       const touch = event.pointerType === "touch";
-      // Native selection can transiently collapse after a long-press pointerup.
-      // A missing range on touch is not proof the reader dismissed the tray.
       timer = setTimeout(() => scan(!touch), touch ? 420 : 140);
     };
-    const onPointerCancel = () => { pointerDown = false; };
+    const onPointerCancel = () => {
+      pointerDown = false;
+      gesture = null;
+      completedTap = false;
+    };
+    const onClick = (event: MouseEvent) => {
+      if (!selection || panel) return;
+      if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      // The native edit menu and selection handles do not generate a regular
+      // short tap. Preserve their selection; dismiss on an intentional tap
+      // anywhere else, including a blank area within the article.
+      if (event.detail > 0 && !completedTap) return;
+      clearTimeout(timer);
+      setSelection(null);
+      window.getSelection()?.removeAllRanges();
+    };
     const onSelectionChange = () => {
       if (pointerDown) return;
       clearTimeout(timer);
@@ -743,12 +767,14 @@ export default function Reader({ post }: { post: Post }) {
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointercancel", onPointerCancel);
+    document.addEventListener("click", onClick, true);
     document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       clearTimeout(timer);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointercancel", onPointerCancel);
+      document.removeEventListener("click", onClick, true);
       document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [post, panel, excerptMode]);
