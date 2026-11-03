@@ -316,7 +316,13 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               setActive(-1);
             }}
             onKeyDown={(e) => {
-              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              if (e.key === "Escape") {
+                // Native <input type="search"> consumes Escape to clear its value
+                // before <dialog> receives cancel. Our UI explicitly promises
+                // "Esc 关闭", so close it on the first keypress instead.
+                e.preventDefault();
+                closeSearch();
+              } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                 if (!shown.length) return;
                 e.preventDefault();
                 const step = e.key === "ArrowDown" ? 1 : -1;

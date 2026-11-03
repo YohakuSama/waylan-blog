@@ -771,6 +771,28 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".search-dialog[open]"), null);
     assert.equal(document.querySelector(".feed-search-row input"), null, "one search entry point only");
   });
+  it("closes a nonempty native search input on the first Escape and resets its next opening", async () => {
+    await mount();
+    await click(document.querySelector(".header-search"));
+    const input = document.querySelector<HTMLInputElement>(".search-dialog input")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!
+        .call(input, "静态");
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    assert.equal(input.value, "静态");
+    assert.ok(document.querySelector(".search-dialog[open]"));
+    await act(async () => {
+      input.dispatchEvent(new dom.window.KeyboardEvent("keydown", {
+        key: "Escape", bubbles: true, cancelable: true,
+      }));
+      await pause(30);
+    });
+    assert.equal(document.querySelector(".search-dialog[open]"), null,
+      "one Escape must close the modal, not just empty the native search field");
+    await click(document.querySelector(".header-search"));
+    assert.equal(document.querySelector<HTMLInputElement>(".search-dialog input")!.value, "");
+  });
   it("renders code blocks as terminal windows with a visible copy button", async () => {
     const post = posts.find((p) => p.blocks.some((b) => b.lang === "bash"))!;
     await mount(`/post/${post.slug}`);
