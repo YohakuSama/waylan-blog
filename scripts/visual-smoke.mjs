@@ -83,7 +83,13 @@ try {
               types: [...document.querySelectorAll(".type-tab")].map(rect),
               meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
-              years: document.querySelectorAll(".timeline-year-nav a").length,
+              years: document.querySelectorAll(".archive-year").length,
+              yearLinks: document.querySelectorAll(".archive-year-nav a").length,
+              archiveOverview: !!document.querySelector(".timeline-overview"),
+              archiveTitle: document.querySelector(".archive-heading h1")?.textContent,
+              hero: select(".home-hero"),
+              firstHeading: select(".home-feed .feed-body h2"),
+              homeHeadingBars: document.querySelectorAll(".home-feed-heading").length,
               archiveRows: document.querySelectorAll(".archive-row").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
@@ -96,7 +102,7 @@ try {
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
-          assert.deepEqual(geometry.navigation, ["首页", "内容", "年表", "关于"], `${label}: destination names changed`);
+          assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "关于"], `${label}: destination names changed`);
           assert.ok(geometry.brand.right <= (geometry.nav || geometry.tools).left + 1, `${label}: brand overlaps header`);
           if (geometry.nav) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
           for (const control of geometry.controls) {
@@ -121,6 +127,14 @@ try {
           if (route === "/archive") {
             assert.equal(geometry.archiveFilters, 0, `${label}: duplicated archive filters`);
             assert.ok(geometry.years > 0 && geometry.archiveRows > 0, `${label}: missing archive entries`);
+            assert.equal(geometry.archiveTitle, "归档", `${label}: archive label inconsistent`);
+            assert.equal(geometry.archiveOverview, false, `${label}: obsolete archive card returned`);
+            if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
+          }
+          if (route === "/") {
+            assert.equal(geometry.homeHeadingBars, 0, `${label}: detached update bar returned`);
+            assert.ok(geometry.hero && geometry.hero.height <= 300, `${label}: introduction dominates the first screen`);
+            if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 740, `${label}: first article pushed below the first screen`);
           }
           const key = `${width}:${route}`, baseline = baselines.get(key);
           if (!baseline) baselines.set(key, geometry);

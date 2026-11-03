@@ -48,8 +48,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(sidebar.includes("grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)"));
   });
   it("keeps the homepage a single editorial feed rather than two filter panels", () => {
-    assert.ok(site.includes(".home-feed-heading"));
-    assert.ok(site.includes(".home-feed-count"));
+    assert.ok(site.includes(".home-feed { border-top:"));
+    assert.equal(site.includes(".home-feed-heading"), false);
     assert.ok(site.includes(".home-hero .resume-link"));
   });
   it("reduces tablet and phone content filtering to adjacent selects", () => {

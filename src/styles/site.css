@@ -177,13 +177,13 @@ h3 {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  min-height: 300px;
-  padding: 36px 0 28px;
+  min-height: 0;
+  padding: 28px 0 20px;
 }
 .intro-copy {
   position: relative;
   z-index: 1;
-  padding-left: 36px;
+  padding-left: 0;
   max-width: 640px;
 }
 .hero-square {
@@ -196,14 +196,14 @@ h3 {
 }
 .hero-title {
   font-family: var(--font-display);
-  font-size: clamp(34px, 3.3vw, 46px);
-  line-height: 1.25;
+  font-size: 32px;
+  line-height: 1.3;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--ink);
 }
 .hero-line {
-  display: block;
+  display: inline-block;
 }
 .hero-highlight {
   font-style: normal;
@@ -225,23 +225,25 @@ h3 {
   max-width: 36em;
 }
 .intro-copy > .primary-button {
-  margin-top: 18px;
-  width: 176px;
-  justify-content: center;
+  margin-top: 6px;
   min-height: 44px;
-  padding: 6px 16px;
-  gap: var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-  font-size: 13px;
+  width: fit-content;
+  justify-content: flex-start;
+  padding: 0;
+  gap: 8px;
+  border-color: transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 14px/1.75 var(--font-cjk-sans);
 }
-.intro-copy > .primary-button:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-brand);
+.home-hero .intro-copy > .primary-button:hover {
+  background: none;
+  border-color: transparent;
+  color: var(--brand);
+  box-shadow: none;
 }
+
 .hero-about {
   margin-left: var(--space-4);
   color: var(--ink-soft);
@@ -295,38 +297,14 @@ h3 {
 .home-hero .resume-link:focus-visible {
   color: var(--accent);
 }
-.home-feed-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 0 10px;
-  border-bottom: 1px solid var(--line);
-}
-.home-feed-heading h2 {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: clamp(16px, 2vw, 19px);
-  font-weight: 600;
-  line-height: 1.5;
-}
-.home-feed-more { display: flex; align-items: center; gap: 16px; }
-.home-feed-more a {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
-  color: var(--ink-soft); font-size: 13px; white-space: nowrap;
-}
-.home-feed-more a:hover { color: var(--brand); }
-.home-feed-count {
-  flex: none;
-  color: var(--muted);
-  font: 11px var(--font-mono);
-}
+.home-feed { border-top: 1px solid var(--line); }
 .hero-visual {
   position: absolute;
-  right: -24px;
-  top: 14px;
-  width: min(58%, 520px);
+  right: 0;
+  top: 0;
+  width: min(52%, 420px);
+  height: 100%;
+  overflow: hidden;
   pointer-events: none;
   /* Soft edges so the mesh dissolves into the paper instead of ending in a box. */
   -webkit-mask-image: radial-gradient(
@@ -1256,7 +1234,7 @@ h3 {
   padding-bottom: 8px;
   font-size: 22px;
   font-weight: 500;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line);
 }
 .archive-year h2 span {
   font-size: 12px;
@@ -1642,7 +1620,7 @@ h3 {
   }
   .home-hero {
     min-height: 0;
-    padding: 28px 0 24px;
+    padding: 24px 0 18px;
     isolation: isolate;
   }
   .hero-visual {
@@ -1753,7 +1731,7 @@ h3 {
     gap: 0;
   }
   .intro-copy {
-    padding-left: 24px;
+    padding-left: 0;
   }
   .hero-square {
     top: 11px;
@@ -1761,7 +1739,7 @@ h3 {
     height: 9px;
   }
   .hero-title {
-    font-size: 27px;
+    font-size: 26px;
   }
   .intro-description {
     font-size: 13.5px;
@@ -1839,40 +1817,26 @@ h3 {
 
 @media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
 
-/* Archive is a time-oriented index rather than a duplicate feed. */
-.timeline-overview {
-  display:grid; grid-template-columns:minmax(150px, 220px) minmax(0,1fr);
-  align-items:center; gap:24px; padding:22px 24px;
-  border:1px solid var(--line); border-radius:var(--radius-lg);
-  background:var(--surface);
+/* Archive is a reading index: one title, quiet year headings, compact rows. */
+.archive-page { max-width: 960px; margin-inline: auto; }
+.archive-heading { padding: 32px 0 20px; border-bottom: 1px solid var(--line); }
+.archive-heading h1 { margin: 0; font-size: 32px; line-height: 1.3; }
+.archive-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 8px; color: var(--muted); font-size: 13px;
 }
-.timeline-summary { display:grid; gap:5px; min-width:0; }
-.timeline-summary strong { font:600 30px/1.2 var(--font-display); color:var(--ink); }
-.timeline-summary strong small { font:400 12px var(--font-sans); color:var(--muted); }
-.timeline-summary > span:last-child { font-size:12px; color:var(--muted); }
-.timeline-year-nav { display:flex; flex-wrap:wrap; align-items:center; gap:9px; min-width:0; }
-.timeline-year-nav a {
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:40px; padding:7px 13px;
-  border:1px solid var(--line); border-radius:var(--radius-full);
-  background:var(--paper); color:var(--ink-soft);
-  font:600 13px var(--font-mono);
-  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-}
-.timeline-year-nav a small { color:var(--muted); font:11px var(--font-mono); }
-.timeline-year-nav a:hover { background:var(--brand-soft); border-color:var(--accent); color:var(--brand); }
-.timeline-result { margin-top:4px; }
-.archive-main { min-width:0; }
-.archive-year { scroll-margin-top:calc(var(--header-height) + 20px); }
-.archive-month { display:grid; grid-template-columns:72px minmax(0,1fr); gap:20px; padding-top:16px; }
-.archive-month-label { padding-top:10px; font:500 13px var(--font-sans); color:var(--muted); white-space:nowrap; }
-.archive-month-list { min-width:0; }
-.archive-month .archive-row { grid-template-columns:54px minmax(0,1fr) 20px; }
-.archive-row { min-width:0; min-height:66px; }
-.archive-row > span { min-width:0; overflow-wrap:anywhere; }
-.timeline-side-note h2 { margin:12px 0 8px; font-size:17px; }
-.timeline-side-note p { font-size:13px; line-height:1.8; color:var(--muted); }
-.timeline-side-note .quiet-button { margin-top:16px; }
+.archive-summary a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.archive-year-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding-top: 16px; }
+.archive-year-nav a { display: inline-flex; align-items: center; min-height: 40px; font: 13px var(--font-mono); color: var(--muted); }
+.archive-year-nav a:hover { color: var(--brand); }
+.archive-main { min-width: 0; padding-top: 16px; }
+.archive-year { scroll-margin-top: calc(var(--header-height) + 20px); }
+.archive-month { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 20px; padding-top: 12px; }
+.archive-month-label { padding-top: 14px; font: 500 13px var(--font-sans); color: var(--muted); white-space: nowrap; }
+.archive-month-list { min-width: 0; margin: 0; padding: 0; list-style: none; }
+.archive-month .archive-row { grid-template-columns: 44px minmax(0,1fr) 16px; }
+.archive-row { min-width: 0; min-height: 54px; }
+.archive-row > span { min-width: 0; overflow-wrap: anywhere; }
 
 /* At 1025–1279px the sidebar follows the feed, preserving a comfortable reading column. */
 @media (min-width:1025px) and (max-width:1279px) {
@@ -1899,7 +1863,6 @@ h3 {
   .header-search-text,.header-search kbd { display:none; }
 }
 @media (max-width:767px) {
-  .timeline-overview { grid-template-columns:minmax(0,1fr); padding:18px; gap:15px; }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
   .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
   .archive-month-label { font-size:12px; }
@@ -1915,10 +1878,6 @@ h3 {
 /* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
 .header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 .header-search:hover { background:var(--surface-muted); }
-.intro-copy > .primary-button {
-  min-height:44px; padding:9px 19px; border-radius:var(--radius-full);
-  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-}
 .feed-controls .sort-control select, .feed-controls .topic-select select { min-height:40px; }
 .feed-result-line a:hover, .timeline-result a:hover { color:var(--brand); }
 @media (hover:none) {

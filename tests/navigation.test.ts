@@ -215,7 +215,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount();
     const nav = [...document.querySelectorAll<HTMLAnchorElement>("#site-nav .nav-link")];
     assert.deepEqual(nav.map((link) => link.querySelector(".nav-label")?.textContent?.trim()),
-      ["首页", "内容", "年表", "关于"]);
+      ["首页", "内容", "归档", "关于"]);
     assert.deepEqual(nav.map((link) => link.getAttribute("href")),
       ["/", "/feed", "/archive", "/about"]);
     assert.ok(!document.querySelector(".home-feed .type-tabs"));
@@ -224,17 +224,18 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".topic-select select"));
     assert.ok(document.querySelectorAll(".filter-tabs button").length > 1);
   });
-  it("treats the yearbook as a chronological index, not a second type-filtered feed", async () => {
+  it("treats the archive as a chronological index, not a second type-filtered feed", async () => {
     await mount("/archive");
-    assert.equal(document.querySelector(".page-heading h1")?.textContent, "写作年表");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "归档");
     assert.equal(document.querySelectorAll(".archive-main .type-tabs").length, 0);
     assert.equal(document.querySelectorAll(".archive-main .filter-tabs").length, 0);
     assert.equal(document.querySelectorAll(".archive-row").length, posts.length);
     const expectedYears = [...new Set(posts.map((post) => post.date.slice(0, 4)))];
-    const years = [...document.querySelectorAll<HTMLAnchorElement>(".timeline-year-nav a")];
-    assert.equal(years.length, expectedYears.length);
+    const years = [...document.querySelectorAll<HTMLAnchorElement>(".archive-year-nav a")];
+    assert.equal(years.length, expectedYears.length > 1 ? expectedYears.length : 0);
+    assert.equal(document.querySelector(".timeline-overview"), null);
     for (const year of expectedYears) {
-      assert.ok(years.some((a) => a.getAttribute("href") === "#year-" + year));
+      if (expectedYears.length > 1) assert.ok(years.some((a) => a.getAttribute("href") === "#year-" + year));
       assert.ok(document.getElementById("year-" + year));
     }
     assert.ok(document.querySelector(".archive-month-label"));
@@ -243,7 +244,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       all.map((a) => a.getAttribute("href")).sort(),
       posts.map((p) => "/post/" + p.slug).sort(),
     );
-    assert.ok(document.querySelector('.timeline-result a[href="/feed"]'));
+    assert.ok(document.querySelector('.archive-summary a[href="/feed"]'));
   });
   it("retains old content-type URLs while making /feed the unfiltered destination", async () => {
     await mount("/feed?type=note");
@@ -527,7 +528,9 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("keeps home editorial while the dedicated content page owns type filters", async () => {
     await mount();
     assert.equal(document.querySelectorAll(".home-feed .type-tabs").length, 0);
-    assert.equal(document.querySelectorAll(".home-feed-heading").length, 1);
+    assert.equal(document.querySelectorAll(".home-feed-heading").length, 0);
+    assert.equal(document.querySelector("#latest-heading")?.textContent, "最新内容");
+    assert.ok(document.querySelector("#latest-heading")?.classList.contains("sr-only"));
     assert.equal(document.querySelectorAll(".hero-about").length, 0);
     await click(document.querySelector(".intro-copy>.primary-button"));
     const tabs = [...document.querySelectorAll(".type-tabs .type-tab")];

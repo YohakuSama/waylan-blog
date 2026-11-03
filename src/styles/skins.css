@@ -1007,15 +1007,6 @@ html {
   background: none;
   color: var(--brand);
 }
-:root[data-skin="terminal"] .intro-copy > .primary-button {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--on-brand);
-}
-:root[data-skin="terminal"] .intro-copy > .primary-button::before {
-  content: "$";
-  opacity: 0.7;
-}
 :root[data-skin="terminal"] .page-heading h1::before,
 :root[data-skin="terminal"] .article-heading h1::before {
   content: "# ";
@@ -1949,6 +1940,4 @@ html {
 @media (max-width: 700px) {
   .feed-controls select { font-size: 16px; min-height: 44px; }
   .query-chip { max-width: 100%; min-height: 40px; height: auto; overflow-wrap: anywhere; }
-  .home-feed-more { gap: 10px; }
-  .home-feed-count { font-size: 11px; }
 }
