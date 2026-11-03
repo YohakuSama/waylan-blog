@@ -713,8 +713,16 @@ export default function Reader({ post }: { post: Post }) {
     let pointerDown = false;
     let gesture: { x: number; y: number; start: number; selection: string } | null = null;
     let completedTap = false;
+    let dismissSelectionUntil = 0;
+    const dismissSelection = () => {
+      dismissSelectionUntil = performance.now() + 250;
+      clearTimeout(timer);
+      selectionRef.current = null;
+      setSelection(null);
+      window.getSelection()?.removeAllRanges();
+    };
     const scan = (dismissMissing: boolean) => {
-      if (panel || !prose.current) return;
+      if (panel || !prose.current || performance.now() < dismissSelectionUntil) return;
       const found = captureSelection(prose.current, post);
       // iOS and iPadOS may collapse the native selection when a user taps
       // the action tray or opens the system share sheet. Only a new pointer
@@ -742,9 +750,16 @@ export default function Reader({ post }: { post: Post }) {
       if (gesture && selectedNow && selectedNow !== gesture.selection) completedTap = false;
       gesture = null;
       clearTimeout(timer);
-      // Native selection can briefly collapse on iOS pointerup; only a
-      // completed click (not this pointerup) deliberately dismisses it.
       const touch = event.pointerType === "touch";
+      // iOS may swallow the first click to collapse native text selection.
+      // A genuine short pointer gesture is sufficient to dismiss BOTH the
+      // native range and the site's toolbar on that very first tap.
+      if (touch && completedTap && selectionRef.current) {
+        dismissSelection();
+        return;
+      }
+      // Long press and selection handles can collapse a range temporarily.
+      // Never dismiss them from pointerup alone.
       timer = setTimeout(() => scan(!touch), touch ? 420 : 140);
     };
     const onPointerCancel = () => {
@@ -759,9 +774,7 @@ export default function Reader({ post }: { post: Post }) {
       // short tap. Preserve their selection; dismiss on an intentional tap
       // anywhere else, including a blank area within the article.
       if (event.detail > 0 && !completedTap) return;
-      clearTimeout(timer);
-      setSelection(null);
-      window.getSelection()?.removeAllRanges();
+      dismissSelection();
     };
     const onSelectionChange = () => {
       if (pointerDown) return;
