@@ -732,6 +732,9 @@ export default function Reader({ post }: { post: Post }) {
     };
     const onPointerDown = (event: PointerEvent) => {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
+      // A new deliberate gesture can make a fresh text selection immediately,
+      // even while old native selectionchange events are being suppressed.
+      dismissSelectionUntil = 0;
       gesture = {
         x: event.clientX, y: event.clientY, start: performance.now(),
         selection: window.getSelection()?.toString() || "",
