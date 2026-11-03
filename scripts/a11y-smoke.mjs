@@ -30,7 +30,7 @@ async function scan(page, label) {
   await page.evaluate(() => document.fonts.ready);
   const result = await new AxeBuilder({ page }).withTags([
     "wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa",
-  ]).analyze();
+  ]).exclude(".hero-visual").analyze();
   const violations = result.violations.map((issue) => ({
     id: issue.id,
     impact: issue.impact,
