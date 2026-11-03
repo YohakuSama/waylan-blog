@@ -113,6 +113,11 @@ try {
               sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
                 ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
               })),
+              sideHeadingRows: [...document.querySelectorAll(".content-grid .site-sidebar .side-head")].map((head) => ({
+                top: rect(head)?.top,
+                linkTop: rect(head.querySelector(".side-heading-link"))?.top,
+                arrowDisplay: getComputedStyle(head.querySelector(".side-more svg")).display,
+              })),
               homeDensity: document.querySelector(".home-list")?.className,
               homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
               homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
@@ -139,6 +144,11 @@ try {
           for (const control of geometry.controls) {
             assert.ok(control && control.width >= 44 && control.height >= 44, `${label}: small header target`);
             assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
+          }
+          if (geometry.sideHeadingRows.length) {
+            assert.ok(geometry.sideHeadingRows.every((row) =>
+              Math.abs(row.linkTop - row.top) <= 2 && row.arrowDisplay !== "none"),
+              `${label}: sidebar heading prefix wrapped or destination arrow hidden`);
           }
           if (geometry.column && geometry.sidebar) {
             assert.ok(width >= 1120

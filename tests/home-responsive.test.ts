@@ -6,6 +6,7 @@ const site = readFileSync("src/styles/site.css", "utf8");
 const feed = readFileSync("src/components/Feed.tsx", "utf8");
 const pages = readFileSync("src/pages.tsx", "utf8");
 const sidebarComponent = readFileSync("src/components/Sidebar.tsx", "utf8");
+const skins = readFileSync("src/styles/skins.css", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
@@ -41,6 +42,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(site.includes("min-height: 44px;"));
     assert.ok(sidebarComponent.includes('href={`/feed?topic=${t.id}`}'));
     assert.equal(sidebarComponent.includes("/feed?type=all"), false);
+    assert.ok(skins.includes('.side-heading-link::before { content: "##"'));
+    assert.ok(skins.includes(".side-heading-link .side-more svg { display: block; }"));
   });
   it("reduces tablet and phone content filtering to adjacent selects", () => {
     const start = site.indexOf("/* Tablets and phones use the same compact");

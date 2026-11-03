@@ -1036,6 +1036,12 @@ html {
   content: "## ";
   color: var(--brand);
 }
+/* The terminal prefix belongs inside the full-row link, not on a separate line.
+   Re-enable the destination arrow, which the generic icon rule hides. */
+:root[data-skin="terminal"] .side-head .side-title::before { content: none; }
+:root[data-skin="terminal"] .side-heading-link::before { content: "##"; color: var(--brand); }
+:root[data-skin="terminal"] .side-heading-icon { display: none; }
+:root[data-skin="terminal"] .side-heading-link .side-more svg { display: block; }
 :root[data-skin="terminal"] .thought-text,
 :root[data-skin="terminal"] .reader-prose,
 :root[data-skin="terminal"] .article-deck {
