@@ -627,8 +627,9 @@ export default function Reader({ post }: { post: Post }) {
       let current = post.toc[0]?.id || "";
       for (const heading of post.toc) {
         if (
-          (document.getElementById(heading.id)?.getBoundingClientRect().top ??
-            Infinity) < 170
+          (prose.current?.querySelector<HTMLElement>(
+            `[data-block-id="${CSS.escape(heading.id)}"]`,
+          )?.getBoundingClientRect().top ?? Infinity) < 170
         )
           current = heading.id;
       }
@@ -674,13 +675,14 @@ export default function Reader({ post }: { post: Post }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;
-    const scan = () => {
+    const scan = (dismissMissing: boolean) => {
       if (panel || !prose.current) return;
       const found = captureSelection(prose.current, post);
-      // Native selection may collapse when its system menu is tapped.
-      // Keep an explicit touch excerpt until the reader dismisses it.
+      // iOS and iPadOS may collapse the native selection when a user taps
+      // the action tray or opens the system share sheet. Only a new pointer
+      // gesture away from the tray should dismiss a missing selection.
       if (found) setSelection(found);
-      else if (!excerptMode) setSelection(null);
+      else if (dismissMissing && !excerptMode) setSelection(null);
     };
     const onPointerDown = (event: PointerEvent) => {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
@@ -691,13 +693,13 @@ export default function Reader({ post }: { post: Post }) {
       if ((event.target as Element)?.closest?.(".selection-toolbar")) return;
       clearTimeout(timer);
       // Selection handles and the native menu are asynchronous on iOS.
-      timer = setTimeout(scan, event.pointerType === "touch" ? 420 : 140);
+      timer = setTimeout(() => scan(true), event.pointerType === "touch" ? 420 : 140);
     };
     const onPointerCancel = () => { pointerDown = false; };
     const onSelectionChange = () => {
       if (pointerDown) return;
       clearTimeout(timer);
-      timer = setTimeout(scan, 180);
+      timer = setTimeout(() => scan(false), 180);
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("pointerup", onPointerUp);
@@ -833,18 +835,25 @@ export default function Reader({ post }: { post: Post }) {
     const text = anchor
       ? `“${anchorQuote(anchor)}”\n—— ${post.title}`
       : post.title;
-    try {
-      if (navigator.share)
-        await navigator.share({ title: post.title, text, url });
-      else {
+    const payload = { title: post.title, text, url };
+    const fallback = async () => {
+      try {
         await navigator.clipboard.writeText(
           `${anchor ? text + "\n" : ""}${url}`,
         );
-        notify("链接已复制。");
+        notify("系统分享不可用，分享内容和链接已复制。");
+      } catch {
+        notify("系统分享未完成，请复制文章地址栏链接。");
       }
+    };
+    try {
+      if (navigator.share && (!navigator.canShare || navigator.canShare(payload))) {
+        await navigator.share(payload);
+      } else await fallback();
     } catch (e) {
-      if ((e as Error).name !== "AbortError")
-        notify("分享未完成，可以复制地址栏链接。");
+      if ((e as Error).name === "AbortError") {
+        notify("系统分享已取消；可使用复制功能。");
+      } else await fallback();
     }
   }
   function privateMark() {
@@ -1653,7 +1662,11 @@ export default function Reader({ post }: { post: Post }) {
                   const next = localMarks.filter((x) => x.id !== a.id);
                   setLocalMarks(next);
                   storage.set(`marks:${post.id}`, next);
-                  setPanelIds((ids) => ids.filter((x) => x !== a.id));
+                  // Keep the thread type during its closing animation.
+                  // Empty panelIds with panel=true would open the composer.
+                  const remaining = panelIds.filter((id) => id !== a.id);
+                  if (remaining.length) setPanelIds(remaining);
+                  else setPanel(false);
                   notify("私人划线已移除。");
                 }}
               >
