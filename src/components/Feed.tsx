@@ -344,11 +344,21 @@ export function FeedList({
   density?: Density;
   variant?: "index" | "home";
 }) {
-  const [limit, setLimit] = useState(batch);
+  // A sort/filter change must reset pagination *before* the first paint.
+  // Resetting limit only in useEffect allows the new order to briefly render
+  // with the previous page's extended count, then snap back to eight items
+  // in the middle of a View Transition.
+  const [paging, setPaging] = useState({ key: resetKey, batch, limit: batch });
+  const limit =
+    paging.key === resetKey && paging.batch === batch ? paging.limit : batch;
   const loadingMore = useRef(false);
   useEffect(() => {
     loadingMore.current = false;
-    setLimit(batch);
+    setPaging((current) =>
+      current.key === resetKey && current.batch === batch
+        ? current
+        : { key: resetKey, batch, limit: batch },
+    );
   }, [resetKey, batch]);
   const visible = items.slice(0, limit);
   const [listRef, grow] = useReveal<HTMLDivElement>(".feed-item", [
@@ -409,7 +419,16 @@ export function FeedList({
               if (loadingMore.current) return;
               loadingMore.current = true;
               grow();
-              setLimit((n) => Math.min(items.length, n + batch));
+              setPaging((current) => ({
+                key: resetKey,
+                batch,
+                limit: Math.min(
+                  items.length,
+                  (current.key === resetKey && current.batch === batch
+                    ? current.limit
+                    : batch) + batch,
+                ),
+              }));
             }}
           >
             加载更多
