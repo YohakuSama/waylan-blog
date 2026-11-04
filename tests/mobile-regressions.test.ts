@@ -262,11 +262,20 @@ describe("mobile reader regression contracts", () => {
   it("runs every selection action directly for touch and deduplicates compatibility clicks", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
     for (const action of ["privateMark", "newComment(selection.anchor)", "copySelected()", "share(selection.anchor)", "dismissToolbar"]) {
-      assert.ok(reader.includes("onToolbarTouchEnd"), "touch toolbar activation must be explicit");
+      assert.ok(reader.includes("onToolbarPointerDown") && reader.includes("onToolbarTouchStart"),
+        "a first touch must act before Safari suppresses touchend and click");
       assert.ok(reader.includes(action), "missing selection action " + action);
     }
-    assert.ok(reader.includes("lastToolbarTouch.current = { target: event.currentTarget"),
-      "the following compatibility click must not repeat the same operation");
+    assert.ok(reader.includes("lastToolbarTouch.current = { target: event.currentTarget") &&
+      reader.includes("event.detail !== 0"),
+      "touch pointerdown and compatibility click must not execute twice");
+    assert.ok(reader.includes('new host.Highlight(native.getRangeAt(0).cloneRange())') &&
+      reader.includes('native.removeAllRanges()') &&
+      style.includes('::highlight(waylan-selected-quote)'),
+      "supported touch browsers must transfer a native selection to a visual custom highlight");
+    assert.ok(style.includes('-webkit-touch-callout: none;') &&
+      style.includes('touch-action: none;'),
+      "the action tray must not invoke Safari native selection interactions");
   });
   it("maintains readable selection contrast in the syntax-highlighted code block", () => {
     assert.ok(skins.includes(".reader-prose .block-code code *::selection"));
