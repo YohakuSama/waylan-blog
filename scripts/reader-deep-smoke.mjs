@@ -166,6 +166,15 @@ async function run(engine,name,width){
           await quoteToggle.click();
           assert.equal(await quoteToggle.getAttribute("aria-expanded"), "false");
         }
+        // ResizeObserver recenters on the next animation frame after the
+        // quotation collapses/expands; assert the settled geometry, not the
+        // transient between the quote click and ResizeObserver delivery.
+        await page.waitForFunction(() => {
+          const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
+          const viewport = window.visualViewport;
+          return dialog && viewport && Math.abs(parseFloat(dialog.style.top) -
+            (viewport.offsetTop + (viewport.height - dialog.offsetHeight) / 2)) <= 3;
+        });
         const geometry = await page.evaluate(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
           const body = dialog.querySelector(".discussion-panel-body");
