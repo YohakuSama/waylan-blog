@@ -36,10 +36,11 @@ async function run(engine,browser,width){
       // The new article may still be inside a View Transition; avoid clicking
       // through an outgoing snapshot instead of the hydrated reader.
       await page.waitForTimeout(650);
-      const fab=page.getByRole("button",{name:"开启摘录段落模式"});
-      await fab.click();
-      await page.getByRole("button",{name:"退出摘录模式"}).waitFor({state:"visible"});
-      assert.equal(await fab.count(),0,"mode toggle should expose its active label");
+      await page.locator(".article-action-toc").click();
+      const excerptToggle=page.locator(".toc-excerpt-toggle");
+      await excerptToggle.click();
+      assert.equal(await excerptToggle.getAttribute("aria-pressed"),"true",
+        "optional paragraph excerpt mode must activate from the contents panel");
       const paragraph=page.locator(".reader-prose .article-block[data-type='paragraph']").first();
       await paragraph.click();
       await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:10000});
@@ -104,7 +105,7 @@ async function run(engine,browser,width){
       await page.waitForTimeout(180);
       const retained=await page.locator(".selection-toolbar").isVisible();
       record(browser,width,"excerpt survives scroll for action",{
-        retained,modeActive:await page.getByRole("button",{name:"退出摘录模式"}).getAttribute("aria-pressed")
+        retained,modeActive:await excerptToggle.getAttribute("aria-pressed")
       },!retained);
       // The first tap away from an active quote now deliberately dismisses
       // that selection and the tray together. Start a different excerpt with
@@ -131,28 +132,30 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
-      // The excerpt toggle belongs to the document's inline article actions.
-      // No duplicate sticky strip should remain; the float is contextual.
+      // Only the byline's quiet actions remain; optional paragraph mode is
+      // still available inside the directory instead of a roaming overlay.
       await page.evaluate(()=>window.scrollTo(0,0));
-      await page.locator(".article-actions").scrollIntoViewIfNeeded();
-      await page.getByRole("button",{name:"退出摘录模式 · 结束划线",exact:true}).click();
+      await page.locator(".article-action-toc").click();
+      await excerptToggle.click();
       const controls=await page.evaluate(()=>{
-        const toggle=document.querySelector('.article-actions .article-action[aria-pressed]');
+        const toggle=document.querySelector(".toc-excerpt-toggle");
         const articleActions=document.querySelector(".article-actions");
         const site=document.querySelector(".site-header");
         return {
-          inArticleActions:!!toggle?.closest(".article-actions"),
-          duplicateTopbar:!!document.querySelector(".reader-topbar, .excerpt-access"),
+          inToc:!!toggle?.closest(".reader-toc"),
+          noFloating:!document.querySelector(".reader-floating-tools, .reader-floating-trigger, .reader-topbar"),
           active:toggle?.getAttribute("aria-pressed"),
+          actionButtons:articleActions?.querySelectorAll("button").length,
           position:articleActions?getComputedStyle(articleActions).position:null,
           siteVisible:!!site && getComputedStyle(site).display!=="none",
           navHidden:getComputedStyle(document.querySelector("#site-nav")).display==="none",
           logoVisible:!!site?.querySelector(".brand")
         };
       });
-      record(browser,width,"excerpt belongs to inline article actions; global logo stays visible",controls,
-        !controls.inArticleActions||controls.duplicateTopbar||controls.active!=="false"||
-          controls.position==="sticky"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
+      record(browser,width,"quiet inline controls and optional excerpt inside directory",controls,
+        !controls.inToc||!controls.noFloating||controls.active!=="false"||
+        controls.position==="sticky"||controls.actionButtons!==3||
+        !controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
