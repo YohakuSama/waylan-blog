@@ -2960,3 +2960,64 @@ body,
 @media print {
   .article-actions, .reader-back, .toc-excerpt-toggle { display: none !important; }
 }
+
+/* Compact article pacing. The reading header, related cards and page
+   transition should feel continuous, not separated by multiple empty screens. */
+@media (min-width: 701px) and (max-width: 1040px) {
+  .reader-layout {
+    grid-template-columns: minmax(0, var(--reading-width));
+  }
+  .reading-article .article-heading h1 {
+    font-size: clamp(31px, 3.9vw, 38px);
+  }
+  .related {
+    margin-top: 36px;
+  }
+  .article-neighbors {
+    margin-top: 24px;
+  }
+}
+@media (max-width: 700px) {
+  .reading-article .article-heading {
+    padding-top: 12px;
+  }
+  .reading-article .reader-back {
+    margin-bottom: 12px;
+  }
+  .reading-article .article-heading h1 {
+    font-size: clamp(27px, 7.1vw, 31px);
+    line-height: 1.34;
+  }
+  .reading-article .article-deck {
+    line-height: 1.72;
+  }
+  .reader-content {
+    margin-top: 24px;
+  }
+  .reading-end {
+    padding: 32px 0 24px;
+    margin-bottom: 24px;
+  }
+  .related {
+    margin-top: 30px;
+    padding-top: 20px;
+  }
+  .related-list {
+    gap: 12px;
+  }
+  .related-list > a {
+    padding: 15px 16px 17px;
+  }
+  .article-neighbors {
+    gap: 16px;
+    margin-top: 22px;
+    padding-top: 20px;
+  }
+  .article-neighbors > a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .article-neighbors > a > strong {
+    line-height: 1.5;
+  }
+}
