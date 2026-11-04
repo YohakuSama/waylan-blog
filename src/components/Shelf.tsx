@@ -13,9 +13,11 @@ const bySlug = new Map(posts.map((p) => [p.slug, p]));
 export function BookmarkButton({
   post,
   className = "",
+  showLabel = false,
 }: {
   post: Post;
   className?: string;
+  showLabel?: boolean;
 }) {
   const saved = useShelf().includes(post.slug);
   return (
@@ -31,6 +33,7 @@ export function BookmarkButton({
       }}
     >
       <Bookmark size={17} aria-hidden="true" />
+      {showLabel && <span className="bookmark-action-label">{saved ? "已收藏本文" : "收藏本文"}</span>}
     </button>
   );
 }
