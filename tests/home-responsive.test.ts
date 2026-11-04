@@ -27,7 +27,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(sidebar.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
     assert.ok(sidebar.includes("@media (min-width:861px) and (max-width:1279px)"));
     assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
-    assert.ok(sidebar.includes("grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)"));
+    assert.ok(sidebar.includes("grid-template-columns:auto minmax(0,1fr) auto"));
   });
   it("keeps the homepage a single editorial feed with a compact topic doorway", () => {
     assert.ok(site.includes(".home-feed { border-top:"));

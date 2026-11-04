@@ -179,17 +179,8 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <Wordmark className="brand-wordmark" />
             <span className="brand-term">
               <b>{site.name.toLowerCase()}</b>
-              <i>@</i>
-              <span>blog</span>
-              <i>:~$</i>
-              <span className="term-cursor" />
             </span>
             <span className="brand-name">{site.name}</span>
-            <span className="brand-rule" aria-hidden="true" />
-            <small className="brand-tagline" title="Dieter Rams — Less, but better.">
-              <span className="brand-motto-quote">Less, but better.</span>
-              <span className="brand-motto-credit">— Dieter Rams</span>
-            </small>
             <span className="sr-only">首页</span>
           </Link>
           <nav
@@ -284,6 +275,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             >
               <Wordmark />
               <span className="footer-blog-script" aria-hidden="true">Blog</span>
+              <span className="footer-terminal-wordmark" aria-hidden="true">
+                <span className="footer-terminal-prompt">&gt;</span> waylan.blog<span className="footer-terminal-cursor">_</span>
+              </span>
             </Link>
             <span className="footer-copy">
               © {copyrightYears} {site.author}. All rights reserved.
