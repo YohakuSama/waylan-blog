@@ -988,7 +988,9 @@ textarea::placeholder {
     width: min(500px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
     max-height: min(220px, calc(var(--waylan-selection-view-height, 100dvh) - 116px));
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 8px;
     border-radius: var(--radius-lg);
     box-shadow: 0 20px 45px #0005;
