@@ -460,7 +460,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
     const toggle = document.querySelector<HTMLButtonElement>(
-      '.article-actions .article-action[aria-label="开启摘录段落模式"]',
+      '.article-actions .article-action[aria-label^="开启摘录段落模式"]',
     )!;
     assert.ok(toggle);
     await click(toggle);
