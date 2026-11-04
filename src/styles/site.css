@@ -2050,6 +2050,19 @@ h3 {
     right: 0;
     height: 2px;
   }
+  /* Beat the later global skin's dashed/pulsing progress treatment only on
+     immersive readers: a quiet solid hairline stays attached to the logo. */
+  .site-header-reader + .site-body .reading-progress > span {
+    background: var(--brand);
+  }
+  .site-header-reader + .site-body .reading-progress > span::after {
+    width: 4px;
+    height: 4px;
+    top: -1px;
+    right: -2px;
+    box-shadow: none;
+    animation: none;
+  }
   .site-header-reader .brand {
     grid-row: 1;
     grid-column: 1;
