@@ -121,8 +121,8 @@ async function publicBrowsers() {
             }
             if (width === 390 && motion === "reduced") {
               stage = "projects reader round trip";
-              await page.goto(origin + "/projects/", { waitUntil: "domcontentloaded" });
-              await page.waitForTimeout(500);
+              await page.locator('#site-nav a[href="/projects"]').click();
+              await page.waitForURL(/\/projects$/, { timeout: 15000 });
               const links = page.locator(".projects-layout .post-card-link");
               assert.equal(await links.count(), 2, name + ": lost real projects");
               assert.equal(await page.locator(".projects-layout .site-sidebar").isVisible(), false,

@@ -1176,6 +1176,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(tag);
     assert.equal(location.pathname, "/feed");
     assert.ok(new URLSearchParams(location.search).has("tag"));
+    // The reading shelf keeps in-process state beyond individual JSDOM
+    // instances; clear the test bookmarks through the real UI so later
+    // tests still start with an empty shelf.
+    await click(document.querySelector(".shelf-trigger"));
+    const clear = document.querySelector(".shelf-footer .confirm-button");
+    await click(clear);
+    await click(clear);
+    assert.equal(document.querySelectorAll(".shelf-items li").length, 0);
   });
   it("only renders project repo/demo actions when real URLs exist, with safe new-tab links", async () => {
     const source = posts.find((p) => p.type === "project")!;
