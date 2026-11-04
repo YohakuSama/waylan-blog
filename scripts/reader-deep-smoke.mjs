@@ -115,7 +115,11 @@ async function run(engine,name,width){
       await page.evaluate(()=>document.fonts.ready);
       const isReaderHeaderShown=await page.locator(".site-header").isVisible();
       if(width<=1024) {
-        assert.equal(isReaderHeaderShown,false,"phone/tablet article must not repeat global navigation");
+        assert.equal(isReaderHeaderShown,true,"phone/tablet readers must preserve the Waylan logo masthead");
+        assert.equal(await page.locator(".site-header-reader .brand-wordmark").isVisible(),true,
+          "editorial Waylan logo was lost in immersive reading");
+        assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),false,
+          "mobile article must not duplicate the full destination row");
         const compact=await page.evaluate(()=>{
           const bar=document.querySelector(".reader-topbar");
           return {position:getComputedStyle(bar).position,top:getComputedStyle(bar).top,
@@ -123,7 +127,7 @@ async function run(engine,name,width){
             height:bar.getBoundingClientRect().height};
         });
         assert.equal(compact.position,"sticky");
-        assert.equal(compact.top,"0px");
+        assert.equal(compact.top,"56px");
         assert.ok(compact.height<=60,"reader row is taller than 60px: "+JSON.stringify(compact));
         // Start at the top and use user-like wheel scrolling; a single
         // programmatic scrollTo can be a no-op when history restores position.
@@ -142,13 +146,27 @@ async function run(engine,name,width){
             mainHeight:document.documentElement.scrollHeight}));
           throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
         }
+        // The animated row must disappear BEHIND the pinned masthead, not
+        // float away and leave a disconnected progress stripe.
+        await page.waitForTimeout(280);
+        const tucked=await page.evaluate(()=>{
+          const logo=document.querySelector(".site-header-reader").getBoundingClientRect();
+          const tools=document.querySelector(".reader-topbar").getBoundingClientRect();
+          const progress=document.querySelector(".reading-progress").getBoundingClientRect();
+          return {logoTop:logo.top,logoBottom:logo.bottom,toolsBottom:tools.bottom,progressTop:progress.top};
+        });
+        assert.ok(Math.abs(tucked.logoTop)<=2,"logo masthead must remain pinned: "+JSON.stringify(tucked));
+        assert.ok(tucked.toolsBottom<=tucked.logoBottom+3,
+          "reader tool row must slide under the logo, not linger over text: "+JSON.stringify(tucked));
+        assert.ok(Math.abs(tucked.progressTop-(tucked.logoBottom-2))<=3,
+          "reading progress should be attached to the masthead border: "+JSON.stringify(tucked));
         // Upward content movement must reveal the row. WebKit's synthetic
         // desktop mouse wheel can be swallowed under a touch emulation, so
         // drive the actual document scroll position for this direction.
         await page.evaluate(()=>window.scrollBy(0,-130));
         await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
         await page.evaluate(()=>window.scrollTo(0,0));
-        observations.push({browser:name,width,scenario:"immersive reader hides global chrome and restores tools on upward scroll",compact});
+        observations.push({browser:name,width,scenario:"Waylan masthead remains while tools slide behind it and return on upward scroll",compact});
       } else {
         assert.ok(isReaderHeaderShown,"desktop keeps its browsing header");
       }

@@ -2019,3 +2019,93 @@ h3 {
   .header-tools { grid-row: 2; grid-column: 1 / -1; justify-self: end; }
   #site-nav { grid-row: 3; }
 }
+
+/* Persistent reader masthead: retain the original Waylan wordmark and a
+   direct route home while removing only the redundant destination row.
+   The independent reader action strip animates behind this static row. */
+@media (max-width: 1024px) {
+  .site-header.site-header-reader {
+    display: block;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper) 96%, transparent);
+  }
+  .site-header-reader .header-inner {
+    min-height: 55px;
+    height: 55px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 55px;
+    column-gap: 8px;
+    row-gap: 0;
+  }
+  .site-header-reader #site-nav { display: none; }
+  /* site.css defines the global progress position after styles.css loads.
+     Override it here only for articles with the retained Waylan masthead. */
+  .site-header-reader + .site-body .reading-progress {
+    top: calc(var(--reader-brand-height) - 2px);
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+  /* Beat the later global skin's dashed/pulsing progress treatment only on
+     immersive readers: a quiet solid hairline stays attached to the logo. */
+  .site-header-reader + .site-body .reading-progress > span {
+    background: var(--brand);
+  }
+  .site-header-reader + .site-body .reading-progress > span::after {
+    width: 4px;
+    height: 4px;
+    top: -1px;
+    right: -2px;
+    box-shadow: none;
+    animation: none;
+  }
+  .site-header-reader .brand {
+    grid-row: 1;
+    grid-column: 1;
+    min-width: 0;
+    width: auto;
+    gap: 6px;
+  }
+  .site-header-reader .brand-wordmark {
+    height: 30px;
+    width: auto;
+    flex-shrink: 0;
+  }
+  .site-header-reader .brand-rule { height: 15px; }
+  .site-header-reader .brand-tagline {
+    max-width: 135px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+  .site-header-reader .header-tools {
+    grid-row: 1;
+    grid-column: 2;
+    display: flex;
+    gap: 0;
+  }
+  /* Preserve all four global actions, including saved items and notifications.
+     The reader's local controls remain independent beneath the masthead. */
+  .site-header-reader .header-search,
+  .site-header-reader .header-tools > .icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+}
+@media (max-width: 420px) {
+  /* Retain the full signature even on the narrowest iPhone. */
+  .site-header-reader .brand-rule,
+  .site-header-reader .brand-tagline { display: none; }
+}
+@media (max-width: 370px) {
+  .site-header-reader .header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 55px;
+  }
+  .site-header-reader .brand { grid-row: 1; grid-column: 1; }
+  .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
+}

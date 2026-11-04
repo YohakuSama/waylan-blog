@@ -80,9 +80,20 @@ describe("mobile reader regression contracts", () => {
     assert.ok(reader.includes('reader-topbar-hidden'), "scroll behavior must hide only the shared tool row");
     assert.ok(!reader.includes('className={`excerpt-access'));
     assert.ok(style.includes('.reader-controls .excerpt-toggle'));
-    assert.ok(style.includes('.site-header-reader { display: none; }'));
+    assert.ok(site.includes('.site-header.site-header-reader {'), "Waylan logo header must remain visible");
+    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
+      "only destination navigation, not the Waylan brand, should be removed");
+    assert.ok(site.includes('.site-header-reader .brand-wordmark'), "reuse the original logo on reading pages");
     assert.ok(style.includes('.reader-topbar.reader-topbar-hidden'));
-    assert.ok(style.includes('top: 0;'), "immersive controls attach to the visible top edge");
+    assert.ok(style.includes('top: var(--reader-brand-height);'),
+      "animated actions must slide behind, not over, the retained masthead");
+    assert.ok(style.includes('transform: translate3d(0, calc(-100% - 2px), 0)'),
+      "keep smooth scroll hide/show animation");
+    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress {') &&
+      site.includes('top: calc(var(--reader-brand-height) - 2px)'),
+      "reading progress must be anchored in the last effective masthead stylesheet");
+    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {') &&
+      site.includes('animation: none;'), "mobile reader progress marker must not pulse");
   });
   it("keeps the brand separator visible on phones", () => {
     assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);

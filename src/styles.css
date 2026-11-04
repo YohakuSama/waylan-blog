@@ -2455,34 +2455,37 @@ body,
    Layout rules above are the only source of truth; no late modal overrides. */
 
 
-/* The article is a reading surface, not a second copy of site navigation.
-   Browsing pages keep their full brand and destination rows unchanged. */
+/* Mobile reading keeps the slim Waylan masthead visible at all times.
+   The reader actions slide BEHIND that masthead on downward scroll, then
+   smoothly return when scrolling up. Progress belongs to its lower edge. */
 @media (max-width: 1024px) {
   :root:has(.site-header-reader) {
-    --header-height: 0px;
-    scroll-padding-top: 64px;
+    --reader-brand-height: 56px;
+    --header-height: var(--reader-brand-height);
+    scroll-padding-top: calc(var(--reader-brand-height) + 64px);
   }
-  .site-header-reader { display: none; }
   .reader-topbar {
-    top: 0;
+    top: var(--reader-brand-height);
     min-height: 52px;
     box-sizing: border-box;
     padding-block: 4px;
     margin-bottom: var(--space-3);
-    transition: transform 190ms ease, opacity 190ms ease, visibility 190ms;
+    transition:
+      transform 240ms cubic-bezier(.22, 1, .36, 1),
+      opacity 190ms ease-out;
     will-change: transform;
+    backface-visibility: hidden;
   }
   .reader-topbar.reader-topbar-hidden {
-    transform: translateY(calc(-100% - 2px));
+    transform: translate3d(0, calc(-100% - 2px), 0);
     opacity: 0;
-    visibility: hidden;
     pointer-events: none;
   }
   .reader-toc.toc-visible {
-    top: 64px;
-    max-height: calc(100dvh - 80px - env(safe-area-inset-bottom));
+    top: calc(var(--reader-brand-height) + 60px);
+    max-height: calc(100dvh - var(--reader-brand-height) - 76px - env(safe-area-inset-bottom));
   }
-  .article-block { scroll-margin-top: 64px; }
+  .article-block { scroll-margin-top: calc(var(--reader-brand-height) + 64px); }
 }
 @media (max-width: 370px) {
   .reader-topbar > .text-button {

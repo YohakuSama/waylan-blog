@@ -198,7 +198,15 @@ try {
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           if (isImmersive) {
-            assert.equal(geometry.header,null,`${label}: the stacked global article header must be hidden`);
+            assert.ok(geometry.header && Math.abs(geometry.header.height-56)<=2,
+              `${label}: Waylan masthead should remain a slim 56px row`);
+            assert.ok(geometry.brand && geometry.brandWordmark,
+              `${label}: original Waylan logo or brand identity disappeared`);
+            assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
+            assert.ok(geometry.tools && geometry.controls.every(box=>box && box.height>=40),
+              `${label}: original search, saved items, notifications or settings disappeared`);
+            assert.ok(geometry.brand.right<=geometry.tools.left+3,
+              `${label}: wordmark intersects the masthead actions`);
             assert.ok(geometry.readerTopbar && geometry.readerTopbar.height <= 60,
               `${label}: missing or oversized immersive reader toolbar`);
             assert.ok(geometry.readerTopbar.left >= 0 && geometry.readerTopbar.right <= geometry.viewport + 1,
