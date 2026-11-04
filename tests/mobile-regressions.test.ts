@@ -123,24 +123,33 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
-  it("keeps article actions inline with a contextual scroll trigger and labeled global menu", () => {
-    const reader=readFileSync("src/components/Reader.tsx","utf8");
-    const app=readFileSync("src/App.tsx","utf8");
-    const shelf=readFileSync("src/components/Shelf.tsx","utf8");
+  it("keeps three quiet article actions without a moving overlay", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const app = readFileSync("src/App.tsx", "utf8");
+    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
+    const settings = readFileSync("src/components/Settings.tsx", "utf8");
     assert.ok(reader.includes('className="article-actions"') &&
-      reader.includes('className="reader-floating-panel"'), "the actions need distinct inline and floating affordances");
-    assert.ok(reader.includes('aria-label="本文操作"'), "article actions must be explained to assistive technology");
+      reader.includes('aria-label="本文操作"'), "article actions must live in the document");
     assert.ok(reader.includes('showLabel />') && shelf.includes('"收藏本文"'),
-      "the current article needs a visible save label");
-    assert.ok(reader.includes('"--waylan-reader-obscured-bottom"'),
-      "floating actions must avoid Safari bottom chrome");
-    assert.ok(!reader.includes('className={`reader-topbar'), "no second sticky toolbar");
-    assert.ok(style.includes('.reader-floating-tools') && style.includes('.article-actions'));
+      "saving the current article needs a visible label");
+    assert.ok(reader.includes('className="article-action article-action-toc"'),
+      "the directory remains directly reachable on phones and tablets");
+    assert.ok(reader.includes('className="toc-excerpt-toggle"'),
+      "whole-paragraph mode remains discoverable inside the contents panel");
+    assert.doesNotMatch(reader, /reader-floating|floatingVisible|floatingTucked|floatingOpen/,
+      "scrolling must never summon or animate a floating reader ball");
+    assert.doesNotMatch(style, /\.reader-floating-tools|\.reader-floating-trigger/);
+    assert.ok(!reader.includes('className={\x60reader-topbar'), "no duplicate sticky reader row");
+    assert.ok(settings.includes('name="reader-font-size"') &&
+      settings.includes('waylan:font-size-changed') &&
+      reader.includes('addEventListener("waylan:font-size-changed"'),
+      "font controls must be in reading settings and update the active article");
+    assert.ok(!reader.includes('aria-label={`正文字号'),
+      "font control must not clutter the byline");
     assert.ok(app.includes('className="reader-global-menu-trigger icon-button"'));
     assert.ok(site.includes('.site-header-reader .reader-global-menu.is-open'));
-    assert.ok(site.includes('content: "阅读清单"'), "saved collection must be distinct from saving a post");
-    assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'),
-      "restore Waylan's original dashed progress signature");
+    assert.ok(site.includes('content: "阅读清单"'));
+    assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
     assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));
     assert.ok(site.includes('.site-header-reader .brand-wordmark'));

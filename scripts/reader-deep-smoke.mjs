@@ -135,44 +135,30 @@ async function run(engine,name,width){
         await page.locator(".reader-global-menu.is-open").waitFor({state:"visible"});
         assert.equal(await page.locator(".reader-global-menu .shelf-trigger").count(),1,
           "reading list should only live in the labeled global menu");
+        await page.locator(".reader-global-menu .settings-button").click();
+      } else {
+        await page.locator(".settings-button").click();
+      }
+      const readingSettings=page.getByRole("dialog",{name:"阅读设置",exact:true});
+      await readingSettings.waitFor({state:"visible"});
+      await readingSettings.locator('.reader-font-choices label:has(input[value="20"])').click();
+      await page.waitForFunction(()=>getComputedStyle(document.querySelector(".reader-prose")).fontSize==="20px");
+      assert.equal(await page.locator(".reader-prose").evaluate(el=>getComputedStyle(el).fontSize),"20px",
+        "reading settings must update the active article font immediately");
+      await readingSettings.locator('button[aria-label="关闭"]').click();
+      await readingSettings.waitFor({state:"hidden"});
+      if(width<=1024) {
         await page.locator(".reader-global-menu-trigger").click();
         await page.locator(".reader-global-menu.is-open").waitFor({state:"hidden"});
-        // The compact affordance appears only after inline actions leave view.
-        await page.evaluate(()=>{
-          const inline=document.querySelector(".article-actions").getBoundingClientRect();
-          window.scrollBy(0,Math.max(550,inline.bottom+220));
-        });
-        const floating=page.locator(".reader-floating-trigger");
-        await floating.waitFor({state:"visible",timeout:7000});
-        const floatGeometry=await floating.evaluate(el=>{
-          const rect=el.getBoundingClientRect(),visible=window.visualViewport;
-          return {width:rect.width,height:rect.height,bottom:rect.bottom,
-            viewportBottom:visible.offsetTop+visible.height};
-        });
-        assert.ok(floatGeometry.width>=44&&floatGeometry.height>=44,
-          "floating reader handle must be finger-sized: "+JSON.stringify(floatGeometry));
-        assert.ok(floatGeometry.bottom<=floatGeometry.viewportBottom-25,
-          "floating handle is hidden behind Safari chrome: "+JSON.stringify(floatGeometry));
-        await floating.click();
-        await page.locator(".reader-floating-panel").waitFor({state:"visible"});
-        const beforeSize=await page.locator(".article-actions button[aria-label^='正文字号']").getAttribute("aria-label");
-        await page.locator(".reader-floating-panel button[aria-label^='正文字号']").click();
-        const afterSize=await page.locator(".article-actions button[aria-label^='正文字号']").getAttribute("aria-label");
-        assert.notEqual(beforeSize,afterSize,"floating font action must change the same article font state");
-        await page.keyboard.press("Escape");
-        await page.locator(".reader-floating-panel").waitFor({state:"hidden"});
-        await page.evaluate(()=>window.scrollTo(0,0));
-        observations.push({browser:name,width,scenario:"inline actions, labeled site menu and Safari-safe floating tools",actionsLayout,floatGeometry});
-      } else {
-        assert.ok(isReaderHeaderShown,"desktop keeps its full browsing header");
-        await page.evaluate(()=>{
-          const inline=document.querySelector(".article-actions").getBoundingClientRect();
-          window.scrollBy(0,Math.max(550,inline.bottom+250));
-        });
-        await page.locator(".reader-floating-trigger").waitFor({state:"visible",timeout:7000});
-        await page.evaluate(()=>window.scrollTo(0,0));
-        observations.push({browser:name,width,scenario:"desktop inline actions and contextual side control",actionsLayout});
       }
+      await page.evaluate(()=>{
+        const inline=document.querySelector(".article-actions").getBoundingClientRect();
+        window.scrollBy(0,Math.max(550,inline.bottom+220));
+      });
+      assert.equal(await page.locator(".reader-floating-tools, .reader-floating-trigger, .reader-floating-panel").count(),0,
+        "no moving reader controls may cover the article while scrolling");
+      await page.evaluate(()=>window.scrollTo(0,0));
+      observations.push({browser:name,width,scenario:"quiet inline actions and responsive font settings",actionsLayout});
       if(width<=1040) await page.locator(".article-action-toc").click();
       await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
       await page.waitForTimeout(120);
@@ -196,6 +182,7 @@ async function run(engine,name,width){
       // Model iPhone Safari's visible viewport shrinking under browser chrome
       // while a native fixed dialog remains anchored to the layout viewport.
       if (width <= 1366) {
+        if(width<=1040) await page.locator(".article-action-toc").click();
         await page.getByRole("button",{name:"开启摘录段落模式"}).click();
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
         await page.locator(".selection-toolbar").waitFor({state:"visible"});
@@ -206,6 +193,7 @@ async function run(engine,name,width){
         observations.push({browser:name,width,scenario:"tap empty article space dismisses excerpt toolbar",ok:true});
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
         await page.locator(".selection-toolbar-actions button").filter({hasText:"划线"}).click();
+        if(width<=1040) await page.locator(".article-action-toc").click();
         await page.getByRole("button",{name:"退出摘录模式"}).click();
         await page.locator("mark.private-mark").first().click();
         const thread = page.locator(".discussion-dialog.thread-dialog[open]");
