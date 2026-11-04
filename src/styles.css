@@ -1007,13 +1007,6 @@ textarea::placeholder {
     gap: 3px;
   }
   .selection-toolbar-actions svg { width: 19px; height: 19px; }
-  /* Expanded iPhone browser controls can reappear before WebKit publishes a
-     viewport resize. Keep the entire touch tray clear on that first tap. */
-  @media (max-width: 600px) and (pointer: coarse) {
-    .selection-toolbar {
-      --waylan-selection-tray-clearance: max(148px, 114px + env(safe-area-inset-bottom));
-    }
-  }
   .excerpt-mode-hint {
     position: static;
     z-index: auto;
@@ -1038,6 +1031,13 @@ textarea::placeholder {
     padding: 4px;
     min-width: 34px;
     min-height: 34px;
+  }
+}
+/* Expanded iPhone browser controls may reappear before WebKit reports a
+   visual viewport resize; reserve an extra one-touch clearance on phones. */
+@media (max-width: 600px) and (pointer: coarse) {
+  .selection-toolbar {
+    --waylan-selection-tray-clearance: max(148px, 114px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {
