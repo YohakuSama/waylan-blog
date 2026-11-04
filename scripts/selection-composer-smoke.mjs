@@ -54,12 +54,13 @@ async function run(engine, label, width, height, touch) {
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
       // SSR markup exists before React hydrates. Prove the reader's handlers
       // are live before generating a programmatic Selection and selectionchange.
-      const font = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: /正文字号/ });
-      const initialFont = await font.getAttribute("aria-label");
-      await font.click();
-      await page.waitForFunction((before) =>
-        document.querySelector(".article-actions button[aria-label^=\"正文字号\"]")?.getAttribute("aria-label") !== before,
-        initialFont, { timeout: 15000 });
+      // The former inline font-cycling button moved into the accessible more panel.
+      // Opening and closing that panel proves React handlers are hydrated.
+      const more = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: "展开更多操作" });
+      await more.click();
+      await page.getByRole("group", { name: "更多阅读操作" }).getByRole("button", { name: "复制链接" }).waitFor({ state: "visible" });
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.querySelector(".article-action-more")?.getAttribute("aria-expanded") === "false");
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
