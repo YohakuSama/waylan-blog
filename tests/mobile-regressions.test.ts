@@ -145,6 +145,13 @@ describe("mobile reader regression contracts", () => {
       "the action menu must hide reliably and the comment jump must avoid the sticky header");
     assert.ok(reader.includes('className="toc-excerpt-toggle"'),
       "whole-paragraph mode remains discoverable inside the contents panel");
+    assert.ok(reader.includes('className="toc-footer"') &&
+      reader.includes('tocButton.current?.focus({ preventScroll: true })'),
+      "TOC actions must share a separate footer and restore focus when closing");
+    assert.ok(style.includes('.toc-visible .toc-footer {') &&
+      style.includes('overflow-y: auto;') &&
+      style.includes('bottom: calc(12px + env(safe-area-inset-bottom));'),
+      "phone contents must be bottom-docked with a separately scrolling list");
     assert.doesNotMatch(reader, /reader-floating|floatingVisible|floatingTucked|floatingOpen/,
       "scrolling must never summon or animate a floating reader ball");
     assert.doesNotMatch(style, /\.reader-floating-tools|\.reader-floating-trigger/);

@@ -537,11 +537,43 @@ try {
             await toc.waitFor();
             const bounds = await toc.boundingBox();
             assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width && bounds.y >= 60 && bounds.y + bounds.height <= 480, `${label}: directory escapes a short viewport`);
+            const tocLayout = await toc.evaluate((el) => {
+              const nav = el.querySelector("nav");
+              const footer = el.querySelector(".toc-footer");
+              const buttons = [...(footer?.querySelectorAll("button") || [])];
+              const navRect = nav?.getBoundingClientRect();
+              const footerRect = footer?.getBoundingClientRect();
+              return {
+                navBottom: navRect?.bottom,
+                footerTop: footerRect?.top,
+                footerBottom: footerRect?.bottom,
+                buttons: buttons.map((button) => {
+                  const r = button.getBoundingClientRect();
+                  return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height };
+                }),
+                navScrollable: nav ? getComputedStyle(nav).overflowY === "auto" : false,
+              };
+            });
+            assert.ok(tocLayout.navScrollable && tocLayout.navBottom <= tocLayout.footerTop + 1,
+              `${label}: directory list must scroll separately from the footer`);
+            assert.equal(tocLayout.buttons.length, 2, `${label}: directory requires two distinct footer actions`);
+            assert.ok(tocLayout.buttons.every((b) => b.height >= 44) &&
+              (tocLayout.buttons[0].bottom <= tocLayout.buttons[1].top + 1 ||
+                tocLayout.buttons[0].right <= tocLayout.buttons[1].left + 1) &&
+              tocLayout.footerBottom <= 480,
+              `${label}: directory actions overlap or escape the viewport`);
+            if (width <= 700) assert.ok(bounds.y >= 100,
+              `${label}: phone directory should open near the bottom, not over the article heading`);
             assert.equal(await toc.locator("nav a").first().evaluate((el) => el === document.activeElement), true, `${label}: directory focus missing`);
             await page.screenshot({ path: `${out}/${label}-directory.png`, animations: "disabled" });
             await page.keyboard.press("Escape");
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
+            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await toc.getByRole("button", { name: "回到页首" }).click();
+            await toc.waitFor({ state: "hidden" });
+            assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true,
+              `${label}: back-to-top must close the directory and restore focus`);
             await page.setViewportSize({ width, height: 900 });
           }
           if (route.startsWith("/post/") && [320, 390, 768, 1440].includes(width) &&
