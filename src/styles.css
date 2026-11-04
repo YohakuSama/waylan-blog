@@ -2251,7 +2251,7 @@ body,
 .discussion-dialog.composer-fullscreen > .composer-bottom {
   padding-inline: max(clamp(16px, 3vw, 28px), calc((100dvw - 900px) / 2));
 }
-@media (max-width: 1024px) {
+@media (max-width: 1024px), (pointer: coarse) {
   .discussion-dialog.composer-dialog,
   .discussion-dialog.composer-dialog.composer-fullscreen {
     position: fixed;
