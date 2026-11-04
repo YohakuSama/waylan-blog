@@ -59,7 +59,7 @@ try {
           await page.route("**/api/status", route => route.fulfill({ json: { comments: false, notifications: false } }));
           await page.route("**/api/session", route => route.fulfill({ json: { user: null } }));
           await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
-          await page.locator(".brand .brand-tagline").waitFor({ state: "visible" });
+          await page.locator(".brand").waitFor({ state: "visible" });
           await page.evaluate(() => document.fonts.ready);
           const header = await page.evaluate(() => {
             const rect = element => {
@@ -70,6 +70,7 @@ try {
             const get = selector => rect(document.querySelector(selector));
             return {
               logo: get(".brand-wordmark"), tagline: get(".brand-tagline"),
+              searchLabel: get(".header-search-text"),
               brand: get(".brand"), tools: get(".header-tools"), nav: get("#site-nav"),
               header: get(".site-header"), body: get(".site-body"),
               main: get(".site-main"), hero: get(".home-hero"),
@@ -79,18 +80,19 @@ try {
           });
           const label = scenario.browser + "-" + width;
           observations.push({ label, header });
-          assert.ok(header.logo && header.tagline && header.brand && header.tools, label + ": header elements missing");
+          assert.ok(header.logo && header.brand && header.tools, label + ": header elements missing");
+          assert.equal(header.tagline, null, label + ": unused small slogan is still in masthead");
           assert.ok(header.scrollWidth <= header.width + 1, label + ": horizontal overflow");
-          assert.ok(header.tagline.left >= header.logo.right - 3,
-            label + ": subtitle detached from logo");
-          assert.ok(header.tagline.top < header.logo.bottom && header.tagline.bottom > header.logo.top,
-            label + ": subtitle not alongside logo");
+          if (width === 320 || (width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) {
+            assert.ok(header.searchLabel?.width >= 18,
+              label + ": search must make practical use of the available header width");
+          }
           if (width <= 370) {
             assert.ok(header.brand.bottom <= header.tools.top + 2,
               label + ": narrow screen tool row overlaps logo");
           } else if (width <= 860) {
             assert.ok(header.brand.right <= header.tools.left + 2,
-              label + ": mobile actions overlap logo or subtitle");
+              label + ": mobile actions overlap the single logo");
           }
           if (width <= 860) {
             assert.ok(header.nav.top >= header.tools.bottom,
