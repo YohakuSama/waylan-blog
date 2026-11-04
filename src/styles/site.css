@@ -2076,17 +2076,15 @@ h3 {
     right: 0;
     height: 2px;
   }
-  /* Beat the later global skin's dashed/pulsing progress treatment only on
-     immersive readers: a quiet solid hairline stays attached to the logo. */
+  /* Keep Waylan's segmented coral trail and amber dot; remove only the
+     pulsation. Position stays on the lower edge of the pinned wordmark row. */
   .site-header-reader + .site-body .reading-progress > span {
-    background: var(--brand);
+    background: repeating-linear-gradient(90deg, var(--brand) 0 14px, transparent 14px 18px);
+  }
+  :root[data-skin="terminal"] .site-header-reader + .site-body .reading-progress > span {
+    background: repeating-linear-gradient(90deg, var(--brand) 0 11px, transparent 11px 15px);
   }
   .site-header-reader + .site-body .reading-progress > span::after {
-    width: 4px;
-    height: 4px;
-    top: -1px;
-    right: -2px;
-    box-shadow: none;
     animation: none;
   }
   .site-header-reader .brand {
@@ -2134,4 +2132,66 @@ h3 {
   }
   .site-header-reader .brand { grid-row: 1; grid-column: 1; }
   .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
+}
+
+/* The reading page uses a real, labelled global menu so its saved-list
+   entry cannot be confused with "收藏本文" beneath the article byline. */
+.reader-global-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.reader-global-menu > summary {
+  list-style: none;
+  width: var(--header-control-size);
+  height: var(--header-control-size);
+  min-width: var(--header-control-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.reader-global-menu > summary::-webkit-details-marker { display: none; }
+.reader-global-menu > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.reader-global-menu[open] > summary { color: var(--brand); background: var(--brand-soft); }
+.reader-global-menu-panel {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 130;
+  width: 210px;
+  max-width: calc(100vw - 28px);
+  max-height: calc(100dvh - 88px - env(safe-area-inset-bottom));
+  overflow: visible;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.reader-global-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.reader-global-menu-item + .reader-global-menu-item { border-top: 1px solid var(--line); }
+.reader-global-menu-item > span { flex: 1 1 auto; }
+.reader-global-menu-item > button,
+.reader-global-menu-item .icon-button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+}
+@media (max-width: 1024px) {
+  .site-header-reader .reader-global-menu > summary {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+  }
 }
