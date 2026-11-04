@@ -2043,6 +2043,10 @@ h3 {
   .site-header:not(.site-header-reader) .header-inner {
     grid-template-rows: var(--header-bar-height) 43px;
   }
+  /* The short grid has no separate controls row for a decorative divider. */
+  :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) .header-inner::before {
+    content: none;
+  }
 }
 
 
