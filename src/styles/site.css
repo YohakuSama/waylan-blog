@@ -269,6 +269,14 @@ h3 {
   color: var(--muted);
   font-size: 11px;
 }
+/* The prerendered homepage has no access to local reading progress.
+   Reserve the card height before hydration so Safari never moves the entire
+   publication list up for one frame and then drops it back down. */
+.home-resume-placeholder { display: none; }
+:root[data-resume-pending="true"] .home-resume-placeholder {
+  display: block;
+  min-height: 56px;
+}
 /* A remembered reading position is secondary to the current publication list. */
 .home-resume { margin: 0 0 16px; }
 .home-resume .resume-link {
