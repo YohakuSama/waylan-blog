@@ -2,6 +2,14 @@ try{var theme=JSON.parse(localStorage.getItem('echo:theme')||'null');document.do
 try{var motion=JSON.parse(localStorage.getItem('echo:motion')||'null');motion=motion==='full'||motion==='reduced'||motion==='system'?motion:'system';document.documentElement.dataset.motionPreference=motion;document.documentElement.dataset.motion=motion==='reduced'||motion==='system'&&matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}catch{document.documentElement.dataset.motionPreference='system';document.documentElement.dataset.motion=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}
 try{var skin=JSON.parse(localStorage.getItem('echo:skin')||'null');document.documentElement.dataset.skin=skin==='terminal'?'terminal':'editorial';}catch{document.documentElement.dataset.skin='editorial';}
 (function(){try{var d=document.documentElement.dataset,m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d.skin==='terminal'?(d.theme==='dark'?'#0b0d0c':'#eef0e8'):(d.theme==='dark'?'#16151a':'#f7f4ee');}catch(e){}})();
+// Mark the locally remembered reading slot before the first stylesheet paints.
+// This is only layout metadata; the full content remains owned by React.
+try {
+  var last = JSON.parse(localStorage.getItem("echo:reading") || "null");
+  if (last && typeof last.slug === "string" && typeof last.title === "string" &&
+      typeof last.progress === "number" && last.progress > 0 && last.progress < 100)
+    document.documentElement.dataset.resumePending = "true";
+} catch (e) {}
 // Pages are already prerendered as readable HTML, with their visible fonts
 // preloaded. Never hide #root while waiting for document.fonts.ready: on iOS
 // Safari every reload would flash a full-screen W mask, including beneath the
