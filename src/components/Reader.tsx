@@ -411,7 +411,7 @@ export default function Reader({ post }: { post: Post }) {
   // the pointer gesture each time WebKit emits selectionchange.
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
-  const lastToolbarTouch = useRef<{ target: EventTarget; at: number } | null>(null);
+  const lastToolbarTouch = useRef<{ target: EventTarget; at: number; handled: boolean } | null>(null);
   // When supported, transfer the *visual* selection to a CSS custom highlight.
   // iOS Safari otherwise treats the first tap as "dismiss the native selection"
   // instead of delivering the button's click. The captured Anchor remains
@@ -1106,37 +1106,64 @@ export default function Reader({ post }: { post: Post }) {
         : "划线已保留到本次阅读；浏览器当前不允许保存本地文件的数据。",
     );
   }
-  // Execute on touch/pen pointerdown, before WebKit can collapse its native
-  // selection and swallow touchend/click. Mouse and keyboard still use click.
-  function onToolbarPointerDown(event: ReactPointerEvent<HTMLButtonElement>, action: () => void) {
+  // Marking, commenting and closing can run on the first pointerdown.
+  // Clipboard and Web Share require transient user activation: stage them on
+  // pointerdown, then perform once at that same touch's pointerup/touchend.
+  // This avoids relying on WebKit's often-swallowed compatibility click.
+  function onToolbarPointerDown(
+    event: ReactPointerEvent<HTMLButtonElement>, action: () => void,
+    needsActivation = false,
+  ) {
     if (event.pointerType !== "touch" && event.pointerType !== "pen") {
       lastToolbarTouch.current = null;
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    lastToolbarTouch.current = { target: event.currentTarget, at: performance.now() };
-    action();
+    lastToolbarTouch.current = {
+      target: event.currentTarget, at: performance.now(), handled: !needsActivation,
+    };
+    if (!needsActivation) action();
   }
-  // iOS fallback for versions where the edit overlay suppresses pointerdown
-  // but forwards touchstart to the action. It must not execute twice when
-  // both event families are delivered for the same press.
-  function onToolbarTouchStart(event: ReactTouchEvent<HTMLButtonElement>, action: () => void) {
+  function onToolbarTouchStart(
+    event: ReactTouchEvent<HTMLButtonElement>, action: () => void,
+    needsActivation = false,
+  ) {
     if (event.touches.length !== 1) return;
     event.stopPropagation();
     const last = lastToolbarTouch.current;
     if (last?.target === event.currentTarget && performance.now() - last.at < 300) return;
-    lastToolbarTouch.current = { target: event.currentTarget, at: performance.now() };
+    lastToolbarTouch.current = {
+      target: event.currentTarget, at: performance.now(), handled: !needsActivation,
+    };
+    if (!needsActivation) action();
+  }
+  function completeToolbarTouch(target: EventTarget, action: () => void) {
+    const last = lastToolbarTouch.current;
+    if (!last || last.target !== target || last.handled) return;
+    last.handled = true;
     action();
+  }
+  function onToolbarPointerUp(event: ReactPointerEvent<HTMLButtonElement>, action: () => void) {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    event.stopPropagation();
+    completeToolbarTouch(event.currentTarget, action);
+  }
+  function onToolbarTouchEnd(event: ReactTouchEvent<HTMLButtonElement>, action: () => void) {
+    if (event.changedTouches.length !== 1) return;
+    event.stopPropagation();
+    completeToolbarTouch(event.currentTarget, action);
   }
   function onToolbarClick(event: ReactMouseEvent<HTMLButtonElement>, action: () => void) {
     const last = lastToolbarTouch.current;
     lastToolbarTouch.current = null;
-    // WebKit may still synthesize a compatibility click after a handled touch.
-    // detail === 0 is an actual keyboard activation and must always work.
+    // A compatibility click is never a second command. If pointerup/touchend
+    // did not arrive, click still completes a pending clipboard/share command.
+    // detail === 0 is a keyboard activation and always runs independently.
     if (event.detail !== 0 && last?.target === event.currentTarget &&
         performance.now() - last.at < 1500) {
       event.preventDefault();
+      if (!last.handled) action();
       return;
     }
     action();
@@ -1921,15 +1948,19 @@ export default function Reader({ post }: { post: Post }) {
             <span>评论</span>
           </button>
           <button
-            onPointerDown={(e) => onToolbarPointerDown(e, () => { void copySelected(); })}
-                onTouchStart={(e) => onToolbarTouchStart(e, () => { void copySelected(); })}
+            onPointerDown={(e) => onToolbarPointerDown(e, () => { void copySelected(); }, true)}
+                onTouchStart={(e) => onToolbarTouchStart(e, () => { void copySelected(); }, true)}
+            onPointerUp={(e) => onToolbarPointerUp(e, () => { void copySelected(); })}
+            onTouchEnd={(e) => onToolbarTouchEnd(e, () => { void copySelected(); })}
             onClick={(e) => onToolbarClick(e, () => { void copySelected(); })}
           >
             <Copy size={17} />
             <span>复制</span>
           </button>
-          <button onPointerDown={(e) => onToolbarPointerDown(e, () => { void share(selection.anchor); })}
-                onTouchStart={(e) => onToolbarTouchStart(e, () => { void share(selection.anchor); })}
+          <button onPointerDown={(e) => onToolbarPointerDown(e, () => { void share(selection.anchor); }, true)}
+                onTouchStart={(e) => onToolbarTouchStart(e, () => { void share(selection.anchor); }, true)}
+            onPointerUp={(e) => onToolbarPointerUp(e, () => { void share(selection.anchor); })}
+            onTouchEnd={(e) => onToolbarTouchEnd(e, () => { void share(selection.anchor); })}
             onClick={(e) => onToolbarClick(e, () => { void share(selection.anchor); })}>
             <Share2 size={17} />
             <span>分享</span>
