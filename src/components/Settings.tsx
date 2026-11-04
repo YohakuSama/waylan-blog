@@ -98,16 +98,18 @@ export function Settings() {
     const dark = matchMedia("(prefers-color-scheme: dark)"),
       reduce = matchMedia("(prefers-reduced-motion: reduce)");
     const changedInAnotherTab = (event: StorageEvent) => {
-      if (event.key === null || ["echo:skin", "echo:theme", "echo:motion"].includes(event.key))
+      if (event.key === null || ["echo:skin", "echo:theme", "echo:motion", "echo:font-size"].includes(event.key))
         sync();
     };
     dark.addEventListener?.("change", sync);
     reduce.addEventListener?.("change", sync);
     window.addEventListener("storage", changedInAnotherTab);
+    window.addEventListener("waylan:font-size-changed", sync);
     return () => {
       dark.removeEventListener?.("change", sync);
       reduce.removeEventListener?.("change", sync);
       window.removeEventListener("storage", changedInAnotherTab);
+      window.removeEventListener("waylan:font-size-changed", sync);
     };
   }, []);
   useEffect(() => setOpen(false), [router.path]);
