@@ -105,6 +105,7 @@ try {
                 return nav && header ? {
                   brandDividerContent: brandDivider?.content,
                   brandDividerImage: brandDivider?.backgroundImage,
+                  brandDividerTopStyle: brandDivider?.borderTopStyle,
                   navBackground: navStyle.backgroundColor,
                   navRadius: parseFloat(navStyle.borderTopLeftRadius),
                   beforeContent: getComputedStyle(nav, "::before").content,
@@ -264,12 +265,26 @@ try {
                 if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
                   `${label}: rounded nav tab lost its rounded corners`);
               } else {
-                assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
-                  `${label}: square terminal header should not gain editorial decorations`);
-                assert.equal(chrome.headerBottomStyle, "dashed",
-                  `${label}: terminal nav needs one straight bottom rule`);
+                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
+                  `${label}: terminal header bottom line intrudes on page content`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
+                  `${label}: terminal navigation must form a second rectangular surface`);
+                assert.equal(chrome.navRadius, 0,
+                  `${label}: terminal navigation base must remain square`);
+                if (width > 370) {
+                  assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
+                    chrome.brandDividerTopStyle === "dashed",
+                    `${label}: terminal needs one brand/navigation dashed divider`);
+                } else {
+                  assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
+                    `${label}: do not draw a divider across very narrow phone tools`);
+                }
                 if (chrome.selectedRadius !== null) assert.equal(chrome.selectedRadius, 0,
                   `${label}: terminal nav tab must stay rectangular`);
+                if (route === "/" && width <= 480) {
+                  assert.ok(geometry.identity && geometry.identity.top - geometry.header.bottom >= 18,
+                    `${label}: intro copy still collides with terminal navigation bottom`);
+                }
               }
             }
             for (const control of geometry.controls) {
