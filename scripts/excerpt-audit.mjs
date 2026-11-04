@@ -131,12 +131,10 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
-      // Reveal the shared toolbar by returning to the top; it is intentionally
-      // hidden during uninterrupted reading after a downward scroll.
+      // The article's explicit action bar remains in the document flow.
+      // Return to it to stop excerpt mode; the floating rail is contextual.
       await page.evaluate(()=>window.scrollTo(0,0));
-      await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"));
-      // Excerpt now shares the ordinary reader controls and must not create
-      // a second sticky strip or a floating overlay.
+      await page.locator(".reader-article-actions").waitFor({state:"visible"});
       await page.getByRole("button",{name:"退出摘录模式"}).click();
       const controls=await page.evaluate(()=>{
         const toggle=document.querySelector(".excerpt-toggle");
@@ -154,9 +152,9 @@ async function run(engine,browser,width){
           style:bar?getComputedStyle(bar).position:null
         };
       });
-      record(browser,width,"excerpt lives in the shared reader tool row",controls,
+      record(browser,width,"excerpt lives in the article action row, not fixed chrome",controls,
         !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||
-          controls.style!=="sticky"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
+          controls.style!=="static"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
