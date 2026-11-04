@@ -189,6 +189,8 @@ try {
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
+              footerBrand: select(".site-footer .footer-brand"),
+              footerCopy: select(".site-footer .footer-copy"),
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
               footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
               notFoundHeading: document.querySelector(".not-found h1")?.textContent?.trim(),
@@ -205,6 +207,8 @@ try {
               },
               aboutSidebarBlockCount: document.querySelectorAll(".about-layout .site-sidebar > .side-block").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
+              articleNeighbors: select(".article-neighbors"),
+              siteFooter: select(".site-footer"),
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
           }, headerControls);
@@ -218,6 +222,22 @@ try {
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
             `${label}: footer link has a small or clipped touch target`);
+          assert.ok(geometry.footerBrand && geometry.footerCopy,
+            `${label}: footer identity and copyright must both remain visible`);
+          assert.ok(geometry.footerBrand.right <= geometry.viewport + 1,
+            `${label}: footer wordmark overflows the viewport`);
+          if (width >= 768) {
+            assert.ok(geometry.footerBrand.left >= geometry.footerCopy.right - 1,
+              `${label}: desktop/tablet footer signature must sit to the right of copyright`);
+          } else {
+            assert.ok(geometry.footerBrand.right >= geometry.footerCopy.right - 2,
+              `${label}: phone footer signature should align to the upper-right`);
+          }
+          if (isImmersive && width <= 700 && geometry.articleNeighbors && geometry.siteFooter) {
+            const gap = geometry.siteFooter.top - geometry.articleNeighbors.bottom;
+            assert.ok(gap >= 0 && gap <= 76,
+              `${label}: article footer has excessive dead space (${gap}px)`);
+          }
           assert.match(geometry.footerCountText || "", /\d+ 条内容/,
             `${label}: mixed content mislabeled as articles`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
