@@ -66,7 +66,6 @@ h3 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.mobile-brand-tagline { display: none; }
 #site-nav {
   display: flex;
   align-items: center;
@@ -1540,9 +1539,14 @@ h3 {
   }
 }
 @media (max-width: 1100px) {
-  .brand-rule,
+  .brand-rule { display: none; }
+  /* Keep the identity readable beside the logo instead of moving its
+     description to a second header line when space tightens. */
   .brand-tagline {
-    display: none;
+    max-width: 124px;
+    white-space: normal;
+    line-height: 1.35;
+    font-size: 10px;
   }
   .header-search {
     width: auto;
@@ -1632,24 +1636,34 @@ h3 {
 @media (max-width: 860px) {
   :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
   .header-inner {
-    height: auto; min-height: var(--header-height);
-    grid-template-columns: auto minmax(0,1fr) auto;
-    grid-template-rows: var(--header-bar-height) 44px;
-    column-gap: 8px; row-gap: 0;
+    height: auto; min-height: calc(var(--header-height) - 1px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--header-bar-height) 43px;
+    column-gap: 6px; row-gap: 0;
   }
-  .brand { grid-row: 1; grid-column: 1; max-width: 160px; }
-  .mobile-brand-tagline {
+  .brand {
+    grid-row: 1; grid-column: 1;
+    min-width: 0;
+    width: 100%;
+    gap: 7px;
+  }
+  .brand-wordmark { flex: 0 0 auto; }
+  .brand .brand-tagline {
     display: block;
-    grid-row: 1; grid-column: 2;
-    justify-self: end;
-    max-width: 100%; min-width: 0;
-    font-size: clamp(10px, 1.6vw, 12px);
-    line-height: 1.45;
-    text-align: right;
-    color: var(--muted);
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 155px;
+    white-space: normal;
     overflow-wrap: anywhere;
+    line-height: 1.35;
+    font-size: clamp(10px, 1.6vw, 12px);
   }
-  .header-tools { grid-row: 1; grid-column: 3; padding-left: 6px; gap: 0; }
+  .header-tools {
+    grid-row: 1; grid-column: 2;
+    border-left: 0;
+    padding-left: 0;
+    gap: 0;
+  }
   #site-nav {
     display: flex; grid-row: 2; grid-column: 1 / -1;
     position: static; align-items: center; gap: 0;
@@ -1783,7 +1797,7 @@ h3 {
     --page-gutter: 18px;
   }
   /* Keep the full wordmark curves visible without increasing the header slot. */
-  .brand { max-width: min(112px, 100%); overflow: visible; }
+  .brand { overflow: visible; }
   .brand-wordmark { max-width: 100%; overflow: visible; }
   .header-tools {
     gap: 0;
@@ -1977,14 +1991,15 @@ h3 {
   .feed-controls .mobile-type-select { display: inline-flex; }
 }
 
-/* Compact phones need a dedicated subtitle row rather than hiding it. */
-@media (max-width: 540px) {
-  :root { --header-height: 130px; }
+/* A narrow phone cannot physically fit four 44px touch targets next to
+   the full logo and subtitle. Keep the identity together, move only tools
+   to a second row, and reserve the third row for normal navigation. */
+@media (max-width: 370px) {
+  :root { --header-height: 148px; }
   .header-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: var(--header-bar-height) 26px 44px;
+    grid-template-rows: var(--header-bar-height) 44px 43px;
   }
-  .header-tools { grid-column: 2; }
-  .mobile-brand-tagline { grid-row: 2; grid-column: 1 / -1; }
+  .brand { grid-row: 1; grid-column: 1 / -1; width: auto; }
+  .header-tools { grid-row: 2; grid-column: 1 / -1; justify-self: end; }
   #site-nav { grid-row: 3; }
 }
