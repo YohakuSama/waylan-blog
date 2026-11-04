@@ -88,7 +88,7 @@ export function ShelfTrigger() {
       <button
         type="button"
         className="icon-button shelf-trigger"
-        aria-label={`阅读清单${items.length ? `，${items.length} 篇` : ""}`}
+        aria-label={`阅读清单${items.length ? `，${items.length} 条` : ""}`}
         data-tip="阅读清单 · 仅保存在此浏览器"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
@@ -107,7 +107,7 @@ export function ShelfTrigger() {
         className="shelf-dialog"
       >
         <p className="shelf-intro">
-          稍后再读的文章。只保存在这台设备的浏览器里，不会上传。
+          稍后阅读的内容，只保存在这台设备的浏览器里，不会上传。
         </p>
         {items.length ? (
           <ol className="shelf-items">
@@ -152,7 +152,7 @@ export function ShelfTrigger() {
             }}
           >
             <Shuffle size={15} />
-            随机读一篇
+            随机阅读一条
           </button>
           {items.length > 0 && (
             <ConfirmButton

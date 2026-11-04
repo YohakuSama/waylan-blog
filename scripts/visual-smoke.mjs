@@ -8,7 +8,7 @@ const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
 const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", '.header-tools > button[aria-label="阅读设置"]'];
-const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet"];
+const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet", "/404"];
 const variants = [
   { skin: "editorial", theme: "light" },
   { skin: "editorial", theme: "dark" },
@@ -61,7 +61,7 @@ try {
       await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: false } }));
       try {
         for (const route of routes) {
-          const target = origin + (route === "/" ? "/" : route + "/");
+          const target = origin + (route === "/" ? "/" : route === "/404" ? "/404.html" : route + "/");
           const response = await page.goto(target, { waitUntil: "domcontentloaded" });
           const label = `${route === "/" ? "home" : route.slice(1).replaceAll("/", "-")}-${width}-${variant.skin}-${variant.theme}`;
           assert.ok(response?.ok(), `${label}: HTTP response failed`);
@@ -143,6 +143,11 @@ try {
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
+              footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
+              footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
+              notFoundHeading: document.querySelector(".not-found h1")?.textContent?.trim(),
+              notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
+              notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
               aboutHeadingLevels: [...document.querySelectorAll(".about-details > div > h2")].map((el) => el.textContent.trim()),
               aboutStatsHeadingIsLink: !![...document.querySelectorAll(".about-layout .side-block .side-title")]
                 .find((el) => el.textContent.trim() === "站点数据")?.querySelector("a"),
@@ -163,6 +168,12 @@ try {
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
+          assert.equal(geometry.footerTargets.length, 3, `${label}: footer links missing`);
+          assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
+            box.left >= 0 && box.right <= geometry.viewport + 1),
+            `${label}: footer link has a small or clipped touch target`);
+          assert.match(geometry.footerCountText || "", /\d+ 条内容/,
+            `${label}: mixed content mislabeled as articles`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           assert.ok(geometry.brand.right <= (width > 860 ? geometry.nav : geometry.tools).left + 1, `${label}: brand overlaps header`);
@@ -252,6 +263,15 @@ try {
               assert.equal(geometry.aboutSidebarBlockCount, 4,
                 `${label}: about rail content changed unexpectedly`);
             }
+          }
+          if (route === "/404") {
+            assert.equal(geometry.notFoundHeading, "页面不存在", `${label}: missing 404 heading`);
+            assert.equal(geometry.notFoundLatest.length, 3, `${label}: missing fallback content links`);
+            assert.ok(geometry.notFoundLatest.every((box) => box && box.height >= 44 &&
+              box.left >= 0 && box.right <= geometry.viewport + 1),
+              `${label}: 404 recent link is too small or clipped`);
+            assert.ok(geometry.notFoundActions.length >= 2,
+              `${label}: 404 page lost its recovery links`);
           }
           if (route === "/archive") {
             assert.equal(geometry.archiveFilters, 0, `${label}: duplicated archive filters`);
@@ -381,6 +401,29 @@ try {
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
             await page.locator(".home-topic-link").click();
             await page.waitForURL("**/feed");
+          }
+          if (route === "/404" && (width === 320 || width === 390)) {
+            await page.locator(".header-search").click();
+            const dialog = page.locator(".search-dialog[open]");
+            await dialog.waitFor();
+            assert.equal(await dialog.locator('[role="listbox"]').count(), 0,
+              `${label}: empty search incorrectly exposes a listbox`);
+            const suggestions = await dialog.locator(".search-suggestions button").evaluateAll((els) =>
+              els.map((el) => {
+                const r = el.getBoundingClientRect();
+                return { height: r.height, left: r.left, right: r.right };
+              }));
+            assert.ok(suggestions.length > 0 && suggestions.every((box) =>
+              box.height >= 44 && box.left >= 0 && box.right <= width + 1),
+              `${label}: small or clipped search recommendations`);
+            await dialog.locator('input[type="search"]').fill("D1");
+            assert.ok(await dialog.locator('[role="listbox"] [role="option"]').count() > 0,
+              `${label}: matching options not exposed`);
+            assert.equal(await dialog.locator('[role="listbox"] .search-all').count(), 0,
+              `${label}: listbox contains a nonoption navigation link`);
+            await page.screenshot({ path: `${out}/${label}-search.png`, animations: "disabled" });
+            await page.keyboard.press("Escape");
+            await dialog.waitFor({ state: "hidden" });
           }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }

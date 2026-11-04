@@ -164,6 +164,41 @@ async function publicBrowsers() {
               await page.waitForFunction((position) =>
                 Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
             }
+            if (width === 390 && motion === "reduced") {
+              stage = "404 recovery and interactive search";
+              // WebKit can keep a history-restoration navigation pending when
+              // the 404 document is loaded into the same page. Use a fresh tab.
+              const missing = await context.newPage();
+              missing.on("pageerror", (error) => errors.push("404: " + String(error)));
+              await missing.route("**/api/status", (route) => route.fulfill({
+                json: { notifications: false, comments: false, login: false },
+              }));
+              await missing.route("**/api/views", (route) => route.fulfill({
+                json: { enabled: false, views: {} },
+              }));
+              await missing.route("**/api/posts/*/view", (route) => route.fulfill({
+                json: { enabled: false, views: null },
+              }));
+              const errorPage = await missing.goto(origin + "/404.html", { waitUntil: "commit", timeout: 15000 });
+              assert.ok(errorPage?.ok(), name + ": built 404 document not served");
+              await missing.getByRole("heading", { name: "页面不存在" }).waitFor();
+              await missing.waitForTimeout(400);
+              await noOverflow(missing, name + "/404");
+              assert.equal(await missing.locator(".not-found .lost-latest a").count(), 3);
+              await missing.locator(".not-found .lost-page").click();
+              await missing.locator(".not-found .echo-trail").waitFor();
+              await missing.locator(".header-search").click();
+              const searchDialog = missing.locator(".search-dialog[open]");
+              await searchDialog.waitFor();
+              assert.equal(await searchDialog.locator('[role="listbox"]').count(), 0);
+              await searchDialog.locator('input[type="search"]').fill("D1");
+              assert.ok(await searchDialog.locator('[role="listbox"] [role="option"]').count() > 0);
+              await missing.keyboard.press("Escape");
+              await searchDialog.waitFor({ state: "hidden" });
+              await missing.locator('.not-found a[href="/archive"]').click();
+              await missing.waitForURL(/\/archive$/, { timeout: 15000 });
+              await missing.close();
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }

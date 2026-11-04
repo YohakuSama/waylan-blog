@@ -444,7 +444,7 @@ export function Archive() {
           const months = [...new Set(annual.map((p) => p.date.slice(5, 7)))];
           return (
             <section className="archive-year" id={`year-${year}`} key={year}>
-              <h2 className="mono">{year}{years.length > 1 && <span>{annual.length} 篇</span>}</h2>
+              <h2 className="mono">{year}{years.length > 1 && <span>{annual.length} 条</span>}</h2>
               {months.map((month) => (
                 <div className="archive-month" key={month}>
                   <h3 className="archive-month-label">{Number(month)} 月</h3>

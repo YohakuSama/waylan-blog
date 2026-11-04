@@ -107,6 +107,17 @@ for (const path of [
     "secret found",
   );
 }
+// Existence alone cannot detect malformed RSS or Sitemap XML.
+for (const [file, expected] of [
+  ["sitemap.xml", posts.length + 5],
+  ["rss.xml", posts.length],
+] as const) {
+  const xml = await readFile("dist/" + file, "utf8");
+  const doc = new JSDOM(xml, { contentType: "application/xml" }).window.document;
+  assert.equal(doc.querySelector("parsererror"), null, file + " malformed XML");
+  const selector = file === "sitemap.xml" ? "urlset > url" : "rss > channel > item";
+  assert.equal(doc.querySelectorAll(selector).length, expected, file + " entries incomplete");
+}
 for (const file of [
   "sitemap.xml",
   "rss.xml",

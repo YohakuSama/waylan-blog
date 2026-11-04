@@ -618,7 +618,7 @@ html {
   margin-top: 14px;
 }
 .search-suggestions button {
-  height: 32px;
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
@@ -1214,7 +1214,7 @@ html {
     min-height: 44px;
   }
   .search-suggestions button {
-    height: 40px;
+    min-height: 44px;
   }
 }
 
@@ -1871,6 +1871,7 @@ html {
 }
 .lost-latest a {
   display: flex;
+  min-height: 44px;
   gap: 14px;
   padding: 11px 0;
   border-top: 1px solid var(--line);

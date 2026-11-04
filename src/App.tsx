@@ -287,7 +287,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <span className="footer-copy">
               © {copyrightYears} {site.author}. All rights reserved.
               <span className="footer-stats mono">
-                {stats.posts} 篇 · {wordsLabel(stats.words)} 字
+                {stats.posts} 条内容 · {wordsLabel(stats.words)} 字
                 {stats.first && <> · 始于 {shortDate(stats.first)}</>}
               </span>
             </span>
@@ -327,7 +327,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             spellCheck={false}
             aria-label="全文搜索"
             aria-expanded={shown.length > 0}
-            aria-controls="search-results"
+            aria-controls={shown.length ? "search-results" : undefined}
             aria-autocomplete="list"
             aria-activedescendant={
               active >= 0 ? `search-option-${active}` : undefined
@@ -367,9 +367,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
         </div>
         <div
           className="search-results"
-          id="search-results"
-          role="listbox"
-          aria-label="搜索结果"
         >
           {!needle && (
             <div className="search-hint-state">
@@ -400,7 +397,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <small>试试更短的关键词，或换一个说法。</small>
             </div>
           )}
-          {shown.map((p, i) => (
+          {shown.length > 0 && (
+            <div id="search-results" role="listbox" aria-label="搜索结果">
+              {shown.map((p, i) => (
             <Link
               key={p.id}
               id={`search-option-${i}`}
@@ -433,7 +432,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
                 className="search-enter"
               />
             </Link>
-          ))}
+              ))}
+            </div>
+          )}
           {results.length > 0 && (
             <Link className="search-all" href={allResults}
               onClick={(event) => {
@@ -453,7 +454,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <kbd>↓</kbd> 选择 <kbd>↵</kbd> 打开 <kbd>Esc</kbd> 关闭
           </span>
           <span>
-            {needle ? `${results.length} 条结果` : `共 ${posts.length} 篇`}
+            {needle ? `${results.length} 条结果` : `共 ${posts.length} 条内容`}
           </span>
         </div>
       </Dialog>

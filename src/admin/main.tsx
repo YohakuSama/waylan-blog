@@ -242,6 +242,7 @@ function Preview({ text, uploads }: { text: string; uploads: Upload[] }) {
 }
 
 function Markdown({
+  label,
   value,
   onChange,
   uploads,
@@ -249,6 +250,7 @@ function Markdown({
   onError,
   rows = 22,
 }: {
+  label: string;
   value: string;
   onChange: (value: string) => void;
   uploads: Upload[];
@@ -303,6 +305,7 @@ function Markdown({
       {mode === "write" ? (
         <textarea
           ref={area}
+          aria-label={label}
           className="mono"
           rows={rows}
           value={value}
@@ -648,6 +651,7 @@ function PostEditor({
         </div>
       </div>
       <Markdown
+        label="文章正文（Markdown）"
         value={form.body}
         onChange={(v) => update("body", v)}
         uploads={uploads}
@@ -888,6 +892,7 @@ function SiteEditor({
       </div>
       <h2 className="section-title">关于页</h2>
       <Markdown
+        label="关于页正文（Markdown）"
         value={form.about}
         onChange={(v) => update("about", v)}
         uploads={uploads}
