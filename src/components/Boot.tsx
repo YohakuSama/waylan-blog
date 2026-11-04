@@ -10,6 +10,7 @@ export function Boot() {
     <div id="boot" className="boot" aria-hidden="true">
       <div className="boot-inner">
         <Monogram className="boot-mark" />
+        <span className="boot-label">WAYLAN</span>
         <span className="boot-line" />
       </div>
     </div>

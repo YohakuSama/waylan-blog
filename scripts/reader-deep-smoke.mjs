@@ -171,8 +171,20 @@ async function run(engine,name,width){
           body.scrollTop = body.scrollHeight;
           const action = dialog.querySelector(".panel-comment-entry");
           const visibleBottom = window.visualViewport.offsetTop + window.visualViewport.height;
+          // Regression: a light surface behind a light primary-button label
+          // made the mobile "发表评论" action effectively invisible.
+          const style = getComputedStyle(action);
+          const rgb = value => (value.match(/[0-9.]+/g) || []).slice(0,3).map(Number);
+          const luminance = value => rgb(value).reduce((sum, channel, index) => {
+            const normalized = channel / 255;
+            const linear = normalized <= 0.04045 ? normalized / 12.92 : Math.pow((normalized + 0.055)/1.055, 2.4);
+            return sum + linear * [0.2126, 0.7152, 0.0722][index];
+          }, 0);
+          const fg = luminance(style.color), bg = luminance(style.backgroundColor);
+          const actionContrast = (Math.max(fg,bg)+0.05)/(Math.min(fg,bg)+0.05);
           return {visibleBottom,dialogBottom:dialog.getBoundingClientRect().bottom,
-            actionBottom:action.getBoundingClientRect().bottom,
+            actionBottom:action.getBoundingClientRect().bottom,actionContrast,
+            actionLabel:action.textContent?.trim(),
             threadBottomStyle:getComputedStyle(dialog).bottom,
             bodyScrollHeight:body.scrollHeight,bodyHeight:body.clientHeight};
         });
@@ -181,6 +193,8 @@ async function run(engine,name,width){
           "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
         assert.ok(geometry.actionBottom <= geometry.visibleBottom + 3,
           "Thread action cannot be scrolled into the visible viewport: " + JSON.stringify(geometry));
+        assert.ok(geometry.actionLabel?.length > 0 && geometry.actionContrast >= 4.5,
+          "Thread action has invisible or low-contrast text: " + JSON.stringify(geometry));
         await page.screenshot({path:dir+"/"+name+"-"+width+"-thread-viewport.png",animations:"disabled"});
       }
       assert.deepEqual(errors,[], "runtime errors");

@@ -2,12 +2,37 @@ try{var theme=JSON.parse(localStorage.getItem('echo:theme')||'null');document.do
 try{var motion=JSON.parse(localStorage.getItem('echo:motion')||'null');motion=motion==='full'||motion==='reduced'||motion==='system'?motion:'system';document.documentElement.dataset.motionPreference=motion;document.documentElement.dataset.motion=motion==='reduced'||motion==='system'&&matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}catch{document.documentElement.dataset.motionPreference='system';document.documentElement.dataset.motion=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}
 try{var skin=JSON.parse(localStorage.getItem('echo:skin')||'null');document.documentElement.dataset.skin=skin==='terminal'?'terminal':'editorial';}catch{document.documentElement.dataset.skin='editorial';}
 (function(){try{var d=document.documentElement.dataset,m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d.skin==='terminal'?(d.theme==='dark'?'#0b0d0c':'#eef0e8'):(d.theme==='dark'?'#16151a':'#f7f4ee');}catch(e){}})();
-// Hold page content until the web fonts it uses are ready, so Chinese text
-// appears once in its final face instead of swapping subset by subset.
-// Checks start once the stylesheet applies (#root computes to opacity 0), not
-// after the JS bundle. Capped like font-display:block, so a slow network
-// falls back to normal swap.
-// The loader (#boot) fades in by CSS 400ms after the styles apply (so it shows even
-// while a large page is still parsing). Once clearly visible it is held to
-// about 600ms of age so it never flashes; a barely-started one just fades out.
-(function(){var d=document.documentElement,f=document.fonts,done=false;if(!f||!f.ready||!window.requestAnimationFrame)return;d.classList.add('font-wait','font-loader');function age(){try{var a=d.getAnimations({subtree:true});for(var i=0;i<a.length;i++)if(a[i].animationName==='font-loader-in'&&a[i].startTime!=null)return document.timeline.currentTime-a[i].startTime-400;}catch(e){}return -1;}function finish(){if(done)return;done=true;d.classList.remove('font-wait');d.classList.add('font-loader-out');setTimeout(function(){d.classList.remove('font-loader','font-loader-out');var b=document.getElementById('boot');if(b)b.remove();},640);}function show(){if(done)return;var t=age();t>120&&t<600?setTimeout(finish,600-t):finish();}function check(){if(done)return;var r=document.getElementById('root');if(document.readyState==='loading'||!r||getComputedStyle(r).opacity!=='0')return void setTimeout(check,30);r.offsetHeight;f.ready.then(function(){requestAnimationFrame(function(){f.status==='loading'?check():show();});},show);}setTimeout(show,location.protocol==='file:'?4000:3000);check();})();
+// Wait only for the fonts used on the initial document. Fast cached loads do not
+// flash a loader; slow fonts show a legible progress mark with an absolute cap.
+(function () {
+  var root = document.documentElement;
+  var fonts = document.fonts;
+  if (!fonts || !fonts.ready || !window.requestAnimationFrame) return;
+  var started = performance.now();
+  var done = false;
+  var timeout;
+  root.classList.add("font-wait", "font-loader");
+  function finish() {
+    if (done) return;
+    done = true;
+    clearTimeout(timeout);
+    root.classList.remove("font-wait");
+    root.classList.add("font-loader-out");
+    setTimeout(function () {
+      root.classList.remove("font-loader", "font-loader-out");
+      var boot = document.getElementById("boot");
+      if (boot) boot.remove();
+    }, 420);
+  }
+  function ready() {
+    var age = performance.now() - started;
+    // A loader that has become visible must not disappear mid-fade.
+    if (age >= 160 && age < 400) setTimeout(finish, 400 - age);
+    else finish();
+  }
+  function waitForFonts() { fonts.ready.then(ready, ready); }
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", waitForFonts, { once: true });
+  else waitForFonts();
+  timeout = setTimeout(finish, location.protocol === "file:" ? 3200 : 2400);
+})();

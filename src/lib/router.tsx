@@ -21,7 +21,11 @@ type Router = {
   backToList: () => void;
 };
 type VisitedRoute = { route: string; fromKey: string | null };
-const isContentListRoute = (route: string) => /^\/(feed|archive|projects)(?:[?#]|$)/.test(route);
+/** Return to the page that actually opened the reader, not an arbitrary feed. */
+const isReturnOrigin = (route: string) => {
+  const pathname = route.split(/[?#]/)[0];
+  return pathname !== "/404" && !pathname.startsWith("/post/") && isAppRoute(pathname);
+};
 /** Top-level navigation follows the visual header order in both directions. */
 export function routeMotionDirection(from: string, to: string, pop = false): "forward" | "back" {
   if (pop || (from.startsWith("/post/") && !to.startsWith("/post/"))) return "back";
@@ -61,7 +65,7 @@ export function RouterProvider({
     pendingTarget = useRef<{ route: string; serial: number } | null>(null),
     pathRef = useRef(path);
   const positions = useRef(new Map<string, number>()),
-    lastList = useRef(transient.get("last-list", "/feed")),
+    lastOrigin = useRef(transient.get("last-origin", transient.get("last-list", "/feed"))),
     visitedRoutes = useRef(new Map<string, VisitedRoute>());
   const fileHistory = useRef({
     entries: [{ route: initialPath, key: "" }],
@@ -129,9 +133,9 @@ export function RouterProvider({
     transition.current?.skipTransition?.();
     save();
     const prevPath = pathRef.current;
-    if (isContentListRoute(prevPath)) {
-      lastList.current = prevPath;
-      transient.set("last-list", prevPath);
+    if (isReturnOrigin(prevPath)) {
+      lastOrigin.current = prevPath;
+      transient.set("last-origin", prevPath);
     }
     const nextKey = options.key || newId();
     // Re-clicking the current page must not stack duplicate history entries.
@@ -190,7 +194,10 @@ export function RouterProvider({
         !target.pathname.startsWith("/post/");
       const active = navigateWithMotion(
         change, direction,
-        collectionToCollection ? "collection" : "reader",
+        collectionToCollection ? "collection"
+          : (target.searchParams.get("resume") === "1" ||
+             new URL(prevPath, "https://preview.invalid").searchParams.get("resume") === "1")
+            ? "resume" : "reader",
       );
       transition.current = active;
       active.finished
@@ -354,17 +361,17 @@ export function RouterProvider({
         back: () => {
           if (offlinePreview()) {
             if (fileHistory.current.index > 0) history.back();
-            else void navigate(lastList.current);
+            else void navigate(lastOrigin.current);
           } else if (history.state?.echoFrom) history.back();
-          else void navigate(transient.get("last-list", "/feed"));
+          else void navigate(lastOrigin.current);
         },
         backToList: () => {
-          // The reader promises the last content list, not the prior article.
-          // Native history also restores its filters and saved scroll position.
+          // Return to the real origin, skipping neighboring articles when necessary.
+          // Browser history restores the origin's filters and saved scroll position.
           if (offlinePreview()) {
             const trail = fileHistory.current;
             for (let i = trail.index - 1; i >= 0; i--) {
-              if (isContentListRoute(trail.entries[i].route)) {
+              if (isReturnOrigin(trail.entries[i].route)) {
                 history.go(i - trail.index);
                 return;
               }
@@ -377,7 +384,7 @@ export function RouterProvider({
               seen.add(fromKey);
               const entry = visitedRoutes.current.get(fromKey);
               if (!entry) break;
-              if (isContentListRoute(entry.route)) {
+              if (isReturnOrigin(entry.route)) {
                 history.go(-steps);
                 return;
               }
@@ -385,8 +392,8 @@ export function RouterProvider({
               steps++;
             }
           }
-          // A deep link or reloaded tab lacks the in-session list history.
-          void navigate(lastList.current);
+          // Deep links have no in-session origin; use the last known destination.
+          void navigate(lastOrigin.current);
         },
       }}
     >

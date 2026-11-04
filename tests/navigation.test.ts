@@ -205,6 +205,20 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".post-card").length,
       posts.filter((p) => p.topic === "notes").length);
   });
+  it("returns to the homepage that opened a post instead of the last feed", async () => {
+    await mount("/");
+    const entry = document.querySelector<HTMLAnchorElement>(".home-list .post-card-link");
+    assert.ok(entry, "homepage should include a working article link");
+    await click(entry);
+    assert.ok(location.pathname.startsWith("/post/"));
+    const neighbor = document.querySelector<HTMLAnchorElement>(
+      '.article-neighbors a[href^="/post/"]',
+    );
+    if (neighbor) await click(neighbor);
+    await click(document.querySelector(".reader-topbar > button"));
+    await settle(100);
+    assert.equal(location.pathname, "/", "return must honor the actual starting page");
+  });
   it("returns to the original filtered list after visiting neighboring articles", async () => {
     await mount("/feed?topic=notes");
     const first = document.querySelector<HTMLAnchorElement>(".post-card-link")!;
@@ -825,6 +839,38 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelectorAll(".emoji-grid button").length >= 1);
     await click(document.querySelector(".emoji-grid button"));
     assert.ok(document.querySelector<HTMLTextAreaElement>("#echo-comment")!.value.includes("🚀"));
+  });
+  it("previews the same safe Markdown formatting as published comments", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 8);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    await click([...document.querySelectorAll(".selection-toolbar button")].find(
+      (button) => button.textContent === "评论",
+    )!);
+    const area = document.querySelector<HTMLTextAreaElement>("#echo-comment")!;
+    await act(async () => {
+      const set = Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value")!.set!;
+      set.call(area, "**重要**、`代码`与[链接](https://example.com)");
+      area.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      await pause(30);
+    });
+    await click([...document.querySelectorAll(".composer-hint button")].find(
+      (button) => button.textContent === "效果预览",
+    )!);
+    const preview = document.querySelector("#echo-preview");
+    assert.ok(preview);
+    assert.equal(preview.querySelector("strong")?.textContent, "重要");
+    assert.equal(preview.querySelector("code")?.textContent, "代码");
+    assert.equal(preview.querySelector("a")?.getAttribute("rel"), "nofollow noopener noreferrer");
+    assert.equal(preview.closest(".comment-composer")?.getAttribute("data-preview"), "true");
+    assert.ok(preview.parentElement!.querySelector(".login-invitation.composer-bottom"),
+      "unauthenticated publishing should share the fixed footer region");
   });
   it("opens an annotated reply outside the first comments page by fetching its own deep endpoint", async () => {
     const post = posts[0],

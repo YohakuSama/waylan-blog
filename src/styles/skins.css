@@ -737,6 +737,17 @@ html {
   font-size: inherit;
   color: var(--code-ink);
 }
+/* Code tokens retain their own syntax colours, but selected text must have
+   one readable foreground/background in every skin and light/dark mode. */
+.reader-prose .block-code pre::selection,
+.reader-prose .block-code pre *::selection,
+.reader-prose .block-code code::selection,
+.reader-prose .block-code code *::selection {
+  background: var(--code-ink);
+  color: var(--code-bg);
+  text-shadow: none;
+}
+
 .code-prompt {
   color: var(--hl-prompt);
   user-select: none;
