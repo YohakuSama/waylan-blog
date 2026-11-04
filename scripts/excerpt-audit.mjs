@@ -131,32 +131,28 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
-      // Reveal the shared toolbar by returning to the top; it is intentionally
-      // hidden during uninterrupted reading after a downward scroll.
+      // The excerpt toggle belongs to the document's inline article actions.
+      // No duplicate sticky strip should remain; the float is contextual.
       await page.evaluate(()=>window.scrollTo(0,0));
-      await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"));
-      // Excerpt now shares the ordinary reader controls and must not create
-      // a second sticky strip or a floating overlay.
-      await page.getByRole("button",{name:"退出摘录模式"}).click();
+      await page.locator(".article-actions").scrollIntoViewIfNeeded();
+      await page.getByRole("button",{name:"退出摘录模式",exact:true}).click();
       const controls=await page.evaluate(()=>{
-        const toggle=document.querySelector(".excerpt-toggle");
-        const bar=document.querySelector(".reader-topbar");
+        const toggle=document.querySelector('.article-actions .article-action[aria-pressed]');
+        const articleActions=document.querySelector(".article-actions");
         const site=document.querySelector(".site-header");
-        const rect=toggle?.getBoundingClientRect(), head=site?.getBoundingClientRect();
         return {
-          inReaderControls:!!toggle?.closest(".reader-topbar .reader-controls"),
-          extraStrip:!!document.querySelector(".excerpt-access"),
+          inArticleActions:!!toggle?.closest(".article-actions"),
+          duplicateTopbar:!!document.querySelector(".reader-topbar, .excerpt-access"),
           active:toggle?.getAttribute("aria-pressed"),
-          toggleTop:rect?.top,headerBottom:head?.bottom,
+          position:articleActions?getComputedStyle(articleActions).position:null,
           siteVisible:!!site && getComputedStyle(site).display!=="none",
           navHidden:getComputedStyle(document.querySelector("#site-nav")).display==="none",
-          logoVisible:!!site?.querySelector(".brand"),
-          style:bar?getComputedStyle(bar).position:null
+          logoVisible:!!site?.querySelector(".brand")
         };
       });
-      record(browser,width,"excerpt lives in the shared reader tool row",controls,
-        !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||
-          controls.style!=="sticky"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
+      record(browser,width,"excerpt belongs to inline article actions; global logo stays visible",controls,
+        !controls.inArticleActions||controls.duplicateTopbar||controls.active!=="false"||
+          controls.position==="sticky"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}

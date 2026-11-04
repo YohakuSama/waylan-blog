@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
 const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
-const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", '.header-tools > button[aria-label="阅读设置"]'];
+const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet", "/404"];
 const variants = [
   { skin: "editorial", theme: "light" },
@@ -68,7 +68,7 @@ try {
           const isImmersive = route.startsWith("/post/") && width <= 1024;
           // Article pages on phones/tablets deliberately hide global search
           // and navigation; wait for the replacement reader row instead.
-          if (isImmersive) await page.locator(".reader-topbar").waitFor({state:"visible"});
+          if (isImmersive) await page.locator(".article-actions").waitFor({state:"visible"});
           else await page.getByRole("button", { name: "搜索 Ctrl K", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForFunction(() => !document.documentElement.classList.contains("font-wait") && !document.documentElement.classList.contains("font-loader-out"));
@@ -80,7 +80,7 @@ try {
           }
           const geometry = await page.evaluate((headerControls) => {
             const rect = (element) => {
-              if (!element || getComputedStyle(element).display === "none") return null;
+              if (!element || getComputedStyle(element).display === "none" || !element.getClientRects().length) return null;
               const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
               return { left, top, right, bottom, width, height };
             };
@@ -115,7 +115,7 @@ try {
                 } : null;
               })(),
               tools: select(".header-tools"),
-              header: select(".site-header"), readerTopbar: select(".reader-topbar"), body: select(".site-body"),
+              header: select(".site-header"), articleActions: select(".article-actions"), globalMenuButton: select(".reader-global-menu-trigger"), body: select(".site-body"),
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
@@ -210,14 +210,16 @@ try {
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
             assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
-            assert.ok(geometry.tools && geometry.controls.every(box=>box && box.height>=40),
-              `${label}: original search, saved items, notifications or settings disappeared`);
+            assert.ok(geometry.tools && geometry.controls[0] && geometry.controls[0].height>=40 &&
+              geometry.globalMenuButton && geometry.globalMenuButton.height>=40,
+              `${label}: logo masthead needs search and a global menu button`);
+            assert.ok(geometry.controls.slice(1).every(box=>!box),
+              `${label}: reading-list and notifications must be inside the closed labeled menu`);
             assert.ok(geometry.brand.right<=geometry.tools.left+3,
               `${label}: wordmark intersects the masthead actions`);
-            assert.ok(geometry.readerTopbar && geometry.readerTopbar.height <= 60,
-              `${label}: missing or oversized immersive reader toolbar`);
-            assert.ok(geometry.readerTopbar.left >= 0 && geometry.readerTopbar.right <= geometry.viewport + 1,
-              `${label}: immersive reader toolbar overflows the screen`);
+            assert.ok(geometry.articleActions && geometry.articleActions.height>=40 &&
+              geometry.articleActions.left>=0 && geometry.articleActions.right<=geometry.viewport+1,
+              `${label}: inline article actions overflow or disappeared`);
             assert.ok(["none", "normal"].includes(geometry.mobileNavChrome?.brandDividerContent),
               `${label}: the reader masthead must not inherit the site nav's decorative separator`);
           } else {
@@ -466,7 +468,7 @@ try {
             await page.screenshot({ path: `${out}/${label}-directory.png`, animations: "disabled" });
             await page.keyboard.press("Escape");
             await toc.waitFor({ state: "hidden" });
-            assert.equal(await page.locator(".mobile-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
+            assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
             await page.setViewportSize({ width, height: 900 });
           }
           if (route === "/" && [320, 768, 1440].includes(width)) {
