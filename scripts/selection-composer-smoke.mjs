@@ -1,0 +1,188 @@
+/** Browser regression: first touch actions and oversized excerpt composer. */
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { chromium, webkit } from "playwright";
+
+const origin = "http://127.0.0.1:4184";
+const server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview",
+  "--host", "127.0.0.1", "--port", "4184", "--strictPort"], { stdio: ["ignore", "pipe", "pipe"] });
+let log = "";
+for (const stream of [server.stdout, server.stderr])
+  stream.on("data", (bytes) => { log = (log + bytes).slice(-2500); });
+
+async function ready() {
+  for (let i = 0; i < 100; i++) {
+    try { if ((await fetch(origin)).ok) return; } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+  throw Error("Preview unavailable: " + log);
+}
+
+async function run(engine, label, width, height, touch) {
+  const browser = await engine.launch({ headless: true });
+  try {
+    const context = await browser.newContext({
+      viewport: { width, height }, hasTouch: touch, isMobile: touch,
+      reducedMotion: "reduce",
+    });
+    try {
+      await context.addInitScript(() => {
+        localStorage.setItem("echo:motion", JSON.stringify("reduced"));
+        window.__copyCount = 0;
+        window.__shareCount = 0;
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+          writeText: async () => { window.__copyCount++; },
+        } });
+        Object.defineProperty(navigator, "share", { configurable: true, value:
+          async () => { window.__shareCount++; },
+        });
+        Object.defineProperty(navigator, "canShare", { configurable: true, value: () => true });
+      });
+      const page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.route("**/api/status", (route) => route.fulfill({
+        json: { comments: false, notifications: false },
+      }));
+      await page.route("**/api/session", (route) => route.fulfill({
+        json: {
+          user: { login: "test-reader", avatarUrl: "https://avatars.githubusercontent.com/u/1?v=4" },
+          configured: true, moderator: false, csrf: "browser-test",
+        },
+      }));
+      await page.goto(origin + "/post/a-room-on-the-internet/", { waitUntil: "domcontentloaded" });
+      await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
+
+      const selectLongText = async () => {
+        const length = await page.evaluate(() => {
+          const blocks = [...document.querySelectorAll(".reader-prose .article-block[data-type='paragraph']")];
+          const chosen = [];
+          let length = 0;
+          for (const block of blocks) {
+            if (chosen.length === 8 || length + block.textContent.length > 3400) break;
+            chosen.push(block);
+            length += block.textContent.length;
+            if (length >= 800) break;
+          }
+          if (length < 300) throw Error("Test article has too little selectable text");
+          const range = document.createRange();
+          range.setStart(chosen[0], 0);
+          const end = chosen[chosen.length - 1];
+          range.setEnd(end, end.childNodes.length);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.dispatchEvent(new Event("selectionchange"));
+          return length;
+        });
+        await page.locator(".selection-toolbar").waitFor({ state: "visible" });
+        return length;
+      };
+      const act = async (name) => {
+        const button = page.getByRole("toolbar", { name: "选中文字的操作" })
+          .getByRole("button", { name, exact: true });
+        if (touch) await button.tap();
+        else await button.click();
+      };
+
+      // Touchend must execute the operation without waiting for an iOS
+      // compatibility click; it also must not repeat copy/share side effects.
+      await selectLongText();
+      await act("复制");
+      await page.waitForFunction(() => window.__copyCount === 1);
+      await act("分享");
+      await page.waitForFunction(() => window.__copyCount + window.__shareCount === 2);
+      await page.waitForTimeout(120);
+      assert.equal(await page.evaluate(() => window.__copyCount + window.__shareCount), 2,
+        label + ": sharing ran twice");
+      await act("关闭摘录工具栏");
+      await page.locator(".selection-toolbar").waitFor({ state: "hidden" });
+
+      await selectLongText();
+      const oldCount = await page.locator("mark.private-mark").count();
+      await act("划线");
+      await page.waitForFunction((n) => document.querySelectorAll("mark.private-mark").length > n, oldCount);
+      assert.equal(await page.locator(".selection-toolbar").count(), 0,
+        label + ": highlight must complete on the first tap");
+
+      const selectedLength = await selectLongText();
+      await act("评论");
+      const composer = page.locator("dialog.discussion-dialog.composer-dialog[open]");
+      await composer.waitFor({ state: "visible" });
+      await composer.locator("textarea").fill("验证长引用下的发表评论操作");
+      await page.waitForTimeout(100);
+
+      const checkGeometry = async (mode) => {
+        const data = await composer.evaluate((dialog) => {
+          const body = dialog.querySelector(".discussion-panel-body");
+          const quote = body.querySelector(".panel-original blockquote");
+          const footer = dialog.querySelector(".composer-bottom");
+          const send = footer?.querySelector(".primary-button");
+          const visual = window.visualViewport;
+          const rect = (el) => {
+            const r = el.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+          };
+          return {
+            dialog: rect(dialog), body: rect(body), quote: rect(quote),
+            footer: rect(footer), send: rect(send),
+            visibleTop: visual?.offsetTop ?? 0,
+            visibleBottom: (visual?.offsetTop ?? 0) + (visual?.height ?? window.innerHeight),
+            bodyOverflow: getComputedStyle(body).overflowY,
+            quoteOverflow: getComputedStyle(quote).overflowY,
+            quoteScrollHeight: quote.scrollHeight, quoteClientHeight: quote.clientHeight,
+            bodyScrollHeight: body.scrollHeight, bodyClientHeight: body.clientHeight,
+            sendEnabled: !send.disabled,
+          };
+        });
+        assert.equal(data.bodyOverflow, "auto", label + "/" + mode + ": editor needs one scroll owner");
+        assert.equal(data.quoteOverflow, "visible", label + "/" + mode + ": nested quote scrollbar");
+        assert.ok(data.quoteScrollHeight <= data.quoteClientHeight + 2,
+          label + "/" + mode + ": quote is internally scrolling: " + JSON.stringify(data));
+        assert.ok(data.body.bottom <= data.footer.top + 2 &&
+          data.send.bottom <= data.visibleBottom + 3 &&
+          data.send.top >= data.visibleTop - 3 &&
+          data.send.left >= -2 && data.send.right <= width + 2 &&
+          data.sendEnabled,
+          label + "/" + mode + ": action not visible: " + JSON.stringify(data));
+        return data;
+      };
+      const normal = await checkGeometry("normal");
+      assert.ok(normal.bodyScrollHeight >= normal.bodyClientHeight);
+      if (!touch) {
+        await composer.getByRole("button", { name: "进入全屏编辑" }).click();
+        await page.waitForFunction(() => !!document.querySelector(".composer-dialog.composer-fullscreen"));
+        await checkGeometry("fullscreen");
+      } else {
+        // Model keyboard/browser-chrome shrinking Safari's visual viewport.
+        await page.evaluate(() => {
+          const v = window.visualViewport;
+          if (!v) throw Error("visualViewport missing");
+          Object.defineProperty(v, "height", {
+            configurable: true, value: Math.min(v.height, 430),
+          });
+          v.dispatchEvent(new Event("resize"));
+        });
+        await checkGeometry("keyboard");
+      }
+      console.log(JSON.stringify({ label, width, selectedLength, quoteScrollOwner: normal.bodyOverflow,
+        sendVisible: true, actionsFirstTouch: true }));
+      assert.deepEqual(errors, [], label + ": runtime errors");
+    } finally {
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+try {
+  await ready();
+  await run(chromium, "desktop Chromium", 1440, 900, false);
+  await run(webkit, "phone WebKit", 390, 760, true);
+  await run(webkit, "tablet WebKit", 820, 900, true);
+  await run(webkit, "landscape tablet WebKit", 1194, 834, true);
+} finally {
+  server.kill("SIGTERM");
+  server.stdout.destroy();
+  server.stderr.destroy();
+}
