@@ -340,6 +340,48 @@ describe("mobile reader regression contracts", () => {
     assert.ok(boot.includes('className="boot"'));
     assert.doesNotMatch(script, /classList\.add\(["\x27]font-wait/);
   });
+  it("preserves the homepage reading-card height and text on Safari reload", () => {
+    const script = readFileSync("public/theme.js", "utf8");
+    const page = readFileSync("src/pages.tsx", "utf8");
+    assert.ok(page.includes('className="home-resume home-resume-placeholder"'),
+      "prerendered home must reserve an empty reading slot until hydration");
+    assert.ok(page.includes('className="resume-preview-title"') &&
+      page.includes('className="resume-progress resume-preview-progress"'),
+      "the placeholder must render the remembered card without changing server markup");
+    assert.ok(site.includes(':root[data-resume-pending="true"] .home-resume-placeholder {') &&
+      site.includes("min-height: 56px;") &&
+      site.includes("--resume-preload-title") &&
+      site.includes("--resume-preload-progress"),
+      "first-paint placeholder must hold the real card geometry and text");
+    const sample = { slug: "test-post", title: "静态优先 · 阅读进度", progress: 12 };
+    for (const saved of [sample, null, { ...sample, progress: 100 }]) {
+      const dataset: Record<string, string> = {};
+      const variables = new Map<string, string>();
+      const document = {
+        documentElement: {
+          dataset,
+          style: { setProperty: (name: string, value: string) => variables.set(name, value) },
+          classList: { remove: () => {} },
+        },
+        querySelector: () => null,
+        getElementById: () => null,
+        readyState: "complete",
+      };
+      runInNewContext(script, {
+        document,
+        localStorage: { getItem: (key: string) => key === "echo:reading" ? JSON.stringify(saved) : null },
+        matchMedia: () => ({ matches: false }),
+      });
+      if (saved?.progress === 12) {
+        assert.equal(dataset.resumePending, "true");
+        assert.equal(variables.get("--resume-preload-title"), JSON.stringify(saved.title));
+        assert.equal(variables.get("--resume-preload-progress"), JSON.stringify("12%"));
+      } else {
+        assert.equal(dataset.resumePending, undefined,
+          "new visitors and completed articles must not have empty reserved space");
+      }
+    }
+  });
   it("does not fade the entire reading surface when navigating on touch devices", () => {
     const source = readFileSync("src/lib/motion.ts", "utf8");
     assert.ok(source.includes('!motionAllowed() || matchMedia("(pointer: coarse)").matches'));
