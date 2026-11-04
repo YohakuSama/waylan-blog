@@ -79,7 +79,7 @@ async function run(engine,name,width){
       await page.waitForURL(url=>url.pathname===secondHref,{timeout:12000});
       await page.locator(".reader-prose").waitFor();
       const historyBefore=await page.evaluate(()=>history.length);
-      await page.locator(".reader-topbar > button").first().click();
+      await page.locator(".reader-back-link").first().click();
       await page.waitForTimeout(400);
       const returned=new URL(page.url()).pathname;
       const canonical=returned.replace(/\/$/,"");
@@ -120,53 +120,35 @@ async function run(engine,name,width){
           "editorial Waylan logo was lost in immersive reading");
         assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),false,
           "mobile article must not duplicate the full destination row");
-        const compact=await page.evaluate(()=>{
-          const bar=document.querySelector(".reader-topbar");
-          return {position:getComputedStyle(bar).position,top:getComputedStyle(bar).top,
-            controls:bar.querySelectorAll(".reader-controls button").length,
-            height:bar.getBoundingClientRect().height};
+        const inline=await page.evaluate(()=>{
+          const bar=document.querySelector(".reader-article-actions"),
+            author=document.querySelector(".article-byline"),
+            progress=document.querySelector(".reading-progress");
+          const rect=bar.getBoundingClientRect(),byline=author.getBoundingClientRect();
+          return {position:getComputedStyle(bar).position,top:rect.top,bottom:rect.bottom,
+            bylineBottom:byline.bottom,height:rect.height,
+            trail:getComputedStyle(progress.firstElementChild).backgroundImage,
+            dot:getComputedStyle(progress.firstElementChild,"::after").content};
         });
-        assert.equal(compact.position,"sticky");
-        assert.equal(compact.top,"56px");
-        assert.ok(compact.height<=60,"reader row is taller than 60px: "+JSON.stringify(compact));
-        // Start at the top and use user-like wheel scrolling; a single
-        // programmatic scrollTo can be a no-op when history restores position.
+        assert.equal(inline.position,"static","article actions must scroll with the byline");
+        assert.ok(inline.top>=inline.bylineBottom-2,"article tools escaped the byline: "+JSON.stringify(inline));
+        assert.ok(inline.height<150,"inline article actions exceed three rows: "+JSON.stringify(inline));
+        assert.ok(inline.trail.includes("repeating-linear-gradient") && inline.dot!=="none",
+          "Waylan segmented progress and dot were lost: "+JSON.stringify(inline));
+        assert.equal(await page.locator(".site-header-reader .reader-global-menu").count(),1,
+          "header should expose one labelled global menu, not duplicate bookmark controls");
         await page.evaluate(()=>window.scrollTo(0,0));
         await page.waitForFunction(()=>window.scrollY<10);
-        await page.mouse.move(100,420);
-        await page.mouse.wheel(0,320);
-        await page.mouse.wheel(0,320);
-        try {
-          await page.waitForFunction(()=>document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
-        } catch {
-          const state=await page.evaluate(()=>({y:window.scrollY,match:matchMedia("(max-width: 1024px)").matches,
-            hidden:document.querySelector(".reader-topbar")?.className,
-            selection:window.getSelection()?.toString()?.slice(0,20),
-            dialog:!!document.querySelector("dialog[open]"),
-            mainHeight:document.documentElement.scrollHeight}));
-          throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
-        }
-        // The animated row must disappear BEHIND the pinned masthead, not
-        // float away and leave a disconnected progress stripe.
-        await page.waitForTimeout(280);
-        const tucked=await page.evaluate(()=>{
-          const logo=document.querySelector(".site-header-reader").getBoundingClientRect();
-          const tools=document.querySelector(".reader-topbar").getBoundingClientRect();
-          const progress=document.querySelector(".reading-progress").getBoundingClientRect();
-          return {logoTop:logo.top,logoBottom:logo.bottom,toolsBottom:tools.bottom,progressTop:progress.top};
-        });
-        assert.ok(Math.abs(tucked.logoTop)<=2,"logo masthead must remain pinned: "+JSON.stringify(tucked));
-        assert.ok(tucked.toolsBottom<=tucked.logoBottom+3,
-          "reader tool row must slide under the logo, not linger over text: "+JSON.stringify(tucked));
-        assert.ok(Math.abs(tucked.progressTop-(tucked.logoBottom-2))<=3,
-          "reading progress should be attached to the masthead border: "+JSON.stringify(tucked));
-        // Upward content movement must reveal the row. WebKit's synthetic
-        // desktop mouse wheel can be swallowed under a touch emulation, so
-        // drive the actual document scroll position for this direction.
-        await page.evaluate(()=>window.scrollBy(0,-130));
-        await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
+        await page.evaluate(()=>window.scrollTo(0,document.querySelector(".reader-article-actions").getBoundingClientRect().bottom+window.scrollY+300));
+        await page.waitForFunction(()=>!!document.querySelector(".reader-float"));
+        await page.getByRole("button",{name:"阅读工具",exact:true}).click();
+        await page.locator(".reader-float-panel").waitFor({state:"visible"});
+        assert.equal(await page.locator(".reader-float-panel > button").count(),3,
+          "floating tool should only contain font, highlight and TOC");
+        await page.keyboard.press("Escape");
+        await page.locator(".reader-float-panel").waitFor({state:"hidden"});
         await page.evaluate(()=>window.scrollTo(0,0));
-        observations.push({browser:name,width,scenario:"Waylan masthead remains while tools slide behind it and return on upward scroll",compact});
+        observations.push({browser:name,width,scenario:"Waylan header, inline article actions and contextual floating tools",inline});
       } else {
         assert.ok(isReaderHeaderShown,"desktop keeps its browsing header");
       }
