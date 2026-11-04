@@ -48,6 +48,9 @@ html {
   --hl-type: #e8c47d;
   --hl-meta: #9eaab5;
   --hl-prompt: #f0937a;
+  --toast-bg: #302821;
+  --toast-ink: #fff7ee;
+  --toast-border: #5a4635;
   --veil: rgba(28, 24, 20, 0.34);
 }
 :root[data-theme="dark"] {
@@ -75,6 +78,9 @@ html {
   --code-line: #2b2930;
   --code-inline-bg: #2a272e;
   --code-inline-ink: #f2a58e;
+  --toast-bg: #eaded2;
+  --toast-ink: #251c1d;
+  --toast-border: #f7e9dd;
   --veil: rgba(6, 5, 8, 0.6);
 }
 
@@ -128,6 +134,9 @@ html {
   --hl-type: #ffd479;
   --hl-meta: #8b9c90;
   --hl-prompt: #3ddc84;
+  --toast-bg: #174329;
+  --toast-ink: #f0fff5;
+  --toast-border: #286b42;
   --veil: rgba(12, 20, 15, 0.38);
 }
 :root[data-skin="terminal"][data-theme="dark"] {
@@ -158,6 +167,9 @@ html {
   --code-inline-bg: #10281a;
   --code-inline-ink: #74f0a8;
   --shadow: 0 0 0 1px var(--line-strong), 0 18px 40px -24px #000;
+  --toast-bg: #b4f2cc;
+  --toast-ink: #092011;
+  --toast-border: #70c693;
   --veil: rgba(0, 4, 2, 0.66);
 }
 
@@ -1261,10 +1273,14 @@ html {
 }
 /* The toast is a manual popover; undo the UA popover box so it keeps its pill shape. */
 .toast[popover] {
-  inset: auto auto var(--space-8) 50%;
+  inset: auto auto max(var(--space-8), env(safe-area-inset-bottom)) 50%;
   margin: 0;
-  border: 0;
   overflow: visible;
+}
+@media (max-width: 700px) {
+  .toast[popover] {
+    bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
 }
 .toast[popover]:not(:popover-open) {
   display: flex;
