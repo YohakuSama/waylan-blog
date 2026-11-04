@@ -602,7 +602,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(custom.has("waylan-selected-quote"), false,
       "closing the toolbar must not leave a ghost quote highlight");
   });
-  it("copies on the first pointerdown even when Safari does not dispatch touchend or click", async () => {
+  it("copies on the first touch gesture even when Safari never dispatches click", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
     const range = document.createRange();
@@ -623,6 +623,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     Object.defineProperty(down, "pointerType", { value: "touch" });
     await act(async () => {
       button.dispatchEvent(down);
+      await pause(30);
+    });
+    assert.equal(copied.length, 0,
+      "clipboard must wait for the pointerup that grants transient user activation");
+    const up = new dom.window.Event("pointerup", { bubbles: true, cancelable: true });
+    Object.defineProperty(up, "pointerType", { value: "touch" });
+    await act(async () => {
+      button.dispatchEvent(up);
       await pause(30);
     });
     assert.deepEqual(copied, [p.textContent!.slice(0, 12)]);
@@ -676,7 +684,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector("dialog.composer-dialog[open]"),
       "composer must open on the first pointerdown");
   });
-  it("shares on touchstart when Safari never sends a pointerdown or click", async () => {
+  it("shares on touchend when Safari sends touch events without pointer or click", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
     const range = document.createRange();
@@ -699,7 +707,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
       button.dispatchEvent(start);
       await pause(30);
     });
-    assert.equal(copies.length, 1, "share fallback must run on the first touchstart");
+    assert.equal(copies.length, 0, "share must wait for touchend user activation");
+    const end = new dom.window.Event("touchend", { bubbles: true, cancelable: true });
+    Object.defineProperty(end, "changedTouches", { value: [{ identifier: 7 }] });
+    await act(async () => {
+      button.dispatchEvent(end);
+      await pause(30);
+    });
+    assert.equal(copies.length, 1, "share fallback must run on the first touch gesture");
     assert.ok(copies[0].includes("/post/a-room-on-the-internet"));
   });
   it("dismisses the selected-text tray and native range on a deliberate blank tap", async () => {
