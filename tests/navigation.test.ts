@@ -205,6 +205,29 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".post-card").length,
       posts.filter((p) => p.topic === "notes").length);
   });
+  it("restores loaded feed batches and scroll when coming back from a later post", async () => {
+    await mount("/feed");
+    assert.ok(posts.length > 8, "test requires several feed batches");
+    assert.equal(document.querySelectorAll(".feed-list .feed-item").length, 8);
+    await click(document.querySelector(".feed-layout .load-more"));
+    await settle(80);
+    assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length);
+    assert.equal(JSON.parse(sessionStorage.getItem("echo:feed-limit:/feed") || "0"), posts.length);
+    y = 1250;
+    const lastEntry = [...document.querySelectorAll(".feed-list .feed-item .post-card-link")].at(-1);
+    assert.ok(lastEntry);
+    await click(lastEntry);
+    assert.ok(location.pathname.startsWith("/post/"));
+    await click(document.querySelector(".reader-topbar > button"));
+    await settle(140);
+    assert.equal(location.pathname, "/feed");
+    assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length,
+      "returning must restore the expanded list before restoring its scroll");
+    assert.equal(y, 1250);
+    assert.equal(document.querySelector(".feed-layout button.load-more"), null,
+      "the already loaded records must not require a second click");
+    assert.match(document.querySelector(".reader-topbar")?.textContent || "", /^$/, "reader must be unmounted");
+  });
   it("returns to the homepage that opened a post instead of the last feed", async () => {
     await mount("/");
     const entry = document.querySelector<HTMLAnchorElement>(".home-list .post-card-link");

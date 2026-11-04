@@ -1122,7 +1122,7 @@ export default function Reader({ post }: { post: Post }) {
       <div className="reader-topbar">
         <button className="text-button" onClick={router.backToList}>
           <ArrowLeft size={16} />
-          返回来源
+          返回列表
         </button>
         <div className="reader-controls">
           <button

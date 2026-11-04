@@ -189,7 +189,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <small className="brand-tagline">{site.tagline}</small>
             <span className="sr-only">首页</span>
           </Link>
-          <span className="mobile-brand-tagline">{site.tagline}</span>
           <nav
             id="site-nav"
             aria-label="主要导航"

@@ -17,7 +17,7 @@ import {
   List,
   Quote,
 } from "lucide-react";
-import { storage } from "../lib/storage";
+import { storage, transient } from "../lib/storage";
 import { Link } from "../lib/router";
 import { useApi } from "../lib/api";
 import { posts, shortDate, typeLabels, typeOrder } from "../lib/data";
@@ -365,6 +365,17 @@ export function FeedList({
   const limit =
     paging.key === resetKey && paging.batch === batch ? paging.limit : batch;
   const loadingMore = useRef(false);
+  // This component unmounts when a reader opens. Cache the expanded count by
+  // canonical filter URL and restore in a layout effect, so React's initial
+  // hydration stays deterministic and the router can restore scroll after
+  // the expanded list actually exists in the DOM.
+  useLayoutEffect(() => {
+    if (variant === "home") return;
+    const saved = transient.get<number>(`feed-limit:${resetKey}`, batch);
+    if (!Number.isSafeInteger(saved) || saved <= batch) return;
+    const restored = Math.min(items.length, Math.max(batch, saved));
+    setPaging({ key: resetKey, batch, limit: restored });
+  }, []);
   useEffect(() => {
     loadingMore.current = false;
     setPaging((current) =>
@@ -433,16 +444,9 @@ export function FeedList({
               if (loadingMore.current) return;
               loadingMore.current = true;
               grow();
-              setPaging((current) => ({
-                key: resetKey,
-                batch,
-                limit: Math.min(
-                  items.length,
-                  (current.key === resetKey && current.batch === batch
-                    ? current.limit
-                    : batch) + batch,
-                ),
-              }));
+              const expanded = Math.min(items.length, limit + batch);
+              transient.set(`feed-limit:${resetKey}`, expanded);
+              setPaging({ key: resetKey, batch, limit: expanded });
             }}
           >
             加载更多

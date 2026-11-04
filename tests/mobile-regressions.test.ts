@@ -12,7 +12,7 @@ const boot = readFileSync("src/components/Boot.tsx", "utf8");
 
 describe("mobile reader regression contracts", () => {
   it("does not clip the script wordmark in the narrow header", () => {
-    assert.match(site, /\.brand \{ max-width: min\(112px, 100%\); overflow: visible; \}/);
+    assert.match(site, /\.brand \{ overflow: visible; \}/);
     assert.match(site, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
   });
   it("gives phone feed rows their full width without a spare arrow column", () => {
@@ -51,10 +51,15 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
-  it("renders an actual subtitle slot at mobile and narrow-phone sizes", () => {
-    assert.match(app, /className="mobile-brand-tagline"/);
-    assert.match(site, /\.mobile-brand-tagline \{\r?\n    display: block;/);
-    assert.ok(site.includes("grid-template-rows: var(--header-bar-height) 26px 44px;"));
+  it("keeps the identity beside the logo across mobile and tablet sizes", () => {
+    assert.match(app, /<small className="brand-tagline">\{site.tagline\}<\/small>/);
+    assert.doesNotMatch(app, /mobile-brand-tagline/);
+    assert.doesNotMatch(site, /mobile-brand-tagline/);
+    assert.ok(site.includes(".brand .brand-tagline {"), "phone and tablet must reuse the same subtitle");
+    assert.ok(site.includes("grid-template-rows: var(--header-bar-height) 43px;"),
+      "default mobile header must have just the brand/tools and navigation rows");
+    assert.ok(site.includes("@media (max-width: 370px) {"),
+      "very narrow phones should move tools instead of clipping the wordmark");
   });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .composer-bottom {"));
