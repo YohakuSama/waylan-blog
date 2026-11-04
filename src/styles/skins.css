@@ -185,7 +185,6 @@ html {
   white-space: nowrap;
 }
 .brand-term,
-.footer-term,
 .hero-terminal {
   display: none;
 }
@@ -924,10 +923,38 @@ html {
 :root[data-skin="terminal"] .brand-wordmark {
   display: none;
 }
-/* The footer is a signature in both skins; only the navigation masthead
-   retains terminal's command-line wordmark. */
-:root[data-skin="terminal"] .footer-brand .wordmark {
-  display: block;
+/* Separate identity: only the Editorial footer uses the script signature. */
+:root[data-skin="terminal"] .footer-brand .wordmark,
+:root[data-skin="terminal"] .footer-blog-script { display: none; }
+:root[data-skin="terminal"] .footer-terminal-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35em;
+  font: 600 clamp(18px, 2.1vw, 24px)/1.2 var(--font-mono);
+  letter-spacing: -.03em;
+  white-space: nowrap;
+  color: var(--brand);
+}
+:root[data-skin="terminal"] .footer-terminal-prompt { color: var(--muted); }
+:root[data-skin="terminal"] .footer-terminal-cursor {
+  margin-left: -.25em;
+  color: var(--amber);
+}
+:root[data-skin="terminal"] .about-motto {
+  border: 1px dashed var(--line-strong);
+  background: var(--surface-muted);
+  border-radius: 0;
+}
+:root[data-skin="terminal"] .about-motto blockquote {
+  font: 500 clamp(16px, 2vw, 21px)/1.65 var(--font-mono);
+}
+:root[data-skin="terminal"] .about-motto blockquote::before,
+:root[data-skin="terminal"] .about-motto figcaption::before {
+  content: "// ";
+  color: var(--brand);
+}
+:root[data-skin="terminal"] .about-motto figcaption {
+  font: 12px/1.65 var(--font-mono);
 }
 :root[data-skin="terminal"] .brand-term {
   display: inline-flex;
@@ -936,22 +963,6 @@ html {
   white-space: nowrap;
 }
 .brand-term b {
-  color: var(--brand);
-}
-.brand-term i {
-  font-style: normal;
-  color: var(--muted);
-}
-.brand-term span:not(.term-cursor) {
-  color: var(--amber);
-}
-:root[data-skin="terminal"] .brand-rule {
-  background: none;
-  border-left: 1px dashed var(--line-strong);
-}
-:root[data-skin="terminal"] .footer-term {
-  display: inline;
-  font: 600 14px var(--font-mono);
   color: var(--brand);
 }
 :root[data-skin="terminal"] .nav-link .nav-label::before { content: none; }
@@ -1210,9 +1221,6 @@ html {
     font-size: 13px;
     min-width: 0;
   }
-  /* Reserve the same narrow brand slot as editorial when all tools are visible. */
-  :root[data-skin="terminal"] .brand-term > i,
-  :root[data-skin="terminal"] .brand-term > span { display: none; }
   :root[data-skin="terminal"] .home-hero .hero-visual {
     opacity: 0.12;
   }
