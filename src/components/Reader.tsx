@@ -553,6 +553,34 @@ export default function Reader({ post }: { post: Post }) {
       document.documentElement.style.removeProperty("--waylan-editor-view-top");
     };
   }, [panel, panelIds.length]);
+  // Safari's bottom browser bar can expand on the first tap and shrink the
+  // visual viewport. Keep the excerpt tray above the *visible* bottom instead
+  // of trusting CSS safe-area (which does not include Safari browser chrome).
+  // This is also needed on iPads where the browser toolbar can change size.
+  useEffect(() => {
+    if (!selection) return;
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const sync = () => {
+      const obscured = viewport
+        ? Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
+        : 0;
+      root.style.setProperty("--waylan-selection-view-bottom", `${Math.ceil(obscured)}px`);
+      root.style.setProperty("--waylan-selection-view-height",
+        `${Math.floor(viewport?.height ?? window.innerHeight)}px`);
+    };
+    sync();
+    viewport?.addEventListener("resize", sync);
+    viewport?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      viewport?.removeEventListener("resize", sync);
+      viewport?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      root.style.removeProperty("--waylan-selection-view-bottom");
+      root.style.removeProperty("--waylan-selection-view-height");
+    };
+  }, [!!selection]);
   // All paragraph threads rise from the bottom, like the comment composer.
   // Safari's visible viewport can end well above the layout viewport when
   // browser chrome or the keyboard is present; measure that covered area.
