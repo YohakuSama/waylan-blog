@@ -273,32 +273,27 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     assert.equal(transitions, 0);
   });
-  it("has a matching visual source and destination before starting the page transition", async () => {
-    // Full motion is independent of JSDOM platform and hardware defaults.
+  it("changes between collections and articles without overlapping native snapshots", async () => {
     document.documentElement.dataset.motionPreference = "full";
     Object.defineProperty(globalThis, "matchMedia", {
       value: () => ({ matches: false }),
       configurable: true,
     });
-    const common: string[][] = [];
-    (document as any).startViewTransition = (change: () => void) => {
-      const before = [...document.querySelectorAll<HTMLElement>("[style]")]
-        .map((e) => e.style.viewTransitionName)
-        .filter(Boolean);
-      change();
-      const after = [...document.querySelectorAll<HTMLElement>("[style]")]
-        .map((e) => e.style.viewTransitionName)
-        .filter(Boolean);
-      common.push(before.filter((name) => after.includes(name)));
-      return { finished: Promise.resolve(), skipTransition() {} };
+    let nativeCalls = 0;
+    (document as any).startViewTransition = () => {
+      nativeCalls++;
+      throw new Error("route navigation must not create an old/new page snapshot");
     };
     await mount();
     await click(document.querySelector(".hero-browse"));
-    assert.ok(common[0].includes("visual-echo-001"));
+    assert.equal(location.pathname, "/feed");
     await click(document.querySelector(".post-card-link"));
-    assert.ok(common[1].includes("title-echo-001"));
     assert.ok(document.querySelector(".reader-prose"));
-    assert.equal(document.querySelector("main>.empty-state"), null);
+    await click(document.querySelector(".reader-topbar > button"));
+    await settle(45);
+    assert.equal(location.pathname, "/feed");
+    assert.equal(nativeCalls, 0);
+    assert.equal(document.querySelector(".shared-cover-ghost"), null);
   });
   it("keeps primary navigation distinct from content-type filters", async () => {
     await mount();
