@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
   ArrowRight,
-  ArrowUpRight,
   ChartColumn,
   Flame,
   Info,
@@ -237,7 +236,7 @@ export function SiteLinksBlock({ current, linkHeading = true }: { current?: stri
                   {l.label}
                   <small>{l.hint}</small>
                 </span>
-                <ArrowUpRight size={14} />
+                <ArrowRight className="sidebar-row-arrow" size={16} aria-hidden="true" />
               </Link>
             </li>
           ))}
