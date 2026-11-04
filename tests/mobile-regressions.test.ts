@@ -91,27 +91,30 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
-  it("puts excerpt into existing reader controls, not its own sticky strip", () => {
+  it("places explicit article actions under the byline and offers a contextual edge tool", () => {
     const reader=readFileSync("src/components/Reader.tsx","utf8");
-    assert.ok(reader.includes('className="icon-button excerpt-toggle"'));
-    assert.ok(reader.includes('aria-pressed={excerptMode}'));
-    assert.ok(reader.includes('reader-topbar-hidden'), "scroll behavior must hide only the shared tool row");
-    assert.ok(!reader.includes('className={`excerpt-access'));
-    assert.ok(style.includes('.reader-controls .excerpt-toggle'));
-    assert.ok(site.includes('.site-header.site-header-reader {'), "Waylan logo header must remain visible");
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
-      "only destination navigation, not the Waylan brand, should be removed");
-    assert.ok(site.includes('.site-header-reader .brand-wordmark'), "reuse the original logo on reading pages");
-    assert.ok(style.includes('.reader-topbar.reader-topbar-hidden'));
-    assert.ok(style.includes('top: var(--reader-brand-height);'),
-      "animated actions must slide behind, not over, the retained masthead");
-    assert.ok(style.includes('transform: translate3d(0, calc(-100% - 2px), 0)'),
-      "keep smooth scroll hide/show animation");
-    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress {') &&
-      site.includes('top: calc(var(--reader-brand-height) - 2px)'),
-      "reading progress must be anchored in the last effective masthead stylesheet");
-    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {') &&
-      site.includes('animation: none;'), "mobile reader progress marker must not pulse");
+    const shelf=readFileSync("src/components/Shelf.tsx","utf8");
+    assert.ok(reader.includes('className="reader-topbar reader-article-actions"'));
+    assert.ok(reader.includes('ref={articleActions}'));
+    assert.ok(reader.indexOf('className="article-byline"') < reader.indexOf('className="reader-topbar reader-article-actions"'));
+    assert.ok(style.includes('.reader-topbar.reader-article-actions {'));
+    assert.ok(style.includes('position: static;'), "article actions must scroll with the document");
+    assert.ok(reader.includes('className="reader-float-trigger"'), "floating tool is required while reading");
+    assert.ok(reader.includes('row.getBoundingClientRect().bottom < 82'),
+      "floating entry should appear only after the inline row leaves the top");
+    assert.ok(reader.includes('reader-float-panel') && reader.includes('hidden={!floatOpen}'));
+    assert.ok(!reader.includes('reader-topbar-hidden'), "old sticky header sliding is removed");
+    assert.ok(reader.includes('showLabel'), "this article has an explicit save label");
+    assert.ok(shelf.includes('showLabel = false') && shelf.includes('收藏本文'));
+    assert.ok(style.includes('.reader-float.is-tucked'), "retain a subtle reading-scroll animation");
+    assert.ok(style.includes('.reader-float-panel[hidden] { display: none; }'));
+    assert.ok(site.includes('.site-header.site-header-reader {'), "preserve Waylan masthead");
+    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));
+    assert.ok(site.includes('background: repeating-linear-gradient(90deg, var(--brand) 0 14px'),
+      "restore the segmented coral reading trail");
+    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'),
+      "restore the amber progress dot");
+    assert.ok(site.includes('animation: none;'), "dot should no longer pulse");
   });
   it("keeps the brand separator visible on phones", () => {
     assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);
