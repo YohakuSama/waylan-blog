@@ -214,7 +214,10 @@ export function listTransition(change: () => void, onFinished?: () => void) {
       finish();
     }
   };
-  if (motionLevel() === "shared" && doc.startViewTransition) {
+  // iOS WebKit can flash the root snapshot when its bottom browser chrome
+  // changes size. On touch screens, keep the CSS pill/card motion instead.
+  if (motionLevel() === "shared" && doc.startViewTransition &&
+      !matchMedia("(pointer: coarse)").matches) {
     root.dataset.vt = "list";
     try {
       const transition = doc.startViewTransition(commit);
