@@ -2539,6 +2539,65 @@ body,
   background: var(--brand-soft);
 }
 .article-actions .article-action-save.is-saved svg { fill: currentColor; }
+.article-more { position: relative; }
+.article-more-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 232px;
+  max-width: calc(100vw - 2 * var(--page-gutter));
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.article-more-panel[hidden] { display: none; }
+.article-more-panel > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-align: left;
+}
+.article-more-panel > button:hover,
+.article-more-panel > button:focus-visible {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.article-font-label {
+  display: block;
+  margin-top: 6px;
+  padding: 12px 6px 6px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+.article-font-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.article-font-options > button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.article-font-options > button:hover,
+.article-font-options > button:focus-visible,
+.article-font-options > button[aria-pressed="true"] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.discussion-section { scroll-margin-top: calc(var(--header-height) + 24px); }
 .article-actions .article-action-toc { display: none; }
 @media (max-width: 1040px) {
   .article-actions .article-action-toc { display: inline-flex; }
@@ -2547,6 +2606,12 @@ body,
   .article-actions { gap: 8px; padding-block: 0; }
   .article-actions .article-action,
   .article-actions .article-action-save { gap: 5px; padding: 8px 9px; font-size: 12px; }
+}
+
+@media (max-width: 380px) {
+  .article-actions { gap: 4px; }
+  .article-actions .article-action,
+  .article-actions .article-action-save { gap: 4px; padding-inline: 5px; font-size: 11px; }
 }
 
 /* Optional whole-paragraph excerpt mode lives inside the contents panel.
