@@ -184,13 +184,25 @@ export function BackToTop() {
     let frame = 0;
     const check = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setShow(window.scrollY > 720));
+      frame = requestAnimationFrame(() => {
+        const viewport = window.visualViewport;
+        const visibleBottom = (viewport?.offsetTop ?? 0) +
+          (viewport?.height ?? window.innerHeight);
+        const footerTop = document.querySelector(".site-footer")?.getBoundingClientRect().top;
+        // The floating shortcut should not cover the page's closing colophon.
+        setShow(window.scrollY > 720 &&
+          (footerTop === undefined || footerTop > visibleBottom - 56));
+      });
     };
     check();
     window.addEventListener("scroll", check, { passive: true });
+    window.visualViewport?.addEventListener("resize", check);
+    window.visualViewport?.addEventListener("scroll", check);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", check);
+      window.visualViewport?.removeEventListener("resize", check);
+      window.visualViewport?.removeEventListener("scroll", check);
     };
   }, [onPost]);
   return (

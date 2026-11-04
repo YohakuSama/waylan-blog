@@ -184,7 +184,15 @@ export function Home() {
           <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
           <ul className="home-projects">
             {items.filter((p) => p.type === "project").slice(0, 3).map((p) => (
-              <li key={p.id}><Link href={`/post/${p.slug}`}><strong>{p.title}</strong><span>{p.project?.status}</span></Link></li>
+              <li key={p.id}>
+                <Link href={`/post/${p.slug}`}>
+                  <span className="home-project-copy">
+                    <strong>{p.title}</strong>
+                    <span className="home-project-state">{p.project?.status}</span>
+                  </span>
+                  <ArrowUpRight className="home-project-arrow" size={15} aria-hidden="true" />
+                </Link>
+              </li>
             ))}
           </ul>
         </section>

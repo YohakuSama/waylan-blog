@@ -295,6 +295,37 @@ describe("mobile reader regression contracts", () => {
       "Terminal's attribution appears in the form of code comments");
     assert.doesNotMatch(app, /mobile-brand-tagline|brand-motto-quote/);
   });
+  it("keeps home discovery compact and footer branding coherent across device widths", () => {
+    const app = readFileSync("src/App.tsx", "utf8");
+    const pages = readFileSync("src/pages.tsx", "utf8");
+    assert.ok(pages.includes('className="home-project-copy"') &&
+      pages.includes('className="home-project-state"') &&
+      pages.includes('className="home-project-arrow"'),
+      "project links must use a compact title/status/arrow layout");
+    assert.match(site, /\.home-projects a \{[\s\S]*?min-height: 60px;[\s\S]*?padding: 9px 2px;/);
+    assert.ok(site.includes(".home-sidebar .home-reading-note summary { min-height: 44px; }"),
+      "home reading tip must remain touch accessible");
+    assert.ok(app.includes('className="footer-identity"') &&
+      app.includes('className="footer-description"') &&
+      app.includes('className="footer-copy"'),
+      "brand, description and copyright must occupy distinct footer rows");
+    assert.ok(site.includes('grid-template-areas: "identity links" "copy copy";') &&
+      site.includes('grid-template-areas: "identity" "copy" "links";'),
+      "desktop/tablet and phone need deliberate footer compositions");
+    assert.ok(site.includes('.site-footer .footer-blog-script { display: none; }'),
+      "phones must not display a second oversized decorative Blog signature");
+    assert.ok(!site.includes('"copy brand"') && !site.includes('"links brand"'),
+      "old floating-right colophon layout must not return");
+    assert.ok(site.includes('@media (min-width: 768px) and (max-width: 1119px)') &&
+      site.includes('grid-column: 1 / -1;'),
+      "tablet discovery tips must span both columns");
+    assert.ok(skins.includes(':root[data-skin="terminal"] .footer-terminal-wordmark {'),
+      "terminal must retain its own wordmark while sharing the grid");
+    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
+    assert.ok(shelf.includes('footerTop > visibleBottom - 56') &&
+      shelf.includes('window.visualViewport?.addEventListener("resize", check)'),
+      "floating back-to-top must retreat when Safari reveals the footer");
+  });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .composer-bottom {"));
     assert.ok(style.includes("position: relative; flex: 0 0 auto"));

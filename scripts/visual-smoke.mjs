@@ -174,6 +174,8 @@ try {
               homeDensity: document.querySelector(".home-list")?.className,
               homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
               homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
+              homeProjectRows: [...document.querySelectorAll(".home-sidebar .home-projects a")].map(rect),
+              homeReadingNote: select(".home-sidebar .home-reading-note"),
               resume: select(".home-resume"),
               densityControls: [...document.querySelectorAll(".view-toggle button")].map(rect),
               resetLink: select(".feed-clear-filters"),
@@ -190,6 +192,9 @@ try {
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
+              footerIdentity: select(".site-footer .footer-identity"),
+              footerDescription: select(".site-footer .footer-description"),
+              footerLinks: select(".site-footer .footer-links"),
               footerBrand: select(".site-footer .footer-brand"),
               footerCopy: select(".site-footer .footer-copy"),
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
@@ -223,16 +228,20 @@ try {
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
             `${label}: footer link has a small or clipped touch target`);
-          assert.ok(geometry.footerBrand && geometry.footerCopy,
-            `${label}: footer identity and copyright must both remain visible`);
+          assert.ok(geometry.footerIdentity && geometry.footerBrand &&
+            geometry.footerDescription && geometry.footerCopy && geometry.footerLinks,
+            `${label}: complete footer identity, descriptor, copyright and navigation must be visible`);
           assert.ok(geometry.footerBrand.right <= geometry.viewport + 1,
-            `${label}: footer wordmark overflows the viewport`);
+            `${label}: footer signature overflows the viewport`);
+          assert.ok(Math.abs(geometry.footerBrand.left - geometry.footerCopy.left) <= 2,
+            `${label}: brand and copyright must share the same left edge`);
           if (width >= 768) {
-            assert.ok(geometry.footerBrand.left >= geometry.footerCopy.right - 1,
-              `${label}: desktop/tablet footer signature must sit to the right of copyright`);
+            assert.ok(geometry.footerLinks.left >= geometry.footerIdentity.right - 2,
+              `${label}: desktop/tablet navigation must sit to the right of identity`);
           } else {
-            assert.ok(geometry.footerBrand.right >= geometry.footerCopy.right - 2,
-              `${label}: phone footer signature should align to the upper-right`);
+            assert.ok(geometry.footerBrand.bottom <= geometry.footerCopy.top + 2 &&
+              geometry.footerCopy.bottom <= geometry.footerLinks.top + 2,
+              `${label}: phone footer must flow brand, copyright, then links without overlap`);
           }
           if (isImmersive && width <= 700 && geometry.articleNeighbors && geometry.siteFooter) {
             const gap = geometry.siteFooter.top - geometry.articleNeighbors.bottom;
@@ -249,9 +258,15 @@ try {
               `${label}: editorial must show only the handwritten Waylan logo`);
             assert.equal(geometry.footerScriptText, "Blog");
             assert.ok(geometry.footerWordmark?.width > 40 && geometry.footerWordmark.height >= 25 &&
-              geometry.footerScript?.width >= 20 && geometry.footerScript.height >= 20 &&
               geometry.footerTerminal === null,
-              `${label}: editorial must show the Waylan Blog script signature only`);
+              `${label}: editorial footer lost its Waylan brand`);
+            if (width <= 767) {
+              assert.equal(geometry.footerScript, null,
+                `${label}: phone footer should use a small single-brand signature`);
+            } else {
+              assert.ok(geometry.footerScript?.width >= 20 && geometry.footerScript.height >= 20,
+                `${label}: desktop/tablet editorial signature lost its small Blog script`);
+            }
             assert.ok(geometry.footerScriptFont.includes("Waylan Great Vibes"),
               `${label}: editorial footer lost its handwriting`);
             assert.ok(await page.evaluate(() => document.fonts.check('20px "Waylan Great Vibes"')),
@@ -521,6 +536,23 @@ try {
             assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
             assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
+            assert.ok(geometry.homeProjectRows.length >= 2,
+              `${label}: project directory should contain the real projects`);
+            assert.ok(geometry.homeProjectRows.every((row) => row &&
+              row.height >= 44 && row.height <= 104 && row.right <= geometry.viewport + 1),
+              `${label}: project rows are too tall or are clipped`);
+            if (width <= 767 && geometry.homeReadingNote) {
+              const lastProject = geometry.homeProjectRows.at(-1);
+              assert.ok(lastProject && geometry.homeReadingNote.top - lastProject.bottom <= 60,
+                `${label}: excessive gap between projects and reading tips`);
+            }
+            if (width === 390) {
+              await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+              await page.waitForTimeout(110);
+              assert.equal(await page.locator(".back-to-top").evaluate((el) => el.classList.contains("visible")), false,
+                `${label}: floating back-to-top must not cover the footer`);
+              await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+            }
             if (width <= 768) assert.ok(geometry.homeSecondEntry?.top < 820, `${label}: second entry is buried below the first screen`);
             if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 660, `${label}: first article pushed below the first screen`);
           }
