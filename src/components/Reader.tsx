@@ -1668,6 +1668,10 @@ export default function Reader({ post }: { post: Post }) {
                         });
                         destination.focus({ preventScroll: true });
                         setActiveSection(targetId);
+                        // WebKit may deliver a stale scroll event while the
+                        // instant jump settles. Restore the clicked section
+                        // on the next frame, after scroll/layout events.
+                        window.requestAnimationFrame(() => setActiveSection(targetId));
                       });
                     }}
                   >
