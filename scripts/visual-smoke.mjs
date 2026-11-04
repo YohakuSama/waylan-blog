@@ -65,7 +65,8 @@ try {
           const response = await page.goto(target, { waitUntil: "domcontentloaded" });
           const label = `${route === "/" ? "home" : route.slice(1).replaceAll("/", "-")}-${width}-${variant.skin}-${variant.theme}`;
           assert.ok(response?.ok(), `${label}: HTTP response failed`);
-          const isImmersive = route.startsWith("/post/") && width <= 1024;
+          const isArticle = route.startsWith("/post/");
+          const isImmersive = isArticle && width <= 1024;
           // Article pages on phones/tablets deliberately hide global search
           // and navigation; wait for the replacement reader row instead.
           if (isImmersive) await page.locator(".reader-topbar").waitFor({state:"visible"});
@@ -115,7 +116,7 @@ try {
                 } : null;
               })(),
               tools: select(".header-tools"),
-              header: select(".site-header"), readerTopbar: select(".reader-topbar"), body: select(".site-body"),
+              header: select(".site-header"), readerTopbar: select(".reader-topbar"), readerByline: select(".article-byline"), readerMenu: select(".reader-global-menu > summary"), body: select(".site-body"),
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
@@ -210,14 +211,16 @@ try {
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
             assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
-            assert.ok(geometry.tools && geometry.controls.every(box=>box && box.height>=40),
-              `${label}: original search, saved items, notifications or settings disappeared`);
+            assert.ok(geometry.tools && geometry.controls[0] && geometry.readerMenu,
+              `${label}: global search / labelled reading menu disappeared`);
             assert.ok(geometry.brand.right<=geometry.tools.left+3,
               `${label}: wordmark intersects the masthead actions`);
-            assert.ok(geometry.readerTopbar && geometry.readerTopbar.height <= 60,
-              `${label}: missing or oversized immersive reader toolbar`);
-            assert.ok(geometry.readerTopbar.left >= 0 && geometry.readerTopbar.right <= geometry.viewport + 1,
-              `${label}: immersive reader toolbar overflows the screen`);
+            assert.ok(geometry.readerTopbar && geometry.readerByline &&
+              geometry.readerTopbar.top>=geometry.readerByline.bottom-2 &&
+              geometry.readerTopbar.height<=150,
+              `${label}: in-flow article actions are misplaced or too tall`);
+            assert.ok(geometry.readerTopbar.left>=0 && geometry.readerTopbar.right<=geometry.viewport+1,
+              `${label}: article actions overflow the screen`);
             assert.ok(["none", "normal"].includes(geometry.mobileNavChrome?.brandDividerContent),
               `${label}: the reader masthead must not inherit the site nav's decorative separator`);
           } else {
@@ -272,7 +275,10 @@ try {
                   `${label}: terminal nav tab must stay rectangular`);
               }
             }
-            for (const control of geometry.controls) {
+            if (isArticle) {
+              assert.ok(geometry.readerMenu && geometry.controls[0],
+                `${label}: article global search and menu must remain reachable`);
+            } else for (const control of geometry.controls) {
               assert.ok(control && control.width >= 44 && control.height >= 44, `${label}: small header target`);
               assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
             }
