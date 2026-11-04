@@ -2268,7 +2268,7 @@ body,
 /* Thread dialogs keep the action OUTSIDE the scrollable content.
    iPads get a centered reading panel; iPhones get a compact bottom sheet.
    visualViewport variables account for browser chrome, zoom and keyboards. */
-@media (max-width: 1024px) {
+@media (max-width: 1024px), (pointer: coarse) {
   .discussion-dialog.thread-dialog {
     --dialog-motion: panel;
     position: fixed;
