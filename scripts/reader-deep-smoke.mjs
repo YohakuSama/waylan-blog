@@ -14,7 +14,7 @@ const observations=[];
 async function run(engine,name,width){
   const browser=await engine.launch({headless:true});
   try{
-    const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:"no-preference"});
+    const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:"no-preference",hasTouch:width>1024&&width<=1366});
     try{
       await ctx.addInitScript(()=>{localStorage.setItem("echo:motion",JSON.stringify("full"));localStorage.setItem("echo:skin",JSON.stringify("editorial"));localStorage.setItem("echo:theme",JSON.stringify("light"))});
       const page=await ctx.newPage();
@@ -141,7 +141,7 @@ async function run(engine,name,width){
       await page.screenshot({path:dir+"/"+name+"-"+width+"-toc-hydration.png",animations:"disabled"});
       // Model iPhone Safari's visible viewport shrinking under browser chrome
       // while a native fixed dialog remains anchored to the layout viewport.
-      if (width <= 1024) {
+      if (width <= 1366) {
         await page.getByRole("button",{name:"开启摘录段落模式"}).click();
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
         await page.locator(".selection-toolbar").waitFor({state:"visible"});
@@ -232,6 +232,7 @@ try{
   await run(webkit,"webkit",390);
   await run(webkit,"webkit",820);
   await run(webkit,"webkit",1024);
+  await run(webkit,"webkit",1194);
   console.log("Reader audit observations:",JSON.stringify(observations));
   assert.ok(observations.filter(x=>x.scenario.includes("返回列表")).every(x=>!x.defect),
     "RETURN_LIST_MISMATCH: 返回列表 must return to content list, not previous article");
