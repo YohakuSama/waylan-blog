@@ -131,11 +131,11 @@ async function run(engine,name,width){
           "Waylan wordmark disappeared during reading");
         assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),false,
           "article must not duplicate destination navigation");
-        await page.locator(".reader-global-menu-trigger").click();
-        await page.locator(".reader-global-menu.is-open").waitFor({state:"visible"});
-        assert.equal(await page.locator(".reader-global-menu .shelf-trigger").count(),1,
-          "reading list should only live in the labeled global menu");
-        await page.locator(".reader-global-menu .settings-button").click();
+        assert.equal(await page.locator(".site-header-reader .header-tools .shelf-trigger").isVisible(),true,
+          "reading list should remain directly visible");
+        assert.equal(await page.locator(".site-header-reader .header-tools .notification-trigger").isVisible(),true,
+          "notifications should remain directly visible");
+        await page.locator(".site-header-reader .header-tools .settings-button").click();
       } else {
         await page.locator(".settings-button").click();
       }
@@ -147,10 +147,6 @@ async function run(engine,name,width){
         "reading settings must update the active article font immediately");
       await readingSettings.locator('button[aria-label="关闭"]').click();
       await readingSettings.waitFor({state:"hidden"});
-      if(width<=1024) {
-        await page.locator(".reader-global-menu-trigger").click();
-        await page.locator(".reader-global-menu.is-open").waitFor({state:"hidden"});
-      }
       await page.evaluate(()=>{
         const inline=document.querySelector(".article-actions").getBoundingClientRect();
         window.scrollBy(0,Math.max(550,inline.bottom+220));
