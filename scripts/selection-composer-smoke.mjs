@@ -54,7 +54,7 @@ async function run(engine, label, width, height, touch) {
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
       // SSR markup exists before React hydrates. Prove the reader's handlers
       // are live before generating a programmatic Selection and selectionchange.
-      const shareArticle = page.getByRole("group", { name: "本文操作" })
+      const shareArticle = page.getByRole("group", { name: "读完后的操作" })
         .getByRole("button", { name: "分享文章" });
       await shareArticle.click();
       // Fine-pointer desktop uses a clipboard fallback, while touch browsers
@@ -62,12 +62,16 @@ async function run(engine, label, width, height, touch) {
       await page.waitForFunction(() => window.__shareCount + window.__copyCount > 0,
         null, { timeout: 15000 });
       await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
-      // A newly opened quick-actions menu confirms the reader controls are hydrated.
-      const more = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: "展开更多操作" });
-      await more.click();
-      await page.getByRole("group", { name: "更多阅读操作" }).getByRole("button", { name: "复制链接" }).waitFor({ state: "visible" });
-      await page.keyboard.press("Escape");
-      await page.waitForFunction(() => document.querySelector(".article-action-more")?.getAttribute("aria-expanded") === "false");
+      // The directory, not an obsolete quick-actions menu, remains interactive.
+      const tocButton = page.getByRole("group", { name: "本文操作" })
+        .getByRole("button", { name: /展开文章目录|展开阅读工具/ });
+      if (await tocButton.isVisible()) {
+        await tocButton.click();
+        await page.locator(".reader-toc.toc-visible").waitFor({ state: "visible" });
+        await page.keyboard.press("Escape");
+        await page.locator(".reader-toc.toc-visible").waitFor({ state: "hidden" });
+      }
+      await page.evaluate(() => window.scrollTo(0, 0));
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
