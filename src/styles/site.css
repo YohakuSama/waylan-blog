@@ -1656,8 +1656,8 @@ h3 {
     pointer-events: none;
     background: linear-gradient(90deg,
       transparent,
-      color-mix(in srgb, var(--line-strong) 55%, transparent) 18%,
-      color-mix(in srgb, var(--line-strong) 55%, transparent) 82%,
+      color-mix(in srgb, var(--line-strong) 35%, transparent) 18%,
+      color-mix(in srgb, var(--line-strong) 35%, transparent) 82%,
       transparent);
   }
   .brand {
@@ -1702,16 +1702,17 @@ h3 {
   .site-header:not(.site-header-reader) + .site-body .home-hero {
     padding-top: 22px;
   }
-  /* A single, quietly tinted navigation surface separates destinations from
-     branding without boxing the rounded active tab between two hard rules. */
-  :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) #site-nav {
-    padding-inline: 4px;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--surface-muted) 55%, var(--paper));
+  /* All skins share the original light, full-width navigation geometry.
+     Only the selected destination is filled: never tint the entire row
+     or inset it relative to the existing logo and tool actions. */
+  .site-header:not(.site-header-reader) #site-nav {
+    padding-inline: 0;
+    border-radius: 0;
+    background: transparent;
   }
   .nav-link {
     flex: 1; width: auto; min-width: 0;
-    height: 35px; margin-block: 4px;
+    height: 40px; margin-block: 1px;
     font-size: 13px; border-radius: 10px;
   }
   .nav-description { display: none; }

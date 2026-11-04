@@ -108,6 +108,8 @@ try {
                   brandDividerTopStyle: brandDivider?.borderTopStyle,
                   navBackground: navStyle.backgroundColor,
                   navRadius: parseFloat(navStyle.borderTopLeftRadius),
+                  navPaddingLeft: parseFloat(navStyle.paddingLeft),
+                  selectedHeight: selected ? selected.getBoundingClientRect().height : null,
                   beforeContent: getComputedStyle(nav, "::before").content,
                   afterContent: getComputedStyle(nav, "::after").content,
                   headerBottomStyle: getComputedStyle(header).borderBottomStyle,
@@ -253,13 +255,19 @@ try {
                 assert.ok(geometry.identity && geometry.identity.top - geometry.header.bottom >= 18,
                   `${label}: introductory copy touches the mobile navigation`);
               }
+              assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
+                `${label}: a tinted nav slab still separates the original logo/tools from the destinations`);
+              assert.equal(chrome.navRadius, 0,
+                `${label}: navigation wrapper must not become a decorative pill`);
+              assert.equal(chrome.navPaddingLeft, 0,
+                `${label}: navigation row must not inset links away from the original grid`);
+              if (chrome.selectedHeight !== null) {
+                assert.ok(Math.abs(chrome.selectedHeight - 40) <= 1,
+                  `${label}: theme-specific nav target height differs from the unified 40px controls`);
+              }
               if (variant.skin === "editorial") {
                 assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
                   `${label}: rounded nav still has a visible full-width bottom border`);
-                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
-                  `${label}: navigation lost its subtly tinted shared surface`);
-                assert.ok(chrome.navRadius >= 12,
-                  `${label}: navigation base should be gently rounded`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerImage?.includes("linear-gradient"),
@@ -273,10 +281,6 @@ try {
               } else {
                 assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
                   `${label}: terminal header bottom line intrudes on page content`);
-                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
-                  `${label}: terminal navigation must form a second rectangular surface`);
-                assert.equal(chrome.navRadius, 0,
-                  `${label}: terminal navigation base must remain square`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerTopStyle === "dashed",

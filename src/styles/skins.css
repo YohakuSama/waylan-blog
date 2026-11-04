@@ -905,17 +905,13 @@ html {
     left: calc(var(--page-gutter) + 10px);
     right: calc(var(--page-gutter) + 10px);
     height: 0;
-    border-top: 1px dashed color-mix(in srgb, var(--line-strong) 65%, transparent);
+    border-top: 1px dashed color-mix(in srgb, var(--line-strong) 40%, transparent);
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
   }
-  :root[data-skin="terminal"] .site-header:not(.site-header-reader) #site-nav {
-    padding-inline: 4px;
-    background: color-mix(in srgb, var(--surface-muted) 55%, var(--paper));
-  }
+  /* Keep the same 40px navigation targets as editorial, square only
+     the selected tab. The header tools remain in their existing slots. */
   :root[data-skin="terminal"] #site-nav .nav-link {
-    height: 35px;
-    margin-block: 4px;
     border-radius: 0;
   }
 }
