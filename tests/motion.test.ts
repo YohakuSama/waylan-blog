@@ -212,6 +212,32 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
 });
 
 describe("list animation single-flight and safe recovery", () => {
+  it("cancels an in-flight filter screenshot before navigating to another page", async () => {
+    let skipped = 0, released = 0, replaced = 0, applied = 0;
+    let resolve!: () => void;
+    const pending = new Promise<void>(done => { resolve = done; });
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: (update: () => void) => {
+        update();
+        return { finished: pending, skipTransition() { skipped++; resolve(); } };
+      },
+    });
+    listTransition(() => applied++);
+    listTransition(() => replaced++, () => released++);
+    const route = navigateWithMotion(() => {
+      assert.equal(document.documentElement.dataset.listBusy, undefined,
+        "the old page screenshot must be gone before mounting the new route");
+      applied++;
+    });
+    assert.equal(skipped, 1);
+    assert.equal(released, 1, "a queued filter must release its state lock");
+    assert.equal(replaced, 0, "queued stale filters may not run on the new route");
+    assert.equal(applied, 2);
+    await route.finished;
+    await pending;
+    assert.equal(document.documentElement.dataset.vt, undefined);
+  });
   it("coalesces a thousand rapid sort choices into the first and final state", async () => {
     let resolve!: () => void;
     const finished = new Promise<void>((done) => { resolve = done; });
