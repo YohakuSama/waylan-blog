@@ -480,6 +480,8 @@ html {
 /* ---------- Search dialog ---------- */
 .search-dialog {
   position: fixed;
+  /* Do not inherit a scrolled page's static position when opening the modal. */
+  inset: 0 0 auto;
   margin: min(12vh, 120px) auto auto;
   width: min(660px, calc(100% - 32px));
   max-height: min(620px, calc(100dvh - 2 * min(12vh, 120px)));
@@ -1141,6 +1143,7 @@ html {
   }
 }
 @media (max-width: 700px) {
+  .search-dialog { inset: 0; }
   .search-dialog,
   .settings-dialog {
     width: 100%;

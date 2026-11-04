@@ -11,6 +11,12 @@ const app = readFileSync("src/App.tsx", "utf8");
 const boot = readFileSync("src/components/Boot.tsx", "utf8");
 
 describe("mobile reader regression contracts", () => {
+  it("anchors the mobile search overlay to the viewport after page scroll", () => {
+    const base = skins.match(/\.search-dialog \{[\s\S]*?\n\}/)?.[0] || "";
+    const phone = skins.slice(skins.indexOf("@media (max-width: 700px) {", skins.indexOf("/* ---------- Search dialog ---------- */")));
+    assert.match(base, /inset: 0 0 auto;/, "desktop and tablet search needs a fixed top offset");
+    assert.match(phone, /\.search-dialog \{ inset: 0; \}/, "phone search must cover viewport from top");
+  });
   it("reserves the resolved discussion height during loading", () => {
     assert.ok(style.includes(".discussion-results {"));
     assert.ok(style.includes("min-height: 268px;"));
