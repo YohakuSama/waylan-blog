@@ -147,11 +147,13 @@ async function run(engine, label, width, height, touch) {
       };
       const normal = await checkGeometry("normal");
       assert.ok(normal.bodyScrollHeight >= normal.bodyClientHeight);
-      if (!touch) {
+      if (!touch || width > 1024) {
+        // Wide touch tablets preserve the compact sheet and can expand it.
         await composer.getByRole("button", { name: "进入全屏编辑" }).click();
         await page.waitForFunction(() => !!document.querySelector(".composer-dialog.composer-fullscreen"));
         await checkGeometry("fullscreen");
-      } else {
+      }
+      if (touch) {
         // Model keyboard/browser-chrome shrinking Safari's visual viewport.
         await page.evaluate(() => {
           const v = window.visualViewport;
