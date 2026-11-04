@@ -162,33 +162,46 @@ describe("mobile reader regression contracts", () => {
     assert.doesNotMatch(site, /\.reader-global-menu/);
     assert.ok(site.includes('.site-header-reader .header-tools .icon-button'));
     assert.ok(site.includes('.site-header-reader .header-tools .notification-root'));
-    assert.ok(site.includes('.site-header-reader .brand-tagline { display: none; }'),
-      "narrow readers keep all four masthead shortcuts without a collapsed menu");
+    assert.ok(!app.includes('className="brand-tagline"'),
+      "readers keep their single Waylan logo, without a crowded slogan");
+    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'),
+      "all four direct reader shortcuts remain available on phones");
     assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
     assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));
     assert.ok(site.includes('.site-header-reader .brand-wordmark'));
   });
-  it("keeps the brand separator visible on phones", () => {
-    assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);
-    assert.ok(site.includes('.brand { gap: 5px; }'));
+  it("uses the header width for navigation and search instead of an extra motto", () => {
+    const app = readFileSync("src/App.tsx", "utf8");
+    assert.ok(!app.includes('className="brand-rule"') &&
+      !app.includes('className="brand-tagline"'), "no small inline slogan beside the logo");
+    assert.ok(site.includes("grid-template-columns: auto minmax(0, 1fr) auto;"),
+      "desktop masthead should flex the navigation between logo and actions");
+    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-search-text { display: inline; }'),
+      "tablet and wider phone header should use available width for a labeled search");
+    assert.ok(site.includes('grid-template-rows: var(--header-bar-height) 52px 43px;'),
+      "320px phones preserve full-size action targets in a dedicated row");
+    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
+      "article masthead must not duplicate the global destinations");
   });
-  it("keeps the identity beside the logo across mobile and tablet sizes", () => {
-    assert.ok(app.includes('className="brand-motto-quote">Less, but better.</span>'));
-    assert.ok(app.includes('className="brand-motto-credit">— Dieter Rams</span>'));
+  it("keeps a distinct footer and separately attributed About quote in each skin", () => {
+    const app = readFileSync("src/App.tsx", "utf8");
+    const pages = readFileSync("src/pages.tsx", "utf8");
     assert.ok(app.includes('className="footer-blog-script" aria-hidden="true">Blog</span>'));
-    assert.ok(site.includes('@font-face {') &&
-      site.includes('great-vibes-latin-400-normal.woff2') &&
-      site.includes('.footer-blog-script {'), "both brand positions must share local script font");
-    assert.match(skins, /:root\[data-skin="terminal"\] \.footer-brand \.wordmark \{\s*display: block;/,
-      "terminal variant must keep the signature footer");
-    assert.doesNotMatch(app, /mobile-brand-tagline/);
-    assert.doesNotMatch(site, /mobile-brand-tagline/);
-    assert.ok(site.includes(".brand .brand-tagline {"), "phone and tablet must reuse the same subtitle");
-    assert.ok(site.includes("grid-template-rows: var(--header-bar-height) 43px;"),
-      "default mobile header must have just the brand/tools and navigation rows");
-    assert.ok(site.includes("@media (max-width: 370px) {"),
-      "very narrow phones should move tools instead of clipping the wordmark");
+    assert.ok(app.includes('className="footer-terminal-wordmark" aria-hidden="true"'));
+    assert.ok(app.includes('footer-terminal-cursor'));
+    assert.ok(!app.includes('className="brand-tagline"'));
+    assert.ok(pages.includes('className="about-motto"') &&
+      pages.includes('<blockquote lang="en">Less, but better.</blockquote>') &&
+      pages.includes('— Dieter Rams</figcaption>'));
+    assert.ok(site.includes('great-vibes-latin-400-normal.woff2') &&
+      site.includes('.footer-blog-script {'), "Editorial keeps its self-hosted script footer");
+    assert.ok(skins.includes(':root[data-skin="terminal"] .footer-terminal-wordmark {') &&
+      skins.includes(':root[data-skin="terminal"] .footer-blog-script { display: none; }'),
+      "Terminal uses its own monospace footer rather than Editorial lettering");
+    assert.ok(skins.includes('.about-motto blockquote::before,'),
+      "Terminal's attribution appears in the form of code comments");
+    assert.doesNotMatch(app, /mobile-brand-tagline|brand-motto-quote/);
   });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .composer-bottom {"));
