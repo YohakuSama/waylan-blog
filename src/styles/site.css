@@ -1676,7 +1676,7 @@ h3 {
   }
   #site-nav {
     display: flex; grid-row: 2; grid-column: 1 / -1;
-    position: static; align-items: center; gap: 0;
+    position: relative; align-items: center; gap: 0;
     width: 100%; min-width: 0; border-top: 0;
     --nav-divider-inset: 12px;
   }
