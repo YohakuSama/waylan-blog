@@ -487,7 +487,7 @@ export function About() {
         <h1>关于</h1>
         <p>{site.description}</p>
       </header>
-      <div className="content-grid">
+      <div className="content-grid about-layout">
         <section className="feed-column about-text" aria-label="关于本站">
           {/* Rendered from content/about.md at build time, already sanitised. */}
           <div
@@ -497,7 +497,7 @@ export function About() {
           <SocialList />
           <div className="about-details">
             <div>
-              <h3 className="side-title">写作主题</h3>
+              <h2 className="side-title">写作主题</h2>
               <ul>
                 {site.topics.map((t) => (
                   <li key={t.id}>
@@ -508,7 +508,7 @@ export function About() {
               </ul>
             </div>
             <div>
-              <h3 className="side-title">技术实现</h3>
+              <h2 className="side-title">技术实现</h2>
               <ul>
                 {stack.map(([k, v]) => (
                   <li key={k}>
@@ -519,7 +519,7 @@ export function About() {
               </ul>
             </div>
             <div>
-              <h3 className="side-title">隐私与数据</h3>
+              <h2 className="side-title">隐私与数据</h2>
               <ul>
                 <li>无广告，无第三方统计与追踪脚本。</li>
                 <li>评论存储在 GitHub Discussions，公开可见。</li>
@@ -528,7 +528,7 @@ export function About() {
             </div>
           </div>
           <Link className="primary-button" href="/feed">
-            阅读最新文章
+            浏览全部内容
             <ArrowRight size={17} />
           </Link>
         </section>
@@ -560,11 +560,7 @@ export function About() {
           </section>
           <RecentBlock heatmap={false} />
           <section className="side-block">
-            <SideTitle
-              icon={<Gauge size={17} />}
-              href="/archive"
-              label="打开归档"
-            >
+            <SideTitle icon={<Gauge size={17} />}>
               站点数据
             </SideTitle>
             <SiteStats views />
@@ -586,7 +582,7 @@ function SiteStats({ views: withViews = false }: { views?: boolean }) {
         <dt>内容</dt>
         <dd>
           {stats.posts}
-          <small>篇</small>
+          <small>条</small>
         </dd>
       </div>
       <div>

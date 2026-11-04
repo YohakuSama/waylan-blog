@@ -143,6 +143,16 @@ try {
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
+              aboutHeadingLevels: [...document.querySelectorAll(".about-details > div > h2")].map((el) => el.textContent.trim()),
+              aboutStatsHeadingIsLink: !![...document.querySelectorAll(".about-layout .side-block .side-title")]
+                .find((el) => el.textContent.trim() === "站点数据")?.querySelector("a"),
+              aboutStatsLabel: document.querySelector(".about-layout .site-stats > div:first-child dd")?.textContent?.trim(),
+              aboutSocialTargets: [...document.querySelectorAll(".about-text .social-links a")].map(rect),
+              aboutCta: {
+                text: document.querySelector(".about-text > .primary-button")?.textContent?.trim(),
+                href: document.querySelector(".about-text > .primary-button")?.getAttribute("href"),
+              },
+              aboutSidebarBlockCount: document.querySelectorAll(".about-layout .site-sidebar > .side-block").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
@@ -219,6 +229,28 @@ try {
                 `${label}: small or clipped project tags`);
               assert.ok(geometry.projectExternal.every((box) => box && box.height >= 44),
                 `${label}: future project links need 44px targets`);
+            }
+          }
+          if (route === "/about") {
+            assert.deepEqual(geometry.aboutHeadingLevels, ["写作主题", "技术实现", "隐私与数据"],
+              `${label}: about section heading levels are inconsistent`);
+            assert.equal(geometry.aboutStatsHeadingIsLink, false,
+              `${label}: site statistics heading incorrectly navigates to archive`);
+            assert.match(geometry.aboutStatsLabel || "", /^\d+条$/,
+              `${label}: about statistics count excludes mixed content`);
+            assert.deepEqual(geometry.aboutCta, { text: "浏览全部内容", href: "/feed" },
+              `${label}: about action implies article-only filtering`);
+            assert.ok(geometry.aboutSocialTargets.length > 0 &&
+              geometry.aboutSocialTargets.every((box) => box && box.height >= 44 &&
+                box.left >= 0 && box.right <= geometry.viewport),
+              `${label}: about social link has a small or clipped click target`);
+            if (width < 1120)
+              assert.equal(geometry.sidebar, null,
+                `${label}: redundant about sidebar extends the narrow-screen page`);
+            else {
+              assert.ok(geometry.sidebar, `${label}: wide-screen about rail vanished`);
+              assert.equal(geometry.aboutSidebarBlockCount, 4,
+                `${label}: about rail content changed unexpectedly`);
             }
           }
           if (route === "/archive") {
