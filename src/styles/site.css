@@ -2170,6 +2170,19 @@ h3 {
     min-width: 44px;
   }
 }
+/* On smaller landscape phones, article chrome may compact optional brand
+   children. Keep the short quote in the available 56px masthead slot while
+   preserving the full 44px shortcut targets. */
+@media (min-width: 371px) and (max-width: 700px) {
+  .site-header-reader .brand .brand-tagline {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 108px;
+    visibility: visible;
+  }
+  .site-header-reader .brand-rule { display: none; }
+}
 @media (max-width: 420px) {
   /* Short original-source motto stays beside the compact reader wordmark. */
   .site-header-reader .brand-rule { display: none; }
