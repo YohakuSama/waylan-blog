@@ -153,6 +153,9 @@ describe("mobile reader regression contracts", () => {
       settings.includes('waylan:font-size-changed') &&
       reader.includes('addEventListener("waylan:font-size-changed"'),
       "font controls must be in reading settings and update the active article");
+    assert.ok(settings.includes('addEventListener("waylan:font-size-changed", sync)') &&
+      settings.includes('"echo:font-size"'),
+      "the global settings and inline size control must stay synchronized");
     assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
     assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);
