@@ -28,6 +28,11 @@
   .search-dialog,
   .settings-dialog { --dialog-motion: sheet; }
 }
+/* Avoid translating the native search top layer during software-keyboard focus.
+   iOS Safari can paint the input caret separately from its sliding dialog. */
+@media (max-width: 700px), (pointer: coarse) {
+  .search-dialog { --dialog-motion: instant; }
+}
 @media (max-width: 600px) {
   .shelf-dialog { --dialog-motion: sheet; }
 }

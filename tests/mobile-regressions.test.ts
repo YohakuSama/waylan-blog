@@ -11,6 +11,18 @@ const app = readFileSync("src/App.tsx", "utf8");
 const boot = readFileSync("src/components/Boot.tsx", "utf8");
 
 describe("mobile reader regression contracts", () => {
+  it("does not translate native search dialogs during soft-keyboard focus", () => {
+    const animateDialog = readFileSync("src/lib/motion.ts", "utf8");
+    const dialogs = readFileSync("src/components/UI.tsx", "utf8");
+    assert.ok(dialogs.includes("initialFocus?.current?.focus({ preventScroll: true })"),
+      "opening search must not scroll the page while raising the keyboard");
+    assert.match(motion, /@media \(max-width: 700px\), \(pointer: coarse\) \{/);
+    assert.match(motion, /\.search-dialog \{ --dialog-motion: instant; \}/);
+    assert.match(animateDialog, /if \(kind === "instant"\) return null;/,
+      "instant overlays must not create transform animations");
+    assert.match(motion, /\.discussion-dialog,\s*\.search-dialog,\s*\.settings-dialog \{ --dialog-motion: sheet; \}/,
+      "other mobile sheets should preserve their existing motion");
+  });
   it("anchors the mobile search overlay to the viewport after page scroll", () => {
     const base = skins.match(/\.search-dialog \{[\s\S]*?\n\}/)?.[0] || "";
     const phone = skins.slice(skins.indexOf("@media (max-width: 700px) {", skins.indexOf("/* ---------- Search dialog ---------- */")));
