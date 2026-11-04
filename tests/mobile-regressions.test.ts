@@ -165,7 +165,7 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('@font-face {') &&
       site.includes('great-vibes-latin-400-normal.woff2') &&
       site.includes('.footer-blog-script {'), "both brand positions must share local script font");
-    assert.ok(skins.includes(':root[data-skin="terminal"] .footer-brand .wordmark {\n  display: block;'),
+    assert.match(skins, /:root\[data-skin="terminal"\] \.footer-brand \.wordmark \{\s*display: block;/,
       "terminal variant must keep the signature footer");
     assert.doesNotMatch(app, /mobile-brand-tagline/);
     assert.doesNotMatch(site, /mobile-brand-tagline/);
