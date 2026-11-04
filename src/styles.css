@@ -2539,7 +2539,9 @@ body,
   background: var(--brand-soft);
 }
 .article-actions .article-action-save.is-saved svg { fill: currentColor; }
-.article-more { position: relative; }
+.article-actions { position: relative; }
+/* Anchor the popover to the entire actions row, not its last wrapped button. */
+.article-more { position: static; }
 .article-more-panel {
   position: absolute;
   top: calc(100% + 6px);
