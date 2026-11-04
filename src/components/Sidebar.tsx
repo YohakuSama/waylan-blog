@@ -236,7 +236,9 @@ export function SiteLinksBlock({ current, linkHeading = true }: { current?: stri
                   {l.label}
                   <small>{l.hint}</small>
                 </span>
-                <ArrowRight className="sidebar-row-arrow" size={16} aria-hidden="true" />
+                <span className="sidebar-row-end" aria-hidden="true">
+                  <ArrowRight size={16} />
+                </span>
               </Link>
             </li>
           ))}
