@@ -142,6 +142,28 @@ async function publicBrowsers() {
               await label.click();
               await page.waitForURL(/\/feed\?tag=/, { timeout: 15000 });
             }
+            if (width === 390 && motion === "reduced") {
+              stage = "about navigation and scroll restoration";
+              await page.locator('#site-nav a[href="/about"]').click();
+              await page.waitForURL(/\/about$/, { timeout: 15000 });
+              assert.equal(await page.locator(".about-details > div > h2").count(), 3,
+                name + ": about independent sections have incorrect heading levels");
+              assert.equal(await page.locator(".about-layout .site-sidebar").isVisible(), false,
+                name + ": about appended a redundant small-screen rail");
+              const social = page.locator(".about-text .social-links a").first();
+              assert.equal(await social.getAttribute("target"), "_blank");
+              assert.match(await social.getAttribute("rel") || "", /noopener/);
+              const cta = page.locator('.about-text > .primary-button[href="/feed"]');
+              await cta.scrollIntoViewIfNeeded();
+              const before = await page.evaluate(() => window.scrollY);
+              assert.ok(before > 100, name + ": about page did not scroll");
+              await cta.click();
+              await page.waitForURL(/\/feed$/, { timeout: 15000 });
+              await page.evaluate(() => history.back());
+              await page.waitForURL(/\/about$/, { timeout: 15000 });
+              await page.waitForFunction((position) =>
+                Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }

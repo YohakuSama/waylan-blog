@@ -1211,6 +1211,50 @@ describe("React navigation and reading interactions (DOM integration, not browse
       if (at !== -1) posts.splice(at, 1);
     }
   });
+  it("keeps about sections, stats, navigation and social destinations semantically accurate", async () => {
+    await mount("/about");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "关于");
+    assert.ok(document.querySelector(".about-layout .about-prose h2"));
+    assert.deepEqual(
+      [...document.querySelectorAll(".about-details > div > h2")].map((h) => h.textContent?.trim()),
+      ["写作主题", "技术实现", "隐私与数据"],
+    );
+    assert.equal(document.querySelectorAll(".about-details > div > h3").length, 0);
+    assert.ok(document.querySelectorAll(".about-details > div > ul > li").length > 0);
+    const stats = document.querySelector(".about-layout .site-stats");
+    assert.ok(stats);
+    assert.match(stats.querySelector("div:first-child dd")?.textContent || "", /^\d+条$/);
+    const heading = [...document.querySelectorAll(".about-layout .side-block .side-title")]
+      .find((el) => el.textContent?.trim() === "站点数据");
+    assert.ok(heading);
+    assert.equal(heading.querySelector("a"), null, "stats should not imply that archive is a data dashboard");
+    assert.ok(heading.querySelector(".side-heading-static"));
+    const github = document.querySelector<HTMLAnchorElement>('.about-text .social-links a');
+    assert.ok(github);
+    assert.equal(github.getAttribute("href"), "https://github.com/YohakuSama");
+    assert.equal(github.textContent?.trim(), "GitHub");
+    assert.equal(github.target, "_blank");
+    for (const flag of ["noopener", "noreferrer"])
+      assert.ok(github.rel.split(/\s+/).includes(flag), "missing external-link protection: " + flag);
+    assert.equal(document.querySelector(".about-text > .primary-button")?.textContent?.trim(), "浏览全部内容");
+    assert.equal(document.querySelector(".about-text > .primary-button")?.getAttribute("href"), "/feed");
+    assert.equal(document.querySelector("#site-nav .selected .nav-label")?.textContent, "关于");
+  });
+  it("returns to the about reading position after opening the complete feed", async () => {
+    await mount("/about");
+    y = 960;
+    await click(document.querySelector(".about-text > .primary-button"));
+    assert.equal(location.pathname, "/feed");
+    assert.equal(y, 0);
+    await act(async () => {
+      dom.window.history.back();
+      await pause(85);
+    });
+    await settle(90);
+    assert.equal(location.pathname, "/about");
+    assert.ok(document.querySelector(".about-prose"));
+    assert.equal(y, 960, "browser back should restore about reading position");
+  });
   it("allows full motion to be selected when the system preference reduces it", async () => {
     await mount();
     await click(document.querySelector(".settings-button"));
