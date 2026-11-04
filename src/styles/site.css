@@ -1977,8 +1977,8 @@ h3 {
   .feed-controls .mobile-type-select { display: inline-flex; }
 }
 
-/* Very narrow phones need a dedicated subtitle row rather than hiding it. */
-@media (max-width: 380px) {
+/* Compact phones need a dedicated subtitle row rather than hiding it. */
+@media (max-width: 540px) {
   :root { --header-height: 130px; }
   .header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
