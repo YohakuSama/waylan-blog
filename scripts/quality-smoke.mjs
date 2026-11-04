@@ -120,7 +120,7 @@ async function publicBrowsers() {
               assert.ok(before > 50, name + ": archive fixture did not scroll");
               await row.click();
               await page.waitForURL(/\/post\/[^/?#]+$/, { timeout: 15000 });
-              await page.locator(".reader-topbar > .text-button").click();
+              await page.locator(".reader-back-link").click();
               await page.waitForURL(/\/archive$/, { timeout: 15000 });
               await page.waitForFunction((position) =>
                 Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
@@ -141,7 +141,7 @@ async function publicBrowsers() {
                 const before = await page.evaluate(() => window.scrollY);
                 await link.click();
                 await page.waitForURL(new RegExp("/post/" + slug + "$"), { timeout: 15000 });
-                await page.locator(".reader-topbar > .text-button").click();
+                await page.locator(".reader-back-link").click();
                 await page.waitForURL(/\/projects$/, { timeout: 15000 });
                 await page.waitForFunction((y) =>
                   Math.abs(window.scrollY - y) <= 24, before, { timeout: 10000 });
