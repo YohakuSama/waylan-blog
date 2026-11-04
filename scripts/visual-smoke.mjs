@@ -37,6 +37,7 @@ function sameBox(actual, expected, label) {
       `${label}: ${key} moved from ${expected[key]} to ${actual[key]}`);
 }
 const results = [], notificationResults = [], baselines = new Map();
+const mastheadBaselines = new Map();
 let browser;
 try {
   await waitForServer();
@@ -258,9 +259,28 @@ try {
               `${label}: the motto must not turn into repeated site chrome`);
           }
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
+          const mastheadKey = `${width}:${variant.skin}:${variant.theme}`;
+          if (route === "/") mastheadBaselines.set(mastheadKey, geometry);
           if (isImmersive) {
-            assert.ok(geometry.header && Math.abs(geometry.header.height-56)<=2,
-              `${label}: Waylan masthead should remain a slim 56px row`);
+            const home = mastheadBaselines.get(mastheadKey);
+            assert.ok(home, `${label}: home masthead baseline missing`);
+            const expectedHeight = width <= 860 ? 60 : 68;
+            assert.ok(geometry.header && Math.abs(geometry.header.height-expectedHeight)<=1,
+              `${label}: article masthead must match the ${expectedHeight}px home first row`);
+            assert.ok(Math.abs(geometry.brandWordmark.height - home.brandWordmark.height) <= 1 &&
+              Math.abs(geometry.brandWordmark.top - home.brandWordmark.top) <= 1,
+              `${label}: home and reader must render the same logo size and vertical position`);
+            for (let i = 0; i < 4; i++) {
+              const actual = geometry.controls[i], original = home.controls[i];
+              assert.ok(actual && original &&
+                Math.abs(actual.height - original.height) <= 1 &&
+                Math.abs(actual.width - (i === 0 && width >= 480 && width <= 860
+                  ? 44 : original.width)) <= 1 &&
+                Math.abs(actual.top - original.top) <= 1,
+                `${label}: global action ${i} differs from the home masthead`);
+              if (width < 480) assert.ok(Math.abs(actual.left - original.left) <= 1,
+                `${label}: compact phone action ${i} shifts between home and reader`);
+            }
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
             assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
@@ -281,15 +301,14 @@ try {
           } else {
             if (width > 860) {
               assert.ok(geometry.brand.right <= geometry.nav.left + 1, `${label}: brand overlaps navigation`);
-            } else if (width > 370) {
-              assert.ok(geometry.brand.right <= geometry.tools.left + 1, `${label}: brand overlaps header actions`);
             } else {
-              assert.ok(geometry.brand.bottom <= geometry.tools.top + 2, `${label}: narrow-phone action row overlaps branding`);
+              assert.ok(geometry.brand.right <= geometry.tools.left + 1,
+                `${label}: logo and controls must share one non-overlapping phone row`);
             }
             assert.ok(geometry.brandWordmark && geometry.brandWordmark.height >= 20,
               `${label}: the standalone brand must remain legible`);
             assert.equal(geometry.mobileTagline, null, `${label}: no detached mobile subtitle`);
-            if ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279) || width <= 370) {
+            if ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) {
               assert.ok(geometry.searchLabel?.width >= 18,
                 `${label}: expand genuine search into available header space`);
             }
