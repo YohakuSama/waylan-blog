@@ -464,10 +464,22 @@ export default function Reader({ post }: { post: Post }) {
       travel = 0;
       setReadingToolsHidden(false);
     };
+    // Desktop-style wheels, trackpads and tablet pointer accessories can
+    // signal an upward reading gesture even before a scroll frame is delivered
+    // (for instance near a scroll boundary). Restore the tools immediately.
+    const onWheel = (event: WheelEvent) => {
+      if (event.deltaY < -20) {
+        travel = 0;
+        direction = -1;
+        setReadingToolsHidden(false);
+      }
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
     mobile.addEventListener("change", onMedia);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
       mobile.removeEventListener("change", onMedia);
     };
   }, [panel, tocOpen]);
