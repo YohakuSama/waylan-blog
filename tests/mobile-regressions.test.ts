@@ -46,6 +46,8 @@ describe("mobile reader regression contracts", () => {
     assert.ok(style.includes('width: min(640px, calc(100dvw - 48px))'),
       "tablet dialog must not stretch across the screen");
     assert.ok(style.includes("max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 24px))"));
+    assert.ok(style.includes("@media (max-width: 1024px), (pointer: coarse) {"),
+      "iPad Pro landscape and other large touch tablets must use the centered thread layout");
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
