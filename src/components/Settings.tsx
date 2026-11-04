@@ -15,13 +15,7 @@ import {
   type Skin,
   type ThemePreference,
 } from "../lib/appearance";
-import {
-  applyMotionPreference,
-  motionLevel,
-  motionPreference,
-  setMotionPreference,
-  type MotionPreference,
-} from "../lib/motion";
+import { applyMotionPreference } from "../lib/motion";
 const readerFontSizes = [16, 18, 20];
 const defaultReaderFontSize = 18;
 const skins: { value: Skin; title: string; description: string }[] = [
@@ -41,27 +35,6 @@ const themes: { value: ThemePreference; title: string; icon: typeof Sun }[] = [
   { value: "dark", title: "深色", icon: Moon },
   { value: "system", title: "跟随系统", icon: Monitor },
 ];
-const motions: {
-  value: MotionPreference;
-  title: string;
-  description: string;
-}[] = [
-  {
-    value: "system",
-    title: "跟随系统",
-    description: "遵循系统的“减少动态效果”设置。",
-  },
-  {
-    value: "full",
-    title: "完整动效",
-    description: "页面转场与列表过渡全部开启。",
-  },
-  {
-    value: "reduced",
-    title: "减少动效",
-    description: "页面直接切换，功能不受影响。",
-  },
-];
 type HighlightSummary = { id: string; slug: string; title: string; count: number };
 function savedHighlights(): HighlightSummary[] {
   return posts.flatMap((p) => {
@@ -77,20 +50,18 @@ export function Settings() {
     [skin, setSkinState] = useState<Skin>("editorial"),
     [theme, setTheme] = useState<ThemePreference>("system"),
     [fontSize, setFontSize] = useState(defaultReaderFontSize),
-    [motion, setMotion] = useState<MotionPreference>("system"),
-    [level, setLevel] = useState("shared"),
     [highlights, setHighlights] = useState<HighlightSummary[]>([]);
   useEffect(() => {
     const sync = () => {
       const s = skinPreference(),
-        t = themePreference(),
-        m = motionPreference();
+        t = themePreference();
       applyAppearance(s, t);
-      applyMotionPreference(m);
+      // There is no manual animation preset anymore. Honor the OS preference;
+      // a previously saved "full" or "reduced" must not silently override it.
+      storage.remove("motion");
+      applyMotionPreference("system");
       setSkinState(s);
       setTheme(t);
-      setMotion(m);
-      setLevel(motionLevel());
       const savedSize = storage.get<number>("font-size", defaultReaderFontSize);
       setFontSize(readerFontSizes.includes(savedSize) ? savedSize : defaultReaderFontSize);
     };
@@ -98,7 +69,7 @@ export function Settings() {
     const dark = matchMedia("(prefers-color-scheme: dark)"),
       reduce = matchMedia("(prefers-reduced-motion: reduce)");
     const changedInAnotherTab = (event: StorageEvent) => {
-      if (event.key === null || ["echo:skin", "echo:theme", "echo:motion", "echo:font-size"].includes(event.key))
+      if (event.key === null || ["echo:skin", "echo:theme", "echo:font-size"].includes(event.key))
         sync();
     };
     dark.addEventListener?.("change", sync);
@@ -218,45 +189,6 @@ export function Settings() {
               ))}
             </div>
             <p className="settings-muted">仅调整文章正文，选中的大小会在本设备保存。</p>
-          </fieldset>
-          <fieldset className="settings-group">
-            <legend>动效</legend>
-            <div className="motion-choices">
-              {motions.map((m) => (
-                <label
-                  key={m.value}
-                  className={
-                    motion === m.value
-                      ? "motion-choice selected"
-                      : "motion-choice"
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="motion-preference"
-                    value={m.value}
-                    checked={motion === m.value}
-                    onChange={() => {
-                      setMotionPreference(m.value);
-                      setMotion(m.value);
-                      setLevel(motionLevel());
-                    }}
-                  />
-                  <span>
-                    <strong>{m.title}</strong>
-                    <small>{m.description}</small>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="settings-status" role="status">
-              当前生效：
-              {level === "off"
-                ? "减少动效"
-                : level === "simple"
-                  ? "轻量过渡"
-                  : "完整过渡"}
-            </p>
           </fieldset>
           <section className="settings-group settings-highlights" aria-label="管理私人划线">
             <div className="settings-highlight-head">
