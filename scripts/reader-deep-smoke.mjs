@@ -174,7 +174,7 @@ async function run(engine,name,width){
           // Regression: a light surface behind a light primary-button label
           // made the mobile "发表评论" action effectively invisible.
           const style = getComputedStyle(action);
-          const rgb = value => (value.match(/[\\d.]+/g) || []).slice(0,3).map(Number);
+          const rgb = value => (value.match(/[0-9.]+/g) || []).slice(0,3).map(Number);
           const luminance = value => rgb(value).reduce((sum, channel, index) => {
             const normalized = channel / 255;
             const linear = normalized <= 0.04045 ? normalized / 12.92 : Math.pow((normalized + 0.055)/1.055, 2.4);
