@@ -227,7 +227,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(location.pathname.startsWith("/post/"));
     assert.ok(document.querySelector(".reader-prose"));
     assert.equal(y, 0);
-    await click(document.querySelector(".reader-topbar>.text-button"));
+    await click(document.querySelector(".reader-back"));
     await settle(50);
     assert.equal(location.pathname, "/feed");
     assert.equal(location.search, "?topic=notes");
@@ -248,7 +248,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(lastEntry);
     await click(lastEntry);
     assert.ok(location.pathname.startsWith("/post/"));
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back"));
     await settle(140);
     assert.equal(location.pathname, "/feed");
     assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length,
@@ -256,7 +256,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(y, 1250);
     assert.equal(document.querySelector(".feed-layout button.load-more"), null,
       "the already loaded records must not require a second click");
-    assert.match(document.querySelector(".reader-topbar")?.textContent || "", /^$/, "reader must be unmounted");
+    assert.match(document.querySelector(".reader-back")?.textContent || "", /^$/, "reader must be unmounted");
   });
   it("returns to the homepage that opened a post instead of the last feed", async () => {
     await mount("/");
@@ -268,7 +268,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       '.article-neighbors a[href^="/post/"]',
     );
     if (neighbor) await click(neighbor);
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back"));
     await settle(100);
     assert.equal(location.pathname, "/", "return must honor the actual starting page");
   });
@@ -286,7 +286,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(neighbor);
     assert.ok(location.pathname.startsWith("/post/"));
     assert.notEqual(location.pathname, firstPath);
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back"));
     await settle(100);
     assert.equal(location.pathname, "/feed",
       "the Return to list control must skip already-read neighboring articles");
@@ -319,7 +319,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     await click(document.querySelector(".post-card-link"));
     assert.ok(document.querySelector(".reader-prose"));
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back"));
     await settle(45);
     assert.equal(location.pathname, "/feed");
     assert.equal(nativeCalls, 0);
@@ -414,7 +414,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(item);
     assert.ok(location.pathname.startsWith("/post/"));
     assert.equal(y, 0, "the reader should start at its own page top");
-    await click(document.querySelector(".reader-topbar > .text-button"));
+    await click(document.querySelector(".reader-back"));
     await settle(90);
     assert.equal(location.pathname, "/archive");
     assert.equal(y, 680, "archive should restore the original list position");
@@ -436,21 +436,37 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount();
     assert.equal(document.querySelectorAll("#site-nav a").length, 5);
     assert.equal(document.querySelectorAll(".mobile-menu").length, 0);
-    assert.ok(document.querySelector('.header-tools[aria-label="阅读工具"]'));
+    assert.ok(document.querySelector('.header-tools[aria-label="全站工具"]'));
     await click(document.querySelector('#site-nav a[href="/projects"]'));
     assert.equal(document.querySelector('#site-nav [aria-current="page"]')?.textContent?.includes("项目"), true);
     assert.equal(document.querySelector('#site-nav a[href="/feed"]')?.getAttribute("aria-current"), null);
   });
+  it("separates the reading list from saving the current article", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const save=document.querySelector<HTMLButtonElement>(".article-actions .article-action-save")!;
+    assert.ok(save);
+    assert.match(save.textContent || "", /收藏本文|已收藏/);
+    assert.equal(document.querySelectorAll(".article-actions .bookmark-button").length,1);
+    const menu=document.querySelector<HTMLButtonElement>(".reader-global-menu-trigger")!;
+    assert.ok(menu, "site menu should be separate from article actions");
+    assert.equal(menu.getAttribute("aria-expanded"),"false");
+    await click(menu);
+    assert.equal(menu.getAttribute("aria-expanded"),"true");
+    assert.ok(document.querySelector(".reader-global-menu.is-open .shelf-trigger"),
+      "reading-list entry must be in the labeled site menu");
+    await click(menu);
+    assert.equal(menu.getAttribute("aria-expanded"),"false");
+  });
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
     const toggle = document.querySelector<HTMLButtonElement>(
-      '.excerpt-toggle[aria-label="开启摘录段落模式"]',
+      '.article-actions .article-action[aria-label^="开启摘录段落模式"]',
     )!;
     assert.ok(toggle);
     await click(toggle);
-    assert.equal(document.querySelector(".excerpt-toggle")?.getAttribute("aria-pressed"), "true",
+    assert.equal(document.querySelector(".article-actions .article-action[aria-pressed]")?.getAttribute("aria-pressed"), "true",
       "the excerpt toggle must stay visible and indicate its active mode");
-    assert.match(document.querySelector(".reader-topbar [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
+    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
     assert.equal(window.getSelection()?.toString(), "");
     const paragraph = document.querySelector<HTMLElement>(
       '.reader-prose .article-block[data-type="paragraph"]',
@@ -462,12 +478,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"));
     assert.ok(document.querySelector(".selection-toolbar-context"));
     assert.ok(document.querySelector(".selection-toolbar-actions"));
-    assert.ok(document.querySelector(".reader-topbar .excerpt-toggle[aria-pressed=\"true\"]"));
+    assert.ok(document.querySelector(".article-actions .article-action[aria-pressed=\"true\"]"));
     await click(document.querySelector<HTMLButtonElement>(
       '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
     ));
     assert.equal(document.querySelector(".selection-toolbar"), null);
-    assert.match(document.querySelector(".reader-topbar [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
+    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
     await click(paragraph);
     const mark = [...document.querySelectorAll(".selection-toolbar-actions button")]
       .find((b) => b.textContent === "划线")!;
@@ -476,7 +492,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("keeps a visible excerpt selected on scroll and allows retapping an already marked passage", async () => {
     await mount("/post/a-room-on-the-internet");
-    await click(document.querySelector<HTMLButtonElement>(".excerpt-toggle"));
+    await click(document.querySelector<HTMLButtonElement>(".article-actions .article-action[aria-pressed]"));
     const paragraph = document.querySelector<HTMLElement>(
       '.reader-prose .article-block[data-type="paragraph"]',
     )!;
@@ -663,7 +679,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("does not reselect the tapped paragraph while dismissing an excerpt-mode toolbar", async () => {
     await mount("/post/a-room-on-the-internet");
-    await click(document.querySelector(".excerpt-toggle"));
+    await click(document.querySelector(".article-actions .article-action[aria-pressed]"));
     const paragraph = document.querySelector(".reader-prose .article-block[data-type='paragraph']")!;
     await click(paragraph);
     assert.ok(document.querySelector(".selection-toolbar"));
@@ -1152,7 +1168,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("focuses the touch reading directory and restores its trigger on dismissal", async () => {
     await mount("/post/a-room-on-the-internet");
-    const trigger = document.querySelector<HTMLButtonElement>('.mobile-toc')!;
+    const trigger = document.querySelector<HTMLButtonElement>('.article-action-toc')!;
     await click(trigger);
     assert.equal(trigger.getAttribute("aria-expanded"), "true");
     assert.equal(document.activeElement, document.querySelector('.reader-toc nav a'));
@@ -1263,7 +1279,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       await click(card.querySelector(".post-card-link"));
       assert.equal(location.pathname, `/post/${project.slug}`);
       assert.equal(y, 0);
-      await click(document.querySelector(".reader-topbar > .text-button"));
+      await click(document.querySelector(".reader-back"));
       await settle(90);
       assert.equal(location.pathname, "/projects");
       assert.equal(y, 640, "return to projects must restore the original scroll");

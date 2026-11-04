@@ -2076,17 +2076,21 @@ h3 {
     right: 0;
     height: 2px;
   }
-  /* Beat the later global skin's dashed/pulsing progress treatment only on
-     immersive readers: a quiet solid hairline stays attached to the logo. */
+  /* Restore Waylan's signature dashed reading path and amber endpoint.
+     Only its position and pulsing motion differ on compact readers. */
   .site-header-reader + .site-body .reading-progress > span {
-    background: var(--brand);
+    background: repeating-linear-gradient(90deg, var(--brand) 0 14px, transparent 14px 18px);
+  }
+  :root[data-skin="terminal"] .site-header-reader + .site-body .reading-progress > span {
+    background: repeating-linear-gradient(90deg, var(--brand) 0 11px, transparent 11px 15px);
   }
   .site-header-reader + .site-body .reading-progress > span::after {
-    width: 4px;
-    height: 4px;
-    top: -1px;
-    right: -2px;
-    box-shadow: none;
+    width: 7px;
+    height: 7px;
+    top: -2px;
+    right: -3px;
+    background: var(--amber);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent);
     animation: none;
   }
   .site-header-reader .brand {
@@ -2134,4 +2138,70 @@ h3 {
   }
   .site-header-reader .brand { grid-row: 1; grid-column: 1; }
   .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
+}
+
+/* Article-only global menu. Browsing routes keep all four header shortcuts.
+   The drawer distinguishes the reading list from "收藏本文" inside each post. */
+.reader-global-menu-trigger { display: none; }
+.reader-global-menu { display: contents; }
+@media (max-width: 1024px) {
+  .site-header-reader .header-tools { gap: 0; }
+  .site-header-reader .reader-global-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--ink-soft);
+  }
+  .site-header-reader .reader-global-menu-trigger[aria-expanded="true"],
+  .site-header-reader .reader-global-menu-trigger:focus-visible {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+  .site-header-reader .reader-global-menu {
+    position: absolute;
+    right: var(--page-gutter);
+    top: calc(100% + 6px);
+    z-index: 95;
+    display: none;
+    width: min(216px, calc(100vw - 36px));
+    padding: 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .site-header-reader .reader-global-menu.is-open { display: grid; gap: 3px; }
+  .site-header-reader .reader-global-menu .notification-root { width: 100%; }
+  .site-header-reader .reader-global-menu .shelf-trigger,
+  .site-header-reader .reader-global-menu .notification-trigger,
+  .site-header-reader .reader-global-menu .settings-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 13px;
+    width: 100%;
+    min-width: 100%;
+    min-height: 46px;
+    height: 46px;
+    padding: 0 13px;
+    border-radius: var(--radius-md);
+    color: var(--ink-soft);
+    text-align: left;
+    font-size: 13px;
+  }
+  .site-header-reader .reader-global-menu .shelf-trigger::after { content: "阅读清单"; }
+  .site-header-reader .reader-global-menu .notification-trigger::after { content: "消息通知"; }
+  .site-header-reader .reader-global-menu .settings-button::after { content: "界面设置"; }
+  .site-header-reader .reader-global-menu .shelf-count { right: 8px; }
+  .site-header-reader .reader-global-menu .icon-button:hover,
+  .site-header-reader .reader-global-menu .icon-button:focus-visible {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
 }

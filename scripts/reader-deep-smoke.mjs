@@ -79,7 +79,7 @@ async function run(engine,name,width){
       await page.waitForURL(url=>url.pathname===secondHref,{timeout:12000});
       await page.locator(".reader-prose").waitFor();
       const historyBefore=await page.evaluate(()=>history.length);
-      await page.locator(".reader-topbar > button").first().click();
+      await page.locator(".reader-back").first().click();
       await page.waitForTimeout(400);
       const returned=new URL(page.url()).pathname;
       const canonical=returned.replace(/\/$/,"");
@@ -114,63 +114,66 @@ async function run(engine,name,width){
       await page.locator('.reader-prose [data-block-id="h-hydration"]').waitFor();
       await page.evaluate(()=>document.fonts.ready);
       const isReaderHeaderShown=await page.locator(".site-header").isVisible();
+      assert.equal(isReaderHeaderShown,true,"Waylan brand masthead must remain visible on every device");
+      assert.equal(await page.locator(".article-actions").isVisible(),true,
+        "full article actions belong below the byline, not a fixed top row");
+      assert.equal(await page.locator(".article-actions .article-action-save").count(),1,
+        "there should be exactly one labeled save-current-post action");
+      assert.equal(await page.locator(".reader-topbar").count(),0,
+        "remove the redundant sticky reading toolbar");
+      const actionsLayout=await page.locator(".article-actions").evaluate(el=>({
+        position:getComputedStyle(el).position,buttons:el.querySelectorAll("button").length,
+        text:el.textContent?.trim().slice(0,100)
+      }));
+      assert.notEqual(actionsLayout.position,"sticky","inline actions must scroll with the article");
       if(width<=1024) {
-        assert.equal(isReaderHeaderShown,true,"phone/tablet readers must preserve the Waylan logo masthead");
         assert.equal(await page.locator(".site-header-reader .brand-wordmark").isVisible(),true,
-          "editorial Waylan logo was lost in immersive reading");
+          "Waylan wordmark disappeared during reading");
         assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),false,
-          "mobile article must not duplicate the full destination row");
-        const compact=await page.evaluate(()=>{
-          const bar=document.querySelector(".reader-topbar");
-          return {position:getComputedStyle(bar).position,top:getComputedStyle(bar).top,
-            controls:bar.querySelectorAll(".reader-controls button").length,
-            height:bar.getBoundingClientRect().height};
+          "article must not duplicate destination navigation");
+        await page.locator(".reader-global-menu-trigger").click();
+        await page.locator(".reader-global-menu.is-open").waitFor({state:"visible"});
+        assert.equal(await page.locator(".reader-global-menu .shelf-trigger").count(),1,
+          "reading list should only live in the labeled global menu");
+        await page.locator(".reader-global-menu-trigger").click();
+        await page.locator(".reader-global-menu.is-open").waitFor({state:"hidden"});
+        // The compact affordance appears only after inline actions leave view.
+        await page.evaluate(()=>{
+          const inline=document.querySelector(".article-actions").getBoundingClientRect();
+          window.scrollBy(0,Math.max(550,inline.bottom+220));
         });
-        assert.equal(compact.position,"sticky");
-        assert.equal(compact.top,"56px");
-        assert.ok(compact.height<=60,"reader row is taller than 60px: "+JSON.stringify(compact));
-        // Start at the top and use user-like wheel scrolling; a single
-        // programmatic scrollTo can be a no-op when history restores position.
-        await page.evaluate(()=>window.scrollTo(0,0));
-        await page.waitForFunction(()=>window.scrollY<10);
-        await page.mouse.move(100,420);
-        await page.mouse.wheel(0,320);
-        await page.mouse.wheel(0,320);
-        try {
-          await page.waitForFunction(()=>document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
-        } catch {
-          const state=await page.evaluate(()=>({y:window.scrollY,match:matchMedia("(max-width: 1024px)").matches,
-            hidden:document.querySelector(".reader-topbar")?.className,
-            selection:window.getSelection()?.toString()?.slice(0,20),
-            dialog:!!document.querySelector("dialog[open]"),
-            mainHeight:document.documentElement.scrollHeight}));
-          throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
-        }
-        // The animated row must disappear BEHIND the pinned masthead, not
-        // float away and leave a disconnected progress stripe.
-        await page.waitForTimeout(280);
-        const tucked=await page.evaluate(()=>{
-          const logo=document.querySelector(".site-header-reader").getBoundingClientRect();
-          const tools=document.querySelector(".reader-topbar").getBoundingClientRect();
-          const progress=document.querySelector(".reading-progress").getBoundingClientRect();
-          return {logoTop:logo.top,logoBottom:logo.bottom,toolsBottom:tools.bottom,progressTop:progress.top};
+        const floating=page.locator(".reader-floating-trigger");
+        await floating.waitFor({state:"visible",timeout:7000});
+        const floatGeometry=await floating.evaluate(el=>{
+          const rect=el.getBoundingClientRect(),visible=window.visualViewport;
+          return {width:rect.width,height:rect.height,bottom:rect.bottom,
+            viewportBottom:visible.offsetTop+visible.height};
         });
-        assert.ok(Math.abs(tucked.logoTop)<=2,"logo masthead must remain pinned: "+JSON.stringify(tucked));
-        assert.ok(tucked.toolsBottom<=tucked.logoBottom+3,
-          "reader tool row must slide under the logo, not linger over text: "+JSON.stringify(tucked));
-        assert.ok(Math.abs(tucked.progressTop-(tucked.logoBottom-2))<=3,
-          "reading progress should be attached to the masthead border: "+JSON.stringify(tucked));
-        // Upward content movement must reveal the row. WebKit's synthetic
-        // desktop mouse wheel can be swallowed under a touch emulation, so
-        // drive the actual document scroll position for this direction.
-        await page.evaluate(()=>window.scrollBy(0,-130));
-        await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
+        assert.ok(floatGeometry.width>=44&&floatGeometry.height>=44,
+          "floating reader handle must be finger-sized: "+JSON.stringify(floatGeometry));
+        assert.ok(floatGeometry.bottom<=floatGeometry.viewportBottom-25,
+          "floating handle is hidden behind Safari chrome: "+JSON.stringify(floatGeometry));
+        await floating.click();
+        await page.locator(".reader-floating-panel").waitFor({state:"visible"});
+        const beforeSize=await page.locator(".article-actions button[aria-label^='正文字号']").getAttribute("aria-label");
+        await page.locator(".reader-floating-panel button[aria-label^='正文字号']").click();
+        const afterSize=await page.locator(".article-actions button[aria-label^='正文字号']").getAttribute("aria-label");
+        assert.notEqual(beforeSize,afterSize,"floating font action must change the same article font state");
+        await page.keyboard.press("Escape");
+        await page.locator(".reader-floating-panel").waitFor({state:"hidden"});
         await page.evaluate(()=>window.scrollTo(0,0));
-        observations.push({browser:name,width,scenario:"Waylan masthead remains while tools slide behind it and return on upward scroll",compact});
+        observations.push({browser:name,width,scenario:"inline actions, labeled site menu and Safari-safe floating tools",actionsLayout,floatGeometry});
       } else {
-        assert.ok(isReaderHeaderShown,"desktop keeps its browsing header");
+        assert.ok(isReaderHeaderShown,"desktop keeps its full browsing header");
+        await page.evaluate(()=>{
+          const inline=document.querySelector(".article-actions").getBoundingClientRect();
+          window.scrollBy(0,Math.max(550,inline.bottom+250));
+        });
+        await page.locator(".reader-floating-trigger").waitFor({state:"visible",timeout:7000});
+        await page.evaluate(()=>window.scrollTo(0,0));
+        observations.push({browser:name,width,scenario:"desktop inline actions and contextual side control",actionsLayout});
       }
-      if(width<=1040) await page.locator(".mobile-toc").click();
+      if(width<=1040) await page.locator(".article-action-toc").click();
       await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
       await page.waitForTimeout(120);
       const tocPosition=await page.evaluate(()=>{
@@ -198,7 +201,7 @@ async function run(engine,name,width){
         await page.locator(".selection-toolbar").waitFor({state:"visible"});
         // Real WebKit tap on unused article space must dismiss the blog tray.
         // Native selection handles are separate OS gestures, not document taps.
-        await page.locator(".article-heading").click({position:{x:8,y:8}});
+        await page.locator(".article-heading h1").click({position:{x:8,y:8}});
         await page.locator(".selection-toolbar").waitFor({state:"hidden"});
         observations.push({browser:name,width,scenario:"tap empty article space dismisses excerpt toolbar",ok:true});
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();

@@ -245,7 +245,7 @@ try {
     doc.querySelector(".toast")!.textContent!.includes("本次阅读"),
     "Opaque-origin storage must not claim permanent saving",
   );
-  await click(dom, doc.querySelector(".reader-topbar>.text-button"));
+  await click(dom, doc.querySelector(".reader-back"));
   await until(
     () => dom.window.location.hash.startsWith("#/feed?"),
     "history back to filtered feed",

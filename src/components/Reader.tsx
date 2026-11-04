@@ -20,6 +20,7 @@ import {
   Maximize2,
   Minimize2,
   MessageSquare,
+  SlidersHorizontal,
   Plus,
   Send,
   Share2,
@@ -343,6 +344,9 @@ export default function Reader({ post }: { post: Post }) {
     article = useRef<HTMLElement>(null),
     toc = useRef<HTMLElement>(null),
     tocButton = useRef<HTMLButtonElement>(null),
+    articleActions = useRef<HTMLDivElement>(null),
+    floatingTools = useRef<HTMLDivElement>(null),
+    floatingButton = useRef<HTMLButtonElement>(null),
     composerArea = useRef<HTMLTextAreaElement>(null),
     composerGeometry = useRef<{ from: DOMRect; radius: string } | null>(null),
     composerResizeAnimation = useRef<Animation | null>(null);
@@ -350,7 +354,9 @@ export default function Reader({ post }: { post: Post }) {
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
     [tocOpen, setTocOpen] = useState(false),
-    [readingToolsHidden, setReadingToolsHidden] = useState(false);
+    [floatingVisible, setFloatingVisible] = useState(false),
+    [floatingTucked, setFloatingTucked] = useState(false),
+    [floatingOpen, setFloatingOpen] = useState(false);
   useEffect(() => {
     if (!tocOpen) return;
     (toc.current?.querySelector<HTMLElement>("nav a") ||
@@ -428,64 +434,108 @@ export default function Reader({ post }: { post: Post }) {
     window.addEventListener("waylan:highlights-changed", sync);
     return () => window.removeEventListener("waylan:highlights-changed", sync);
   }, [post.id]);
-  // Phone and portrait-tablet readers use one compact tool row. Keep the
-  // reading surface clear while moving down; reveal the controls on a deliberate
-  // upward scroll, at the top, or whenever text/TOC/dialog interaction needs them.
+  // The complete actions live below the article byline. Only after that
+  // row scrolls away does the small contextual control appear. No second
+  // sticky toolbar competes with the masthead or the prose.
   useEffect(() => {
-    const mobile = window.matchMedia("(max-width: 1024px)");
-    if (!mobile.matches) return;
     let lastY = window.scrollY;
     let travel = 0;
     let direction = 0;
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      const obscured = viewport ? Math.max(
+        0, window.innerHeight - viewport.offsetTop - viewport.height,
+      ) : 0;
+      document.documentElement.style.setProperty(
+        "--waylan-reader-obscured-bottom", `${Math.ceil(obscured)}px`,
+      );
+    };
     const onScroll = () => {
       const y = Math.max(0, window.scrollY);
       const delta = y - lastY;
       lastY = y;
-      if (y < 90 || panel || tocOpen || selectionRef.current ||
-          document.querySelector("dialog[open]")) {
+      const controls = articleActions.current?.getBoundingClientRect();
+      const postEnd = article.current?.getBoundingClientRect().bottom ?? 0;
+      const editing = !!document.activeElement?.closest(
+        "input, textarea, [contenteditable='true']",
+      );
+      const shouldShow = !!controls && controls.bottom < 70 &&
+        postEnd > 180 && !panel && !tocOpen && !selectionRef.current &&
+        !document.querySelector("dialog[open]") && !editing;
+      setFloatingVisible(shouldShow);
+      if (!shouldShow) {
+        setFloatingOpen(false);
+        setFloatingTucked(false);
         travel = 0;
-        setReadingToolsHidden(false);
         return;
       }
       if (Math.abs(delta) < 2) return;
       const nextDirection = Math.sign(delta);
       travel = nextDirection === direction ? travel + Math.abs(delta) : Math.abs(delta);
       direction = nextDirection;
-      if (nextDirection > 0 && y > 150 && travel > 48) {
-        setReadingToolsHidden(true);
+      if (nextDirection > 0 && travel > 54) {
+        setFloatingTucked(true);
+        setFloatingOpen(false);
         travel = 0;
-      } else if (nextDirection < 0 && travel > 22) {
-        setReadingToolsHidden(false);
+      } else if (nextDirection < 0 && travel > 24) {
+        setFloatingTucked(false);
         travel = 0;
       }
     };
-    const onMedia = () => {
-      lastY = window.scrollY;
-      travel = 0;
-      setReadingToolsHidden(false);
-    };
-    // Desktop-style wheels, trackpads and tablet pointer accessories can
-    // signal an upward reading gesture even before a scroll frame is delivered
-    // (for instance near a scroll boundary). Restore the tools immediately.
     const onWheel = (event: WheelEvent) => {
-      if (event.deltaY < -20) {
-        travel = 0;
-        direction = -1;
-        setReadingToolsHidden(false);
-      }
+      if (event.deltaY < -20) setFloatingTucked(false);
     };
+    updateViewport();
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("wheel", onWheel, { passive: true });
-    mobile.addEventListener("change", onMedia);
+    window.addEventListener("resize", onScroll);
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("wheel", onWheel);
-      mobile.removeEventListener("change", onMedia);
+      window.removeEventListener("resize", onScroll);
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      document.documentElement.style.removeProperty("--waylan-reader-obscured-bottom");
     };
-  }, [panel, tocOpen]);
+  }, [panel, tocOpen, post.id]);
   useEffect(() => {
-    if (panel || tocOpen || selection) setReadingToolsHidden(false);
+    if (!floatingOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (!floatingTools.current?.contains(event.target as Node)) setFloatingOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFloatingOpen(false);
+        floatingButton.current?.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [floatingOpen]);
+  useEffect(() => {
+    if (panel || tocOpen || selection) {
+      setFloatingOpen(false);
+      setFloatingVisible(false);
+    }
   }, [panel, tocOpen, selection]);
+  function cycleReaderFont() {
+    const size = FONT_SIZES[(FONT_SIZES.indexOf(fontSize) + 1) % FONT_SIZES.length];
+    setFontSize(size);
+    storage.set("font-size", size);
+  }
+  function toggleReaderExcerpt() {
+    setExcerptMode((active) => !active);
+    setSelection(null);
+    window.getSelection()?.removeAllRanges();
+    setFloatingOpen(false);
+  }
   // Snapshot before React changes the class; run geometry animation in
   // layout effect after the new bounds exist, before the first painted frame.
   function toggleComposerFullscreen(event: ReactMouseEvent<HTMLButtonElement>) {
@@ -584,7 +634,7 @@ export default function Reader({ post }: { post: Post }) {
     const id = window.requestAnimationFrame(() => composerArea.current?.focus({ preventScroll: true }));
     return () => window.cancelAnimationFrame(id);
   }, [panel, panelIds.length]);
-  // Unknown is not the same as an empty or unmapped discussion (also during SSR).
+  // Unknown comment data must not be mistaken for an empty discussion.
   const commentsUnresolved = !comments && !commentState.data;
   const state = comments || commentState.data || emptyPage;
   const visibleTopComments = state.nodes.filter(visibleComment);
@@ -1191,72 +1241,14 @@ export default function Reader({ post }: { post: Post }) {
       >
         <span style={{ width: `${progress}%` }} />
       </div>
-      <div className={`reader-topbar${readingToolsHidden ? " reader-topbar-hidden" : ""}`} onFocusCapture={() => setReadingToolsHidden(false)}>
-        <button className="text-button" aria-label="返回列表" onClick={router.backToList}>
-          <ArrowLeft size={16} />
-          返回列表
-        </button>
-        <div className="reader-controls">
-          <button
-            className="quiet-button font-button"
-            onClick={() => {
-              const size =
-                FONT_SIZES[
-                  (FONT_SIZES.indexOf(fontSize) + 1) % FONT_SIZES.length
-                ];
-              setFontSize(size);
-              storage.set("font-size", size);
-            }}
-            aria-label={`正文字号 ${fontSize}，点击切换`}
-          >
-            <Type size={17} />
-            <span>{fontSize}</span>
-          </button>
-          <BookmarkButton post={post} className="icon-button" />
-          <button
-            className="icon-button"
-            onClick={() => share()}
-            aria-label="分享文章"
-          >
-            <Share2 size={17} />
-          </button>
-          {/* Excerpt is a mode of the existing reader controls, never a spare sticky row. */}
-          {!panel && (
-            <button
-              type="button"
-              className="icon-button excerpt-toggle"
-              aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-              aria-pressed={excerptMode}
-              title={excerptMode ? "退出摘录模式" : "摘录段落"}
-              onClick={() => {
-                setExcerptMode(!excerptMode);
-                setSelection(null);
-                window.getSelection()?.removeAllRanges();
-              }}
-            >
-              <Highlighter size={18} />
-              <span className="excerpt-toggle-text">{excerptMode ? "结束摘录" : "摘录"}</span>
-            </button>
-          )}
-          <span className="sr-only" role="status">
-            {excerptMode ? "摘录模式已开启：点选正文段落可划线或评论。" : ""}
-          </span>
-          <button
-            ref={tocButton}
-            className="icon-button mobile-toc"
-            onClick={() => setTocOpen(!tocOpen)}
-            aria-label={tocOpen ? "收起文章目录" : post.toc.length ? "展开文章目录" : "查看阅读进度"}
-            aria-expanded={tocOpen}
-            aria-controls="reader-toc"
-          >
-            <List size={20} />
-          </button>
-        </div>
-      </div>
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
             <header className="article-heading">
+              <button className="reader-back text-button" type="button"
+                aria-label="返回列表" onClick={router.backToList}>
+                <ArrowLeft size={16} /> 返回列表
+              </button>
               <div className="article-eyebrow">
                 <span className={`type-label type-${post.type}`}>
                   <span className="type-mark" aria-hidden="true" />
@@ -1316,6 +1308,31 @@ export default function Reader({ post }: { post: Post }) {
                 </div>
               )}
             </header>
+            <div className="article-actions" ref={articleActions}
+              role="group" aria-label="本文操作">
+              <BookmarkButton post={post} className="article-action-save" showLabel />
+              <button className="article-action" type="button" aria-label="分享文章" onClick={() => share()}>
+                <Share2 size={17} /><span>分享</span>
+              </button>
+              <button className="article-action" type="button"
+                aria-label={`正文字号 ${fontSize}，点击切换`} onClick={cycleReaderFont}>
+                <Type size={17} /><span>字号 {fontSize}</span>
+              </button>
+              <button className={`article-action${excerptMode ? " is-active" : ""}`}
+                type="button" aria-pressed={excerptMode}
+                aria-label={excerptMode ? "退出摘录模式 · 结束划线" : "开启摘录段落模式 · 划线"}
+                onClick={toggleReaderExcerpt}>
+                <Highlighter size={17} /><span>{excerptMode ? "结束划线" : "划线"}</span>
+              </button>
+              <button className="article-action article-action-toc" type="button" ref={tocButton}
+                aria-label={tocOpen ? "收起文章目录" : post.toc.length ? "展开文章目录" : "查看阅读进度"}
+                aria-expanded={tocOpen} aria-controls="reader-toc" onClick={() => setTocOpen((value) => !value)}>
+                <List size={17} /><span>目录</span>
+              </button>
+            </div>
+            <span className="sr-only" role="status">
+              {excerptMode ? "摘录模式已开启：点选正文段落可划线或评论。" : ""}
+            </span>
             {post.cover && (
               <figure className="article-cover">
                 <div
@@ -1774,6 +1791,40 @@ export default function Reader({ post }: { post: Post }) {
             </button>
           </div>
         </aside>
+      </div>
+      <div ref={floatingTools} className={`reader-floating-tools${floatingVisible ? " is-visible" : ""}${floatingTucked ? " is-tucked" : ""}${floatingOpen ? " is-open" : ""}`}
+        aria-label="快捷阅读工具">
+        {floatingOpen && floatingVisible && (
+          <div id="reader-floating-panel" className="reader-floating-panel" role="group" aria-label="阅读操作">
+            <button type="button" onClick={cycleReaderFont}
+              aria-label={`正文字号 ${fontSize}，点击切换`}>
+              <Type size={17} /><span>字号 {fontSize}</span>
+            </button>
+            <button type="button" onClick={toggleReaderExcerpt}
+              aria-pressed={excerptMode} aria-label={excerptMode ? "退出摘录模式 · 结束划线" : "开启摘录段落模式 · 划线"}>
+              <Highlighter size={17} /><span>{excerptMode ? "结束划线" : "划线"}</span>
+            </button>
+            <button type="button" aria-label={tocOpen ? "收起文章目录" : "展开文章目录"}
+              onClick={() => { setFloatingOpen(false); setTocOpen(true); }}>
+              <List size={17} /><span>目录</span>
+            </button>
+            <button type="button" aria-label="分享文章"
+              onClick={() => { setFloatingOpen(false); void share(); }}>
+              <Share2 size={17} /><span>分享</span>
+            </button>
+          </div>
+        )}
+        {floatingVisible && (
+          <button ref={floatingButton} type="button" className="reader-floating-trigger"
+            aria-expanded={floatingOpen} aria-controls="reader-floating-panel"
+            aria-label={floatingOpen ? "收起阅读工具" : "展开阅读工具"}
+            onClick={() => {
+              setFloatingTucked(false);
+              setFloatingOpen((open) => !open);
+            }}>
+            {floatingOpen ? <X size={19} /> : <SlidersHorizontal size={19} />}
+          </button>
+        )}
       </div>
       {selection && (
         <div

@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { Post } from "../shared/types";
 import { getReader } from "./lib/reader-loader";
-import { ArrowUpRight, CornerDownLeft, Search, X } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Menu, Search, X } from "lucide-react";
 import { RouterProvider, Link, useRouter } from "./lib/router";
 import { posts, shortDate, site, stats, topicName, typeLabels, wordsLabel } from "./lib/data";
 import { BackToTop, ShelfTrigger } from "./components/Shelf";
@@ -57,8 +57,10 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   const [search, setSearch] = useState(false),
     [query, setQuery] = useState(""),
     [active, setActive] = useState(-1),
+    [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [shortcut, setShortcut] = useState("⌘K");
   const searchInput = useRef<HTMLInputElement>(null);
+  const headerToolsRef = useRef<HTMLDivElement>(null);
   const pendingSearchRoute = useRef<string | null>(null);
   useEffect(() => {
     markHydrated();
@@ -97,7 +99,28 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   useEffect(() => {
     pendingSearchRoute.current = null;
     setSearch(false);
+    setMobileMenuOpen(false);
   }, [router.path]);
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const outside = (event: PointerEvent) => {
+      // Keep the menu open when its own notification panel is being used.
+      if (!headerToolsRef.current?.contains(event.target as Node) &&
+          !document.querySelector("dialog[open]")) setMobileMenuOpen(false);
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
+        setMobileMenuOpen(false);
+        headerToolsRef.current?.querySelector<HTMLButtonElement>(".reader-global-menu-trigger")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", keydown);
+    };
+  }, [mobileMenuOpen]);
   const post = posts.find((p) => pathname === `/post/${p.slug}`);
   // Primary navigation is for destinations, not content-type filters.
   // Every type (article, note, thought, journal, project) lives in /feed.
@@ -214,7 +237,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               </Link>
             ))}
           </nav>
-          <div className="header-tools" role="group" aria-label="阅读工具">
+          <div className="header-tools" role="group" aria-label="全站工具" ref={headerToolsRef}>
             <button
               type="button"
               className="header-search"
@@ -226,9 +249,27 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <span className="header-search-text">搜索</span>
               <kbd>{shortcut}</kbd>
             </button>
-            <ShelfTrigger />
-            <NotificationBell />
-            <Settings />
+            {post && (
+              <button type="button" className="reader-global-menu-trigger icon-button"
+                aria-label="打开网站菜单" aria-expanded={mobileMenuOpen}
+                aria-controls="reader-global-menu" onClick={() => setMobileMenuOpen((open) => !open)}>
+                <Menu size={20} aria-hidden="true" />
+              </button>
+            )}
+            {post ? (
+              <div id="reader-global-menu" className={`reader-global-menu${mobileMenuOpen ? " is-open" : ""}`}
+                role="group" aria-label="网站功能">
+                <ShelfTrigger />
+                <NotificationBell />
+                <Settings />
+              </div>
+            ) : (
+              <>
+                <ShelfTrigger />
+                <NotificationBell />
+                <Settings />
+              </>
+            )}
           </div>
         </div>
       </header>
