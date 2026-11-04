@@ -1796,30 +1796,30 @@ export default function Reader({ post }: { post: Post }) {
             </div>
             <div className="toc-footer" role="group" aria-label="目录操作">
               <button type="button" className="toc-excerpt-toggle"
-              aria-pressed={excerptMode}
-              aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-              onClick={() => {
-                toggleReaderExcerpt();
-                setTocOpen(false);
-                tocButton.current?.focus({ preventScroll: true });
-              }}>
-              <Highlighter size={15} aria-hidden="true" />
-              {excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-            </button>
-            <button
-              className="text-button"
-              onClick={() => {
-                setTocOpen(false);
-                window.scrollTo({
-                  top: 0,
-                  behavior: motionAllowed() ? "smooth" : "instant",
-                });
-                tocButton.current?.focus({ preventScroll: true });
-              }}
-            >
-              回到页首
-              <ArrowUp size={14} />
-            </button>
+                aria-pressed={excerptMode}
+                aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+                onClick={() => {
+                  toggleReaderExcerpt();
+                  setTocOpen(false);
+                  tocButton.current?.focus({ preventScroll: true });
+                }}>
+                <Highlighter size={15} aria-hidden="true" />
+                {excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+              </button>
+              <button
+                className="text-button"
+                onClick={() => {
+                  setTocOpen(false);
+                  window.scrollTo({
+                    top: 0,
+                    behavior: motionAllowed() ? "smooth" : "instant",
+                  });
+                  tocButton.current?.focus({ preventScroll: true });
+                }}
+              >
+                回到页首
+                <ArrowUp size={14} />
+              </button>
             </div>
           </div>
         </aside>
