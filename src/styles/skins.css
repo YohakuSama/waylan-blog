@@ -916,10 +916,6 @@ html {
     margin-block: 4px;
     border-radius: 0;
   }
-  /* A clear gap between nav and introductory copy, also on dark iPhones. */
-  :root[data-skin="terminal"] .site-header:not(.site-header-reader) + .site-body .home-hero {
-    padding-top: 22px;
-  }
 }
 @media (max-width: 370px) {
   /* On very narrow phones the tool row sits between brand and nav. */
