@@ -429,7 +429,7 @@ export function Archive() {
       <header className="page-heading archive-heading">
         <h1>归档</h1>
         <div className="archive-summary">
-          <span>共 {entries.length} 篇记录</span>
+          <span>共 {entries.length} 条记录</span>
           <Link href="/feed">按主题浏览<ArrowUpRight size={14} aria-hidden="true" /></Link>
         </div>
       </header>
@@ -453,7 +453,10 @@ export function Archive() {
                       <li key={p.id}>
                         <Link className="archive-row" href={`/post/${p.slug}`}>
                           <time className="mono" dateTime={p.date}>{p.date.slice(8, 10)} 日</time>
-                          <span>{p.title}</span>
+                          <span className="archive-entry-title">
+                            <small className="archive-type">{typeLabels[p.type]}</small>
+                            {p.title}
+                          </span>
                           <ArrowUpRight size={15} aria-hidden="true" />
                         </Link>
                       </li>
