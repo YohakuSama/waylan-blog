@@ -135,7 +135,7 @@ async function run(engine,browser,width){
       // No duplicate sticky strip should remain; the float is contextual.
       await page.evaluate(()=>window.scrollTo(0,0));
       await page.locator(".article-actions").scrollIntoViewIfNeeded();
-      await page.getByRole("button",{name:"退出摘录模式",exact:true}).click();
+      await page.getByRole("button",{name:"退出摘录模式 · 结束划线",exact:true}).click();
       const controls=await page.evaluate(()=>{
         const toggle=document.querySelector('.article-actions .article-action[aria-pressed]');
         const articleActions=document.querySelector(".article-actions");
