@@ -186,10 +186,32 @@ describe("mobile reader regression contracts", () => {
       "desktop masthead should flex the navigation between logo and actions");
     assert.ok(site.includes('.site-header:not(.site-header-reader) .header-search-text { display: inline; }'),
       "tablet and wider phone header should use available width for a labeled search");
-    assert.ok(site.includes('grid-template-rows: var(--header-bar-height) 52px 43px;'),
-      "320px phones preserve full-size action targets in a dedicated row");
+    assert.ok(site.includes('grid-template-rows: var(--header-bar-height) 43px;'),
+      "320px phones share the same logo/controls row and a separate navigation row");
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "article masthead must not duplicate the global destinations");
+  });
+  it("shares masthead sizing across the home and immersive article views", () => {
+    assert.ok(app.includes('post ? "site-header site-header-reader" : "site-header"'),
+      "the same App Shell should render both headers");
+    assert.ok(site.includes('--header-control-size: 44px;') &&
+      site.includes('--masthead-wordmark-height: 38px;') &&
+      site.includes('--header-bar-height: 68px;'),
+      "logo, row and tap sizes must be shared tokens");
+    assert.ok(site.includes('--header-height: 104px; --header-bar-height: 60px;'),
+      "phone header must use a 60px masthead plus the home navigation");
+    assert.ok(site.includes('--masthead-wordmark-height: 32px;'),
+      "the same 32px wordmark must apply to both phone views");
+    assert.ok(site.includes('height: var(--header-bar-height);') &&
+      site.includes('height: var(--masthead-wordmark-height);'),
+      "article header and logo must inherit the same dimensions as home");
+    assert.ok(site.includes('flex: 0 0 var(--header-control-size);'),
+      "notification icon must not be narrower in reader mode");
+    assert.ok(!site.includes('height: 56px;\n    position: sticky;') &&
+      !site.includes('.site-header-reader .brand-wordmark { height: 26px; }'),
+      "remove old 56px reader header and squeezed 26px logo overrides");
+    assert.ok(style.includes('--reader-brand-height: var(--header-bar-height);'),
+      "toc, reading-progress and scroll offsets should track the same masthead height");
   });
   it("keeps a distinct footer and separately attributed About quote in each skin", () => {
     const app = readFileSync("src/App.tsx", "utf8");
