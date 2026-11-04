@@ -141,7 +141,7 @@ export function ShelfTrigger() {
           <div className="shelf-empty">
             <Bookmark size={22} aria-hidden="true" />
             <strong>清单还是空的</strong>
-            <p>在文章卡片或正文顶部点一下书签图标，就能把它放进这里。</p>
+            <p>在文章卡片点击书签，或在文章信息下方点击“收藏本文”，就能把它放进这里。</p>
           </div>
         )}
         <footer className="shelf-footer">
