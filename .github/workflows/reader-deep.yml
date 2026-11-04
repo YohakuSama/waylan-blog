@@ -11,7 +11,7 @@ permissions:
 jobs:
   reader-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +26,16 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Test reader neighbors, back-to-list and settings transition
         run: node scripts/reader-deep-smoke.mjs
+      - name: Validate Android, iPhone, iPad and desktop feed return with responsive header
+        run: node scripts/responsive-navigation-smoke.mjs
+      - name: Save cross-device header and pagination evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-device-navigation-audit
+          path: responsive-navigation-report/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Save reader flow screenshots and measurements
         if: always()
         uses: actions/upload-artifact@v4
