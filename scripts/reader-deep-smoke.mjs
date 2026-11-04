@@ -142,7 +142,10 @@ async function run(engine,name,width){
             mainHeight:document.documentElement.scrollHeight}));
           throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
         }
-        await page.mouse.wheel(0,-110);
+        // Upward content movement must reveal the row. WebKit's synthetic
+        // desktop mouse wheel can be swallowed under a touch emulation, so
+        // drive the actual document scroll position for this direction.
+        await page.evaluate(()=>window.scrollBy(0,-130));
         await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
         await page.evaluate(()=>window.scrollTo(0,0));
         observations.push({browser:name,width,scenario:"immersive reader hides global chrome and restores tools on upward scroll",compact});
