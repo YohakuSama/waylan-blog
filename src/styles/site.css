@@ -333,12 +333,53 @@ h3 {
 .home-list .entry-views { display: none; }
 .home-list .thought-text { font-size: 18px; line-height: 1.75; }
 .home-motto { position: absolute; bottom: 12px; right: 8px; color: var(--muted); font-size: 12px; background: var(--paper); }
-.home-sidebar { padding-top: 24px; }
+/* Home discovery is a compact index, not a stack of oversized cards. */
+.home-sidebar { padding-top: 20px; padding-bottom: 12px; }
+.home-sidebar > .side-block { padding: 18px 0; }
+.home-sidebar > .side-block:first-child { padding-top: 0; }
 .home-projects { list-style: none; margin: 0; padding: 0; }
 .home-projects li + li { border-top: 1px solid var(--line); }
-.home-projects a { display: grid; gap: 4px; padding: 14px 0; }
-.home-projects strong { font-weight: 500; font-size: 14px; }
-.home-projects span { color: var(--muted); font-size: 12px; }
+.home-projects a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 9px 2px;
+  color: var(--ink);
+}
+.home-projects a:hover,
+.home-projects a:focus-visible { color: var(--brand); }
+.home-project-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.home-projects strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 550;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.home-project-state {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.home-project-arrow {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.home-projects a:hover .home-project-arrow,
+.home-projects a:focus-visible .home-project-arrow { color: var(--brand); }
+.home-sidebar .home-reading-note {
+  margin: 4px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+.home-sidebar .home-reading-note summary { min-height: 44px; }
+:root[data-skin="terminal"] .home-sidebar .home-reading-note { border-top-style: dashed; }
 .home-about-link { display: inline-flex; align-items: center; min-height: 44px; gap: 5px; font-size: 13px; }
 .hero-visual {
   position: absolute;
@@ -1486,7 +1527,7 @@ h3 {
 @media (max-width: 480px) {
   .about-motto { padding: 16px 18px; }
 }
-/* ---------- Footer ---------- */
+/* ---------- Footer: one quiet colophon for both skins ---------- */
 .site-footer {
   border-top: 1px solid var(--line);
   font-size: 12.5px;
@@ -1495,43 +1536,63 @@ h3 {
 .footer-inner {
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: 22px var(--page-gutter) 28px;
+  padding: 24px var(--page-gutter) 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "identity links" "copy copy";
+  align-items: start;
+  gap: 8px 24px;
+}
+.footer-identity {
+  grid-area: identity;
   display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
 }
 .footer-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
+  gap: 5px;
+  min-height: 34px;
   color: var(--ink);
 }
 .site-footer .footer-brand .wordmark {
   width: auto;
-  height: 36px;
+  height: 28px;
 }
 .footer-blog-script {
   display: inline-block;
-  margin-left: -3px;
+  margin-left: -2px;
   color: var(--ink);
-  font: 400 35px/1 "Waylan Great Vibes", cursive;
+  font: 400 25px/1 "Waylan Great Vibes", cursive;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  transform: translateY(2px);
+  transform: translateY(1px);
 }
-/* Hidden in Editorial; Terminal displays its distinct command-line colophon. */
+/* The Terminal skin substitutes its command-line lockup in skins.css. */
 .footer-terminal-wordmark { display: none; }
+.footer-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
 .footer-copy {
-  flex: 1;
+  grid-area: copy;
+  display: block;
   min-width: 0;
+  font-size: 12px;
+  line-height: 1.6;
 }
 .footer-links {
+  grid-area: links;
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0 18px;
 }
 .footer-links a {
   display: inline-flex;
@@ -2203,44 +2264,6 @@ h3 {
     text-wrap: balance;
   }
 }
-/* The footer is the secondary identity, not a second masthead.
-   Keep "Waylan Blog" at the upper right and the copyright/author below-left. */
-.site-footer .footer-inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "copy brand"
-    "links brand";
-  align-items: start;
-  gap: 3px 24px;
-  padding-top: 24px;
-  padding-bottom: 26px;
-}
-.site-footer .footer-brand {
-  grid-area: brand;
-  justify-self: end;
-  align-self: start;
-  gap: 5px;
-}
-.site-footer .footer-brand .wordmark {
-  height: 29px;
-}
-.site-footer .footer-blog-script {
-  font-size: 29px;
-}
-.site-footer .footer-copy {
-  grid-area: copy;
-  min-width: 0;
-}
-.site-footer .footer-links {
-  grid-area: links;
-  justify-self: start;
-  flex-wrap: wrap;
-  gap: 0 18px;
-}
-.site-footer .footer-links a {
-  min-height: 44px;
-}
 @media (max-width: 1024px) {
   .site-main {
     padding-bottom: 40px;
@@ -2262,29 +2285,50 @@ h3 {
     font-size: clamp(21px, 5.55vw, 23px);
     line-height: 1.43;
   }
+  /* Phone: left-aligned hierarchy instead of a floating right-hand signature. */
   .site-footer .footer-inner {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "brand" "copy" "links";
-    gap: 7px;
-    padding-top: 20px;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    grid-template-areas: "identity" "copy" "links";
+    gap: 9px;
+    padding-top: 19px;
+    padding-bottom: calc(17px + env(safe-area-inset-bottom));
   }
-  .site-footer .footer-brand {
-    justify-self: end;
+  .site-footer .footer-brand .wordmark { height: 28px; }
+  .site-footer .footer-blog-script { display: none; }
+  .site-footer .footer-identity { gap: 4px; }
+  .site-footer .footer-copy { line-height: 1.6; }
+  .site-footer .footer-links {
+    justify-content: flex-start;
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid var(--line);
+    gap: 0 18px;
   }
-  .site-footer .footer-brand .wordmark {
-    height: 27px;
+  :root[data-skin="terminal"] .site-footer .footer-links { border-top-style: dashed; }
+  .home-sidebar {
+    margin-top: 24px;
+    padding: 16px 0 10px;
+    border-top: 1px solid var(--line);
   }
-  .site-footer .footer-blog-script {
-    font-size: 27px;
-  }
-  .site-footer .footer-copy {
-    line-height: 1.6;
-  }
-  .site-footer .footer-links a {
-    min-height: 44px;
-  }
+  .home-sidebar > .side-block { padding: 14px 0; }
+  .home-sidebar > .side-block:first-child { padding-top: 0; }
+  .home-sidebar .side-head { margin-bottom: 7px; }
+  .home-sidebar .explore-list a { min-height: 44px; padding: 7px 6px; }
+  .home-sidebar .home-reading-note { margin-top: 0; }
   .reader-main {
     padding-bottom: 24px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .home-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 8px 28px;
+    padding-bottom: 12px;
+  }
+  .home-sidebar > .side-block { min-width: 0; }
+  .home-sidebar > .home-reading-note {
+    grid-column: 1 / -1;
+    margin-top: 0;
   }
 }
