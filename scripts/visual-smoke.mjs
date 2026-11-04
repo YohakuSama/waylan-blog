@@ -87,7 +87,12 @@ try {
               documentWidth: document.documentElement.scrollWidth,
               skin: document.documentElement.dataset.skin,
               theme: document.documentElement.dataset.theme,
-              brand: select(".brand"), nav: select("#site-nav"), tools: select(".header-tools"),
+              brand: select(".brand"),
+              brandWordmark: select(".brand .brand-wordmark"),
+              brandTagline: select(".brand .brand-tagline"),
+              mobileTagline: select(".mobile-brand-tagline"),
+              nav: select("#site-nav"), tools: select(".header-tools"),
+              header: select(".site-header"), body: select(".site-body"),
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
@@ -176,7 +181,21 @@ try {
             `${label}: mixed content mislabeled as articles`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
-          assert.ok(geometry.brand.right <= (width > 860 ? geometry.nav : geometry.tools).left + 1, `${label}: brand overlaps header`);
+          if (width > 860) {
+            assert.ok(geometry.brand.right <= geometry.nav.left + 1, `${label}: brand overlaps navigation`);
+          } else if (width > 370) {
+            assert.ok(geometry.brand.right <= geometry.tools.left + 1, `${label}: brand overlaps header actions`);
+          } else {
+            assert.ok(geometry.brand.bottom <= geometry.tools.top + 2, `${label}: narrow-phone action row overlaps branding`);
+          }
+          assert.ok(geometry.brandTagline && geometry.brandWordmark, `${label}: missing wordmark or subtitle`);
+          assert.equal(geometry.mobileTagline, null, `${label}: subtitle must not float to a detached mobile row`);
+          assert.ok(geometry.brandTagline.left >= geometry.brandWordmark.right - 3 &&
+            geometry.brandTagline.top < geometry.brandWordmark.bottom &&
+            geometry.brandTagline.bottom > geometry.brandWordmark.top,
+            `${label}: site identity must stay beside the wordmark`);
+          assert.ok(Math.abs(geometry.header.bottom - geometry.body.top) <= 1,
+            `${label}: an unwanted gap appeared below the header`);
           assert.ok(geometry.nav, `${label}: primary destinations are hidden`);
           if (width > 860) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
           else assert.ok(geometry.nav.top >= geometry.tools.bottom && geometry.nav.height >= 43, `${label}: destinations not separated from utilities`);
