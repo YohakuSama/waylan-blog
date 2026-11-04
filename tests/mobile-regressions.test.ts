@@ -73,7 +73,7 @@ describe("mobile reader regression contracts", () => {
     assert.ok(style.includes('top: var(--header-height);'));
   });
   it("keeps the brand separator visible on phones", () => {
-    assert.ok(site.includes('.brand-rule {\n    display: block;'));
+    assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);
     assert.ok(site.includes('.brand { gap: 5px; }'));
   });
   it("keeps the identity beside the logo across mobile and tablet sizes", () => {
