@@ -99,8 +99,8 @@ async function run(engine, label, width, height, touch) {
         else await button.click();
       };
 
-      // WebKit can drop both touchend and click while releasing a native range.
-      // A *single pointerdown*, with no pointerup/touchend/click, must copy.
+      // WebKit can drop the compatibility click while releasing a native range.
+      // pointerdown must retain the quote until pointerup gives permission to copy.
       await selectLongText();
       const customSelection = await page.evaluate(() => {
         const supported = !!window.CSS?.highlights && !!window.Highlight;
@@ -117,6 +117,11 @@ async function run(engine, label, width, height, touch) {
       const copyAction = page.getByRole("toolbar", { name: "选中文字的操作" })
         .getByRole("button", { name: "复制", exact: true });
       await copyAction.dispatchEvent("pointerdown", {
+        bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, pointerId: 42,
+      });
+      assert.equal(await page.evaluate(() => window.__copyCount), 0,
+        label + ": copy must await transient activation on pointerup");
+      await copyAction.dispatchEvent("pointerup", {
         bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, pointerId: 42,
       });
       await page.waitForFunction(() => window.__copyCount === 1);
