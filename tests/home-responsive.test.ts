@@ -10,6 +10,19 @@ const skins = readFileSync("src/styles/skins.css", "utf8");
 
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
+  it("shares the index-page heading geometry and 44px action rows with archive", () => {
+    assert.ok(pages.includes('className="home-hero page-heading"'));
+    assert.ok(pages.includes('className="eyebrow mono">WAYLAN / HOME'));
+    assert.ok(pages.includes('className="eyebrow mono">WAYLAN / ARCHIVE'));
+    assert.ok(pages.includes('className="home-links page-heading-actions"'));
+    assert.ok(pages.includes('className="archive-summary page-heading-actions"'));
+    assert.ok(site.includes(".page-heading-actions > a {"));
+    assert.ok(site.includes("min-height: 44px;"));
+    assert.ok(site.includes(".page-heading { padding: 32px 0 20px; }"));
+    assert.equal(site.includes(".archive-heading h1 {"), false);
+    assert.equal(site.includes(".home-links > .home-topic-link { display: none; }"), false);
+    assert.ok(pages.includes("浏览全部内容<ArrowRight"));
+  });
   it("uses one native type picker on phones and accessible tabs on wider screens", () => {
     assert.ok(site.includes("@media (max-width: 767px) {"));
     assert.ok(site.includes(".feed-controls .type-tabs { display: none; }"));
