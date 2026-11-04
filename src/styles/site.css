@@ -1657,6 +1657,7 @@ h3 {
     max-width: 155px;
     white-space: normal;
     overflow-wrap: anywhere;
+    text-wrap: balance;
     line-height: 1.35;
     font-size: clamp(10px, 1.6vw, 12px);
   }
