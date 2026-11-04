@@ -2481,21 +2481,6 @@ body,
     opacity: 0;
     pointer-events: none;
   }
-  .reading-progress {
-    top: calc(var(--reader-brand-height) - 2px);
-    left: 0;
-    right: 0;
-    height: 2px;
-    z-index: 105;
-  }
-  .reading-progress > span::after {
-    width: 4px;
-    height: 4px;
-    top: -1px;
-    right: -2px;
-    box-shadow: none;
-    animation: none;
-  }
   .reader-toc.toc-visible {
     top: calc(var(--reader-brand-height) + 60px);
     max-height: calc(100dvh - var(--reader-brand-height) - 76px - env(safe-area-inset-bottom));
