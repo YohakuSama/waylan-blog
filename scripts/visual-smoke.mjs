@@ -247,6 +247,10 @@ try {
               assert.ok(["none", "normal"].includes(chrome.beforeContent) &&
                 ["none", "normal"].includes(chrome.afterContent),
                 `${label}: double horizontal rules still frame the nav tabs: ${JSON.stringify(chrome)}`);
+              if (route === "/" && width <= 480) {
+                assert.ok(geometry.identity && geometry.identity.top - geometry.header.bottom >= 18,
+                  `${label}: introductory copy touches the mobile navigation`);
+              }
               if (variant.skin === "editorial") {
                 assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
                   `${label}: rounded nav still has a visible full-width bottom border`);
@@ -281,10 +285,6 @@ try {
                 }
                 if (chrome.selectedRadius !== null) assert.equal(chrome.selectedRadius, 0,
                   `${label}: terminal nav tab must stay rectangular`);
-                if (route === "/" && width <= 480) {
-                  assert.ok(geometry.identity && geometry.identity.top - geometry.header.bottom >= 18,
-                    `${label}: intro copy still collides with terminal navigation bottom`);
-                }
               }
             }
             for (const control of geometry.controls) {
