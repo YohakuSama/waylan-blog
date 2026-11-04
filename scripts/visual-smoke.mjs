@@ -99,7 +99,14 @@ try {
                 const nav = document.querySelector("#site-nav");
                 const header = document.querySelector(".site-header");
                 const selected = nav?.querySelector(".nav-link.selected");
+                const brandRow = document.querySelector(".header-inner");
+                const brandDivider = brandRow ? getComputedStyle(brandRow, "::before") : null;
+                const navStyle = getComputedStyle(nav);
                 return nav && header ? {
+                  brandDividerContent: brandDivider?.content,
+                  brandDividerImage: brandDivider?.backgroundImage,
+                  navBackground: navStyle.backgroundColor,
+                  navRadius: parseFloat(navStyle.borderTopLeftRadius),
                   beforeContent: getComputedStyle(nav, "::before").content,
                   afterContent: getComputedStyle(nav, "::after").content,
                   headerBottomStyle: getComputedStyle(header).borderBottomStyle,
@@ -211,6 +218,8 @@ try {
               `${label}: missing or oversized immersive reader toolbar`);
             assert.ok(geometry.readerTopbar.left >= 0 && geometry.readerTopbar.right <= geometry.viewport + 1,
               `${label}: immersive reader toolbar overflows the screen`);
+            assert.ok(["none", "normal"].includes(geometry.mobileNavChrome?.brandDividerContent),
+              `${label}: the reader masthead must not inherit the site nav's decorative separator`);
           } else {
             if (width > 860) {
               assert.ok(geometry.brand.right <= geometry.nav.left + 1, `${label}: brand overlaps navigation`);
@@ -240,9 +249,23 @@ try {
               if (variant.skin === "editorial") {
                 assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
                   `${label}: rounded nav still has a visible full-width bottom border`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
+                  `${label}: navigation lost its subtly tinted shared surface`);
+                assert.ok(chrome.navRadius >= 12,
+                  `${label}: navigation base should be gently rounded`);
+                if (width > 370) {
+                  assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
+                    chrome.brandDividerImage?.includes("linear-gradient"),
+                    `${label}: missing the single fading brand/navigation separator`);
+                } else {
+                  assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
+                    `${label}: narrow phone divider should not cross the second tool row`);
+                }
                 if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
                   `${label}: rounded nav tab lost its rounded corners`);
               } else {
+                assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
+                  `${label}: square terminal header should not gain editorial decorations`);
                 assert.equal(chrome.headerBottomStyle, "dashed",
                   `${label}: terminal nav needs one straight bottom rule`);
                 if (chrome.selectedRadius !== null) assert.equal(chrome.selectedRadius, 0,

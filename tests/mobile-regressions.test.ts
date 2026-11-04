@@ -79,6 +79,18 @@ describe("mobile reader regression contracts", () => {
     assert.ok(skins.includes('border-radius: 0;'));
     assert.ok(site.includes("height: 35px; margin-block: 4px;"));
   });
+  it("separates rounded mobile navigation without adding rails to the reader masthead", () => {
+    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'));
+    assert.ok(site.includes('top: calc(var(--header-bar-height) - 5px);'));
+    assert.ok(site.includes('background: linear-gradient(90deg,'));
+    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav'));
+    assert.ok(site.includes('color-mix(in srgb, var(--surface-muted) 55%, var(--paper))'));
+    assert.ok(site.includes('border-radius: 14px;'));
+    assert.ok(site.includes('.header-inner::before { content: none; }'));
+    assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
+    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
+      "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
+  });
   it("puts excerpt into existing reader controls, not its own sticky strip", () => {
     const reader=readFileSync("src/components/Reader.tsx","utf8");
     assert.ok(reader.includes('className="icon-button excerpt-toggle"'));
