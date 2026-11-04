@@ -203,10 +203,8 @@ try {
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
             assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
-            assert.ok(geometry.tools && geometry.controls[0] && geometry.controls[3],
-              `${label}: global search and reading settings should stay accessible`);
-            assert.equal(geometry.controls[1],null,`${label}: second shelf entry crowds the reading header`);
-            assert.equal(geometry.controls[2],null,`${label}: bell duplicates global navigation chrome`);
+            assert.ok(geometry.tools && geometry.controls.every(box=>box && box.height>=40),
+              `${label}: original search, saved items, notifications or settings disappeared`);
             assert.ok(geometry.brand.right<=geometry.tools.left+3,
               `${label}: wordmark intersects the masthead actions`);
             assert.ok(geometry.readerTopbar && geometry.readerTopbar.height <= 60,
