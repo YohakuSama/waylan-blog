@@ -166,6 +166,15 @@ async function run(engine,name,width){
           await quoteToggle.click();
           assert.equal(await quoteToggle.getAttribute("aria-expanded"), "false");
         }
+        // ResizeObserver recenters on the next animation frame after the
+        // quotation collapses/expands; assert the settled geometry, not the
+        // transient between the quote click and ResizeObserver delivery.
+        await page.waitForFunction(() => {
+          const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
+          const viewport = window.visualViewport;
+          return dialog && viewport && Math.abs(parseFloat(dialog.style.top) -
+            (viewport.offsetTop + (viewport.height - dialog.offsetHeight) / 2)) <= 3;
+        });
         const geometry = await page.evaluate(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
           const body = dialog.querySelector(".discussion-panel-body");
@@ -192,6 +201,9 @@ async function run(engine,name,width){
             actionBottom:action.getBoundingClientRect().bottom,actionContrast,
             actionLabel:action.textContent?.trim(),actionStable,
             footerOutsideScrollableBody:!body.contains(footer) && footer.contains(action),
+            inlineTop:dialog.style.top, inlineBottom:dialog.style.bottom,
+            marginBlock:dialog.style.marginBlock,
+            dialogHeight:dialog.offsetHeight,
             dialogWidth:dialog.getBoundingClientRect().width,
             threadBottomStyle:getComputedStyle(dialog).bottom,
             bodyScrollHeight:body.scrollHeight,bodyHeight:body.clientHeight};
@@ -209,12 +221,30 @@ async function run(engine,name,width){
           assert.ok(geometry.dialogWidth <= (width >= 768 ? 640 : width - 30) + 2,
             "Thread dialog touches the viewport edge: " + JSON.stringify(geometry));
         }
+        assert.ok(geometry.inlineTop && geometry.inlineBottom === "auto" &&
+          Number.parseFloat(geometry.marginBlock) === 0, "Thread must use measured top, not CSS auto margins: " + JSON.stringify(geometry));
+        assert.ok(Math.abs(parseFloat(geometry.inlineTop) -
+          (geometry.visualTop + (geometry.visibleBottom - geometry.visualTop - geometry.dialogHeight) / 2)) <= 3,
+          "Measured thread top does not match visible-viewport center: " + JSON.stringify(geometry));
         assert.ok(geometry.dialogBottom <= geometry.visibleBottom + 3,
           "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
         assert.ok(geometry.actionBottom <= geometry.visibleBottom + 3,
           "Thread action cannot be scrolled into the visible viewport: " + JSON.stringify(geometry));
         assert.ok(geometry.actionLabel?.length > 0 && geometry.actionContrast >= 4.5,
           "Thread action has invisible or low-contrast text: " + JSON.stringify(geometry));
+        // Safari's toolbars can move the visual viewport downward after open.
+        // Recenter without relying on CSS auto margin or the modal's initial position.
+        await page.evaluate(() => {
+          const viewport = window.visualViewport;
+          Object.defineProperty(viewport, "offsetTop", {configurable:true,value:36});
+          viewport.dispatchEvent(new Event("scroll"));
+        });
+        await page.waitForFunction(() => {
+          const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
+          return dialog && Math.abs(parseFloat(dialog.style.top) -
+            (36 + (window.visualViewport.height - dialog.offsetHeight) / 2)) <= 3;
+        });
+        observations.push({browser:name,width,scenario:"thread recenters after Safari toolbar offset",ok:true});
         await page.screenshot({path:dir+"/"+name+"-"+width+"-thread-viewport.png",animations:"disabled"});
       }
       assert.deepEqual(errors,[], "runtime errors");

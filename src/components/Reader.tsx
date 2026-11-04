@@ -478,14 +478,18 @@ export default function Reader({ post }: { post: Post }) {
       document.documentElement.style.removeProperty("--waylan-editor-view-top");
     };
   }, [panel, panelIds.length]);
-  // Native iOS browser chrome and keyboards can reduce the visual viewport
-  // without moving a fixed <dialog> anchored to the layout viewport bottom.
-  // Keep the thread sheet visible, without changing composer geometry.
+  // iOS Safari lays out modal dialogs against the layout viewport, while the
+  // visible area changes with browser chrome and the software keyboard.
+  // Measure the actual thread box and position its top explicitly, like the
+  // working full-screen composer. CSS auto margins alone are not reliable here.
   useEffect(() => {
     if (!panel || !panelIds.length) return;
     const viewport = window.visualViewport;
     if (!viewport) return;
     const root = document.documentElement;
+    let frame = 0;
+    let observedDialog: HTMLDialogElement | null = null;
+    let observer: ResizeObserver | null = null;
     const sync = () => {
       const obscured = Math.max(
         0,
@@ -494,8 +498,36 @@ export default function Reader({ post }: { post: Post }) {
       root.style.setProperty("--waylan-thread-view-top", `${Math.max(0, Math.ceil(viewport.offsetTop))}px`);
       root.style.setProperty("--waylan-thread-view-bottom", `${Math.ceil(obscured)}px`);
       root.style.setProperty("--waylan-thread-view-height", `${Math.floor(viewport.height)}px`);
+
+      const dialog = document.querySelector<HTMLDialogElement>(
+        "dialog.discussion-dialog.thread-dialog[open]",
+      );
+      if (!dialog) return;
+      if (dialog !== observedDialog) {
+        observer?.disconnect();
+        observer?.observe(dialog);
+        observedDialog = dialog;
+      }
+      // offsetHeight is the untransformed box even during a dialog animation.
+      // The height cap above guarantees at least 12px breathing room.
+      const top = viewport.offsetTop + Math.max(
+        12,
+        (viewport.height - dialog.offsetHeight) / 2,
+      );
+      dialog.style.top = `${Math.round(top)}px`;
+      dialog.style.bottom = "auto";
+      dialog.style.marginBlock = "0";
     };
+    const schedule = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        sync();
+      });
+    };
+    if (typeof ResizeObserver !== "undefined") observer = new ResizeObserver(schedule);
     sync();
+    schedule();
     viewport.addEventListener("resize", sync);
     viewport.addEventListener("scroll", sync);
     window.addEventListener("resize", sync);
@@ -503,6 +535,13 @@ export default function Reader({ post }: { post: Post }) {
       viewport.removeEventListener("resize", sync);
       viewport.removeEventListener("scroll", sync);
       window.removeEventListener("resize", sync);
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      if (observedDialog) {
+        observedDialog.style.removeProperty("top");
+        observedDialog.style.removeProperty("bottom");
+        observedDialog.style.removeProperty("margin-block");
+      }
       root.style.removeProperty("--waylan-thread-view-top");
       root.style.removeProperty("--waylan-thread-view-bottom");
       root.style.removeProperty("--waylan-thread-view-height");

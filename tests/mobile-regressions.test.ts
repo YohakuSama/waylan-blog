@@ -42,6 +42,10 @@ describe("mobile reader regression contracts", () => {
     assert.ok(reader.includes('className="thread-dialog-footer"'));
     assert.ok(reader.includes('aria-expanded={quoteExpanded}'));
     assert.ok(reader.includes("--waylan-thread-view-top"));
+    assert.ok(reader.includes("dialog.style.top ="), "thread dialog must use explicit visual-viewport top");
+    assert.ok(reader.includes("dialog.offsetHeight"), "thread centering must measure rendered height");
+    assert.ok(reader.includes("new ResizeObserver(schedule)"), "expanded quotes must trigger recentering");
+    assert.ok(reader.includes('dialog.style.bottom = "auto"'), "bottom docking must not override centering");
     assert.ok(style.includes("flex: 0 0 auto;"), "action footer must not scroll with paragraph content");
     assert.ok(style.includes('max-height: min(82dvh, calc(var(--waylan-thread-view-height, 100dvh) - 24px))'),
       "phone dialog needs a visual-viewport height cap");
