@@ -886,19 +886,43 @@ html {
   border-bottom: 1px dashed var(--line-strong);
 }
 @media (max-width: 860px) {
-  /* Editorial: a quiet, borderless navigation row with the active rounded tab.
-     Keep the transparent border to preserve sticky header height and offsets. */
+  /* Editorial uses its softly separated brand and rounded nav surface. */
   :root:not([data-skin="terminal"]) .site-header {
     border-bottom-color: transparent;
   }
-  /* Terminal: one straight rule at the bottom, never a pair around the tabs. */
-  :root[data-skin="terminal"] .site-header {
-    border-bottom: 1px dashed var(--line-strong);
+
+  /* Terminal needs the SAME brand/navigation hierarchy, translated to its
+     square/dashed visual language. Never place a dashed rail against the
+     first line of content: it looks like text has been struck through. */
+  :root[data-skin="terminal"] .site-header:not(.site-header-reader) {
+    border-bottom-color: transparent;
+  }
+  :root[data-skin="terminal"] .site-header:not(.site-header-reader) .header-inner::before {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    top: calc(var(--header-bar-height) - 5px);
+    left: calc(var(--page-gutter) + 10px);
+    right: calc(var(--page-gutter) + 10px);
+    height: 0;
+    border-top: 1px dashed color-mix(in srgb, var(--line-strong) 65%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  :root[data-skin="terminal"] .site-header:not(.site-header-reader) #site-nav {
+    padding-inline: 4px;
+    background: color-mix(in srgb, var(--surface-muted) 55%, var(--paper));
   }
   :root[data-skin="terminal"] #site-nav .nav-link {
-    height: 43px;
-    margin-block: 0;
+    height: 35px;
+    margin-block: 4px;
     border-radius: 0;
+  }
+}
+@media (max-width: 370px) {
+  /* On very narrow phones the tool row sits between brand and nav. */
+  :root[data-skin="terminal"] .site-header:not(.site-header-reader) .header-inner::before {
+    content: none;
   }
 }
 :root[data-skin="terminal"] .brand-wordmark,

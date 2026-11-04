@@ -1697,6 +1697,11 @@ h3 {
     position: relative; align-items: center; gap: 0;
     width: 100%; min-width: 0; border: 0;
   }
+  /* Same breathing room for both skins: no layout jump when switching
+     between editorial and terminal while reading the home intro. */
+  .site-header:not(.site-header-reader) + .site-body .home-hero {
+    padding-top: 22px;
+  }
   /* A single, quietly tinted navigation surface separates destinations from
      branding without boxing the rounded active tab between two hard rules. */
   :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) #site-nav {

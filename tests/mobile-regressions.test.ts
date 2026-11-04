@@ -74,16 +74,27 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
-  it("removes both editorial mobile rails while terminal keeps one square separator", () => {
+  it("gives both mobile skins a separated navigation layer without rails touching content", () => {
     assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
     assert.doesNotMatch(skins, /#site-nav::(?:before|after)/);
     assert.doesNotMatch(site, /--nav-divider-inset/);
+    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'),
+      "rounded skin gets a brand/navigation separator");
+    assert.ok(skins.includes('.site-header:not(.site-header-reader) .header-inner::before'),
+      "terminal skin also gets its own brand/navigation separator");
+    assert.ok(skins.includes('border-top: 1px dashed color-mix(in srgb, var(--line-strong) 65%, transparent);'),
+      "terminal divider is subtly dashed instead of a line touching content");
+    assert.ok(skins.includes('background: color-mix(in srgb, var(--surface-muted) 55%, var(--paper));'),
+      "terminal navigation gets its own shaded rectangular base");
     assert.ok(skins.includes('border-bottom-color: transparent;'),
-      "editorial mobile header must not frame the rounded tab with rules");
-    assert.ok(skins.includes('border-bottom: 1px dashed var(--line-strong);'),
-      "terminal header retains a single bottom line");
-    assert.ok(skins.includes('border-radius: 0;'));
-    assert.ok(site.includes("height: 35px; margin-block: 4px;"));
+      "terminal masthead must not draw a dash across first paragraph");
+    assert.ok(site.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
+      site.includes('padding-top: 22px;'),
+      "both skins must share identical 22px intro spacing without modifying article layout");
+    assert.ok(skins.includes('height: 35px;') && skins.includes('margin-block: 4px;') &&
+      skins.includes('border-radius: 0;'), "terminal selected tab stays inset and square");
+    assert.match(skins, /\.header-inner::before\s*\{\s*content:\s*none;/,
+      "narrow phone tools cannot be crossed by the divider");
   });
   it("separates rounded mobile navigation without adding rails to the reader masthead", () => {
     assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'));

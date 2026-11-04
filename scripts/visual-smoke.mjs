@@ -105,6 +105,7 @@ try {
                 return nav && header ? {
                   brandDividerContent: brandDivider?.content,
                   brandDividerImage: brandDivider?.backgroundImage,
+                  brandDividerTopStyle: brandDivider?.borderTopStyle,
                   navBackground: navStyle.backgroundColor,
                   navRadius: parseFloat(navStyle.borderTopLeftRadius),
                   beforeContent: getComputedStyle(nav, "::before").content,
@@ -248,6 +249,10 @@ try {
               assert.ok(["none", "normal"].includes(chrome.beforeContent) &&
                 ["none", "normal"].includes(chrome.afterContent),
                 `${label}: double horizontal rules still frame the nav tabs: ${JSON.stringify(chrome)}`);
+              if (route === "/" && width <= 480) {
+                assert.ok(geometry.identity && geometry.identity.top - geometry.header.bottom >= 18,
+                  `${label}: introductory copy touches the mobile navigation`);
+              }
               if (variant.skin === "editorial") {
                 assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
                   `${label}: rounded nav still has a visible full-width bottom border`);
@@ -266,10 +271,20 @@ try {
                 if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
                   `${label}: rounded nav tab lost its rounded corners`);
               } else {
-                assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
-                  `${label}: square terminal header should not gain editorial decorations`);
-                assert.equal(chrome.headerBottomStyle, "dashed",
-                  `${label}: terminal nav needs one straight bottom rule`);
+                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
+                  `${label}: terminal header bottom line intrudes on page content`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.navBackground),
+                  `${label}: terminal navigation must form a second rectangular surface`);
+                assert.equal(chrome.navRadius, 0,
+                  `${label}: terminal navigation base must remain square`);
+                if (width > 370) {
+                  assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
+                    chrome.brandDividerTopStyle === "dashed",
+                    `${label}: terminal needs one brand/navigation dashed divider`);
+                } else {
+                  assert.ok(["none", "normal"].includes(chrome.brandDividerContent),
+                    `${label}: do not draw a divider across very narrow phone tools`);
+                }
                 if (chrome.selectedRadius !== null) assert.equal(chrome.selectedRadius, 0,
                   `${label}: terminal nav tab must stay rectangular`);
               }
