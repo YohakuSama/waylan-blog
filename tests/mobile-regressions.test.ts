@@ -17,6 +17,12 @@ describe("mobile reader regression contracts", () => {
     assert.match(base, /inset: 0 0 auto;/, "desktop and tablet search needs a fixed top offset");
     assert.match(phone, /\.search-dialog \{ inset: 0; \}/, "phone search must cover viewport from top");
   });
+  it("reserves the resolved discussion height during loading", () => {
+    assert.ok(style.includes(".discussion-results {"));
+    assert.ok(style.includes("min-height: 268px;"));
+    assert.ok(motion.includes(".comment-skeleton {"));
+    assert.ok(motion.includes("min-height: 218px;"));
+  });
   it("does not clip the script wordmark in the narrow header", () => {
     assert.match(site, /\.brand \{ overflow: visible; \}/);
     assert.match(site, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);

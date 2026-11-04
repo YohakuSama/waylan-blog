@@ -1078,6 +1078,15 @@ textarea::placeholder {
   color: var(--muted);
   margin: var(--space-4) 0 var(--space-8);
 }
+.discussion-action-placeholder {
+  display: block;
+  flex: 0 0 100px;
+  height: 40px;
+}
+/* Reserve the empty-card + GitHub-link footprint while initial comments load. */
+.discussion-results {
+  min-height: 268px;
+}
 .discussion-empty {
   text-align: center;
   border: 1px solid var(--line);
