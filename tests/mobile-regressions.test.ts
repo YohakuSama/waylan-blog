@@ -200,7 +200,7 @@ describe("mobile reader regression contracts", () => {
       "save and share actions should be available after the article");
     assert.ok(style.includes(".reading-end-actions {") &&
       style.includes(".reading-article .article-actions {") &&
-      !style.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"),
+      !/\.reading-article \.article-actions\s*\{[^}]*grid-template-columns:/s.test(style),
       "article header should use a lightweight two-item layout rather than four columns");
     assert.ok(reader.includes('post.toc.length ? "本文目录" : "阅读工具"'),
       "short articles need a meaningful reading-tools label instead of an empty table of contents");
