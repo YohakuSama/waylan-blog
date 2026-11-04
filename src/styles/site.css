@@ -2195,3 +2195,16 @@ h3 {
     height: 44px;
   }
 }
+
+/* Final cascade contract: article actions must remain part of document
+   flow even when a touch layout or skin defines .reader-topbar as sticky.
+   Keep this alongside the site-header rules which load after reader CSS. */
+.site-header-reader + .site-body .reader-topbar.reader-article-actions {
+  position: static;
+  top: auto;
+  bottom: auto;
+  transform: none;
+  margin-inline: 0;
+  border-bottom: 0;
+  background: transparent;
+}
