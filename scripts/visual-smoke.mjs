@@ -36,7 +36,7 @@ function sameBox(actual, expected, label) {
     assert.ok(Math.abs(actual[key] - expected[key]) <= 1,
       `${label}: ${key} moved from ${expected[key]} to ${actual[key]}`);
 }
-const results = [], notificationResults = [], baselines = new Map();
+const results = [], notificationResults = [], baselines = new Map(), mastheadBaselines = new Map();
 let browser;
 try {
   await waitForServer();
@@ -66,8 +66,7 @@ try {
           const label = `${route === "/" ? "home" : route.slice(1).replaceAll("/", "-")}-${width}-${variant.skin}-${variant.theme}`;
           assert.ok(response?.ok(), `${label}: HTTP response failed`);
           const isImmersive = route.startsWith("/post/") && width <= 1024;
-          // Article pages keep destination navigation hidden while exposing
-          // the same four global shortcuts and independent inline reader actions.
+          // Articles share the homepage masthead; only inline reading controls differ.
           if (isImmersive) await page.locator(".article-actions").waitFor({state:"visible"});
           else await page.getByRole("button", { name: "搜索 Ctrl K", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
@@ -207,6 +206,19 @@ try {
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
           }, headerControls);
+          // Compare physical header geometry with the homepage for every route.
+          const key = `${width}/${variant.skin}/${variant.theme}`;
+          if (route === "/") mastheadBaselines.set(key, geometry);
+          else {
+            const home = mastheadBaselines.get(key);
+            assert.ok(home, `${label}: missing homepage header baseline`);
+            for (const part of ["header", "brand", "brandWordmark", "nav", "tools"])
+              sameBox(geometry[part], home[part], `${label}: ${part} shifted`);
+            if (home.searchLabel || geometry.searchLabel)
+              sameBox(geometry.searchLabel, home.searchLabel, `${label}: search label shifted`);
+            for (let index = 0; index < headerControls.length; index++)
+              sameBox(geometry.controls[index], home.controls[index], `${label}: utility ${index} shifted`);
+          }
           results.push({ route, width, ...variant, ...geometry });
           // Capture before assertions so a failing state is available to review.
           if ([1440, 768, 390, 320].includes(width))
@@ -259,26 +271,13 @@ try {
           }
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           if (isImmersive) {
-            assert.ok(geometry.header && Math.abs(geometry.header.height-56)<=2,
-              `${label}: Waylan masthead should remain a slim 56px row`);
-            assert.ok(geometry.brand && geometry.brandWordmark,
-              `${label}: original Waylan logo or brand identity disappeared`);
-            assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
-            assert.ok(geometry.tools && geometry.controls.length===4 &&
-              geometry.controls.every(box=>box && box.height>=40 && box.width>=36),
-              `${label}: compact masthead must show four direct global shortcuts`);
-            assert.equal(geometry.globalMenuButton,null,
-              `${label}: compact masthead must not add a collapsed site menu`);
-            assert.ok(geometry.controls.every(box=>box.left>=-1 && box.right<=geometry.viewport+1),
-              `${label}: global shortcut overflows the iPhone viewport`);
-            assert.ok(geometry.brand.right<=geometry.tools.left+3,
-              `${label}: wordmark intersects the masthead actions`);
-            assert.ok(geometry.articleActions && geometry.articleActions.height>=40 &&
-              geometry.articleActions.left>=0 && geometry.articleActions.right<=geometry.viewport+1,
-              `${label}: inline article actions overflow or disappeared`);
-            assert.ok(["none", "normal"].includes(geometry.mobileNavChrome?.brandDividerContent),
-              `${label}: the reader masthead must not inherit the site nav's decorative separator`);
-          } else {
+            assert.ok(geometry.articleActions && geometry.articleActions.height >= 40 &&
+              geometry.articleActions.left >= 0 && geometry.articleActions.right <= geometry.viewport + 1,
+              `${label}: inline article actions are missing or overflowing`);
+            assert.equal(geometry.globalMenuButton, null,
+              `${label}: no separate reader-only global menu`);
+          }
+          {
             if (width > 860) {
               assert.ok(geometry.brand.right <= geometry.nav.left + 1, `${label}: brand overlaps navigation`);
             } else if (width > 370) {

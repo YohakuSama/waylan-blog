@@ -90,19 +90,19 @@ describe("mobile reader regression contracts", () => {
     assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
     assert.doesNotMatch(skins, /#site-nav::(?:before|after)/);
     assert.doesNotMatch(site, /--nav-divider-inset/);
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'),
+    assert.ok(site.includes('.site-header .header-inner::before'),
       "rounded skin gets a brand/navigation separator");
-    assert.ok(skins.includes('.site-header:not(.site-header-reader) .header-inner::before'),
+    assert.ok(skins.includes('.site-header .header-inner::before'),
       "terminal skin also gets its own brand/navigation separator");
     assert.ok(skins.includes('border-top: 1px dashed color-mix(in srgb, var(--line-strong) 40%, transparent);'),
       "terminal divider is muted and does not touch content");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav {') &&
+    assert.ok(site.includes('.site-header #site-nav {') &&
       site.includes('background: transparent;') && site.includes('padding-inline: 0;'),
       "both navigation rows must stay visually integrated with their toolbars");
     assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
     assert.ok(skins.includes('border-bottom-color: transparent;'),
       "terminal masthead must not draw a dash across first paragraph");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
+    assert.ok(site.includes('.site-header + .site-body .home-hero {') &&
       site.includes('padding-top: 22px;'),
       "both skins must share identical 22px intro spacing without modifying article layout");
     assert.ok(site.includes('height: 40px; margin-block: 1px;') &&
@@ -111,17 +111,17 @@ describe("mobile reader regression contracts", () => {
     assert.match(skins, /\.header-inner::before\s*\{\s*content:\s*none;/,
       "narrow phone tools cannot be crossed by the divider");
   });
-  it("keeps mobile navigation visually unified while leaving the reader masthead untouched", () => {
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'));
+  it("uses identical navigation on reading and browsing routes", () => {
+    assert.ok(site.includes('.site-header .header-inner::before'));
     assert.ok(site.includes('top: calc(var(--header-bar-height) - 5px);'));
     assert.ok(site.includes('background: linear-gradient(90deg,'));
     assert.ok(site.includes('color-mix(in srgb, var(--line-strong) 35%, transparent)'));
-    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav'));
+    assert.ok(site.includes('.site-header #site-nav'));
     assert.ok(site.includes('padding-inline: 0;') && site.includes('background: transparent;'));
     assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
     assert.ok(site.includes('.header-inner::before { content: none; }'));
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
-      "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
+    assert.doesNotMatch(site, /\.site-header-reader\s+#site-nav/,
+      "article pages must not hide global navigation");
   });
   it("keeps quiet article actions without a moving overlay", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
@@ -160,16 +160,15 @@ describe("mobile reader regression contracts", () => {
       "font control must not clutter the byline");
     assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);
     assert.doesNotMatch(site, /\.reader-global-menu/);
-    assert.ok(site.includes('.site-header-reader .header-tools .icon-button'));
-    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'));
     assert.ok(!app.includes('className="brand-tagline"'),
       "readers keep their single Waylan logo, without a crowded slogan");
-    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'),
-      "all four direct reader shortcuts remain available on phones");
+    assert.doesNotMatch(site, /\.site-header-reader\s+(?:\.header-inner|\.brand|\.header-tools|\.header-search)/,
+      "articles cannot override the common header geometry");
     assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
     assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));
-    assert.ok(site.includes('.site-header-reader .brand-wordmark'));
+    assert.doesNotMatch(site, /\.site-header-reader\s+#site-nav/,
+      "article pages must not hide global navigation");
+    assert.ok(site.includes('top: calc(var(--header-height) - 2px);'));
   });
   it("uses the header width for navigation and search instead of an extra motto", () => {
     const app = readFileSync("src/App.tsx", "utf8");
@@ -177,12 +176,12 @@ describe("mobile reader regression contracts", () => {
       !app.includes('className="brand-tagline"'), "no small inline slogan beside the logo");
     assert.ok(site.includes("grid-template-columns: auto minmax(0, 1fr) auto;"),
       "desktop masthead should flex the navigation between logo and actions");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-search-text { display: inline; }'),
+    assert.ok(site.includes('.site-header .header-search-text { display: inline; }'),
       "tablet and wider phone header should use available width for a labeled search");
     assert.ok(site.includes('grid-template-rows: var(--header-bar-height) 52px 43px;'),
       "320px phones preserve full-size action targets in a dedicated row");
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
-      "article masthead must not duplicate the global destinations");
+    assert.doesNotMatch(site, /\.site-header-reader\s+#site-nav/,
+      "article pages must not hide global navigation");
   });
   it("keeps a distinct footer and separately attributed About quote in each skin", () => {
     const app = readFileSync("src/App.tsx", "utf8");

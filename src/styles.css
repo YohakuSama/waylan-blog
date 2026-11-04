@@ -2478,19 +2478,14 @@ body,
    Layout rules above are the only source of truth; no late modal overrides. */
 
 
-/* On article pages the inline actions belong to the document, not a
-   permanent second toolbar. Only the Waylan masthead remains sticky. */
+/* Reader in-page positioning tracks the same physical masthead as home,
+   including the 156px three-row layout on the narrowest phones. */
 @media (max-width: 1024px) {
-  :root:has(.site-header-reader) {
-    --reader-brand-height: 56px;
-    --header-height: var(--reader-brand-height);
-    scroll-padding-top: calc(var(--reader-brand-height) + 16px);
-  }
   .reader-toc.toc-visible {
-    top: calc(var(--reader-brand-height) + 12px);
-    max-height: calc(100dvh - var(--reader-brand-height) - 28px - env(safe-area-inset-bottom));
+    top: calc(var(--header-height) + 12px);
+    max-height: calc(100dvh - var(--header-height) - 28px - env(safe-area-inset-bottom));
   }
-  .article-block { scroll-margin-top: calc(var(--reader-brand-height) + 20px); }
+  .article-block { scroll-margin-top: calc(var(--header-height) + 20px); }
 }
 /* Article-specific navigation is quietly part of the document. */
 .reader-back {

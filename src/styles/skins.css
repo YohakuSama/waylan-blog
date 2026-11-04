@@ -893,10 +893,10 @@ html {
   /* Terminal needs the SAME brand/navigation hierarchy, translated to its
      square/dashed visual language. Never place a dashed rail against the
      first line of content: it looks like text has been struck through. */
-  :root[data-skin="terminal"] .site-header:not(.site-header-reader) {
+  :root[data-skin="terminal"] .site-header {
     border-bottom-color: transparent;
   }
-  :root[data-skin="terminal"] .site-header:not(.site-header-reader) .header-inner::before {
+  :root[data-skin="terminal"] .site-header .header-inner::before {
     content: "";
     position: absolute;
     pointer-events: none;
@@ -916,7 +916,7 @@ html {
 }
 @media (max-width: 370px) {
   /* On very narrow phones the tool row sits between brand and nav. */
-  :root[data-skin="terminal"] .site-header:not(.site-header-reader) .header-inner::before {
+  :root[data-skin="terminal"] .site-header .header-inner::before {
     content: none;
   }
 }

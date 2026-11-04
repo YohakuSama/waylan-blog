@@ -74,12 +74,42 @@ async function publicBrowsers() {
             // The first navigation should exercise hydrated handlers, not a
             // click raced against downloading/starting the client bundle.
             await page.waitForTimeout(500);
+            await page.evaluate(() => document.fonts.ready);
+            const readHeaderBoxes = () => page.evaluate(() => {
+              const rect = (selector) => {
+                const el = document.querySelector(selector);
+                if (!el || getComputedStyle(el).display === "none") return null;
+                const { x, y, width, height } = el.getBoundingClientRect();
+                return { x, y, width, height };
+              };
+              return {
+                header: rect(".site-header"), brand: rect(".brand"),
+                nav: rect("#site-nav"), tools: rect(".header-tools"),
+                controls: [".header-search", ".shelf-trigger",
+                  ".notification-trigger", ".settings-button"].map(rect),
+              };
+            });
+            const homeHeader = await readHeaderBoxes();
+            const assertHeaderSameAsHome = async (phase) => {
+              const actual = await readHeaderBoxes();
+              for (const key of ["header", "brand", "nav", "tools"]) {
+                assert.ok(actual[key] && homeHeader[key], phase + ": missing " + key);
+                for (const dimension of ["x", "y", "width", "height"])
+                  assert.ok(Math.abs(actual[key][dimension] - homeHeader[key][dimension]) <= 1,
+                    `${phase}: ${key} ${dimension} shifted`);
+              }
+              actual.controls.forEach((control, index) => {
+                assert.ok(control && homeHeader.controls[index], phase + ": missing tool " + index);
+                for (const dimension of ["x", "y", "width", "height"])
+                  assert.ok(Math.abs(control[dimension] - homeHeader.controls[index][dimension]) <= 1,
+                    `${phase}: utility ${index} ${dimension} shifted`);
+              });
+            };
             stage = "feed navigation";
             await page.locator("a[href='/feed']").first().click();
             await page.waitForURL(/\/feed(?:\?.*)?$/, { timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/feed");
-            // Browsing routes keep the global settings button. On mobile an
-            // article intentionally replaces that chrome with one reader row.
+            // Browsing and article routes always use the same masthead.
             stage = "browsing settings";
             const settingsButton = page.locator('.header-tools > button[aria-label="阅读设置"]');
             await settingsButton.click();
@@ -97,9 +127,17 @@ async function publicBrowsers() {
             if (width <= 1024) {
               assert.equal(await page.locator(".site-header-reader").isVisible(), true,
                 name + ": mobile reader lost its Waylan logo masthead");
-              assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(), false,
-                name + ": destination navigation returned as a redundant second row");
+              assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(), true,
+                name + ": article navigation is hidden");
             }
+            await page.evaluate(() => document.fonts.ready);
+            await assertHeaderSameAsHome(name + "/" + width + "/" + motion + "/post");
+            // Verify the real client-side transition back to the homepage.
+            stage = "reader to homepage";
+            await page.locator('.site-header-reader #site-nav a[href="/"]').click();
+            await page.waitForURL(/\/$/, { timeout: 15000 });
+            await page.waitForTimeout(300);
+            await assertHeaderSameAsHome(name + "/" + width + "/" + motion + "/back-home");
             // Simulate navigation churn with real (not reduced) transitions.
             stage = "archive navigation";
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });

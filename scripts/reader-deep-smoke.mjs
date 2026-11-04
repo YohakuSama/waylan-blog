@@ -129,8 +129,12 @@ async function run(engine,name,width){
       if(width<=1024) {
         assert.equal(await page.locator(".site-header-reader .brand-wordmark").isVisible(),true,
           "Waylan wordmark disappeared during reading");
-        assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),false,
-          "article must not duplicate destination navigation");
+        assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(),true,
+          "article must keep the identical homepage navigation");
+        const mastheadHeight = await page.locator(".site-header-reader").evaluate(el=>el.getBoundingClientRect().height);
+        const expectedHeight = width <= 370 ? 156 : width <= 860 ? 104 : 68;
+        assert.ok(Math.abs(mastheadHeight - expectedHeight) <= 2,
+          `article masthead ${mastheadHeight}px differs from shared ${expectedHeight}px`);
         assert.equal(await page.locator(".site-header-reader .header-tools .shelf-trigger").isVisible(),true,
           "reading list should remain directly visible");
         assert.equal(await page.locator(".site-header-reader .header-tools .notification-trigger").isVisible(),true,
