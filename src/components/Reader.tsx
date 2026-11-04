@@ -1320,7 +1320,7 @@ export default function Reader({ post }: { post: Post }) {
               </button>
               <button className={`article-action${excerptMode ? " is-active" : ""}`}
                 type="button" aria-pressed={excerptMode}
-                aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+                aria-label={excerptMode ? "退出摘录模式 · 结束划线" : "开启摘录段落模式 · 划线"}
                 onClick={toggleReaderExcerpt}>
                 <Highlighter size={17} /><span>{excerptMode ? "结束划线" : "划线"}</span>
               </button>
@@ -1801,7 +1801,7 @@ export default function Reader({ post }: { post: Post }) {
               <Type size={17} /><span>字号 {fontSize}</span>
             </button>
             <button type="button" onClick={toggleReaderExcerpt}
-              aria-pressed={excerptMode} aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}>
+              aria-pressed={excerptMode} aria-label={excerptMode ? "退出摘录模式 · 结束划线" : "开启摘录段落模式 · 划线"}>
               <Highlighter size={17} /><span>{excerptMode ? "结束划线" : "划线"}</span>
             </button>
             <button type="button" aria-label={tocOpen ? "收起文章目录" : "展开文章目录"}
