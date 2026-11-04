@@ -528,13 +528,13 @@ export default function Reader({ post }: { post: Post }) {
     if (typeof ResizeObserver !== "undefined") observer = new ResizeObserver(schedule);
     sync();
     schedule();
-    viewport.addEventListener("resize", schedule);
-    viewport.addEventListener("scroll", schedule);
-    window.addEventListener("resize", schedule);
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
     return () => {
-      viewport.removeEventListener("resize", schedule);
-      viewport.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
       if (frame) window.cancelAnimationFrame(frame);
       observer?.disconnect();
       if (observedDialog) {
