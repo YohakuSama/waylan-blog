@@ -55,6 +55,27 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
+  it("keeps rounded nav dividers inside the mobile frame and terminal dividers square", () => {
+    assert.ok(site.includes("--nav-divider-inset: 12px;"));
+    assert.ok(site.includes("#site-nav::before,"));
+    assert.ok(site.includes("#site-nav::after { bottom: 0; }"));
+    assert.ok(skins.includes('--nav-divider-inset: 0px;'));
+    assert.ok(skins.includes('border-radius: 0;'));
+    assert.ok(site.includes("height: 35px; margin-block: 4px;"));
+  });
+  it("puts excerpt into existing reader controls, not its own sticky strip", () => {
+    const reader=readFileSync("src/components/Reader.tsx","utf8");
+    assert.ok(reader.includes('className="icon-button excerpt-toggle"'));
+    assert.ok(reader.includes('aria-pressed={excerptMode}'));
+    assert.ok(reader.includes('className="reader-topbar"'));
+    assert.ok(!reader.includes('className={`excerpt-access'));
+    assert.ok(style.includes('.reader-controls .excerpt-toggle'));
+    assert.ok(style.includes('top: var(--header-height);'));
+  });
+  it("keeps the brand separator visible on phones", () => {
+    assert.ok(site.includes('.brand-rule {\n    display: block;'));
+    assert.ok(site.includes('.brand { gap: 5px; }'));
+  });
   it("keeps the identity beside the logo across mobile and tablet sizes", () => {
     assert.match(app, /<small className="brand-tagline">\{site.tagline\}<\/small>/);
     assert.doesNotMatch(app, /mobile-brand-tagline/);
