@@ -2745,6 +2745,16 @@ body,
     background: var(--surface-muted);
   }
 }
+@media (min-width: 390px) and (max-width: 1040px) {
+  .toc-visible .toc-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .toc-visible .toc-footer > button {
+    gap: 5px;
+    padding-inline: 7px;
+    font-size: 11px;
+  }
+}
 @media (max-width: 700px) {
   .reader-toc.toc-visible {
     top: auto;
