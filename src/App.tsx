@@ -179,10 +179,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <Wordmark className="brand-wordmark" />
             <span className="brand-term">
               <b>{site.name.toLowerCase()}</b>
-              <i>@</i>
-              <span>blog</span>
-              <i>:~$</i>
-              <span className="term-cursor" />
             </span>
             <span className="brand-name">{site.name}</span>
             <span className="sr-only">首页</span>
