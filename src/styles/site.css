@@ -277,6 +277,12 @@ h3 {
   display: block;
   min-height: 56px;
 }
+.home-resume-placeholder .resume-preview-title::before {
+  content: var(--resume-preload-title, "");
+}
+.home-resume-placeholder .resume-preview-progress::before {
+  content: var(--resume-preload-progress, "");
+}
 /* A remembered reading position is secondary to the current publication list. */
 .home-resume { margin: 0 0 16px; }
 .home-resume .resume-link {
