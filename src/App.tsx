@@ -186,7 +186,10 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             </span>
             <span className="brand-name">{site.name}</span>
             <span className="brand-rule" aria-hidden="true" />
-            <small className="brand-tagline">{site.tagline}</small>
+            <small className="brand-tagline" title="Dieter Rams — Less, but better.">
+              <span className="brand-motto-quote">Less, but better.</span>
+              <span className="brand-motto-credit">— Dieter Rams</span>
+            </small>
             <span className="sr-only">首页</span>
           </Link>
           <nav
@@ -277,12 +280,10 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <Link
               href="/"
               className="footer-brand"
-              aria-label={`${site.name} 首页`}
+              aria-label={`${site.name} Blog 首页`}
             >
               <Wordmark />
-              <span className="footer-term" aria-hidden="true">
-                ~/{site.name.toLowerCase()}
-              </span>
+              <span className="footer-blog-script" aria-hidden="true">Blog</span>
             </Link>
             <span className="footer-copy">
               © {copyrightYears} {site.author}. All rights reserved.

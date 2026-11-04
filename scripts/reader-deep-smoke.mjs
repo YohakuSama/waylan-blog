@@ -142,14 +142,11 @@ async function run(engine,name,width){
       const readingSettings=page.getByRole("dialog",{name:"阅读设置",exact:true});
       await readingSettings.waitFor({state:"visible"});
       await readingSettings.locator('.reader-font-choices label:has(input[value="20"])').click();
-      // Phones intentionally render the saved reader size 2px smaller in CSS.
-      // Verify both the selected preference and the resulting responsive size.
-      const expectedFont=width<=700?"18px":"20px";
-      await page.waitForFunction(expected=>getComputedStyle(document.querySelector(".reader-prose")).fontSize===expected,expectedFont);
-      assert.equal(await page.locator(".reader-prose").evaluate(el=>el.style.getPropertyValue("--reader-font")),"20px",
-        "the selected font preference must reach the article");
-      assert.equal(await page.locator(".reader-prose").evaluate(el=>getComputedStyle(el).fontSize),expectedFont,
-        "reading settings must update the responsive article font immediately");
+      await page.waitForFunction(()=>getComputedStyle(document.querySelector(".reader-prose"))
+        .getPropertyValue("--reader-font").trim()==="20px");
+      const actualFont=await page.locator(".reader-prose").evaluate(el=>getComputedStyle(el).fontSize);
+      assert.equal(actualFont,width<=700?"18px":"20px",
+        "reader settings must update the article while preserving the deliberate -2px phone adjustment");
       await readingSettings.locator('button[aria-label="关闭"]').click();
       await readingSettings.waitFor({state:"hidden"});
       await page.evaluate(()=>{
@@ -162,7 +159,11 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"quiet inline actions and responsive font settings",actionsLayout});
       if(width<=1040) await page.locator(".article-action-toc").click();
       await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
-      await page.waitForTimeout(120);
+      // The scroll target is synchronous, but the active section is updated by
+      // the scroll observer on a subsequent animation frame.
+      await page.waitForFunction(() =>
+        document.querySelector('.reader-toc nav a.active')?.getAttribute("href")==="#h-hydration",
+        null, {timeout:5000});
       const tocPosition=await page.evaluate(()=>{
         const hydration=document.getElementById("h-hydration");
         const stable=document.getElementById("h-ids");

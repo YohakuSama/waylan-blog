@@ -921,9 +921,13 @@ html {
     content: none;
   }
 }
-:root[data-skin="terminal"] .brand-wordmark,
-:root[data-skin="terminal"] .footer-brand .wordmark {
+:root[data-skin="terminal"] .brand-wordmark {
   display: none;
+}
+/* The footer is a signature in both skins; only the navigation masthead
+   retains terminal's command-line wordmark. */
+:root[data-skin="terminal"] .footer-brand .wordmark {
+  display: block;
 }
 :root[data-skin="terminal"] .brand-term {
   display: inline-flex;

@@ -54,8 +54,15 @@ async function run(engine, label, width, height, touch) {
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
       // SSR markup exists before React hydrates. Prove the reader's handlers
       // are live before generating a programmatic Selection and selectionchange.
-      // The former inline font-cycling button moved into the accessible more panel.
-      // Opening and closing that panel proves React handlers are hydrated.
+      const shareArticle = page.getByRole("group", { name: "本文操作" })
+        .getByRole("button", { name: "分享文章" });
+      await shareArticle.click();
+      // Fine-pointer desktop uses a clipboard fallback, while touch browsers
+      // use navigator.share. Either outcome confirms React hydration.
+      await page.waitForFunction(() => window.__shareCount + window.__copyCount > 0,
+        null, { timeout: 15000 });
+      await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
+      // A newly opened quick-actions menu confirms the reader controls are hydrated.
       const more = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: "展开更多操作" });
       await more.click();
       await page.getByRole("group", { name: "更多阅读操作" }).getByRole("button", { name: "复制链接" }).waitFor({ state: "visible" });

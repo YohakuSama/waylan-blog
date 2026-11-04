@@ -93,6 +93,13 @@ try {
               brand: select(".brand"),
               brandWordmark: select(".brand .brand-wordmark") || select(".brand .brand-term"),
               brandTagline: select(".brand .brand-tagline"),
+              mottoQuote: select(".brand-motto-quote"),
+              mottoText: document.querySelector(".brand-motto-quote")?.textContent?.trim(),
+              mottoFont: getComputedStyle(document.querySelector(".brand-motto-quote")).fontFamily,
+              footerBlog: select(".footer-blog-script"),
+              footerBlogText: document.querySelector(".footer-blog-script")?.textContent?.trim(),
+              footerBlogFont: getComputedStyle(document.querySelector(".footer-blog-script")).fontFamily,
+              footerWordmark: select(".footer-brand .wordmark"),
               mobileTagline: select(".mobile-brand-tagline"),
               nav: select("#site-nav"),
               mobileNavChrome: (() => {
@@ -206,6 +213,17 @@ try {
           assert.match(geometry.footerCountText || "", /\d+ 条内容/,
             `${label}: mixed content mislabeled as articles`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
+          assert.equal(geometry.mottoText, "Less, but better.", `${label}: attributed motto missing`);
+          assert.ok(geometry.mottoQuote?.width >= 24 && geometry.mottoQuote.height >= 10,
+            `${label}: motto clipped away from header`);
+          assert.ok(geometry.mottoFont.includes("Waylan Great Vibes"), `${label}: motto lost script typeface`);
+          assert.equal(geometry.footerBlogText, "Blog", `${label}: footer signature missing`);
+          assert.ok(geometry.footerWordmark?.width > 40 && geometry.footerWordmark.height >= 25 &&
+            geometry.footerBlog?.width >= 20 && geometry.footerBlog.height >= 20,
+            `${label}: Waylan Blog signature hidden or split`);
+          assert.ok(geometry.footerBlogFont.includes("Waylan Great Vibes"), `${label}: footer script typeface changed`);
+          assert.ok(await page.evaluate(() => document.fonts.check('20px "Waylan Great Vibes"')),
+            `${label}: local handwriting font did not load`);
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           if (isImmersive) {
             assert.ok(geometry.header && Math.abs(geometry.header.height-56)<=2,
