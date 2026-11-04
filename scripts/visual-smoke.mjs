@@ -94,7 +94,20 @@ try {
               brandWordmark: select(".brand .brand-wordmark") || select(".brand .brand-term"),
               brandTagline: select(".brand .brand-tagline"),
               mobileTagline: select(".mobile-brand-tagline"),
-              nav: select("#site-nav"), tools: select(".header-tools"),
+              nav: select("#site-nav"),
+              mobileNavChrome: (() => {
+                const nav = document.querySelector("#site-nav");
+                const header = document.querySelector(".site-header");
+                const selected = nav?.querySelector(".nav-link.selected");
+                return nav && header ? {
+                  beforeContent: getComputedStyle(nav, "::before").content,
+                  afterContent: getComputedStyle(nav, "::after").content,
+                  headerBottomStyle: getComputedStyle(header).borderBottomStyle,
+                  headerBottomColor: getComputedStyle(header).borderBottomColor,
+                  selectedRadius: selected ? parseFloat(getComputedStyle(selected).borderTopLeftRadius) : null,
+                } : null;
+              })(),
+              tools: select(".header-tools"),
               header: select(".site-header"), readerTopbar: select(".reader-topbar"), body: select(".site-body"),
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
@@ -208,7 +221,26 @@ try {
               `${label}: an unwanted gap appeared below the header`);
             assert.ok(geometry.nav, `${label}: primary destinations are hidden`);
             if (width > 860) assert.ok(geometry.nav.right <= geometry.tools.left + 1, `${label}: navigation overlaps actions`);
-            else assert.ok(geometry.nav.top >= geometry.tools.bottom && geometry.nav.height >= 43, `${label}: destinations not separated from utilities`);
+            else {
+              assert.ok(geometry.nav.top >= geometry.tools.bottom && geometry.nav.height >= 43,
+                `${label}: destinations not separated from utilities`);
+              const chrome = geometry.mobileNavChrome;
+              assert.ok(chrome, `${label}: missing mobile nav chrome`);
+              assert.ok(["none", "normal"].includes(chrome.beforeContent) &&
+                ["none", "normal"].includes(chrome.afterContent),
+                `${label}: double horizontal rules still frame the nav tabs: ${JSON.stringify(chrome)}`);
+              if (variant.skin === "editorial") {
+                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
+                  `${label}: rounded nav still has a visible full-width bottom border`);
+                if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
+                  `${label}: rounded nav tab lost its rounded corners`);
+              } else {
+                assert.equal(chrome.headerBottomStyle, "dashed",
+                  `${label}: terminal nav needs one straight bottom rule`);
+                if (chrome.selectedRadius !== null) assert.equal(chrome.selectedRadius, 0,
+                  `${label}: terminal nav tab must stay rectangular`);
+              }
+            }
             for (const control of geometry.controls) {
               assert.ok(control && control.width >= 44 && control.height >= 44, `${label}: small header target`);
               assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
