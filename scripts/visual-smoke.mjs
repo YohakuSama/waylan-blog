@@ -137,6 +137,12 @@ try {
               archiveTopicTarget: select(".archive-summary a"),
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
+              projectCount: document.querySelectorAll(".projects-layout .feed-item.is-project").length,
+              projectStatusCount: document.querySelectorAll(".projects-layout .project-status").length,
+              projectCodeLabels: [...document.querySelectorAll(".projects-layout .project-code")].map((el) => el.textContent.trim()),
+              projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
+              projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
+              projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
@@ -193,6 +199,27 @@ try {
                 tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
             }
             assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= 40), `${label}: density preference cannot be changed`);
+          }
+          if (route === "/projects") {
+            assert.equal(geometry.projectCount, 2, `${label}: missing project entries`);
+            assert.equal(geometry.projectStatusCount, 2, `${label}: missing project status`);
+            assert.ok(geometry.projectCodeLabels.every((text) => text.startsWith("项目 · ")),
+              `${label}: unpublished slug looks like a public repository`);
+            if (width < 1120)
+              assert.equal(geometry.sidebar, null, `${label}: projects sidebar should not bury the footer`);
+            else {
+              assert.ok(geometry.sidebar, `${label}: wide-screen project navigation missing`);
+              assert.equal(geometry.projectSidebarBlockCount, 2,
+                `${label}: full-length sidebar returned to projects`);
+            }
+            if (width <= 767) {
+              assert.ok(geometry.projectTags.length > 0 &&
+                geometry.projectTags.every((box) => box && box.height >= 40 &&
+                  box.left >= 0 && box.right <= geometry.viewport),
+                `${label}: small or clipped project tags`);
+              assert.ok(geometry.projectExternal.every((box) => box && box.height >= 44),
+                `${label}: future project links need 44px targets`);
+            }
           }
           if (route === "/archive") {
             assert.equal(geometry.archiveFilters, 0, `${label}: duplicated archive filters`);

@@ -6,7 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const origin = "http://127.0.0.1:4177";
 const output = "accessibility-report";
-const pages = ["/", "/feed/", "/archive/", "/about/", "/post/a-room-on-the-internet/"];
+const pages = ["/", "/feed/", "/archive/", "/projects/", "/about/", "/post/a-room-on-the-internet/"];
 const themes = ["light", "dark"];
 const skins = ["editorial", "terminal"];
 const widths = [390, 1440];

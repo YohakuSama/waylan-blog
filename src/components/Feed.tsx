@@ -199,9 +199,10 @@ export function FeedEntry({
         <div className="feed-media project-thumb">
           <span className="project-head">
             <span className="project-initial">{post.title.slice(0, 1)}</span>
-            <span className="mono project-repo">
-              {post.project?.repo?.replace(/^https?:\/\/(www\.)?github\.com\//, "") ||
-                post.slug}
+            <span className="mono project-code">
+              {post.project?.repo
+                ? `仓库 · ${post.project.repo.replace(/^https?:\/\/(www\.)?github\.com\//, "")}`
+                : `项目 · ${post.slug.replace(/^project-/, "")}`}
             </span>
           </span>
           <span className="project-langs" aria-hidden="true">

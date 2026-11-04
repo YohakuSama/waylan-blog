@@ -1144,6 +1144,65 @@ describe("React navigation and reading interactions (DOM integration, not browse
       "项目",
     );
   });
+  it("keeps project details, bookmarks and return position across both project readers", async () => {
+    await mount("/projects");
+    const projects = posts.filter((p) => p.type === "project").sort((a, b) => b.date.localeCompare(a.date));
+    assert.equal(document.querySelectorAll(".projects-layout .feed-item.is-project").length, projects.length);
+    assert.equal(document.querySelectorAll(".projects-sidebar .profile-block").length, 0);
+    assert.equal(document.querySelectorAll(".projects-sidebar .side-block").length, 2);
+    for (const project of projects) {
+      const card = document.getElementById(`card-${project.id}`)!;
+      assert.ok(card);
+      assert.match(card.querySelector(".project-code")?.textContent || "", /^项目 · /);
+      assert.ok(card.querySelector(".project-status"));
+      assert.equal(card.querySelectorAll(".stack-list li").length, project.project!.stack.length);
+      const bookmark = card.querySelector<HTMLButtonElement>(".card-bookmark")!;
+      await click(bookmark);
+      assert.equal(bookmark.getAttribute("aria-pressed"), "true");
+      y = 640;
+      await click(card.querySelector(".post-card-link"));
+      assert.equal(location.pathname, `/post/${project.slug}`);
+      assert.equal(y, 0);
+      await click(document.querySelector(".reader-topbar > .text-button"));
+      await settle(90);
+      assert.equal(location.pathname, "/projects");
+      assert.equal(y, 640, "return to projects must restore the original scroll");
+      assert.equal(document.getElementById(`card-${project.id}`)?.querySelector(".card-bookmark")?.getAttribute("aria-pressed"), "true");
+    }
+    const tag = document.querySelector<HTMLAnchorElement>(".projects-layout .tag-list a")!;
+    assert.ok(tag);
+    const destination = tag.getAttribute("href")!;
+    assert.match(destination, /^\/feed\?tag=/);
+    await click(tag);
+    assert.equal(location.pathname, "/feed");
+    assert.ok(new URLSearchParams(location.search).has("tag"));
+  });
+  it("only renders project repo/demo actions when real URLs exist, with safe new-tab links", async () => {
+    const source = posts.find((p) => p.type === "project")!;
+    const fixture = {
+      ...source,
+      id: "project-external-fixture",
+      slug: "project-external-fixture",
+      title: "项目外链测试",
+      project: { ...source.project!, repo: "https://github.com/example/project", demo: "https://demo.example.com/" },
+    };
+    posts.push(fixture);
+    try {
+      await mount("/projects");
+      const card = document.getElementById("card-project-external-fixture")!;
+      assert.ok(card, "temporary project must be visible without modifying production data");
+      const links = [...card.querySelectorAll<HTMLAnchorElement>(".project-facts a")];
+      assert.deepEqual(links.map((a) => a.href), [fixture.project.repo, fixture.project.demo]);
+      for (const link of links) {
+        assert.equal(link.target, "_blank");
+        assert.ok(link.rel.split(/\s+/).includes("noreferrer"));
+      }
+      assert.match(card.querySelector(".project-code")?.textContent || "", /^仓库 · /);
+    } finally {
+      const at = posts.indexOf(fixture);
+      if (at !== -1) posts.splice(at, 1);
+    }
+  });
   it("allows full motion to be selected when the system preference reduces it", async () => {
     await mount();
     await click(document.querySelector(".settings-button"));
