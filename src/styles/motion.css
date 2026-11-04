@@ -230,6 +230,14 @@ a:hover {
   border-radius: 50%;
   background: var(--surface-muted);
 }
+.comment-skeleton {
+  box-sizing: border-box;
+  min-height: 218px;
+  padding: 20px var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
 .comment-skeleton > div {
   display: grid;
   grid-template-columns: 28px 1fr;

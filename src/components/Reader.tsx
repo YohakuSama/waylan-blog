@@ -584,6 +584,8 @@ export default function Reader({ post }: { post: Post }) {
     const id = window.requestAnimationFrame(() => composerArea.current?.focus({ preventScroll: true }));
     return () => window.cancelAnimationFrame(id);
   }, [panel, panelIds.length]);
+  // Unknown is not the same as an empty or unmapped discussion (also during SSR).
+  const commentsUnresolved = !comments && !commentState.data;
   const state = comments || commentState.data || emptyPage;
   const visibleTopComments = state.nodes.filter(visibleComment);
   const visibleCount = Math.max(0, state.totalCount - (state.nodes.length - visibleTopComments.length));
@@ -1519,14 +1521,16 @@ export default function Reader({ post }: { post: Post }) {
               <h2>
                 发表评论
                 <span>
-                  {commentState.loading
+                  {commentsUnresolved && !commentState.error
                     ? "…"
                     : commentState.error
                       ? "—"
                       : visibleCount}
                 </span>
               </h2>
-              {state.mapped && !offlinePreview() ? (
+              {commentsUnresolved ? (
+                <span className="discussion-action-placeholder" aria-hidden="true" />
+              ) : state.mapped && !offlinePreview() ? (
                 <button className="quiet-button" onClick={() => newComment()}>
                   <Plus size={16} />写下想法
                 </button>
@@ -1536,101 +1540,103 @@ export default function Reader({ post }: { post: Post }) {
             </div>
             <p className="discussion-intro">
               关于整篇文章，也关于让你停下来的那句话。
-              {!state.mapped && (
+              {!commentsUnresolved && !state.mapped && (
                 <>
                   <br />
                   公开评论基于 GitHub Discussions；接入完成后才可发表。
                 </>
               )}
             </p>
-            {commentState.loading ? (
-              <div className="comment-skeleton" role="status">
-                <span className="sr-only">正在加载评论…</span>
-                {[0, 1].map((i) => (
-                  <div key={i} aria-hidden="true">
-                    <span className="skeleton-dot" />
-                    <span className="skeleton-line" />
-                    <span className="skeleton-line" />
-                  </div>
-                ))}
-              </div>
-            ) : commentState.error ? (
-              <div className="discussion-empty is-error" role="status">
-                <p>{commentState.error.message}</p>
-                <small>正文与私人划线不受影响，稍后再试即可。</small>
-                <button className="quiet-button" onClick={commentState.reload}>
-                  <RotateCw size={15} aria-hidden="true" />
-                  重新读取
-                </button>
-              </div>
-            ) : (visibleTopComments.length > 0 || state.pageInfo.hasNextPage) ? (
-              <>
-                {state.stale && (
-                  <p className="inline-notice">
-                    GitHub 暂时没有回应，当前展示最近缓存的评论。
-                  </p>
-                )}
-                {visibleTopComments.map((c, index) => (
-                  <CommentItem
-                    key={c.id}
-                    comment={c}
-                    floor={`${index}F`}
-                    currentUser={session.data?.user?.login}
-                    moderator={session.data?.moderator}
-                    csrf={session.data?.csrf}
-                    onChanged={commentChanged}
-                    onQuote={quoteJump}
-                    onReply={(c) => newComment(c.annotation?.anchor || null, c)}
-                  />
-                ))}
-                {state.pageInfo.hasNextPage && (
-                  <button
-                    className="quiet-button"
-                    disabled={moreLoading}
-                    onClick={loadMore}
-                  >
-                    {moreLoading ? "正在读取…" : "加载更多评论"}
-                    <ArrowDown size={15} />
+            <div className="discussion-results">
+              {commentsUnresolved && !commentState.error ? (
+                <div className="comment-skeleton" role="status">
+                  <span className="sr-only">正在加载评论…</span>
+                  {[0, 1].map((i) => (
+                    <div key={i} aria-hidden="true">
+                      <span className="skeleton-dot" />
+                      <span className="skeleton-line" />
+                      <span className="skeleton-line" />
+                    </div>
+                  ))}
+                </div>
+              ) : commentState.error ? (
+                <div className="discussion-empty is-error" role="status">
+                  <p>{commentState.error.message}</p>
+                  <small>正文与私人划线不受影响，稍后再试即可。</small>
+                  <button className="quiet-button" onClick={commentState.reload}>
+                    <RotateCw size={15} aria-hidden="true" />
+                    重新读取
                   </button>
-                )}
-                {moreError && (
-                  <p role="alert" className="small-error">
-                    {moreError}
+                </div>
+              ) : (visibleTopComments.length > 0 || state.pageInfo.hasNextPage) ? (
+                <>
+                  {state.stale && (
+                    <p className="inline-notice">
+                      GitHub 暂时没有回应，当前展示最近缓存的评论。
+                    </p>
+                  )}
+                  {visibleTopComments.map((c, index) => (
+                    <CommentItem
+                      key={c.id}
+                      comment={c}
+                      floor={`${index}F`}
+                      currentUser={session.data?.user?.login}
+                      moderator={session.data?.moderator}
+                      csrf={session.data?.csrf}
+                      onChanged={commentChanged}
+                      onQuote={quoteJump}
+                      onReply={(c) => newComment(c.annotation?.anchor || null, c)}
+                    />
+                  ))}
+                  {state.pageInfo.hasNextPage && (
+                    <button
+                      className="quiet-button"
+                      disabled={moreLoading}
+                      onClick={loadMore}
+                    >
+                      {moreLoading ? "正在读取…" : "加载更多评论"}
+                      <ArrowDown size={15} />
+                    </button>
+                  )}
+                  {moreError && (
+                    <p role="alert" className="small-error">
+                      {moreError}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="discussion-empty">
+                  <span className="empty-echo">
+                    <EchoMark />
+                  </span>
+                  <p>
+                    {state.mapped
+                      ? "还没有评论。"
+                      : "这篇文章的评论暂时还没有开放。"}
                   </p>
-                )}
-              </>
-            ) : (
-              <div className="discussion-empty">
-                <span className="empty-echo">
-                  <EchoMark />
-                </span>
-                <p>
-                  {state.mapped
-                    ? "还没有评论。"
-                    : "这篇文章的评论暂时还没有开放。"}
-                </p>
-                <span>你仍然可以选中文字，把喜欢的句子划下来。</span>
-                {state.mapped && !offlinePreview() ? (
-                  <button className="text-button" onClick={() => newComment()}>
-                    留下一点想法 <ArrowUpRight size={15} />
-                  </button>
-                ) : (
-                  <p className="discussion-setup-note">公开讨论尚未关联到本文，当前仅可使用私人划线；关联 GitHub Discussions 后自动显示真实讨论入口。</p>
-                )}
-              </div>
-            )}
-            {state.mapped && state.discussionUrl && (
-              <a
-                href={safeURL(state.discussionUrl)}
-                className="discussion-source"
-                rel="noreferrer"
-                target="_blank"
-              >
-                <Github size={14} />
-                前往 GitHub 讨论
-                <ArrowUpRight size={13} />
-              </a>
-            )}
+                  <span>你仍然可以选中文字，把喜欢的句子划下来。</span>
+                  {state.mapped && !offlinePreview() ? (
+                    <button className="text-button" onClick={() => newComment()}>
+                      留下一点想法 <ArrowUpRight size={15} />
+                    </button>
+                  ) : (
+                    <p className="discussion-setup-note">公开讨论尚未关联到本文，当前仅可使用私人划线；关联 GitHub Discussions 后自动显示真实讨论入口。</p>
+                  )}
+                </div>
+              )}
+              {state.mapped && state.discussionUrl && (
+                <a
+                  href={safeURL(state.discussionUrl)}
+                  className="discussion-source"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <Github size={14} />
+                  前往 GitHub 讨论
+                  <ArrowUpRight size={13} />
+                </a>
+              )}
+            </div>
           </section>
           <Related post={post} exclude={[prev?.id, next?.id].filter((x): x is string => !!x)} />
           <nav className="article-neighbors" aria-label="相邻文章">
