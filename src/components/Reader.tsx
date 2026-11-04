@@ -1336,7 +1336,7 @@ export default function Reader({ post }: { post: Post }) {
                   <div className="article-font-options" role="group" aria-labelledby="reader-font-label">
                     {FONT_SIZES.map((size) => (
                       <button key={size} type="button" aria-pressed={fontSize === size}
-                        aria-label={`切换正文为${size}px`}
+                        aria-label={`切换正文为${size}px（${size === 16 ? "小" : size === 18 ? "标准" : "大"}）`}
                         onClick={() => changeFontSize(size)}>
                         {size === 16 ? "小" : size === 18 ? "标准" : "大"}
                       </button>
@@ -1792,7 +1792,7 @@ export default function Reader({ post }: { post: Post }) {
             </div>
             <button type="button" className="toc-excerpt-toggle"
               aria-pressed={excerptMode}
-              aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+              aria-label={excerptMode ? "退出摘录模式 · 结束段落摘录" : "开启摘录段落模式 · 点按整段摘录"}
               onClick={() => {
                 toggleReaderExcerpt();
                 setTocOpen(false);
