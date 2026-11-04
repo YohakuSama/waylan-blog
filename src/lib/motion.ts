@@ -109,7 +109,10 @@ export function navigateWithMotion(
     cleanup();
     throw error;
   }
-  if (!motionAllowed()) {
+  // A page-wide opacity fade briefly exposes the page background through
+  // Safari's translucent bottom toolbar on touch devices. Keep the new route
+  // fully opaque from its first frame; desktop may retain the small fade.
+  if (!motionAllowed() || matchMedia("(pointer: coarse)").matches) {
     cleanup();
     return { finished: Promise.resolve(), skipTransition() {} };
   }
