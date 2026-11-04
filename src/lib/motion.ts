@@ -58,7 +58,7 @@ type Snapshot = {
 };
 type Transition = { finished: Promise<void>; skipTransition: () => void };
 export type Direction = "forward" | "back";
-export type RouteMotion = "collection" | "reader";
+export type RouteMotion = "collection" | "reader" | "resume";
 let routeMotionSerial = 0;
 type ViewTransitionDocument = Document & {
   startViewTransition?: (change: () => void) => {
