@@ -104,7 +104,7 @@ html.font-wait #root {
   place-items: center;
   pointer-events: none;
   background: var(--paper);
-  transition: opacity 240ms ease-out;
+  transition: filter 240ms ease-out;
 }
 html.font-loader .boot {
   display: grid;
@@ -155,9 +155,9 @@ html.font-loader .boot {
   transform: translateX(70%);
   animation: none;
 }
-/* Leave the viewport clear before revealing the hydrated page. */
+/* Filter fades cleanly even if the initial opacity keyframe is still running. */
 html.font-loader-out .boot {
-  opacity: 0;
+  filter: opacity(0);
 }
 /* Opening: the header settles while the page beneath rises into place. */
 html.font-loader-out .site-header {
@@ -2113,19 +2113,47 @@ body,
   margin-top: 0;
 }
 .discussion-dialog.composer-dialog .comment-composer > textarea {
-  flex: 1 1 240px;
-  min-height: 150px; max-height: none;
+  flex: 1 1 180px;
+  min-height: 90px; max-height: none;
   resize: none;
 }
 .discussion-dialog.composer-dialog .composer-bottom {
-  position: sticky; bottom: 0; z-index: 3;
+  /* A normal flex footer cannot layer over the preview after OAuth reload. */
+  position: relative; flex: 0 0 auto; z-index: 1;
   margin-top: auto;
-  padding-top: 12px; padding-bottom: max(4px, env(safe-area-inset-bottom));
+  padding-top: 12px; padding-bottom: max(8px, env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
 .discussion-dialog.composer-dialog .composer-hint { align-items: center; }
-.discussion-dialog.composer-dialog .composer-preview { overflow: auto; max-height: 36dvh; }
+.discussion-dialog.composer-dialog .composer-preview {
+  flex: 1 1 200px; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+}
+.discussion-dialog.composer-dialog .comment-composer[data-preview="true"] > textarea,
+.discussion-dialog.composer-dialog .comment-composer[data-preview="true"] > .markdown-tools { display: none; }
+.discussion-dialog.composer-dialog .comment-composer[data-preview="true"] .composer-preview { margin-top: 10px; }
+.discussion-dialog.composer-dialog .login-invitation {
+  display: flex; align-items: center; gap: 12px;
+}
+.discussion-dialog.composer-dialog .login-invitation p {
+  flex: 1 1 240px; min-width: 0; margin: 0;
+  line-height: 1.6;
+}
+.discussion-dialog.composer-dialog .login-invitation .primary-button {
+  flex: 0 0 auto; width: auto; min-width: 190px; margin: 0;
+}
+.discussion-dialog.composer-dialog .composer-status { color: var(--muted); font-size: var(--text-xs); }
+.discussion-dialog.composer-dialog .signed-user { min-width: 0; }
+.discussion-dialog.composer-dialog .signed-user > span {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .discussion-dialog.composer-dialog.composer-fullscreen {
   /* Do not center a native modal or leave an auto margin. Anchor the top-layer
      box to the physical viewport origin on every desktop engine. */
@@ -2182,7 +2210,7 @@ body,
     padding: 18px clamp(16px, 4vw, 40px);
   }
   .discussion-dialog.composer-dialog .comment-composer > textarea {
-    min-height: min(28dvh, 210px);
+    min-height: 76px;
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
 }
@@ -2193,7 +2221,16 @@ body,
   .discussion-dialog.thread-dialog {
     bottom: var(--waylan-thread-view-bottom, 0px);
     box-sizing: border-box;
-    max-height: min(88dvh, 740px, calc(var(--waylan-thread-view-height, 100dvh) - 12px));
+    width: min(760px, 100dvw);
+    max-height: min(90dvh, 740px, calc(var(--waylan-thread-view-height, 100dvh) - 8px));
+  }
+  .discussion-dialog.thread-dialog .discussion-panel-body { padding: clamp(14px, 3vw, 24px); }
+  .discussion-dialog.thread-dialog .panel-original { margin-bottom: 14px; padding-bottom: 12px; }
+  .discussion-dialog.thread-dialog .panel-original blockquote { max-height: min(24dvh, 150px); }
+  .discussion-dialog.thread-dialog .panel-comment-entry {
+    position: sticky; bottom: 0; z-index: 2;
+    width: 100%; min-height: 48px;
+    background: var(--surface); box-shadow: 0 -8px 14px var(--surface);
   }
   .discussion-dialog.thread-dialog .discussion-panel-body {
     max-height: none;
@@ -2213,6 +2250,11 @@ body,
     font-size: 16px; line-height: 1.7;
   }
   .discussion-dialog.composer-dialog .composer-hint { flex-wrap: wrap; }
+  .discussion-dialog.composer-dialog .login-invitation { flex-direction: column; align-items: stretch; gap: 8px; }
+  .discussion-dialog.composer-dialog .login-invitation p { flex: 0 0 auto; }
+  .discussion-dialog.composer-dialog .login-invitation .primary-button { width: 100%; min-width: 0; }
+  .discussion-dialog.composer-dialog .composer-bottom { gap: 8px; }
+  .discussion-dialog.composer-dialog .composer-preview { padding: 10px 12px; }
 }
 /* Searchable emoji panel; old 4-column popup rules are superseded. */
 .markdown-tools .markdown-emoji-picker {
