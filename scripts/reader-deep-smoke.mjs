@@ -213,7 +213,7 @@ async function run(engine,name,width){
             "Thread dialog touches the viewport edge: " + JSON.stringify(geometry));
         }
         assert.ok(geometry.inlineTop && geometry.inlineBottom === "auto" &&
-          geometry.marginBlock === "0", "Thread must use measured top, not CSS auto margins: " + JSON.stringify(geometry));
+          Number.parseFloat(geometry.marginBlock) === 0, "Thread must use measured top, not CSS auto margins: " + JSON.stringify(geometry));
         assert.ok(Math.abs(parseFloat(geometry.inlineTop) -
           (geometry.visualTop + (geometry.visibleBottom - geometry.visualTop - geometry.dialogHeight) / 2)) <= 3,
           "Measured thread top does not match visible-viewport center: " + JSON.stringify(geometry));
