@@ -38,7 +38,8 @@ async function run(engine,browser,width){
       await page.waitForTimeout(650);
       const fab=page.getByRole("button",{name:"开启摘录段落模式"});
       await fab.click();
-      await page.locator(".excerpt-mode-hint").waitFor({state:"visible"});
+      await page.getByRole("button",{name:"退出摘录模式"}).waitFor({state:"visible"});
+      assert.equal(await fab.count(),0,"mode toggle should expose its active label");
       const paragraph=page.locator(".reader-prose .article-block[data-type='paragraph']").first();
       await paragraph.click();
       await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:10000});
@@ -103,7 +104,7 @@ async function run(engine,browser,width){
       await page.waitForTimeout(180);
       const retained=await page.locator(".selection-toolbar").isVisible();
       record(browser,width,"excerpt survives scroll for action",{
-        retained,hintVisible:await page.locator(".excerpt-mode-hint").isVisible()
+        retained,modeActive:await page.getByRole("button",{name:"退出摘录模式"}).getAttribute("aria-pressed")
       },!retained);
       // The first tap away from an active quote now deliberately dismisses
       // that selection and the tray together. Start a different excerpt with
@@ -130,20 +131,25 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
-      // UI overlay: a reader-mode control belongs in the reserved rail, not
-      // over arbitrary words near the bottom-right of the viewport.
-      await page.locator(".excerpt-mode-hint button").click();
-      const overlapping=await page.evaluate(()=>{
-        const fab=document.querySelector(".excerpt-fab"),paras=[...document.querySelectorAll(".reader-prose [data-block-id]")];
-        if(!fab)return{visible:false};
-        const f=fab.getBoundingClientRect(),x=f.left+f.width/2,y=f.top+f.height/2;
-        const before=paras.filter(p=>{const r=p.getBoundingClientRect();return r.top<=y&&r.bottom>=y&&r.left<=x&&r.right>=x}).map(p=>p.dataset.blockId);
-        const headerBottom=document.querySelector(".site-header")?.getBoundingClientRect().bottom||0;
-        const inRail=!!fab.closest(".excerpt-access") && f.top>=headerBottom-1 && f.bottom<=headerBottom+85;
-        return{visible:true,rect:{x:f.x,y:f.y,w:f.width,h:f.height},coveredBlocks:before,inRail,headerBottom,atTop:document.elementFromPoint(x,y)?.className};
+      // Excerpt now shares the ordinary reader controls and must not create
+      // a second sticky strip or a floating overlay.
+      await page.getByRole("button",{name:"退出摘录模式"}).click();
+      const controls=await page.evaluate(()=>{
+        const toggle=document.querySelector(".excerpt-toggle");
+        const bar=document.querySelector(".reader-topbar");
+        const site=document.querySelector(".site-header");
+        const rect=toggle?.getBoundingClientRect(), head=site?.getBoundingClientRect();
+        return {
+          inReaderControls:!!toggle?.closest(".reader-topbar .reader-controls"),
+          extraStrip:!!document.querySelector(".excerpt-access"),
+          active:toggle?.getAttribute("aria-pressed"),
+          toggleTop:rect?.top,headerBottom:head?.bottom,
+          style:bar?getComputedStyle(bar).position:null
+        };
       });
-      record(browser,width,"floating trigger obscures prose or controls",overlapping,!overlapping.inRail);
-      await page.screenshot({path:dir+"/"+browser+"-"+width+"-floating.png",animations:"disabled"});
+      record(browser,width,"excerpt lives in the shared reader tool row",controls,
+        !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||controls.style!=="sticky");
+      await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
 }
