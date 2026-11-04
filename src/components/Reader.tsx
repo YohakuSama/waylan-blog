@@ -1345,9 +1345,18 @@ export default function Reader({ post }: { post: Post }) {
                 </div>
               </div>
             </div>
-            <span className="sr-only" role="status">
-              {excerptMode ? "摘录模式已开启：点选正文段落可划线或评论。" : ""}
-            </span>
+            {excerptMode && (
+              <div className="excerpt-mode-hint" role="status">
+                <Highlighter size={17} aria-hidden="true" />
+                <span>
+                  <strong>段落摘录已开启</strong>
+                  <small>点击正文段落选择，无时间限制</small>
+                </span>
+                <button type="button" onClick={toggleReaderExcerpt}>
+                  退出摘录
+                </button>
+              </div>
+            )}
             {post.cover && (
               <figure className="article-cover">
                 <div
@@ -1840,6 +1849,12 @@ export default function Reader({ post }: { post: Post }) {
             <span title={anchorQuote(selection.anchor)}>
               已选 {anchorQuote(selection.anchor).length} 字 · “{anchorQuote(selection.anchor).slice(0, 28)}{anchorQuote(selection.anchor).length > 28 ? "…" : ""}”
             </span>
+            {excerptMode && (
+              <button type="button" className="selection-toolbar-mode-exit"
+                onTouchEnd={(e) => onToolbarTouchEnd(e, toggleReaderExcerpt)}
+                onClick={(e) => onToolbarClick(e, toggleReaderExcerpt)}
+              >退出摘录</button>
+            )}
             <button type="button" aria-label="关闭摘录工具栏"
               onTouchEnd={(e) => onToolbarTouchEnd(e, dismissToolbar)}
               onClick={(e) => onToolbarClick(e, dismissToolbar)}
