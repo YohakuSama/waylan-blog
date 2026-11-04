@@ -173,7 +173,13 @@ try {
         await scan(page, width + "/admin/dashboard");
         await page.locator(".posts .link").first().click();
         await page.getByRole("heading", { name: "编辑", exact: true }).waitFor();
+        await page.locator('textarea[aria-label="文章正文（Markdown）"]').waitFor();
         await scan(page, width + "/admin/editor");
+        await page.locator(".editor-head button").first().click();
+        await page.locator(".site-card button").click();
+        await page.getByRole("heading", { name: "站点资料", exact: true }).waitFor();
+        await page.locator('textarea[aria-label="关于页正文（Markdown）"]').waitFor();
+        await scan(page, width + "/admin/site");
       } finally { await context.close(); }
     }
   } finally { await browser.close(); }
