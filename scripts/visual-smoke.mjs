@@ -517,8 +517,7 @@ try {
             await panel.getByRole("button", { name: "跳到评论" }).click();
             assert.ok(await page.locator("#discussion").evaluate((el) => el === document.activeElement),
               `${label}: comment shortcut did not move keyboard focus`);
-            assert.ok(await page.evaluate(() => window.scrollY > 300),
-              `${label}: comment shortcut did not scroll the page`);
+            await page.waitForFunction(() => window.scrollY > 300, null, { timeout: 5000 });
           }
           if (route === "/" && [320, 768, 1440].includes(width)) {
             await page.getByRole("button", { name: "阅读设置", exact: true }).click();
