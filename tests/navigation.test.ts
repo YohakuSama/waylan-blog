@@ -454,6 +454,21 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".reader-global-menu-trigger"), null,
       "article header must not collapse the site shortcuts into another menu");
   });
+  it("keeps the entry to reading light and the save/share actions at the end", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const actions = document.querySelector<HTMLElement>(".article-actions")!;
+    assert.equal(actions.querySelectorAll("button").length, 2,
+      "article header should expose only the contents/reading-tools link and a save control");
+    assert.ok(!/分享|更多/.test(actions.textContent || ""),
+      "sharing and extra font controls must not occupy the article introduction");
+    const closing = document.querySelector<HTMLElement>(".reading-end-actions")!;
+    assert.ok(closing.querySelector<HTMLButtonElement>(".reading-end-save"));
+    assert.ok(closing.querySelector<HTMLButtonElement>(".reading-end-share"));
+    assert.match(closing.textContent || "", /收藏本文|已收藏/);
+    assert.match(closing.textContent || "", /分享文章/);
+    assert.ok(document.querySelector(".site-header-reader .settings-button"),
+      "reader font size remains available in the global settings");
+  });
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
     const toggle = document.querySelector<HTMLButtonElement>(

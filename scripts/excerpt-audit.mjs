@@ -162,9 +162,8 @@ async function run(engine,browser,width){
           inToc:!!toggle?.closest(".reader-toc"),
           noFloating:!document.querySelector(".reader-floating-tools, .reader-floating-trigger, .reader-topbar"),
           active:toggle?.getAttribute("aria-pressed"),
-          // Count visible primary actions, not buttons inside the hidden optional menu.
-          actionButtons:articleActions?.querySelectorAll(":scope > button, :scope > .article-more > button").length,
-          moreHidden:articleActions?.querySelector(".article-more-panel")?.hidden===true,
+          // A compact table-of-contents/reading-tools entry and save action.
+          actionButtons:articleActions?.querySelectorAll(":scope > button").length,
           position:articleActions?getComputedStyle(articleActions).position:null,
           siteVisible:!!site && getComputedStyle(site).display!=="none",
           navHidden:getComputedStyle(document.querySelector("#site-nav")).display==="none",
@@ -173,7 +172,7 @@ async function run(engine,browser,width){
       });
       record(browser,width,"quiet inline controls and optional excerpt inside directory",controls,
         !controls.inToc||!controls.noFloating||controls.active!=="false"||
-        controls.position==="sticky"||controls.actionButtons!==4||!controls.moreHidden||
+        controls.position==="sticky"||controls.actionButtons!==2||
         !controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
