@@ -534,6 +534,11 @@ try {
             await page.keyboard.press("Escape");
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
+            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await toc.getByRole("button", { name: "回到页首" }).click();
+            await toc.waitFor({ state: "hidden" });
+            assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true,
+              `${label}: back-to-top must close the directory and restore focus`);
             await page.setViewportSize({ width, height: 900 });
           }
           if (route.startsWith("/post/") && [320, 390, 768, 1440].includes(width) &&
