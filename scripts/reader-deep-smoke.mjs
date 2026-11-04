@@ -60,18 +60,12 @@ async function run(engine,name,width){
         await page.waitForTimeout(440);
         const audit = await page.evaluate(() => window.__routeMotionAudit);
         observations.push({browser:name,width,scenario:"collection motion paths and search-close ordering",audit});
-        const collection = audit.filter(x => x.kind === "collection");
-        if (audit.length) {
-          assert.ok(collection.length >= 5,"expected routed collection transitions: "+JSON.stringify(audit));
-          for (const snapshot of collection) {
-            assert.ok([...snapshot.before,...snapshot.after].every(name => name === "none"),
-              "collection transition may not fly individual titles/covers: "+JSON.stringify(snapshot));
-          }
-          const readerRoute = audit.find(x => x.kind === "reader");
-          assert.ok(readerRoute,"search should begin reader transition");
-          assert.equal(readerRoute.modalOpen,false,
-            "search dialog must close before capturing the article route");
-        }
+        assert.deepEqual(audit, [],
+          "No cross-route startViewTransition snapshots: avoid overlapped text/cover frames in iOS Safari");
+        assert.equal(await page.locator("dialog.search-dialog[open]").count(), 0,
+          "Search dialog must be fully dismissed before the article is shown");
+        assert.ok(await page.locator(".reader-prose").count() > 0,
+          "Search result must still navigate successfully without native View Transitions");
         await page.screenshot({path:dir+"/"+name+"-"+width+"-search-to-article.png",animations:"disabled"});
       }
       await page.goto(origin+"/feed/",{waitUntil:"domcontentloaded"});
