@@ -349,7 +349,8 @@ export default function Reader({ post }: { post: Post }) {
   const [progress, setProgress] = useState(0),
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
-    [tocOpen, setTocOpen] = useState(false);
+    [tocOpen, setTocOpen] = useState(false),
+    [readingToolsHidden, setReadingToolsHidden] = useState(false);
   useEffect(() => {
     if (!tocOpen) return;
     (toc.current?.querySelector<HTMLElement>("nav a") ||
@@ -427,6 +428,52 @@ export default function Reader({ post }: { post: Post }) {
     window.addEventListener("waylan:highlights-changed", sync);
     return () => window.removeEventListener("waylan:highlights-changed", sync);
   }, [post.id]);
+  // Phone and portrait-tablet readers use one compact tool row. Keep the
+  // reading surface clear while moving down; reveal the controls on a deliberate
+  // upward scroll, at the top, or whenever text/TOC/dialog interaction needs them.
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 1024px)");
+    if (!mobile.matches) return;
+    let lastY = window.scrollY;
+    let travel = 0;
+    let direction = 0;
+    const onScroll = () => {
+      const y = Math.max(0, window.scrollY);
+      const delta = y - lastY;
+      lastY = y;
+      if (y < 90 || panel || tocOpen || selectionRef.current ||
+          document.querySelector("dialog[open]")) {
+        travel = 0;
+        setReadingToolsHidden(false);
+        return;
+      }
+      if (Math.abs(delta) < 2) return;
+      const nextDirection = Math.sign(delta);
+      travel = nextDirection === direction ? travel + Math.abs(delta) : Math.abs(delta);
+      direction = nextDirection;
+      if (nextDirection > 0 && y > 150 && travel > 48) {
+        setReadingToolsHidden(true);
+        travel = 0;
+      } else if (nextDirection < 0 && travel > 22) {
+        setReadingToolsHidden(false);
+        travel = 0;
+      }
+    };
+    const onMedia = () => {
+      lastY = window.scrollY;
+      travel = 0;
+      setReadingToolsHidden(false);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    mobile.addEventListener("change", onMedia);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mobile.removeEventListener("change", onMedia);
+    };
+  }, [panel, tocOpen]);
+  useEffect(() => {
+    if (panel || tocOpen || selection) setReadingToolsHidden(false);
+  }, [panel, tocOpen, selection]);
   // Snapshot before React changes the class; run geometry animation in
   // layout effect after the new bounds exist, before the first painted frame.
   function toggleComposerFullscreen(event: ReactMouseEvent<HTMLButtonElement>) {
@@ -478,71 +525,43 @@ export default function Reader({ post }: { post: Post }) {
       document.documentElement.style.removeProperty("--waylan-editor-view-top");
     };
   }, [panel, panelIds.length]);
-  // iOS Safari lays out modal dialogs against the layout viewport, while the
-  // visible area changes with browser chrome and the software keyboard.
-  // Measure the actual thread box and position its top explicitly, like the
-  // working full-screen composer. CSS auto margins alone are not reliable here.
+  // All paragraph threads rise from the bottom, like the comment composer.
+  // Safari's visible viewport can end well above the layout viewport when
+  // browser chrome or the keyboard is present; measure that covered area.
   useEffect(() => {
     if (!panel || !panelIds.length) return;
     const viewport = window.visualViewport;
-    if (!viewport) return;
     const root = document.documentElement;
-    let frame = 0;
-    let observedDialog: HTMLDialogElement | null = null;
-    let observer: ResizeObserver | null = null;
+    let trackedDialog: HTMLDialogElement | null = null;
     const sync = () => {
-      const obscured = Math.max(
-        0,
-        window.innerHeight - viewport.offsetTop - viewport.height,
-      );
-      root.style.setProperty("--waylan-thread-view-top", `${Math.max(0, Math.ceil(viewport.offsetTop))}px`);
+      const obscured = viewport ? Math.max(
+        0, window.innerHeight - viewport.offsetTop - viewport.height,
+      ) : 0;
+      const viewHeight = viewport?.height ?? window.innerHeight;
       root.style.setProperty("--waylan-thread-view-bottom", `${Math.ceil(obscured)}px`);
-      root.style.setProperty("--waylan-thread-view-height", `${Math.floor(viewport.height)}px`);
-
+      root.style.setProperty("--waylan-thread-view-height", `${Math.floor(viewHeight)}px`);
       const dialog = document.querySelector<HTMLDialogElement>(
         "dialog.discussion-dialog.thread-dialog[open]",
       );
       if (!dialog) return;
-      if (dialog !== observedDialog) {
-        observer?.disconnect();
-        observer?.observe(dialog);
-        observedDialog = dialog;
-      }
-      // offsetHeight is the untransformed box even during a dialog animation.
-      // The height cap above guarantees at least 12px breathing room.
-      const top = viewport.offsetTop + Math.max(
-        12,
-        (viewport.height - dialog.offsetHeight) / 2,
-      );
-      dialog.style.top = `${Math.round(top)}px`;
-      dialog.style.bottom = "auto";
+      trackedDialog = dialog;
+      dialog.style.top = "auto";
+      dialog.style.bottom = `${Math.ceil(obscured) + 8}px`;
       dialog.style.marginBlock = "0";
     };
-    const schedule = () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        sync();
-      });
-    };
-    if (typeof ResizeObserver !== "undefined") observer = new ResizeObserver(schedule);
     sync();
-    schedule();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
+    viewport?.addEventListener("resize", sync);
+    viewport?.addEventListener("scroll", sync);
     window.addEventListener("resize", sync);
     return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
+      viewport?.removeEventListener("resize", sync);
+      viewport?.removeEventListener("scroll", sync);
       window.removeEventListener("resize", sync);
-      if (frame) window.cancelAnimationFrame(frame);
-      observer?.disconnect();
-      if (observedDialog) {
-        observedDialog.style.removeProperty("top");
-        observedDialog.style.removeProperty("bottom");
-        observedDialog.style.removeProperty("margin-block");
+      if (trackedDialog) {
+        trackedDialog.style.removeProperty("top");
+        trackedDialog.style.removeProperty("bottom");
+        trackedDialog.style.removeProperty("margin-block");
       }
-      root.style.removeProperty("--waylan-thread-view-top");
       root.style.removeProperty("--waylan-thread-view-bottom");
       root.style.removeProperty("--waylan-thread-view-height");
     };
@@ -1158,8 +1177,8 @@ export default function Reader({ post }: { post: Post }) {
       >
         <span style={{ width: `${progress}%` }} />
       </div>
-      <div className="reader-topbar">
-        <button className="text-button" onClick={router.backToList}>
+      <div className={`reader-topbar${readingToolsHidden ? " reader-topbar-hidden" : ""}`} onFocusCapture={() => setReadingToolsHidden(false)}>
+        <button className="text-button" aria-label="返回列表" onClick={router.backToList}>
           <ArrowLeft size={16} />
           返回列表
         </button>
