@@ -36,7 +36,9 @@ h3 {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 var(--page-gutter);
-  height: var(--header-bar-height);
+  /* Include the 1px masthead border in --header-height, so the desktop
+     banner and all sticky offsets share one physical position. */
+  height: calc(var(--header-bar-height) - 1px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
