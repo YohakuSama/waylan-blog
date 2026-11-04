@@ -983,11 +983,12 @@ textarea::placeholder {
     /* Safari's expanded address/bottom bar is not part of safe-area-inset.
        Reserve a stable finger-sized buffer above it, and compensate for any
        visual viewport space Safari has already obscured. */
-    inset: auto auto calc(var(--waylan-selection-view-bottom, 0px) + max(88px, 60px + env(safe-area-inset-bottom))) 50% !important;
+    --waylan-selection-tray-clearance: max(88px, 60px + env(safe-area-inset-bottom));
+    inset: auto auto calc(var(--waylan-selection-view-bottom, 0px) + var(--waylan-selection-tray-clearance)) 50% !important;
     transform: translateX(-50%);
     width: min(500px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
-    max-height: min(220px, calc(var(--waylan-selection-view-height, 100dvh) - 116px));
+    max-height: min(220px, calc(var(--waylan-selection-view-height, 100dvh) - var(--waylan-selection-tray-clearance) - 28px));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1030,6 +1031,13 @@ textarea::placeholder {
     padding: 4px;
     min-width: 34px;
     min-height: 34px;
+  }
+}
+/* Expanded iPhone browser controls may reappear before WebKit reports a
+   visual viewport resize; reserve an extra one-touch clearance on phones. */
+@media (max-width: 600px) and (pointer: coarse) {
+  .selection-toolbar {
+    --waylan-selection-tray-clearance: max(148px, 114px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1603,15 +1611,16 @@ textarea::placeholder {
   left: calc(50% + var(--rail-width) / 2);
   transform: translateX(-50%);
   z-index: 1500;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--toast-bg, var(--ink));
+  color: var(--toast-ink, var(--paper));
+  border: 1px solid var(--toast-border, var(--line-strong));
   font-size: var(--text-xs);
   padding: var(--space-3) var(--space-5);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow);
+  box-shadow: 0 16px 40px -16px #0007, 0 3px 10px #0002;
   max-width: min(600px, calc(100vw - 32px));
   width: max-content;
   animation: toolbar-in var(--motion-base) var(--ease);

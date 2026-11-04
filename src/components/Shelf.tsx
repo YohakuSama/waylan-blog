@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, Bookmark, Shuffle, X } from "lucide-react";
+import { ArrowUp, Bookmark, LibraryBig, Shuffle, X } from "lucide-react";
 import { posts, topicName, typeLabels } from "../lib/data";
 import { Link, useRouter } from "../lib/router";
 import { shelf, useShelf } from "../lib/shelf";
@@ -96,7 +96,7 @@ export function ShelfTrigger() {
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
-        <Bookmark size={18} aria-hidden="true" />
+        <LibraryBig size={18} aria-hidden="true" />
         {items.length > 0 && (
           <span className="shelf-count mono" aria-hidden="true">
             {items.length > 99 ? "99+" : items.length}
@@ -139,7 +139,7 @@ export function ShelfTrigger() {
           </ol>
         ) : (
           <div className="shelf-empty">
-            <Bookmark size={22} aria-hidden="true" />
+            <LibraryBig size={22} aria-hidden="true" />
             <strong>清单还是空的</strong>
             <p>在文章卡片或正文顶部点一下书签图标，就能把它放进这里。</p>
           </div>

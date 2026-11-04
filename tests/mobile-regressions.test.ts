@@ -98,8 +98,12 @@ describe("mobile reader regression contracts", () => {
       mobileDock.includes("max(88px, 60px + env(safe-area-inset-bottom))"),
       "the selection tray must leave a buffer above Safari's expanded native bottom bar");
     assert.ok(mobileDock.includes("var(--waylan-selection-view-height, 100dvh)") &&
-      mobileDock.includes("max-height: min(220px"),
+      mobileDock.includes("max-height: min(220px") &&
+      mobileDock.includes("var(--waylan-selection-tray-clearance) - 28px"),
       "the tray must fit within the actual visual viewport when browser chrome expands");
+    const phoneDock = style.slice(style.indexOf("@media (max-width: 600px) and (pointer: coarse) {"));
+    assert.ok(phoneDock.includes("--waylan-selection-tray-clearance: max(148px, 114px + env(safe-area-inset-bottom))"),
+      "iPhone tray needs extra clearance even before Safari publishes an expanded viewport");
     assert.ok(reader.includes('root.style.setProperty("--waylan-selection-view-bottom"') &&
       reader.includes('root.style.setProperty("--waylan-selection-view-height"') &&
       reader.includes('viewport?.addEventListener("resize", sync)') &&
@@ -108,6 +112,46 @@ describe("mobile reader regression contracts", () => {
     assert.ok(reader.includes("setPointerCapture?.(event.pointerId)") &&
       reader.includes("completeToolbarTouch(event.currentTarget, action)"),
       "copy/share should retain the original pressed button even if Safari moves the tray");
+  });
+  it("keeps the reading-list icon distinct from the article bookmark", () => {
+    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
+    assert.ok(shelf.includes('import { ArrowUp, Bookmark, LibraryBig, Shuffle, X }'),
+      "the list trigger must use a library icon in place of the article bookmark");
+    assert.ok(shelf.includes('<LibraryBig size={18} aria-hidden="true" />'),
+      "the header should show the library icon");
+    assert.ok(shelf.includes('<Bookmark size={17} aria-hidden="true" />'),
+      "article save action must retain its bookmark icon and storage semantics");
+  });
+  it("uses four contrast-checked toast palettes and preserves popover borders", () => {
+    const selectors = [
+      ':root {', ':root[data-theme="dark"] {',
+      ':root[data-skin="terminal"] {', ':root[data-skin="terminal"][data-theme="dark"] {',
+    ];
+    const luminance = (hex: string) => {
+      const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
+      const linear = channels.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    };
+    const backgrounds = new Set<string>();
+    for (const selector of selectors) {
+      const start = skins.indexOf(selector);
+      assert.ok(start >= 0, `missing palette for ${selector}`);
+      const block = skins.slice(start, skins.indexOf("}", start));
+      const background = block.match(/--toast-bg:\s*(#[\da-f]{6})/i)?.[1];
+      const foreground = block.match(/--toast-ink:\s*(#[\da-f]{6})/i)?.[1];
+      const border = block.match(/--toast-border:\s*(#[\da-f]{6})/i)?.[1];
+      assert.ok(background && foreground && border, `incomplete toast palette for ${selector}`);
+      backgrounds.add(background);
+      const a = luminance(background), b = luminance(foreground);
+      const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      assert.ok(ratio >= 7, `toast text contrast ${ratio.toFixed(2)}:1 too low for ${selector}`);
+    }
+    assert.equal(backgrounds.size, 4, "all four theme/skin combinations should look distinct");
+    assert.ok(style.includes("background: var(--toast-bg, var(--ink))") &&
+      style.includes("color: var(--toast-ink, var(--paper))") &&
+      style.includes("border: 1px solid var(--toast-border, var(--line-strong))"));
+    const popover = skins.slice(skins.indexOf(".toast[popover] {"), skins.indexOf(".toast[popover]:not("));
+    assert.ok(!popover.includes("border: 0;"), "popover rules must not erase the toast border");
   });
   it("docks paragraph threads at the visual-viewport bottom on phone, tablet and desktop", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
