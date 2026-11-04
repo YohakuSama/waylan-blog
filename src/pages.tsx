@@ -107,6 +107,7 @@ export function Home() {
     } | null>("reading", null);
     if (last && last.progress > 0 && last.progress < 100 &&
         posts.some((p) => p.slug === last.slug)) setResume(last);
+    else delete document.documentElement.dataset.resumePending;
   }, []);
   // The home page is a reading doorway, not a second filtering interface.
   // Detailed type/topic/sort controls belong exclusively on the content page.
@@ -136,7 +137,7 @@ export function Home() {
             <p className="home-motto">{site.hero.lines.join("")}</p>
           </div>
         </section>
-        {resume && (
+        {resume ? (
           <aside className="home-resume" aria-label="继续阅读">
             <Link className="resume-link" href={`/post/${resume.slug}?resume=1`}>
               <BookOpen size={17} aria-hidden="true" />
@@ -145,6 +146,10 @@ export function Home() {
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </aside>
+        ) : (
+          // SSR cannot read this visitor's progress. A head-script marker
+          // reserves the exact card height until hydration fills the slot.
+          <div className="home-resume home-resume-placeholder" aria-hidden="true" />
         )}
         <section className="home-feed" aria-labelledby="latest-heading">
           <div className="home-section-head">
