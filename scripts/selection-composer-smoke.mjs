@@ -55,16 +55,15 @@ async function run(engine, label, width, height, touch) {
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
-          const blocks = [...document.querySelectorAll(".reader-prose .article-block[data-type='paragraph']")];
-          const chosen = [];
-          let length = 0;
-          for (const block of blocks) {
-            if (chosen.length === 8 || length + block.textContent.length > 3400) break;
-            chosen.push(block);
-            length += block.textContent.length;
-            if (length >= 800) break;
-          }
-          if (length < 300) throw Error("Test article has too little selectable text");
+          // Include contiguous text blocks only. Skipping intervening headings
+          // makes a Range cross unbounded blocks and exceed the anchor limit.
+          const blocks = [...document.querySelectorAll(".reader-prose .article-block[data-block-id]")];
+          const start = blocks.findIndex((b) => b.dataset.type === "paragraph");
+          const chosen = blocks.slice(start, start + 6);
+          const length = chosen.reduce((count, b) => count + b.textContent.length, 0);
+          if (chosen.length !== 6 || length < 300 || length > 3000 ||
+              chosen.some((b) => b.dataset.type === "code"))
+            throw Error("Expected six consecutive, selectable text blocks");
           const range = document.createRange();
           range.setStart(chosen[0], 0);
           const end = chosen[chosen.length - 1];
