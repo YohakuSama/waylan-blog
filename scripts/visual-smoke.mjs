@@ -241,7 +241,7 @@ try {
               geometry.footerTerminal.height >= 20 &&
               geometry.footerScript === null && geometry.footerWordmark === null,
               `${label}: terminal footer must be monospace, not handwritten`);
-            assert.equal(geometry.footerTerminalText.replace(/\\s+/g, " "), "> waylan.blog_",
+            assert.equal(geometry.footerTerminalText.replace(/\s+/g, " "), "> waylan.blog_",
               `${label}: terminal footer must have its native prompt signature`);
             assert.ok(!geometry.footerTerminalFont.includes("Waylan Great Vibes"),
               `${label}: terminal must not inherit editorial script`);
