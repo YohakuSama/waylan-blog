@@ -116,7 +116,7 @@ try {
           const originY = await page.evaluate(() => window.scrollY);
           await last.click();
           await page.waitForURL(/\/post\/[^/?]+/);
-          const back = page.locator(".reader-topbar > button").first();
+          const back = page.locator(".reader-back");
           assert.match((await back.innerText()).trim(), /返回列表/, label + ": internal wording exposed");
           await back.click();
           await page.waitForURL(url => url.pathname.replace(/\/$/, "") === "/feed");
