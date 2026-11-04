@@ -102,6 +102,23 @@ async function publicBrowsers() {
               path: out + "/" + name + "-" + width + "-" + motion + ".png",
               animations: "disabled",
             });
+            // Real browser regression: returning to the archive must preserve
+            // its scroll position in Chromium, Firefox and WebKit.
+            if (width === 390 && motion === "reduced") {
+              stage = "archive reader return and scroll restoration";
+              const row = page.locator(".archive-row").nth(10);
+              await row.scrollIntoViewIfNeeded();
+              const before = await page.evaluate(() => window.scrollY);
+              assert.ok(before > 50, name + ": archive fixture did not scroll");
+              await row.click();
+              await page.waitForURL(/\/post\/[^/?#]+$/, { timeout: 15000 });
+              await page.locator(".reader-topbar > .text-button").click();
+              await page.waitForURL(/\/archive$/, { timeout: 15000 });
+              await page.waitForFunction((position) =>
+                Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
+              assert.equal(await page.locator(".archive-row .archive-type").count(), 15,
+                name + ": archive labels missing after restoring scroll");
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }

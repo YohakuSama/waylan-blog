@@ -132,6 +132,11 @@ try {
               resetLink: select(".feed-clear-filters"),
               homeHeadingBars: document.querySelectorAll(".home-feed-heading").length,
               archiveRows: document.querySelectorAll(".archive-row").length,
+              archiveTypeCount: document.querySelectorAll(".archive-row .archive-type").length,
+              archiveRowTarget: select(".archive-row"),
+              archiveTopicTarget: select(".archive-summary a"),
+              archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
+              archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
             };
@@ -192,6 +197,11 @@ try {
           if (route === "/archive") {
             assert.equal(geometry.archiveFilters, 0, `${label}: duplicated archive filters`);
             assert.ok(geometry.years > 0 && geometry.archiveRows > 0, `${label}: missing archive entries`);
+            assert.equal(geometry.archiveTypeCount, geometry.archiveRows, `${label}: an archive item lacks its type label`);
+            assert.match(geometry.archiveSummaryText, /共 \d+ 条记录/, `${label}: incorrect mixed-content counter`);
+            assert.ok(geometry.archiveRowTarget?.height >= 54, `${label}: archive row has a small click target`);
+            assert.ok(geometry.archiveTopicTarget?.height >= 44, `${label}: archive theme link has a small click target`);
+            assert.ok(geometry.archiveYearTargets.every((box) => box?.height >= 44), `${label}: archive year link has a small click target`);
             assert.equal(geometry.archiveTitle, "归档", `${label}: archive label inconsistent`);
             assert.equal(geometry.archiveOverview, false, `${label}: obsolete archive card returned`);
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);

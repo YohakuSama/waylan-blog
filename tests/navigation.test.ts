@@ -7,7 +7,7 @@ import App from "../src/App";
 import { fragmentId, isAppRoute, routeMotionDirection } from "../src/lib/router";
 import Reader from "../src/components/Reader";
 import worker from "../worker/index";
-import { metadata, posts, structuredData } from "../src/lib/data";
+import { metadata, posts, structuredData, typeLabels } from "../src/lib/data";
 import { invalidateComments } from "../src/lib/api";
 let dom: JSDOM,
   root: Root,
@@ -282,6 +282,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".archive-main .type-tabs").length, 0);
     assert.equal(document.querySelectorAll(".archive-main .filter-tabs").length, 0);
     assert.equal(document.querySelectorAll(".archive-row").length, posts.length);
+    assert.match(document.querySelector(".archive-summary")?.textContent || "", /共 \d+ 条记录/);
     const expectedYears = [...new Set(posts.map((post) => post.date.slice(0, 4)))];
     const years = [...document.querySelectorAll<HTMLAnchorElement>(".archive-year-nav a")];
     assert.equal(years.length, expectedYears.length > 1 ? expectedYears.length : 0);
@@ -297,6 +298,60 @@ describe("React navigation and reading interactions (DOM integration, not browse
       posts.map((p) => "/post/" + p.slug).sort(),
     );
     assert.ok(document.querySelector('.archive-summary a[href="/feed"]'));
+    for (const row of all) {
+      const slug = row.getAttribute("href")!.split("/").at(-1);
+      const entry = posts.find((p) => p.slug === slug);
+      assert.ok(entry, "archive row must resolve a real post");
+      assert.equal(row.querySelector(".archive-type")?.textContent, typeLabels[entry.type]);
+    }
+  });
+  it("navigates synthetic multi-year anchors with correct hash targets", async () => {
+    // Production currently contains only 2026. Add a fixture for the duration
+    // of this DOM test; never modify published content or generated JSON.
+    const fixture = {
+      ...posts[0],
+      id: "archive-year-test-only",
+      slug: "archive-year-test-only",
+      date: "2025-12-31",
+      title: "跨年度导航测试",
+    };
+    posts.push(fixture);
+    try {
+      await mount("/archive");
+      const links = [...document.querySelectorAll<HTMLAnchorElement>(".archive-year-nav a")];
+      assert.deepEqual(links.map((link) => link.textContent?.trim()), ["2026", "2025"]);
+      assert.ok(document.querySelector('.archive-row[href="/post/archive-year-test-only"]'));
+      const jumps: string[] = [];
+      Object.defineProperty(dom.window.HTMLElement.prototype, "scrollIntoView", {
+        value: function(this: HTMLElement) { jumps.push(this.id); },
+        configurable: true,
+      });
+      await click(links[1]);
+      await settle(90);
+      assert.equal(location.pathname + location.hash, "/archive#year-2025");
+      assert.ok(jumps.includes("year-2025"), "the 2025 section should receive the scroll action");
+      await click(links[0]);
+      await settle(90);
+      assert.equal(location.hash, "#year-2026");
+      assert.ok(jumps.includes("year-2026"), "the 2026 section should receive the scroll action");
+    } finally {
+      const index = posts.indexOf(fixture);
+      if (index !== -1) posts.splice(index, 1);
+    }
+  });
+  it("restores archive scroll when returning from an article", async () => {
+    await mount("/archive");
+    y = 680;
+    const item = document.querySelectorAll<HTMLAnchorElement>(".archive-row")[7];
+    assert.ok(item);
+    await click(item);
+    assert.ok(location.pathname.startsWith("/post/"));
+    assert.equal(y, 0, "the reader should start at its own page top");
+    await click(document.querySelector(".reader-topbar > .text-button"));
+    await settle(90);
+    assert.equal(location.pathname, "/archive");
+    assert.equal(y, 680, "archive should restore the original list position");
+    assert.equal(document.querySelectorAll(".archive-row").length, posts.length);
   });
   it("retains old content-type URLs while making /feed the unfiltered destination", async () => {
     await mount("/feed?type=note");

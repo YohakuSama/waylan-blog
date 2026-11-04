@@ -1840,9 +1840,9 @@ h3 {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   margin-top: 8px; color: var(--muted); font-size: 13px;
 }
-.archive-summary a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.archive-summary a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 .archive-year-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding-top: 16px; }
-.archive-year-nav a { display: inline-flex; align-items: center; min-height: 40px; font: 13px var(--font-mono); color: var(--muted); }
+.archive-year-nav a { display: inline-flex; align-items: center; min-height: 44px; font: 13px var(--font-mono); color: var(--muted); }
 .archive-year-nav a:hover { color: var(--brand); }
 .archive-main { min-width: 0; padding-top: 16px; }
 .archive-year { scroll-margin-top: calc(var(--header-height) + 20px); }
@@ -1852,6 +1852,19 @@ h3 {
 .archive-month .archive-row { grid-template-columns: 44px minmax(0,1fr) 16px; }
 .archive-row { min-width: 0; min-height: 54px; }
 .archive-row > span { min-width: 0; overflow-wrap: anywhere; }
+.archive-row .archive-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  margin-right: 10px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font: 11px/18px var(--font-sans);
+  vertical-align: 2px;
+  white-space: nowrap;
+}
 
 /* At 1025–1119px the sidebar follows the feed; wider screens retain two columns. */
 @media (min-width:1025px) and (max-width:1119px) {
