@@ -1928,7 +1928,7 @@ h3 {
 @media (min-width:861px) and (max-width:1279px) {
   .header-inner { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:20px; }
   #site-nav { justify-content:center; gap:12px; min-width:0; }
-  .brand-rule,.brand-tagline { display:none; }
+  .brand-rule { display:none; }
   .header-tools { gap:4px; }
   .header-search {
     width:var(--header-control-size); height:var(--header-control-size); justify-content:center;
