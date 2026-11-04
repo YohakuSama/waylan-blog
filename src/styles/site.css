@@ -2239,7 +2239,7 @@ h3 {
   gap: 0 18px;
 }
 .site-footer .footer-links a {
-  min-height: 36px;
+  min-height: 44px;
 }
 @media (max-width: 1024px) {
   .site-main {
@@ -2282,7 +2282,7 @@ h3 {
     line-height: 1.6;
   }
   .site-footer .footer-links a {
-    min-height: 40px;
+    min-height: 44px;
   }
   .reader-main {
     padding-bottom: 24px;
