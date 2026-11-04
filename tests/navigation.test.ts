@@ -647,7 +647,10 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("executes first-press highlight and comment actions without waiting for click", async () => {
     const firstPress = async (name: string) => {
-      const p = document.querySelector(".reader-prose p")!;
+      const p = [...document.querySelectorAll(".reader-prose p")].find((node) =>
+        node.firstChild?.nodeType === 3 && (node.firstChild.textContent?.length || 0) >= 10,
+      )!;
+      assert.ok(p, "a still-unmarked text node must be selectable");
       const range = document.createRange();
       range.setStart(p.firstChild!, 0);
       range.setEnd(p.firstChild!, 10);
