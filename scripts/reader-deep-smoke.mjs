@@ -142,9 +142,14 @@ async function run(engine,name,width){
       const readingSettings=page.getByRole("dialog",{name:"阅读设置",exact:true});
       await readingSettings.waitFor({state:"visible"});
       await readingSettings.locator('.reader-font-choices label:has(input[value="20"])').click();
-      await page.waitForFunction(()=>getComputedStyle(document.querySelector(".reader-prose")).fontSize==="20px");
-      assert.equal(await page.locator(".reader-prose").evaluate(el=>getComputedStyle(el).fontSize),"20px",
-        "reading settings must update the active article font immediately");
+      // Phones intentionally render the saved reader size 2px smaller in CSS.
+      // Verify both the selected preference and the resulting responsive size.
+      const expectedFont=width<=700?"18px":"20px";
+      await page.waitForFunction(expected=>getComputedStyle(document.querySelector(".reader-prose")).fontSize===expected,expectedFont);
+      assert.equal(await page.locator(".reader-prose").evaluate(el=>el.style.getPropertyValue("--reader-font")),"20px",
+        "the selected font preference must reach the article");
+      assert.equal(await page.locator(".reader-prose").evaluate(el=>getComputedStyle(el).fontSize),expectedFont,
+        "reading settings must update the responsive article font immediately");
       await readingSettings.locator('button[aria-label="关闭"]').click();
       await readingSettings.waitFor({state:"hidden"});
       await page.evaluate(()=>{
