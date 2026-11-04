@@ -888,8 +888,11 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(preview.querySelector("code")?.textContent, "代码");
     assert.equal(preview.querySelector("a")?.getAttribute("rel"), "nofollow noopener noreferrer");
     assert.equal(preview.closest(".comment-composer")?.getAttribute("data-preview"), "true");
-    assert.ok(preview.parentElement!.querySelector(".login-invitation.composer-bottom"),
-      "unauthenticated publishing should share the fixed footer region");
+    const composer = preview.closest(".comment-composer")!;
+    const dialog = composer.closest(".composer-dialog")!;
+    const login = dialog.querySelector(".login-invitation.composer-bottom");
+    assert.ok(login && login.parentElement === dialog && !composer.contains(login),
+      "unauthenticated publishing must stay in the fixed footer outside scrollable editor content");
   });
   it("opens an annotated reply outside the first comments page by fetching its own deep endpoint", async () => {
     const post = posts[0],
