@@ -662,30 +662,26 @@ try {
           }
           if (route.startsWith("/post/") && [320, 390, 768, 1440].includes(width) &&
               variant.skin === "editorial" && variant.theme === "light") {
-            const more = page.getByRole("button", { name: "展开更多操作", exact: true });
-            await more.click();
-            const panel = page.locator(".article-more-panel:not([hidden])");
-            await panel.waitFor();
-            const box = await panel.boundingBox();
-            assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1,
-              `${label}: more actions escape viewport`);
-            assert.ok(await panel.locator("button").first().evaluate((el) => el === document.activeElement),
-              `${label}: more menu must focus its first action`);
-            await page.keyboard.press("Escape");
-            await panel.waitFor({ state: "hidden" });
-            assert.ok(await more.evaluate((el) => el === document.activeElement),
-              `${label}: Escape must restore focus to more trigger`);
-            await more.click();
-            await panel.getByRole("button", { name: "切换正文为20px" }).click();
-            assert.equal(await page.locator(".reader-prose").evaluate((el) => el.style.getPropertyValue("--reader-font")), "20px",
-              `${label}: font-size quick control did not update the article`);
+            // Font size belongs to site-wide reading settings, not an article menu.
+            await page.getByRole("button", { name: "阅读设置", exact: true }).click();
+            const settings = page.getByRole("dialog", { name: "阅读设置", exact: true });
+            await settings.waitFor();
+            await settings.locator('.reader-font-choices label:has(input[value="20"])').click();
+            await page.waitForFunction(() =>
+              document.querySelector(".reader-prose")?.style.getPropertyValue("--reader-font") === "20px");
             assert.equal(await page.evaluate(() => localStorage.getItem("echo:font-size")), "20",
-              `${label}: font-size preference did not persist`);
-            await more.click();
-            await panel.getByRole("button", { name: "跳到评论" }).click();
-            assert.ok(await page.locator("#discussion").evaluate((el) => el === document.activeElement),
-              `${label}: comment shortcut did not move keyboard focus`);
-            await page.waitForFunction(() => window.scrollY > 300, null, { timeout: 5000 });
+              `${label}: font size selected in reading settings did not persist`);
+            await settings.getByRole("button", { name: "关闭", exact: true }).click();
+            await settings.waitFor({ state: "hidden" });
+            // The two completion actions are deliberately outside the reading intro.
+            const completion = page.getByRole("group", { name: "读完后的操作" });
+            await completion.scrollIntoViewIfNeeded();
+            assert.equal(await completion.locator("button").count(), 2,
+              `${label}: completion should offer only saving and sharing`);
+            assert.ok(await completion.getByRole("button", { name: "分享文章" }).isVisible(),
+              `${label}: completion share action not visible`);
+            assert.equal(await page.locator(".article-action-more").count(), 0,
+              `${label}: old intro action menu returned unexpectedly`);
           }
           if (route === "/" && [320, 768, 1440].includes(width)) {
             await page.getByRole("button", { name: "阅读设置", exact: true }).click();
