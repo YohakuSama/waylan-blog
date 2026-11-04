@@ -94,8 +94,12 @@ async function publicBrowsers() {
             await page.waitForTimeout(500);
             await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/post");
-            if (width <= 1024) assert.equal(await page.locator(".site-header").isVisible(), false,
-              name + ": immersive article unexpectedly retained global header");
+            if (width <= 1024) {
+              assert.equal(await page.locator(".site-header-reader").isVisible(), true,
+                name + ": mobile reader lost its Waylan logo masthead");
+              assert.equal(await page.locator(".site-header-reader #site-nav").isVisible(), false,
+                name + ": destination navigation returned as a redundant second row");
+            }
             // Simulate navigation churn with real (not reduced) transitions.
             stage = "archive navigation";
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
