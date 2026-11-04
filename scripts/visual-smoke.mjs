@@ -546,6 +546,13 @@ try {
               assert.ok(lastProject && geometry.homeReadingNote.top - lastProject.bottom <= 60,
                 `${label}: excessive gap between projects and reading tips`);
             }
+            if (width === 390) {
+              await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+              await page.waitForTimeout(110);
+              assert.equal(await page.locator(".back-to-top").evaluate((el) => el.classList.contains("visible")), false,
+                `${label}: floating back-to-top must not cover the footer`);
+              await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+            }
             if (width <= 768) assert.ok(geometry.homeSecondEntry?.top < 820, `${label}: second entry is buried below the first screen`);
             if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 660, `${label}: first article pushed below the first screen`);
           }
