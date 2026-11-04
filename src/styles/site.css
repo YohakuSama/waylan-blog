@@ -1997,9 +1997,9 @@ h3 {
    the full logo and subtitle. Keep the identity together, move only tools
    to a second row, and reserve the third row for normal navigation. */
 @media (max-width: 370px) {
-  :root { --header-height: 148px; }
+  :root { --header-height: 156px; }
   .header-inner {
-    grid-template-rows: var(--header-bar-height) 44px 43px;
+    grid-template-rows: var(--header-bar-height) 52px 43px;
   }
   .brand { grid-row: 1; grid-column: 1 / -1; width: auto; }
   .header-tools { grid-row: 2; grid-column: 1 / -1; justify-self: end; }
