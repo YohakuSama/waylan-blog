@@ -281,8 +281,11 @@ export function animateDialog(
   opening: boolean,
 ): Animation | null {
   if (!motionAllowed()) return null;
-  const kind = token("--dialog-motion", "pop", dialog),
-    box = dialog.getBoundingClientRect(),
+  const kind = token("--dialog-motion", "pop", dialog);
+  // Search receives focus immediately, opening the iOS software keyboard.
+  // A concurrent transform on the native dialog causes WebKit to mispaint it.
+  if (kind === "instant") return null;
+  const box = dialog.getBoundingClientRect(),
     from = visibleRect(origin);
   let hidden: Keyframe,
     transformOrigin = "50% 40%",
