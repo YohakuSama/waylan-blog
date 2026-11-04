@@ -1543,7 +1543,7 @@ h3 {
   /* Keep the identity readable beside the logo instead of moving its
      description to a second header line when space tightens. */
   .brand-tagline {
-    max-width: 124px;
+    max-width: min(124px, 10vw);
     white-space: normal;
     line-height: 1.35;
     font-size: 10px;
