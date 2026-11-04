@@ -190,7 +190,9 @@ export function Home() {
                     <strong>{p.title}</strong>
                     <span className="home-project-state">{p.project?.status}</span>
                   </span>
-                  <ArrowUpRight className="home-project-arrow" size={15} aria-hidden="true" />
+                  <span className="home-project-end" aria-hidden="true">
+                    <ArrowRight className="home-project-arrow" size={16} />
+                  </span>
                 </Link>
               </li>
             ))}

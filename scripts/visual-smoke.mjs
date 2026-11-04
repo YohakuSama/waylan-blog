@@ -98,13 +98,9 @@ try {
               editorialLogo: select(".brand .brand-wordmark"),
               terminalLogo: select(".brand .brand-term"),
               searchLabel: select(".header-search-text"),
-              footerScript: select(".footer-blog-script"),
-              footerScriptText: document.querySelector(".footer-blog-script")?.textContent?.trim(),
-              footerScriptFont: getComputedStyle(document.querySelector(".footer-blog-script")).fontFamily,
-              footerWordmark: select(".footer-brand .wordmark"),
-              footerTerminal: select(".footer-terminal-wordmark"),
-              footerTerminalText: document.querySelector(".footer-terminal-wordmark")?.textContent?.trim(),
-              footerTerminalFont: getComputedStyle(document.querySelector(".footer-terminal-wordmark")).fontFamily,
+              footerLogoCount: document.querySelectorAll(
+                ".site-footer .wordmark, .site-footer .footer-brand, .site-footer .footer-blog-script, .site-footer .footer-terminal-wordmark"
+              ).length,
               aboutQuote: select(".about-motto blockquote"),
               aboutQuoteText: document.querySelector(".about-motto blockquote")?.textContent?.trim(),
               aboutQuoteStyle: document.querySelector(".about-motto blockquote") &&
@@ -160,6 +156,13 @@ try {
               sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
                 ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
               })),
+              sidebarEndSlots: [...document.querySelectorAll(
+                ".content-grid .site-sidebar .side-more, .content-grid .site-sidebar .explore-count, .content-grid .site-sidebar .home-project-end, .content-grid .site-sidebar .sidebar-row-end"
+              )].map((el) => {
+                const box = el.getBoundingClientRect();
+                const parent = el.closest(".side-block")?.getBoundingClientRect();
+                return { width: box.width, rightGap: parent ? parent.right - box.right : null };
+              }),
               sideHeadingRows: [...document.querySelectorAll(".content-grid .site-sidebar .side-head")]
                 .filter((head) => head.getClientRects().length)
                 .map((head) => {
@@ -192,10 +195,7 @@ try {
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
-              footerIdentity: select(".site-footer .footer-identity"),
-              footerDescription: select(".site-footer .footer-description"),
               footerLinks: select(".site-footer .footer-links"),
-              footerBrand: select(".site-footer .footer-brand"),
               footerCopy: select(".site-footer .footer-copy"),
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
               footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
@@ -228,20 +228,16 @@ try {
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
             `${label}: footer link has a small or clipped touch target`);
-          assert.ok(geometry.footerIdentity && geometry.footerBrand &&
-            geometry.footerDescription && geometry.footerCopy && geometry.footerLinks,
-            `${label}: complete footer identity, descriptor, copyright and navigation must be visible`);
-          assert.ok(geometry.footerBrand.right <= geometry.viewport + 1,
-            `${label}: footer signature overflows the viewport`);
-          assert.ok(Math.abs(geometry.footerBrand.left - geometry.footerCopy.left) <= 2,
-            `${label}: brand and copyright must share the same left edge`);
+          assert.equal(geometry.footerLogoCount, 0,
+            `${label}: footer duplicated the masthead logo`);
+          assert.ok(geometry.footerCopy && geometry.footerLinks,
+            `${label}: footer must contain copyright/statistics and navigation`);
           if (width >= 768) {
-            assert.ok(geometry.footerLinks.left >= geometry.footerIdentity.right - 2,
-              `${label}: desktop/tablet navigation must sit to the right of identity`);
+            assert.ok(geometry.footerLinks.left >= geometry.footerCopy.right - 2,
+              `${label}: footer navigation must align right of copyright on tablet/desktop`);
           } else {
-            assert.ok(geometry.footerBrand.bottom <= geometry.footerCopy.top + 2 &&
-              geometry.footerCopy.bottom <= geometry.footerLinks.top + 2,
-              `${label}: phone footer must flow brand, copyright, then links without overlap`);
+            assert.ok(geometry.footerCopy.bottom <= geometry.footerLinks.top + 2,
+              `${label}: phone footer rows overlap`);
           }
           if (isImmersive && width <= 700 && geometry.articleNeighbors && geometry.siteFooter) {
             const gap = geometry.siteFooter.top - geometry.articleNeighbors.bottom;
@@ -255,33 +251,10 @@ try {
             `${label}: no second slogan may clutter the logo`);
           if (variant.skin === "editorial") {
             assert.ok(geometry.editorialLogo && geometry.terminalLogo === null,
-              `${label}: editorial must show only the handwritten Waylan logo`);
-            assert.equal(geometry.footerScriptText, "Blog");
-            assert.ok(geometry.footerWordmark?.width > 40 && geometry.footerWordmark.height >= 25 &&
-              geometry.footerTerminal === null,
-              `${label}: editorial footer lost its Waylan brand`);
-            if (width <= 767) {
-              assert.equal(geometry.footerScript, null,
-                `${label}: phone footer should use a small single-brand signature`);
-            } else {
-              assert.ok(geometry.footerScript?.width >= 20 && geometry.footerScript.height >= 20,
-                `${label}: desktop/tablet editorial signature lost its small Blog script`);
-            }
-            assert.ok(geometry.footerScriptFont.includes("Waylan Great Vibes"),
-              `${label}: editorial footer lost its handwriting`);
-            assert.ok(await page.evaluate(() => document.fonts.check('20px "Waylan Great Vibes"')),
-              `${label}: local handwritten font failed to load`);
+              `${label}: editorial header must have one handwritten Waylan logo`);
           } else {
             assert.ok(geometry.terminalLogo && geometry.editorialLogo === null,
-              `${label}: terminal header must show only the monospace name`);
-            assert.ok(geometry.footerTerminal?.width > 70 &&
-              geometry.footerTerminal.height >= 20 &&
-              geometry.footerScript === null && geometry.footerWordmark === null,
-              `${label}: terminal footer must be monospace, not handwritten`);
-            assert.equal(geometry.footerTerminalText.replace(/\s+/g, " "), "> waylan.blog_",
-              `${label}: terminal footer must have its native prompt signature`);
-            assert.ok(!geometry.footerTerminalFont.includes("Waylan Great Vibes"),
-              `${label}: terminal must not inherit editorial script`);
+              `${label}: terminal header must have one monospace identity`);
           }
           if (route === "/about") {
             assert.equal(geometry.aboutQuoteText, "Less, but better.",
@@ -419,6 +392,10 @@ try {
               assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
             }
             }
+          assert.ok(geometry.sidebarEndSlots.every((slot) =>
+            Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
+            Math.abs(slot.rightGap) <= 3),
+            `${label}: shared sidebar counts and arrows drift from the trailing column`);
           if (geometry.sideHeadingRows.length) {
             assert.ok(geometry.sideHeadingRows.every((row) =>
               Math.abs(row.linkTop - row.top) <= 2 &&

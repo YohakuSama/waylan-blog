@@ -268,20 +268,6 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
         <Tooltips />
         <footer className="site-footer">
           <div className="footer-inner">
-            <div className="footer-identity">
-              <Link
-                href="/"
-                className="footer-brand"
-                aria-label={`${site.name} Blog 首页`}
-              >
-                <Wordmark />
-                <span className="footer-blog-script" aria-hidden="true">Blog</span>
-                <span className="footer-terminal-wordmark" aria-hidden="true">
-                  <span className="footer-terminal-prompt">&gt;</span> waylan.blog<span className="footer-terminal-cursor">_</span>
-                </span>
-              </Link>
-              <p className="footer-description">系统、软件与技术实践</p>
-            </div>
             <span className="footer-copy">
               © {copyrightYears} {site.author}. All rights reserved.
               <span className="footer-stats mono">
