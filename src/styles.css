@@ -877,12 +877,21 @@ textarea::placeholder {
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
+/* iOS needs to release its native text-editing overlay before toolbar taps.
+   A CSS Highlight retains visual feedback without changing range offsets. */
+::highlight(waylan-selected-quote) {
+  background-color: color-mix(in srgb, var(--brand) 27%, transparent);
+  color: var(--ink);
+}
 /* Contextual actions are placed BELOW desktop selection to avoid Edge's
    built-in selection menu. Touch devices use a safe-area-aware bottom tray. */
 .selection-toolbar {
   position: fixed;
   z-index: 70;
   width: 290px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   padding: 5px;
   background: var(--surface);
   color: var(--ink);
@@ -927,7 +936,7 @@ textarea::placeholder {
   min-height: 38px;
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
-  touch-action: manipulation;
+  touch-action: none;
 }
 .selection-toolbar button:hover,
 .selection-toolbar button:focus-visible {
