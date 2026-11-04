@@ -969,20 +969,6 @@ textarea::placeholder {
     outline-offset: -2px;
   }
   .excerpt-toggle-text { font-size: 12px; }
-  .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
-    cursor: pointer;
-  }
-  /* Keep the chosen paragraph visibly tied to the fixed action tray.
-     Previously the only outline was :active; after release there was no
-     visible selection, even though the toolbar claimed "已选". */
-  .reader-prose.excerpt-mode .article-block[data-type][data-excerpt-selected="true"]:not([data-type="code"]) {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
-    background: color-mix(in srgb, var(--brand) 7%, transparent);
-    /* WebKit otherwise animates from transparent :active outline and the
-       freshly tapped excerpt briefly looks unselected. Feedback is immediate. */
-    transition: none;
-  }
   .selection-toolbar {
     position: fixed;
     inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50% !important;
@@ -2637,6 +2623,17 @@ body,
 .reader-font-choices label { min-height: 44px; }
 
 
+/* Selected excerpts retain a solid outline until the selection is closed.
+   The dashed touch flash was not a timer and is intentionally removed. */
+.reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
+  cursor: pointer;
+}
+.reader-prose.excerpt-mode .article-block[data-type][data-excerpt-selected="true"]:not([data-type="code"]) {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  transition: none;
+}
 /* Excerpt mode is persistent, not an animation or a timed interaction.
    Keep its status and off switch visible without reopening the TOC. */
 .excerpt-mode-hint {
