@@ -99,16 +99,41 @@ async function run(engine, label, width, height, touch) {
         else await button.click();
       };
 
-      // Touchend must execute the operation without waiting for an iOS
-      // compatibility click; it also must not repeat copy/share side effects.
+      // WebKit can drop both touchend and click while releasing a native range.
+      // A *single pointerdown*, with no pointerup/touchend/click, must copy.
       await selectLongText();
-      await act("复制");
+      const customSelection = await page.evaluate(() => {
+        const supported = !!window.CSS?.highlights && !!window.Highlight;
+        return {
+          supported,
+          registered: !!window.CSS?.highlights?.has("waylan-selected-quote"),
+          nativeRanges: window.getSelection()?.rangeCount || 0,
+        };
+      });
+      if (touch && customSelection.supported) {
+        assert.ok(customSelection.registered && customSelection.nativeRanges === 0,
+          label + ": native iOS selection was not transferred to a visible custom highlight");
+      }
+      const copyAction = page.getByRole("toolbar", { name: "选中文字的操作" })
+        .getByRole("button", { name: "复制", exact: true });
+      await copyAction.dispatchEvent("pointerdown", {
+        bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, pointerId: 42,
+      });
       await page.waitForFunction(() => window.__copyCount === 1);
+      await copyAction.dispatchEvent("click", { bubbles: true, detail: 1 });
+      await page.waitForTimeout(90);
+      assert.equal(await page.evaluate(() => window.__copyCount), 1,
+        label + ": compatibility click repeated an already handled press");
+
+      // A separate real touch must execute again, not be swallowed by the
+      // previous gesture's de-duplication. Share must execute exactly once.
+      await act("复制");
+      await page.waitForFunction(() => window.__copyCount === 2);
       await act("分享");
-      await page.waitForFunction(() => window.__copyCount + window.__shareCount === 2);
+      await page.waitForFunction(() => window.__copyCount + window.__shareCount === 3);
       await page.waitForTimeout(120);
-      assert.equal(await page.evaluate(() => window.__copyCount + window.__shareCount), 2,
-        label + ": sharing ran twice");
+      assert.equal(await page.evaluate(() => window.__copyCount + window.__shareCount), 3,
+        label + ": a toolbar action was swallowed or repeated");
       await act("关闭摘录工具栏");
       await page.locator(".selection-toolbar").waitFor({ state: "hidden" });
 
