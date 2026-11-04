@@ -980,10 +980,17 @@ textarea::placeholder {
   .excerpt-toggle-text { font-size: 12px; }
   .selection-toolbar {
     position: fixed;
-    inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50% !important;
+    /* Safari's expanded address/bottom bar is not part of safe-area-inset.
+       Reserve a stable finger-sized buffer above it, and compensate for any
+       visual viewport space Safari has already obscured. */
+    inset: auto auto calc(var(--waylan-selection-view-bottom, 0px) + max(88px, 60px + env(safe-area-inset-bottom))) 50% !important;
     transform: translateX(-50%);
     width: min(500px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
+    max-height: min(220px, calc(var(--waylan-selection-view-height, 100dvh) - 116px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 8px;
     border-radius: var(--radius-lg);
     box-shadow: 0 20px 45px #0005;

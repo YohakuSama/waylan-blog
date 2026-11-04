@@ -54,6 +54,24 @@ describe("mobile reader regression contracts", () => {
       "border: 1px solid var(--line-strong);",
     ]) assert.ok(tray.includes(declaration), declaration);
   });
+  it("keeps the selected-text actions above Safari expanding browser chrome", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const mobileDock = style.slice(style.indexOf("@media (max-width: 1024px), (pointer: coarse) {"));
+    assert.ok(mobileDock.includes("var(--waylan-selection-view-bottom, 0px)") &&
+      mobileDock.includes("max(88px, 60px + env(safe-area-inset-bottom))"),
+      "the selection tray must leave a buffer above Safari's expanded native bottom bar");
+    assert.ok(mobileDock.includes("var(--waylan-selection-view-height, 100dvh)") &&
+      mobileDock.includes("max-height: min(220px"),
+      "the tray must fit within the actual visual viewport when browser chrome expands");
+    assert.ok(reader.includes('root.style.setProperty("--waylan-selection-view-bottom"') &&
+      reader.includes('root.style.setProperty("--waylan-selection-view-height"') &&
+      reader.includes('viewport?.addEventListener("resize", sync)') &&
+      reader.includes('viewport?.addEventListener("scroll", sync)'),
+      "scrolling or expanding browser chrome must immediately update the tray's offset");
+    assert.ok(reader.includes("setPointerCapture?.(event.pointerId)") &&
+      reader.includes("completeToolbarTouch(event.currentTarget, action)"),
+      "copy/share should retain the original pressed button even if Safari moves the tray");
+  });
   it("docks paragraph threads at the visual-viewport bottom on phone, tablet and desktop", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
     assert.ok(style.includes(".discussion-dialog.thread-dialog {"));

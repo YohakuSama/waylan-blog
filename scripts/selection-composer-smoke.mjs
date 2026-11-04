@@ -116,13 +116,59 @@ async function run(engine, label, width, height, touch) {
       }
       const copyAction = page.getByRole("toolbar", { name: "选中文字的操作" })
         .getByRole("button", { name: "复制", exact: true });
+      const dock = async () => page.locator(".selection-toolbar").evaluate((el) => {
+        const v = window.visualViewport;
+        const r = el.getBoundingClientRect();
+        return {
+          gap: (v?.offsetTop ?? 0) + (v?.height ?? window.innerHeight) - r.bottom,
+          top: r.top, visibleTop: v?.offsetTop ?? 0,
+          bottom: r.bottom,
+        };
+      });
+      if (touch) {
+        const initial = await dock();
+        assert.ok(initial.gap >= 80 && initial.top >= initial.visibleTop - 2,
+          label + ": tray intersects Safari bottom bar: " + JSON.stringify(initial));
+      }
       await copyAction.dispatchEvent("pointerdown", {
         bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, pointerId: 42,
       });
       assert.equal(await page.evaluate(() => window.__copyCount), 0,
         label + ": copy must await transient activation on pointerup");
+      if (touch) {
+        // Safari can expand its lower chrome after the first finger-down.
+        // The selection controls must move above the new *visual* viewport
+        // without losing that same gesture or hiding its target.
+        await page.evaluate(() => {
+          const v = window.visualViewport;
+          if (!v) throw Error("visualViewport missing");
+          window.__selectionChromeBefore = { height: v.height, offsetTop: v.offsetTop };
+          Object.defineProperty(v, "height", {
+            configurable: true, value: Math.max(320, v.height - 96),
+          });
+          Object.defineProperty(v, "offsetTop", {
+            configurable: true, value: v.offsetTop + 12,
+          });
+          v.dispatchEvent(new Event("resize"));
+          v.dispatchEvent(new Event("scroll"));
+        });
+        await page.waitForFunction(() => {
+          const v = window.visualViewport;
+          const r = document.querySelector(".selection-toolbar")?.getBoundingClientRect();
+          return !!r && v.offsetTop + v.height - r.bottom >= 80 &&
+            r.top >= v.offsetTop - 2;
+        });
+        const expanded = await dock();
+        assert.ok(expanded.gap >= 80, label + ": Safari expansion covered the tray");
+      }
       await copyAction.dispatchEvent("pointerup", {
         bubbles: true, cancelable: true, pointerType: "touch", isPrimary: true, pointerId: 42,
+      });
+      if (touch) await page.evaluate(() => {
+        const v = window.visualViewport, before = window.__selectionChromeBefore;
+        Object.defineProperty(v, "height", { configurable: true, value: before.height });
+        Object.defineProperty(v, "offsetTop", { configurable: true, value: before.offsetTop });
+        v.dispatchEvent(new Event("resize"));
       });
       await page.waitForFunction(() => window.__copyCount === 1);
       await copyAction.dispatchEvent("click", { bubbles: true, detail: 1 });
