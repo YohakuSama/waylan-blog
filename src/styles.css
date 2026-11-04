@@ -2482,7 +2482,7 @@ body,
    permanent second toolbar. Only the Waylan masthead remains sticky. */
 @media (max-width: 1024px) {
   :root:has(.site-header-reader) {
-    --reader-brand-height: 56px;
+    --reader-brand-height: var(--header-bar-height);
     --header-height: var(--reader-brand-height);
     scroll-padding-top: calc(var(--reader-brand-height) + 16px);
   }
