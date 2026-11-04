@@ -129,7 +129,7 @@ describe("mobile reader regression contracts", () => {
       settings.includes('waylan:font-size-changed') &&
       reader.includes('addEventListener("waylan:font-size-changed"'),
       "font controls must be in reading settings and update the active article");
-    assert.ok(!reader.includes('className="article-action" type="button"\\n                aria-label={\x60正文字号'),
+    assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
     assert.ok(app.includes('className="reader-global-menu-trigger icon-button"'));
     assert.ok(site.includes('.site-header-reader .reader-global-menu.is-open'));
