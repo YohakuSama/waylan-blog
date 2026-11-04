@@ -1717,7 +1717,7 @@ export default function Reader({ post }: { post: Post }) {
                 setTocOpen(false);
               }}>
               <Highlighter size={15} aria-hidden="true" />
-              {excerptMode ? "结束段落摘录" : "点按整段摘录"}
+              {excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
             </button>
             <button
               className="text-button"
