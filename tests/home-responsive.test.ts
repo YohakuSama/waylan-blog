@@ -11,6 +11,7 @@ const skins = readFileSync("src/styles/skins.css", "utf8");
 /** These contracts guard layout regressions without requiring a live Worker. */
 describe("home hero mobile and tablet layout", () => {
   it("uses one native type picker on phones and accessible tabs on wider screens", () => {
+    assert.ok(site.includes("@media (max-width: 767px) {"));
     assert.ok(site.includes(".feed-controls .type-tabs { display: none; }"));
     assert.ok(site.includes(".feed-controls .mobile-type-select { display: inline-flex; }"));
     assert.ok(pages.includes('className="mobile-type-select"'));
@@ -41,6 +42,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(site.includes(".side-heading-link:focus-visible"));
     assert.ok(site.includes("min-height: 44px;"));
     assert.ok(sidebarComponent.includes('href={`/feed?topic=${t.id}`}'));
+    assert.ok(sidebarComponent.includes('className="side-heading-static"'));
+    assert.ok(pages.includes('mode="feed"'));
     assert.equal(sidebarComponent.includes("/feed?type=all"), false);
     assert.ok(skins.includes('.side-heading-link::before { content: "##"'));
     assert.ok(skins.includes(".side-heading-link .side-more svg { display: block; }"));
@@ -56,7 +59,16 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(compact.includes("display: inline-flex;"));
     assert.ok(compact.includes(".feed-controls .feed-search-row"));
     assert.ok(compact.includes("flex-direction: row;"));
+    assert.ok(site.includes(".feed-layout .site-sidebar { display: none; }"));
     assert.ok(compact.includes(".feed-controls .feed-search-row .sort-control"));
+  });
+  it("preserves existing filters on card tag clicks and provides a reset affordance", () => {
+    assert.ok(feed.includes("hrefForTag?.(tag)"));
+    assert.ok(feed.includes("tagHref={tagHref}"));
+    assert.ok(pages.includes('tagHref={(selectedTag) => href({ tag: selectedTag })}'));
+    assert.ok(pages.includes('className="feed-clear-filters"'));
+    assert.ok(site.includes(".feed-layout .tag-list a"));
+    assert.ok(site.includes(".feed-layout .load-more"));
   });
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = site.indexOf("@media (max-width: 1024px)");

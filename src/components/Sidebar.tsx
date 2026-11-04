@@ -102,20 +102,27 @@ export function SideTitle({
   children,
 }: {
   icon: ReactNode;
-  href: string;
-  label: string;
+  href?: string;
+  label?: string;
   children: ReactNode;
 }) {
   return (
     <div className="side-head">
       <h2 className="side-title">
-        <Link href={href} className="side-heading-link" title={label}>
-          <span className="side-heading-icon" aria-hidden="true">{icon}</span>
-          <span className="side-heading-text">{children}</span>
-          <span className="side-more" aria-hidden="true">
-            <ArrowRight size={16} />
+        {href ? (
+          <Link href={href} className="side-heading-link" title={label}>
+            <span className="side-heading-icon" aria-hidden="true">{icon}</span>
+            <span className="side-heading-text">{children}</span>
+            <span className="side-more" aria-hidden="true">
+              <ArrowRight size={16} />
+            </span>
+          </Link>
+        ) : (
+          <span className="side-heading-link side-heading-static">
+            <span className="side-heading-icon" aria-hidden="true">{icon}</span>
+            <span className="side-heading-text">{children}</span>
           </span>
-        </Link>
+        )}
       </h2>
     </div>
   );
@@ -132,7 +139,7 @@ function Popular() {
   if (top.length < 2) return null;
   return (
     <section className="side-block popular-block">
-      <SideTitle icon={<Flame size={17} />} href="/archive" label="打开归档">
+      <SideTitle icon={<Flame size={17} />}>
         读得最多
       </SideTitle>
       <ol className="popular-list">
@@ -158,13 +165,13 @@ const siteLinks = [
   { href: "/about", label: "关于", hint: "写作方向与实践方式" },
 ];
 /** Rail blocks shared by every index page, so the right column reads as one system. */
-export function TopicsBlock() {
+export function TopicsBlock({ linkHeading = true }: { linkHeading?: boolean } = {}) {
   return (
     <section className="side-block">
       <SideTitle
         icon={<Layers size={17} />}
-        href="/feed"
-        label="浏览全部内容"
+        href={linkHeading ? "/feed" : undefined}
+        label={linkHeading ? "浏览全部内容" : undefined}
       >
         写作主题
       </SideTitle>
@@ -214,10 +221,10 @@ export function RecentBlock({ heatmap = true }: { heatmap?: boolean }) {
   );
 }
 /** Sibling pages; the current one is left out rather than linking to itself. */
-export function SiteLinksBlock({ current }: { current?: string }) {
+export function SiteLinksBlock({ current, linkHeading = true }: { current?: string; linkHeading?: boolean }) {
   return (
     <section className="side-block">
-      <SideTitle icon={<Link2 size={17} />} href="/feed" label="浏览全部内容">
+      <SideTitle icon={<Link2 size={17} />} href={linkHeading ? "/feed" : undefined} label={linkHeading ? "浏览全部内容" : undefined}>
         站内导航
       </SideTitle>
       <ul className="link-list">
@@ -238,7 +245,7 @@ export function SiteLinksBlock({ current }: { current?: string }) {
     </section>
   );
 }
-export function Sidebar({ current }: { current?: string }) {
+export function Sidebar({ current, mode }: { current?: string; mode?: "feed" }) {
   return (
     <aside className="site-sidebar" aria-label="侧栏">
       <section className="side-block profile-block">
@@ -278,9 +285,9 @@ export function Sidebar({ current }: { current?: string }) {
           <p>选中喜欢的文字可以私人划线；想先把一篇文章放好，点一下书签就行。它们都不会上传到服务器。</p>
         </details>
       </section>
-      <TopicsBlock />
+      <TopicsBlock linkHeading={mode !== "feed"} />
       <RecentBlock />
-      <SiteLinksBlock current={current} />
+      <SiteLinksBlock current={current} linkHeading={mode !== "feed"} />
       <Popular />
     </aside>
   );

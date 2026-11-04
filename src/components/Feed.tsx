@@ -78,12 +78,18 @@ export function TypeTabs({
     </div>
   );
 }
-export function TagList({ tags }: { tags: string[] }) {
+export function TagList({
+  tags,
+  hrefForTag,
+}: {
+  tags: string[];
+  hrefForTag?: (tag: string) => string;
+}) {
   return tags.length ? (
     <ul className="tag-list" aria-label="标签">
       {tags.map((tag) => (
         <li key={tag}>
-          <Link href={`/feed?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
+          <Link href={hrefForTag?.(tag) ?? `/feed?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
         </li>
       ))}
     </ul>
@@ -138,11 +144,13 @@ export function FeedEntry({
   discussion,
   priority = false,
   showMedia = true,
+  tagHref,
 }: {
   post: Post;
   discussion?: Discussion;
   priority?: boolean;
   showMedia?: boolean;
+  tagHref?: (tag: string) => string;
 }) {
   const href = `/post/${post.slug}`;
   let media: ReactNode = null;
@@ -221,7 +229,7 @@ export function FeedEntry({
               {post.text.trim()}
             </Link>
           </p>
-          <TagList tags={post.tags} />
+          <TagList tags={post.tags} hrefForTag={tagHref} />
         </div>
         <Link
           className="feed-arrow"
@@ -266,7 +274,7 @@ export function FeedEntry({
             )}
           </div>
         )}
-        <TagList tags={post.tags} />
+        <TagList tags={post.tags} hrefForTag={tagHref} />
       </div>
       {media}
       <Link
@@ -284,7 +292,9 @@ export type Density = "full" | "compact";
 /** Reader-chosen list density, remembered on this device after hydration. */
 export function useDensity() {
   const [density, set] = useState<Density>("full");
-  useEffect(() => {
+  // Restore saved density before the hydration commit is painted, while
+  // keeping SSR's initial markup deterministic.
+  useLayoutEffect(() => {
     if (storage.get<Density>("density", "full") === "compact") set("compact");
   }, []);
   return [
@@ -336,6 +346,7 @@ export function FeedList({
   empty,
   density = "full",
   variant = "index",
+  tagHref,
 }: {
   items: Post[];
   batch?: number;
@@ -343,6 +354,7 @@ export function FeedList({
   empty: ReactNode;
   density?: Density;
   variant?: "index" | "home";
+  tagHref?: (tag: string) => string;
 }) {
   // A sort/filter change must reset pagination *before* the first paint.
   // Resetting limit only in useEffect allows the new order to briefly render
@@ -405,6 +417,7 @@ export function FeedList({
             priority={i < 2}
             showMedia={variant !== "home" || i === 0}
             discussion={previews.data?.posts[p.id]}
+            tagHref={tagHref}
           />
         ))}
       </div>
