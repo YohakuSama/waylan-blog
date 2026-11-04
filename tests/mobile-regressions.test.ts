@@ -150,6 +150,29 @@ describe("mobile reader regression contracts", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .login-invitation {"));
     assert.ok(style.includes(".comment-composer[data-preview=\"true\"] > textarea"));
   });
+  it("keeps long selected quotes on one scroll surface and pins composer actions", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const composerCSS = style.slice(style.indexOf("/* Waylan immersive comment composer.")).replace(/\r\n/g, "\n");
+    assert.ok(composerCSS.includes("overflow-y: auto; overflow-x: hidden;"),
+      "the editor content, including long quotes, must own one scroll area");
+    assert.ok(composerCSS.includes(".panel-original blockquote {\n  max-height: none; overflow: visible;"),
+      "the quoted text must not own a nested scrollbar");
+    assert.ok(composerCSS.includes(".composer-bottom {\n  /* A normal flex footer"),
+      "the publish/login footer must be a separate flex child");
+    assert.ok(reader.includes("        {!panelIds.length && (session.loading ? ("),
+      "publish/login controls must be siblings of the scrolling editor body");
+    assert.ok(!composerCSS.includes("min-height: min(38dvh, 320px)"),
+      "a forced fullscreen textarea minimum must not push the publish action off-screen");
+  });
+  it("runs every selection action directly for touch and deduplicates compatibility clicks", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    for (const action of ["privateMark", "newComment(selection.anchor)", "copySelected()", "share(selection.anchor)", "dismissToolbar"]) {
+      assert.ok(reader.includes("onToolbarTouchEnd"), "touch toolbar activation must be explicit");
+      assert.ok(reader.includes(action), "missing selection action " + action);
+    }
+    assert.ok(reader.includes("lastToolbarTouch.current = { target: event.currentTarget"),
+      "the following compatibility click must not repeat the same operation");
+  });
   it("maintains readable selection contrast in the syntax-highlighted code block", () => {
     assert.ok(skins.includes(".reader-prose .block-code code *::selection"));
     assert.ok(skins.includes("background: var(--code-ink);"));
