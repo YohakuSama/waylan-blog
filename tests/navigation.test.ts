@@ -856,7 +856,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     const area = document.querySelector<HTMLTextAreaElement>("#echo-comment")!;
     await act(async () => {
       const set = Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value")!.set!;
-      set.call(area, "**重要**、\`代码\`与[链接](https://example.com)");
+      set.call(area, "**重要**、`代码`与[链接](https://example.com)");
       area.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
       await pause(30);
     });
