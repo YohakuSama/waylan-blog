@@ -554,6 +554,80 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await mount("/post/a-room-on-the-internet");
     assert.equal(document.querySelectorAll("mark.private-mark").length, 1);
   });
+  it("moves selection actions with Safari visualViewport and clears offsets on close", async () => {
+    const viewport = Object.assign(new dom.window.EventTarget(), {
+      offsetTop: 0,
+      height: 760,
+    });
+    Object.defineProperty(dom.window, "innerHeight", { value: 900, configurable: true });
+    Object.defineProperty(dom.window, "visualViewport", { value: viewport, configurable: true });
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"), "selection tray must appear");
+    const rootStyle = document.documentElement.style;
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-bottom"), "140px");
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-height"), "760px");
+    viewport.height = 650;
+    viewport.offsetTop = 28;
+    viewport.dispatchEvent(new dom.window.Event("resize"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-bottom"), "222px",
+      "expanded Safari chrome must update the tray without waiting for another tap");
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-height"), "650px");
+    viewport.offsetTop = 42;
+    viewport.dispatchEvent(new dom.window.Event("scroll"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-bottom"), "208px",
+      "scrolling browser chrome should keep the tray inside the visible viewport");
+    await click(document.querySelector(".selection-toolbar button[aria-label='关闭摘录工具栏']"));
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-bottom"), "");
+    assert.equal(rootStyle.getPropertyValue("--waylan-selection-view-height"), "");
+  });
+  it("captures a pressed toolbar pointer if Safari shifts its position mid-gesture", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    const button = [...document.querySelectorAll<HTMLButtonElement>(".selection-toolbar-actions button")]
+      .find((b) => b.textContent === "复制")!;
+    assert.ok(button);
+    let captured: number | null = null;
+    button.setPointerCapture = (id) => { captured = id; };
+    const copied: string[] = [];
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+      writeText: async (content: string) => { copied.push(content); },
+    } });
+    const pointer = (type: string) => {
+      const e = new dom.window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperties(e, {
+        pointerType: { value: "touch" },
+        pointerId: { value: 17 },
+      });
+      button.dispatchEvent(e);
+    };
+    await act(async () => {
+      pointer("pointerdown");
+      await pause(20);
+    });
+    assert.equal(captured, 17, "the first touch must lock pointerup to the same button");
+    assert.equal(copied.length, 0, "copy awaits user activation at pointerup");
+    await act(async () => {
+      pointer("pointerup");
+      await pause(20);
+    });
+    assert.deepEqual(copied, [p.textContent!.slice(0, 12)],
+      "the first gesture must copy once despite simulated button movement");
+  });
   it("does not dismiss the touch selection toolbar on transient selectionchange", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
