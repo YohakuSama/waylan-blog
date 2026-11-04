@@ -26,6 +26,8 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Test reader neighbors, back-to-list and settings transition
         run: node scripts/reader-deep-smoke.mjs
+      - name: Verify touch selection and long-quote composer geometry
+        run: node scripts/selection-composer-smoke.mjs
       - name: Validate Android, iPhone, iPad and desktop feed return with responsive header
         run: node scripts/responsive-navigation-smoke.mjs
       - name: Save cross-device header and pagination evidence
