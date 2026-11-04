@@ -202,12 +202,6 @@ html {
     opacity: 0;
   }
 }
-.footer-brand .wordmark {
-  height: 30px;
-  width: auto;
-  color: var(--ink);
-}
-
 /* ---------- Header ---------- */
 .header-search {
   transition:
@@ -922,23 +916,6 @@ html {
 }
 :root[data-skin="terminal"] .brand-wordmark {
   display: none;
-}
-/* Separate identity: only the Editorial footer uses the script signature. */
-:root[data-skin="terminal"] .footer-brand .wordmark,
-:root[data-skin="terminal"] .footer-blog-script { display: none; }
-:root[data-skin="terminal"] .footer-terminal-wordmark {
-  display: inline-flex;
-  align-items: baseline;
-  gap: .35em;
-  font: 600 clamp(18px, 2.1vw, 24px)/1.2 var(--font-mono);
-  letter-spacing: -.03em;
-  white-space: nowrap;
-  color: var(--brand);
-}
-:root[data-skin="terminal"] .footer-terminal-prompt { color: var(--muted); }
-:root[data-skin="terminal"] .footer-terminal-cursor {
-  margin-left: -.25em;
-  color: var(--amber);
 }
 :root[data-skin="terminal"] .about-motto {
   border: 1px dashed var(--line-strong);
