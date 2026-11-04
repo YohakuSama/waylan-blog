@@ -149,10 +149,10 @@ try {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
               Math.abs(source.height - dest.height) <= 1 &&
-              Math.abs(dest.width - (i === 0 && width > 480 && width <= 860 ? 44 : source.width)) <= 1 &&
+              Math.abs(dest.width - (i === 0 && width >= 480 && width <= 860 ? 44 : source.width)) <= 1 &&
               Math.abs(source.top - dest.top) <= 1,
               label + ": shortcut " + i + " changes size or height in the article");
-            if (width <= 480) assert.ok(Math.abs(source.left - dest.left) <= 1,
+            if (width < 480) assert.ok(Math.abs(source.left - dest.left) <= 1,
               label + ": phone shortcut " + i + " moves horizontally between pages");
           }
           const back = page.locator(".reader-back");
