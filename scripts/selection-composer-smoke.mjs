@@ -62,6 +62,12 @@ async function run(engine, label, width, height, touch) {
       await page.waitForFunction(() => window.__shareCount + window.__copyCount > 0,
         null, { timeout: 15000 });
       await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
+      // A newly opened quick-actions menu confirms the reader controls are hydrated.
+      const more = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: "展开更多操作" });
+      await more.click();
+      await page.getByRole("group", { name: "更多阅读操作" }).getByRole("button", { name: "复制链接" }).waitFor({ state: "visible" });
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.querySelector(".article-action-more")?.getAttribute("aria-expanded") === "false");
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {

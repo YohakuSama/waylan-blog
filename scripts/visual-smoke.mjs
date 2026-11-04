@@ -510,6 +510,33 @@ try {
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
             await page.setViewportSize({ width, height: 900 });
           }
+          if (route.startsWith("/post/") && [320, 390, 768, 1440].includes(width) &&
+              variant.skin === "editorial" && variant.theme === "light") {
+            const more = page.getByRole("button", { name: "展开更多操作", exact: true });
+            await more.click();
+            const panel = page.locator(".article-more-panel:not([hidden])");
+            await panel.waitFor();
+            const box = await panel.boundingBox();
+            assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1,
+              `${label}: more actions escape viewport`);
+            assert.ok(await panel.locator("button").first().evaluate((el) => el === document.activeElement),
+              `${label}: more menu must focus its first action`);
+            await page.keyboard.press("Escape");
+            await panel.waitFor({ state: "hidden" });
+            assert.ok(await more.evaluate((el) => el === document.activeElement),
+              `${label}: Escape must restore focus to more trigger`);
+            await more.click();
+            await panel.getByRole("button", { name: "切换正文为20px" }).click();
+            assert.equal(await page.locator(".reader-prose").evaluate((el) => el.style.getPropertyValue("--reader-font")), "20px",
+              `${label}: font-size quick control did not update the article`);
+            assert.equal(await page.evaluate(() => localStorage.getItem("echo:font-size")), "20",
+              `${label}: font-size preference did not persist`);
+            await more.click();
+            await panel.getByRole("button", { name: "跳到评论" }).click();
+            assert.ok(await page.locator("#discussion").evaluate((el) => el === document.activeElement),
+              `${label}: comment shortcut did not move keyboard focus`);
+            await page.waitForFunction(() => window.scrollY > 300, null, { timeout: 5000 });
+          }
           if (route === "/" && [320, 768, 1440].includes(width)) {
             await page.getByRole("button", { name: "阅读设置", exact: true }).click();
             const settings = page.getByRole("dialog", { name: "阅读设置", exact: true });

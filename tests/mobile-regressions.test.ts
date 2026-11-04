@@ -123,7 +123,7 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
-  it("keeps three quiet article actions without a moving overlay", () => {
+  it("keeps quiet article actions without a moving overlay", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
     const app = readFileSync("src/App.tsx", "utf8");
     const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
@@ -134,6 +134,15 @@ describe("mobile reader regression contracts", () => {
       "saving the current article needs a visible label");
     assert.ok(reader.includes('className="article-action article-action-toc"'),
       "the directory remains directly reachable on phones and tablets");
+    assert.ok(reader.includes('className="article-action article-action-more"') &&
+      reader.includes('aria-label="更多阅读操作"') && reader.includes('hidden={!moreOpen}'),
+      "the optional reader actions stay in a dismissible inline menu");
+    assert.ok(reader.includes('void copyArticleLink()') && reader.includes('onClick={jumpToDiscussion}') &&
+      reader.includes('changeFontSize(size)'),
+      "direct copy, comment shortcut and font-size controls must be usable");
+    assert.ok(style.includes(".article-more-panel[hidden] { display: none; }") &&
+      style.includes(".discussion-section { scroll-margin-top:"),
+      "the action menu must hide reliably and the comment jump must avoid the sticky header");
     assert.ok(reader.includes('className="toc-excerpt-toggle"'),
       "whole-paragraph mode remains discoverable inside the contents panel");
     assert.doesNotMatch(reader, /reader-floating|floatingVisible|floatingTucked|floatingOpen/,
@@ -144,6 +153,9 @@ describe("mobile reader regression contracts", () => {
       settings.includes('waylan:font-size-changed') &&
       reader.includes('addEventListener("waylan:font-size-changed"'),
       "font controls must be in reading settings and update the active article");
+    assert.ok(settings.includes('addEventListener("waylan:font-size-changed", sync)') &&
+      settings.includes('"echo:font-size"'),
+      "the global settings and inline size control must stay synchronized");
     assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
     assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);

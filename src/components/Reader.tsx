@@ -19,6 +19,7 @@ import {
   LoaderCircle,
   Maximize2,
   Minimize2,
+  MoreHorizontal,
   MessageSquare,
   Plus,
   Send,
@@ -342,13 +343,36 @@ export default function Reader({ post }: { post: Post }) {
     article = useRef<HTMLElement>(null),
     toc = useRef<HTMLElement>(null),
     tocButton = useRef<HTMLButtonElement>(null),
+    moreButton = useRef<HTMLButtonElement>(null),
+    moreMenu = useRef<HTMLDivElement>(null),
     composerArea = useRef<HTMLTextAreaElement>(null),
     composerGeometry = useRef<{ from: DOMRect; radius: string } | null>(null),
     composerResizeAnimation = useRef<Animation | null>(null);
   const [progress, setProgress] = useState(0),
     [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
     [fontSize, setFontSize] = useState(DEFAULT_FONT),
-    [tocOpen, setTocOpen] = useState(false);
+    [tocOpen, setTocOpen] = useState(false),
+    [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => {
+    if (!moreOpen) return;
+    moreMenu.current?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+    const outside = (event: PointerEvent) => {
+      if (!moreMenu.current?.contains(event.target as Node) &&
+          !moreButton.current?.contains(event.target as Node)) setMoreOpen(false);
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMoreOpen(false);
+      moreButton.current?.focus({ preventScroll: true });
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", keydown);
+    };
+  }, [moreOpen]);
   useEffect(() => {
     if (!tocOpen) return;
     (toc.current?.querySelector<HTMLElement>("nav a") ||
@@ -960,6 +984,36 @@ export default function Reader({ post }: { post: Post }) {
         notify("这段原文已发生变化，暂时无法定位。");
     }, 180);
   }
+  async function copyArticleLink() {
+    if (offlinePreview()) {
+      notify("离线预览暂不提供在线文章链接。");
+      return;
+    }
+    const url = `${site.origin.includes("YOUR_DOMAIN") ? location.origin : site.origin}/post/${post.slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      notify("文章链接已复制。");
+    } catch {
+      notify("复制未完成，请从地址栏复制文章链接。");
+    }
+  }
+  function changeFontSize(size: number) {
+    if (!FONT_SIZES.includes(size)) return;
+    setFontSize(size);
+    const saved = storage.set("font-size", size);
+    if (saved) window.dispatchEvent(new Event("waylan:font-size-changed"));
+    else notify("字号已调整，但当前浏览器无法保存偏好。");
+    setMoreOpen(false);
+  }
+  function jumpToDiscussion() {
+    setMoreOpen(false);
+    const discussion = document.getElementById("discussion");
+    discussion?.focus({ preventScroll: true });
+    discussion?.scrollIntoView({
+      block: "start",
+      behavior: motionAllowed() ? "smooth" : "instant",
+    });
+  }
   async function share(anchor?: Anchor, commentId?: string) {
     if (offlinePreview()) {
       try {
@@ -1260,9 +1314,36 @@ export default function Reader({ post }: { post: Post }) {
               </button>
               <button className="article-action article-action-toc" type="button" ref={tocButton}
                 aria-label={tocOpen ? "收起文章目录" : post.toc.length ? "展开文章目录" : "查看阅读进度"}
-                aria-expanded={tocOpen} aria-controls="reader-toc" onClick={() => setTocOpen((value) => !value)}>
+                aria-expanded={tocOpen} aria-controls="reader-toc" onClick={() => { setMoreOpen(false); setTocOpen((value) => !value); }}>
                 <List size={17} /><span>目录</span>
               </button>
+              <div className="article-more">
+                <button className="article-action article-action-more" type="button" ref={moreButton}
+                  aria-label={moreOpen ? "收起更多操作" : "展开更多操作"}
+                  aria-expanded={moreOpen} aria-controls="reader-more-actions"
+                  onClick={() => { setTocOpen(false); setMoreOpen((value) => !value); }}>
+                  <MoreHorizontal size={17} /><span>更多</span>
+                </button>
+                <div className="article-more-panel" id="reader-more-actions" ref={moreMenu}
+                  role="group" aria-label="更多阅读操作" hidden={!moreOpen}>
+                  <button type="button" onClick={() => { setMoreOpen(false); void copyArticleLink(); }}>
+                    <Copy size={16} aria-hidden="true" />复制链接
+                  </button>
+                  <button type="button" onClick={jumpToDiscussion}>
+                    <MessageSquare size={16} aria-hidden="true" />跳到评论
+                  </button>
+                  <span className="article-font-label" id="reader-font-label">正文字号</span>
+                  <div className="article-font-options" role="group" aria-labelledby="reader-font-label">
+                    {FONT_SIZES.map((size) => (
+                      <button key={size} type="button" aria-pressed={fontSize === size}
+                        aria-label={`切换正文为${size}px（${size === 16 ? "小" : size === 18 ? "标准" : "大"}）`}
+                        onClick={() => changeFontSize(size)}>
+                        {size === 16 ? "小" : size === 18 ? "标准" : "大"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
             <span className="sr-only" role="status">
               {excerptMode ? "摘录模式已开启：点选正文段落可划线或评论。" : ""}
@@ -1467,7 +1548,7 @@ export default function Reader({ post }: { post: Post }) {
               把这篇文字带给朋友
             </button>
           </div>
-          <section className="discussion-section" id="discussion">
+          <section className="discussion-section" id="discussion" tabIndex={-1}>
             <div className="discussion-title">
               <h2>
                 发表评论
