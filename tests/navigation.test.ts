@@ -227,7 +227,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(location.pathname.startsWith("/post/"));
     assert.ok(document.querySelector(".reader-prose"));
     assert.equal(y, 0);
-    await click(document.querySelector(".reader-topbar>.text-button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(50);
     assert.equal(location.pathname, "/feed");
     assert.equal(location.search, "?topic=notes");
@@ -248,7 +248,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(lastEntry);
     await click(lastEntry);
     assert.ok(location.pathname.startsWith("/post/"));
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(140);
     assert.equal(location.pathname, "/feed");
     assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length,
@@ -268,7 +268,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       '.article-neighbors a[href^="/post/"]',
     );
     if (neighbor) await click(neighbor);
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(100);
     assert.equal(location.pathname, "/", "return must honor the actual starting page");
   });
@@ -286,7 +286,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(neighbor);
     assert.ok(location.pathname.startsWith("/post/"));
     assert.notEqual(location.pathname, firstPath);
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(100);
     assert.equal(location.pathname, "/feed",
       "the Return to list control must skip already-read neighboring articles");
@@ -319,7 +319,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     await click(document.querySelector(".post-card-link"));
     assert.ok(document.querySelector(".reader-prose"));
-    await click(document.querySelector(".reader-topbar > button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(45);
     assert.equal(location.pathname, "/feed");
     assert.equal(nativeCalls, 0);
@@ -414,7 +414,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(item);
     assert.ok(location.pathname.startsWith("/post/"));
     assert.equal(y, 0, "the reader should start at its own page top");
-    await click(document.querySelector(".reader-topbar > .text-button"));
+    await click(document.querySelector(".reader-back-link"));
     await settle(90);
     assert.equal(location.pathname, "/archive");
     assert.equal(y, 680, "archive should restore the original list position");
@@ -1263,7 +1263,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       await click(card.querySelector(".post-card-link"));
       assert.equal(location.pathname, `/post/${project.slug}`);
       assert.equal(y, 0);
-      await click(document.querySelector(".reader-topbar > .text-button"));
+      await click(document.querySelector(".reader-back-link"));
       await settle(90);
       assert.equal(location.pathname, "/projects");
       assert.equal(y, 640, "return to projects must restore the original scroll");
