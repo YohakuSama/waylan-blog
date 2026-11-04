@@ -136,6 +136,36 @@ afterEach(async () => {
   dom.window.close();
 });
 describe("React navigation and reading interactions (DOM integration, not browser layout)", () => {
+  it("keeps comments neutral and the result slot stable until the initial request resolves", async () => {
+    const post = posts[0];
+    const originalFetch = globalThis.fetch;
+    let resolveComments!: (response: Response) => void;
+    const deferred = new Promise<Response>((resolve) => { resolveComments = resolve; });
+    mock.method(globalThis, "fetch", (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input) === `/api/posts/${post.id}/comments`
+        ? deferred
+        : originalFetch(input, init),
+    );
+    await mount("/post/" + post.slug);
+    const section = document.querySelector(".discussion-section")!;
+    assert.ok(section.querySelector(".comment-skeleton"), "initial request must show a loading placeholder");
+    assert.ok(section.querySelector(".discussion-results"), "loading and settled content share a stable slot");
+    assert.ok(section.querySelector(".discussion-action-placeholder"));
+    assert.doesNotMatch(section.textContent || "", /还没有评论|公开讨论尚未连接|评论暂时还没有开放/);
+    await act(async () => {
+      resolveComments(Response.json({
+        nodes: [], totalCount: 0,
+        pageInfo: { hasNextPage: false, endCursor: null },
+        mapped: true,
+        discussionUrl: "https://github.com/example/repo/discussions/1",
+      }));
+      await pause(40);
+    });
+    assert.equal(section.querySelector(".comment-skeleton"), null);
+    assert.match(section.querySelector(".discussion-empty")?.textContent || "", /还没有评论/);
+    assert.ok(section.querySelector(".discussion-source"), "real discussion link appears after resolution");
+    assert.ok(section.querySelector(".discussion-title button"), "comment composer only appears when mapped");
+  });
   it("reverses top-navigation motion when going from projects to content or home", () => {
     assert.equal(routeMotionDirection("/", "/projects"), "forward");
     assert.equal(routeMotionDirection("/feed", "/projects"), "forward");
