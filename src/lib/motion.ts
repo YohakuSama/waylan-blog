@@ -49,13 +49,6 @@ export function animateElement(
     return null;
   }
 }
-type Snapshot = {
-  key: string;
-  src: string;
-  rect: DOMRect;
-  radius: string;
-  objectPosition: string;
-};
 type Transition = { finished: Promise<void>; skipTransition: () => void };
 export type Direction = "forward" | "back";
 export type RouteMotion = "collection" | "reader" | "resume";
@@ -76,196 +69,71 @@ export function token(name: string, fallback: string, from?: Element) {
       .trim() || fallback
   );
 }
-function coverSnapshots() {
-  const result: Snapshot[] = [];
-  for (const element of document.querySelectorAll<HTMLElement>(
-    "[data-shared-cover]",
-  )) {
-    const rect = element.getBoundingClientRect(),
-      image = element.querySelector("img");
-    if (
-      !image ||
-      rect.width <= 0 ||
-      rect.height <= 0 ||
-      rect.bottom <= 0 ||
-      rect.top >= window.innerHeight ||
-      rect.right <= 0 ||
-      rect.left >= window.innerWidth
-    )
-      continue;
-    const style = window.getComputedStyle(element);
-    result.push({
-      key: element.dataset.sharedCover!,
-      src: image.currentSrc || image.src,
-      rect,
-      radius: style.borderRadius,
-      objectPosition: window.getComputedStyle(image).objectPosition,
-    });
-  }
-  return result;
-}
-/** Shared image geometry is the fallback when native View Transitions are unavailable. */
-function fallback(
-  snapshots: Snapshot[],
-  shared: boolean,
-  direction: Direction,
-): Transition {
-  const animations: Animation[] = [],
-    restorations: (() => void)[] = [];
-  const targets = [
-    ...document.querySelectorAll<HTMLElement>("[data-shared-cover]"),
-  ];
-  if (shared) {
-    for (const snapshot of snapshots) {
-      const target = targets.find(
-          (element) => element.dataset.sharedCover === snapshot.key,
-        ),
-        rect = target?.getBoundingClientRect();
-      if (
-        !target ||
-        !rect ||
-        rect.width <= 0 ||
-        rect.height <= 0 ||
-        rect.bottom <= 0 ||
-        rect.top >= window.innerHeight
-      )
-        continue;
-      const ghost = document.createElement("img"),
-        visibility = target.style.visibility;
-      ghost.src = snapshot.src;
-      ghost.alt = "";
-      ghost.setAttribute("aria-hidden", "true");
-      ghost.className = "shared-cover-ghost";
-      Object.assign(ghost.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: `${snapshot.rect.width}px`,
-        height: `${snapshot.rect.height}px`,
-        maxWidth: "none",
-        objectFit: "cover",
-        objectPosition: snapshot.objectPosition || "50% 50%",
-        transformOrigin: "0 0",
-        borderRadius: snapshot.radius || "0px",
-        margin: "0",
-        pointerEvents: "none",
-        zIndex: "60",
-      });
-      document.body.appendChild(ghost);
-      const animation = animateElement(
-        ghost,
-        [
-          {
-            transform: `translate(${snapshot.rect.left}px,${snapshot.rect.top}px) scale(1,1)`,
-          },
-          {
-            transform: `translate(${rect.left}px,${rect.top}px) scale(${rect.width / snapshot.rect.width},${rect.height / snapshot.rect.height})`,
-            borderRadius: window.getComputedStyle(target).borderRadius,
-          },
-        ],
-        { duration: 300, easing: token("--ease-out", "ease-out"), fill: "both" },
-      );
-      if (animation) {
-        target.style.visibility = "hidden";
-        animations.push(animation);
-        restorations.push(() => {
-          target.style.visibility = visibility;
-          ghost.remove();
-        });
-      } else ghost.remove();
-    }
-  }
-  // Same language as the native ::view-transition-new(main) keyframes in motion.css.
-  const entry = animateElement(
-    document.querySelector("main"),
-    [
-      { opacity: 0, transform: `translateY(${direction === "back" ? -8 : 10}px)` },
-      { opacity: 1, transform: "none" },
-    ],
-    { duration: shared ? 280 : 200, easing: token("--ease-out", "ease-out") },
-  );
-  if (entry) animations.push(entry);
-  let clean = false;
-  const cleanup = () => {
-    if (clean) return;
-    clean = true;
-    restorations.forEach((restore) => restore());
-  };
-  const finished = Promise.allSettled(
-    animations.map((animation) => animation.finished),
-  ).then(() => cleanup());
-  return {
-    finished,
-    skipTransition: () => {
-      animations.forEach((animation) => animation.cancel());
-      cleanup();
-    },
-  };
-}
 /**
- * Route change. "forward" goes deeper (list → article), "back" returns;
- * motion.css mirrors the direction so a page leaves the way it came.
+ * Route navigation changes the document scroll position and can replace large,
+ * differently shaped content trees. Native cross-document-style snapshots
+ * duplicate those trees during a frame: on mobile WebKit this visibly stacks
+ * archived text over feed cards and sends cover images across the viewport.
+ *
+ * Apply the route first, then animate ONLY the new main's opacity. No old page,
+ * title, cover, nav label or Safari chrome is snapshotted. Same-page sort and
+ * filter changes still use the separate listTransition() path below.
  */
 export function navigateWithMotion(
   change: () => void,
   direction: Direction = "forward",
   kind: RouteMotion = "reader",
 ): Transition {
-  const level = motionLevel();
-  if (level === "off") {
-    change();
-    return { finished: Promise.resolve(), skipTransition() {} };
-  }
   const root = document.documentElement;
+  // A filter/sort transition can still be in flight when a reader link is
+  // clicked. Cancel its top-layer screenshot before changing routes.
+  const list = activeListDocuments.get(document);
+  if (list) {
+    list.queued?.onFinished?.();
+    list.queued = null;
+    list.abort?.();
+  }
   const serial = ++routeMotionSerial;
   root.dataset.navDir = direction;
-  // A collection-to-collection route morphs as one coherent page. Only
-  // reader transitions are allowed to share individual post titles/covers.
   root.dataset.routeMotion = kind;
-  const settle = (t: Transition): Transition => {
-    void t.finished.finally(() => {
-      // Stale/cancelled transitions must not erase the newer route's state.
-      if (serial !== routeMotionSerial) return;
-      delete root.dataset.navDir;
-      delete root.dataset.routeMotion;
-    });
-    return t;
+  const cleanup = () => {
+    if (serial !== routeMotionSerial) return;
+    delete root.dataset.navDir;
+    delete root.dataset.routeMotion;
   };
-  const sharedReader = level === "shared" && kind === "reader";
-  const snapshots = sharedReader ? coverSnapshots() : [];
-  const doc = document as ViewTransitionDocument;
-  if (level === "shared" && doc.startViewTransition) {
-    let changed = false,
-      cancelled = false,
-      later: Transition | null = null;
-    const update = () => {
-      if (!changed && !cancelled) {
-        changed = true;
-        change();
-      }
-    };
-    try {
-      const native = doc.startViewTransition(update);
-      return settle({
-        finished: native.finished.catch(() => {
-          if (cancelled) return;
-          update();
-          later = fallback(snapshots, sharedReader, direction);
-          return later.finished;
-        }),
-        skipTransition: () => {
-          cancelled = true;
-          native.skipTransition();
-          later?.skipTransition();
-        },
-      });
-    } catch {
-      update();
-      return settle(fallback(snapshots, sharedReader, direction));
-    }
+  // There must be no asynchronously scheduled native View Transition callback:
+  // browser Back and a second fast tap must always apply the next route now.
+  try {
+    change();
+  } catch (error) {
+    cleanup();
+    throw error;
   }
-  change();
-  return settle(fallback(snapshots, sharedReader, direction));
+  if (!motionAllowed()) {
+    cleanup();
+    return { finished: Promise.resolve(), skipTransition() {} };
+  }
+  const main = document.querySelector("main");
+  const fade = animateElement(
+    main,
+    [{ opacity: 0.25 }, { opacity: 1 }],
+    { duration: 170, easing: token("--ease-out", "ease-out") },
+  );
+  if (!fade) {
+    cleanup();
+    return { finished: Promise.resolve(), skipTransition() {} };
+  }
+  let stopped = false;
+  const finished = fade.finished.catch(() => {}).then(() => cleanup());
+  return {
+    finished,
+    skipTransition: () => {
+      if (stopped) return;
+      stopped = true;
+      fade.cancel();
+      cleanup();
+    },
+  };
 }
 
 /**
@@ -276,7 +144,7 @@ export function navigateWithMotion(
 // Only list-changing actions share this gate. Never lock typing, browser
 // navigation, dialog dismissal or assistive controls behind a global click timer.
 type QueuedListChange = { change: () => void; onFinished?: () => void };
-type ListTransaction = { queued: QueuedListChange | null };
+type ListTransaction = { queued: QueuedListChange | null; abort?: () => void };
 const activeListDocuments = new WeakMap<Document, ListTransaction>();
 export function listTransition(change: () => void, onFinished?: () => void) {
   const doc = document as ViewTransitionDocument;
@@ -319,6 +187,7 @@ export function listTransition(change: () => void, onFinished?: () => void) {
   // A safety valve, not a debounce: normal release is driven by actual
   // animation completion. A stalled browser API must never freeze interaction.
   const watchdog = setTimeout(finish, 1500);
+  transaction.abort = finish;
   const commit = () => {
     if (changed) return;
     changed = true;
@@ -346,6 +215,9 @@ export function listTransition(change: () => void, onFinished?: () => void) {
     root.dataset.vt = "list";
     try {
       const transition = doc.startViewTransition(commit);
+      transaction.abort = () => {
+        try { transition.skipTransition(); } finally { finish(); }
+      };
       void transition.finished.then(afterVisuals, () => {
         try {
           // A rejected transition must still apply the requested state once.

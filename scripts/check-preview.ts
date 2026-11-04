@@ -366,11 +366,14 @@ try {
   );
   assert(
     moving.animations.some((item) =>
-      item.element.classList.contains("shared-cover-ghost"),
+      item.element.tagName === "MAIN" &&
+      Number(item.options.duration) > 0 &&
+      item.frames.every((frame) => frame.transform === undefined),
     ),
-    "Bundled preview must dispatch geometry-based shared image motion",
+    "Bundled preview must fade the newly mounted article without flying image geometry",
   );
-  assert.equal(doc.querySelector(".shared-cover-ghost"), null);
+  assert.equal(doc.querySelector(".shared-cover-ghost"), null,
+    "Offline navigation must not create shared-cover overlays");
   assert.equal(moving.fetches(), 0);
   assert.deepEqual(
     moving.errors.map((error) => error.message),
