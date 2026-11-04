@@ -321,6 +321,10 @@ describe("mobile reader regression contracts", () => {
       "tablet discovery tips must span both columns");
     assert.ok(skins.includes(':root[data-skin="terminal"] .footer-terminal-wordmark {'),
       "terminal must retain its own wordmark while sharing the grid");
+    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
+    assert.ok(shelf.includes('footerTop > visibleBottom - 56') &&
+      shelf.includes('window.visualViewport?.addEventListener("resize", check)'),
+      "floating back-to-top must retreat when Safari reveals the footer");
   });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .composer-bottom {"));
