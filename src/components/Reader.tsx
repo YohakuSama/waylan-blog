@@ -431,9 +431,14 @@ export default function Reader({ post }: { post: Post }) {
     const native = window.getSelection();
     if (!host.CSS?.highlights || !host.Highlight || !native?.rangeCount || native.isCollapsed) return;
     // Cloned Range stays rendered even after Safari releases its edit handles.
-    host.CSS.highlights.set("waylan-selected-quote",
-      new host.Highlight(native.getRangeAt(0).cloneRange()));
-    native.removeAllRanges();
+    // Keep the native range if a browser exposes an incomplete Highlight API.
+    try {
+      host.CSS.highlights.set("waylan-selected-quote",
+        new host.Highlight(native.getRangeAt(0).cloneRange()));
+      native.removeAllRanges();
+    } catch {
+      clearToolbarHighlight();
+    }
   }
   useEffect(() => {
     if (!selection) clearToolbarHighlight();
