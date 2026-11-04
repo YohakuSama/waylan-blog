@@ -38,6 +38,7 @@ function sameBox(actual, expected, label) {
 }
 const results = [], notificationResults = [], baselines = new Map();
 const mastheadBaselines = new Map();
+const editorialLogoBaselines = new Map();
 let browser;
 try {
   await waitForServer();
@@ -260,7 +261,19 @@ try {
           }
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           const mastheadKey = `${width}:${variant.skin}:${variant.theme}`;
-          if (route === "/") mastheadBaselines.set(mastheadKey, geometry);
+          if (route === "/") {
+            mastheadBaselines.set(mastheadKey, geometry);
+            const styleKey = `${width}:${variant.theme}`;
+            if (variant.skin === "editorial") {
+              editorialLogoBaselines.set(styleKey, geometry.brandWordmark);
+            } else {
+              const editorial = editorialLogoBaselines.get(styleKey);
+              assert.ok(editorial && geometry.terminalLogo &&
+                geometry.terminalLogo.width >= editorial.width * .85 &&
+                geometry.terminalLogo.height >= editorial.height * .75,
+                `${label}: terminal logo still reads much smaller than editorial`);
+            }
+          }
           if (isImmersive) {
             const home = mastheadBaselines.get(mastheadKey);
             assert.ok(home, `${label}: home masthead baseline missing`);
