@@ -88,7 +88,7 @@ try {
               skin: document.documentElement.dataset.skin,
               theme: document.documentElement.dataset.theme,
               brand: select(".brand"),
-              brandWordmark: select(".brand .brand-wordmark"),
+              brandWordmark: select(".brand .brand-wordmark") || select(".brand .brand-term"),
               brandTagline: select(".brand .brand-tagline"),
               mobileTagline: select(".mobile-brand-tagline"),
               nav: select("#site-nav"), tools: select(".header-tools"),
