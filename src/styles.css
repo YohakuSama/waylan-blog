@@ -2104,17 +2104,24 @@ body,
 }
 .discussion-dialog.composer-dialog .discussion-panel-body {
   display: flex; flex-direction: column;
-  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  flex: 1 1 auto; min-height: 0; overflow: hidden;
   overscroll-behavior: contain;
   padding: clamp(16px, 3vw, 28px);
 }
+/* Keep the quote separately scrollable so the publish/login footer never
+   disappears beneath an oversized excerpt or an iOS software keyboard. */
+.discussion-dialog.composer-dialog .discussion-panel-body > .panel-original {
+  flex: 0 1 auto; min-height: 0; overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .discussion-dialog.composer-dialog .comment-composer {
   display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;
+  overflow: hidden;
   margin-top: 0;
 }
 .discussion-dialog.composer-dialog .comment-composer > textarea {
   flex: 1 1 180px;
-  min-height: 90px; max-height: none;
+  min-height: 0; max-height: none;
   resize: none;
 }
 .discussion-dialog.composer-dialog .composer-bottom {
@@ -2210,7 +2217,7 @@ body,
     padding: 18px clamp(16px, 4vw, 40px);
   }
   .discussion-dialog.composer-dialog .comment-composer > textarea {
-    min-height: 76px;
+    min-height: 0;
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
 }
