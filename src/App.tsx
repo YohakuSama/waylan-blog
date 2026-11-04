@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { Post } from "../shared/types";
 import { getReader } from "./lib/reader-loader";
-import { ArrowUpRight, CornerDownLeft, Search, X } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, MoreHorizontal, Search, X } from "lucide-react";
 import { RouterProvider, Link, useRouter } from "./lib/router";
 import { posts, shortDate, site, stats, topicName, typeLabels, wordsLabel } from "./lib/data";
 import { BackToTop, ShelfTrigger } from "./components/Shelf";
@@ -59,6 +59,23 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     [active, setActive] = useState(-1),
     [shortcut, setShortcut] = useState("⌘K");
   const searchInput = useRef<HTMLInputElement>(null);
+  const readerMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    readerMenu.current?.removeAttribute("open");
+    const outside = (event: PointerEvent) => {
+      if (!readerMenu.current?.contains(event.target as Node))
+        readerMenu.current?.removeAttribute("open");
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") readerMenu.current?.removeAttribute("open");
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [router.path]);
   const pendingSearchRoute = useRef<string | null>(null);
   useEffect(() => {
     markHydrated();
@@ -226,9 +243,24 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <span className="header-search-text">搜索</span>
               <kbd>{shortcut}</kbd>
             </button>
-            <ShelfTrigger />
-            <NotificationBell />
-            <Settings />
+            {post ? (
+              <details className="reader-global-menu" ref={readerMenu}>
+                <summary className="icon-button" aria-label="更多全站工具" title="更多全站工具">
+                  <MoreHorizontal size={20} aria-hidden="true" />
+                </summary>
+                <div className="reader-global-menu-panel" role="group" aria-label="全站功能">
+                  <div className="reader-global-menu-item"><span>阅读清单</span><ShelfTrigger /></div>
+                  <div className="reader-global-menu-item"><span>通知消息</span><NotificationBell /></div>
+                  <div className="reader-global-menu-item"><span>外观与设置</span><Settings /></div>
+                </div>
+              </details>
+            ) : (
+              <>
+                <ShelfTrigger />
+                <NotificationBell />
+                <Settings />
+              </>
+            )}
           </div>
         </div>
       </header>
