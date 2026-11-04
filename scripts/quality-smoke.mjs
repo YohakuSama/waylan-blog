@@ -207,6 +207,36 @@ async function publicBrowsers() {
               await missing.waitForURL(/\/archive$/, { timeout: 15000 });
               await missing.close();
             }
+            // iOS Safari: focus raises the keyboard while the search dialog opens.
+            // Under full motion the native top layer must not translate.
+            if (name === "webkit" && width === 390 && motion === "full") {
+              stage = "mobile full-motion search and keyboard-like viewport changes";
+              await page.goto(origin + "/feed/", { waitUntil: "domcontentloaded" });
+              await page.locator(".header-search").waitFor();
+              await page.evaluate(() => window.scrollTo(0, 600));
+              await page.locator(".header-search").evaluate((button) => button.click());
+              const overlay = page.locator(".search-dialog[open]");
+              await overlay.waitFor();
+              const initial = await overlay.evaluate((dialog) => ({
+                bounds: dialog.getBoundingClientRect().toJSON(),
+                transforms: dialog.getAnimations().flatMap((a) =>
+                  a.effect?.getKeyframes?.() || []).filter((f) => "transform" in f),
+                focused: document.activeElement === dialog.querySelector('input[type="search"]'),
+              }));
+              assert.equal(initial.transforms.length, 0,
+                "search must not slide while Safari raises the keyboard");
+              assert.ok(Math.abs(initial.bounds.top) <= 1 && initial.focused,
+                "search should start at the viewport top and focus the input");
+              await page.setViewportSize({ width: 390, height: 540 });
+              const resized = await overlay.boundingBox();
+              assert.ok(resized && Math.abs(resized.y) <= 1 && Math.abs(resized.height - 540) <= 2,
+                "search must remain viewport-anchored during keyboard-like resize");
+              await overlay.locator('input[type="search"]').fill("D1");
+              assert.ok(await overlay.locator('[role="option"]').count() > 0,
+                "search results remain usable after resizing");
+              await page.keyboard.press("Escape");
+              await overlay.waitFor({ state: "hidden" });
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }
