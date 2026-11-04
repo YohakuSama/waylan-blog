@@ -22,6 +22,8 @@ import {
   setMotionPreference,
   type MotionPreference,
 } from "../lib/motion";
+const readerFontSizes = [16, 18, 20];
+const defaultReaderFontSize = 18;
 const skins: { value: Skin; title: string; description: string }[] = [
   {
     value: "editorial",
@@ -74,6 +76,7 @@ export function Settings() {
   const [open, setOpen] = useState(false),
     [skin, setSkinState] = useState<Skin>("editorial"),
     [theme, setTheme] = useState<ThemePreference>("system"),
+    [fontSize, setFontSize] = useState(defaultReaderFontSize),
     [motion, setMotion] = useState<MotionPreference>("system"),
     [level, setLevel] = useState("shared"),
     [highlights, setHighlights] = useState<HighlightSummary[]>([]);
@@ -88,6 +91,8 @@ export function Settings() {
       setTheme(t);
       setMotion(m);
       setLevel(motionLevel());
+      const savedSize = storage.get<number>("font-size", defaultReaderFontSize);
+      setFontSize(readerFontSizes.includes(savedSize) ? savedSize : defaultReaderFontSize);
     };
     sync();
     const dark = matchMedia("(prefers-color-scheme: dark)"),
@@ -193,6 +198,24 @@ export function Settings() {
                 </label>
               ))}
             </div>
+          </fieldset>
+          <fieldset className="settings-group settings-reader-font">
+            <legend>文章正文字号</legend>
+            <div className="segmented reader-font-choices">
+              {readerFontSizes.map((size) => (
+                <label key={size} className={fontSize === size ? "selected" : ""}>
+                  <input type="radio" name="reader-font-size" value={size}
+                    checked={fontSize === size}
+                    onChange={() => {
+                      storage.set("font-size", size);
+                      setFontSize(size);
+                      window.dispatchEvent(new Event("waylan:font-size-changed"));
+                    }} />
+                  <span>{size === 16 ? "小" : size === 18 ? "标准" : "大"} · {size}</span>
+                </label>
+              ))}
+            </div>
+            <p className="settings-muted">仅调整文章正文，选中的大小会在本设备保存。</p>
           </fieldset>
           <fieldset className="settings-group">
             <legend>动效</legend>
