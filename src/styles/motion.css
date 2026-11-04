@@ -145,6 +145,20 @@ a:hover {
 :root[data-route-motion="collection"] .feed-item .feed-media {
   view-transition-name: none !important;
 }
+/* Resuming at a saved scroll location cannot safely morph thumbnail/title
+   geometry into a reader that immediately scrolls away from its heading. */
+:root[data-route-motion="resume"] .feed-item .feed-body h2,
+:root[data-route-motion="resume"] .feed-item .feed-media,
+:root[data-route-motion="resume"] .article-heading h1,
+:root[data-route-motion="resume"] .article-cover-image {
+  view-transition-name: none !important;
+}
+:root[data-route-motion="resume"]::view-transition-old(root) {
+  animation: var(--motion-fast) ease both vt-fade-out;
+}
+:root[data-route-motion="resume"]::view-transition-new(root) {
+  animation: var(--motion-fast) ease both vt-fade-in;
+}
 /* Forward: old page lifts away, new one rises in. Back mirrors it. */
 ::view-transition-old(root) { animation: var(--motion-fast) var(--ease-in) both vt-out; }
 ::view-transition-new(root) { animation: var(--motion-page) var(--ease-out) 40ms both vt-in; }
