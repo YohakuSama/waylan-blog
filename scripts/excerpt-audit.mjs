@@ -46,6 +46,8 @@ async function run(engine,browser,width){
       assert.ok((await hint.innerText()).includes("无时间限制"),
         "excerpt mode must be explained as an ongoing state, not a temporary effect");
       const paragraph=page.locator(".reader-prose .article-block[data-type='paragraph']").first();
+      assert.notEqual(await paragraph.evaluate(el=>getComputedStyle(el).outlineStyle),"dashed",
+        "an untouched paragraph must not flash a fake countdown outline");
       await paragraph.click();
       await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:10000});
       assert.equal(await page.locator(".selection-toolbar-mode-exit").isVisible(),true,
@@ -62,7 +64,7 @@ async function run(engine,browser,width){
       record(browser,width,"excerpt visual selection after tap",state,
         state.attrs["data-excerpt-selected"] !== "true" ||
         state.outline.includes("rgba(0, 0, 0, 0)") ||
-        state.outlineStyle === "none");
+        state.outlineStyle !== "solid");
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
       // Check every excerpt toolbar side effect independently, without an
       // actual GitHub login or publishing any comment.
