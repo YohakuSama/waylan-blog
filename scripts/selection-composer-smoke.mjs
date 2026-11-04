@@ -54,11 +54,11 @@ async function run(engine, label, width, height, touch) {
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
       // SSR markup exists before React hydrates. Prove the reader's handlers
       // are live before generating a programmatic Selection and selectionchange.
-      const font = page.locator(".reader-topbar .font-button");
+      const font = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: /正文字号/ });
       const initialFont = await font.getAttribute("aria-label");
       await font.click();
       await page.waitForFunction((before) =>
-        document.querySelector(".reader-topbar .font-button")?.getAttribute("aria-label") !== before,
+        document.querySelector(".article-actions button[aria-label^=\"正文字号\"]")?.getAttribute("aria-label") !== before,
         initialFont, { timeout: 15000 });
 
       const selectLongText = async () => {
