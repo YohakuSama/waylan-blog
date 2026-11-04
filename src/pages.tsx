@@ -149,7 +149,14 @@ export function Home() {
         ) : (
           // SSR cannot read this visitor's progress. A head-script marker
           // reserves the exact card height until hydration fills the slot.
-          <div className="home-resume home-resume-placeholder" aria-hidden="true" />
+          <div className="home-resume home-resume-placeholder" aria-hidden="true">
+            <div className="resume-link">
+              <BookOpen size={17} aria-hidden="true" />
+              <span><small>继续阅读</small><strong className="resume-preview-title" /></span>
+              <small className="resume-progress resume-preview-progress" />
+              <ArrowRight size={16} aria-hidden="true" />
+            </div>
+          </div>
         )}
         <section className="home-feed" aria-labelledby="latest-heading">
           <div className="home-section-head">
