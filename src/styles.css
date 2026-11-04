@@ -2605,6 +2605,125 @@ body,
   .article-actions .article-action-save { gap: 4px; padding-inline: 5px; font-size: 11px; }
 }
 
+/* Article reading hierarchy: title, publication facts, actions, then the body.
+   Use editorial rules and whitespace rather than nested decorative cards. */
+.reading-article .article-heading {
+  padding-top: clamp(20px, 3vw, 36px);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--line);
+}
+.reading-article .reader-back {
+  margin-bottom: var(--space-6);
+}
+.reading-article .article-eyebrow {
+  margin-bottom: var(--space-4);
+}
+.reading-article .article-heading h1 {
+  font-size: clamp(32px, 3.5vw, 42px);
+  line-height: 1.34;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+.reading-article .article-deck {
+  margin: var(--space-4) 0 var(--space-6);
+  font-size: clamp(14px, 1.2vw, 16px);
+  line-height: 1.75;
+}
+.reading-article .article-byline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: 12px;
+}
+.article-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+}
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.article-meta time { margin-left: 0; }
+.article-meta > span { white-space: nowrap; }
+.reading-article .article-heading .project-facts {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+}
+.reading-article .article-actions {
+  gap: 8px 14px;
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.reading-article .article-actions .article-action,
+.reading-article .article-actions .article-action-save {
+  min-height: 44px;
+}
+.reader-content {
+  min-width: 0;
+  margin-top: var(--space-10);
+}
+.reader-content .article-cover {
+  margin-bottom: var(--space-10);
+}
+@media (max-width: 700px) {
+  .reading-article .article-heading {
+    padding-top: var(--space-5);
+    padding-bottom: var(--space-6);
+  }
+  .reading-article .reader-back { margin-bottom: var(--space-6); }
+  .reading-article .article-eyebrow { margin-bottom: var(--space-3); }
+  .reading-article .article-heading h1 {
+    font-size: clamp(28px, 8.1vw, 36px);
+    line-height: 1.32;
+    letter-spacing: -0.025em;
+  }
+  .reading-article .article-deck {
+    margin: var(--space-4) 0 var(--space-5);
+    font-size: 14px;
+    line-height: 1.75;
+  }
+  .reading-article .article-byline { gap: var(--space-2); }
+  .reading-article .article-heading .project-facts {
+    margin-top: var(--space-5);
+    padding: var(--space-3);
+  }
+  .reading-article .article-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    padding: 8px 0;
+  }
+  .reading-article .article-actions .article-action,
+  .reading-article .article-actions .article-action-save {
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 7px 2px;
+    font-size: 11px;
+  }
+  .reading-article .article-actions .article-more { min-width: 0; }
+  .reader-content { margin-top: var(--space-8); }
+  .reader-content .article-cover { margin-bottom: var(--space-8); }
+  .reader-content .reader-prose { line-height: 1.86; }
+  .reader-content .reader-prose h2 { margin-top: 1.9em; }
+}
+@media (max-width: 380px) {
+  .reading-article .article-meta { gap: 5px 10px; }
+}
+
 /* Optional whole-paragraph excerpt mode lives inside the contents panel.
    Native text selection remains the default way to show quote actions. */
 .toc-excerpt-toggle {

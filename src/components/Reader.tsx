@@ -1338,21 +1338,25 @@ export default function Reader({ post }: { post: Post }) {
                 <p className="article-deck">{post.excerpt}</p>
               )}
               <div className="article-byline">
-                <AuthorAvatar size={24} className="author-seal" />
-                <strong>{site.author}</strong>
-                <time dateTime={post.date}>{dateLabel(post.date)}</time>
-                {post.updated && (
-                  <span>
-                    更新于{" "}
-                    <time dateTime={post.updated}>
-                      {dateLabel(post.updated)}
-                    </time>
-                  </span>
-                )}
-                <span>{post.readingMinutes} 分钟阅读</span>
-                {!!viewCount && (
-                  <span className="article-views">{viewsLabel(viewCount)} 次阅读</span>
-                )}
+                <div className="article-author">
+                  <AuthorAvatar size={24} className="author-seal" />
+                  <strong>{site.author}</strong>
+                </div>
+                <div className="article-meta">
+                  <time dateTime={post.date}>{dateLabel(post.date)}</time>
+                  {post.updated && (
+                    <span>
+                      更新于{" "}
+                      <time dateTime={post.updated}>
+                        {dateLabel(post.updated)}
+                      </time>
+                    </span>
+                  )}
+                  <span>{post.readingMinutes} 分钟阅读</span>
+                  {!!viewCount && (
+                    <span className="article-views">{viewsLabel(viewCount)} 次阅读</span>
+                  )}
+                </div>
               </div>
               {post.project && (
                 <div className="project-facts">
@@ -1434,6 +1438,7 @@ export default function Reader({ post }: { post: Post }) {
                 </button>
               </div>
             )}
+            <section className="reader-content" aria-label="文章正文">
             {post.cover && (
               <figure className="article-cover">
                 <div
@@ -1589,6 +1594,7 @@ export default function Reader({ post }: { post: Post }) {
                 </div>
               ))}
             </div>
+            </section>
           </article>
           {(anchorState.error || annotationError) && (
             <div className="inline-notice">
