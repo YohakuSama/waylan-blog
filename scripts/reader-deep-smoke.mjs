@@ -201,12 +201,13 @@ async function run(engine,name,width){
           "The thread action must be outside the scrolling excerpt: " + JSON.stringify(geometry));
         assert.ok(geometry.dialogTop >= geometry.visualTop - 3,
           "Thread dialog crosses Safari top chrome: " + JSON.stringify(geometry));
-        if (width >= 768) {
-          assert.ok(geometry.dialogWidth <= 640 + 2, "Tablet thread dialog is too wide");
+        {
           const viewportMid = (geometry.visualTop + geometry.visibleBottom) / 2;
           const dialogMid = (geometry.dialogTop + geometry.dialogBottom) / 2;
           assert.ok(Math.abs(viewportMid - dialogMid) <= 35,
-            "iPad thread dialog is not centered in the visible viewport: " + JSON.stringify(geometry));
+            "Phone/tablet thread dialog is not centered in the visible viewport: " + JSON.stringify(geometry));
+          assert.ok(geometry.dialogWidth <= (width >= 768 ? 640 : width - 30) + 2,
+            "Thread dialog touches the viewport edge: " + JSON.stringify(geometry));
         }
         assert.ok(geometry.dialogBottom <= geometry.visibleBottom + 3,
           "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
