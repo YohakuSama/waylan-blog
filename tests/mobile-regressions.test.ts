@@ -94,29 +94,32 @@ describe("mobile reader regression contracts", () => {
       "rounded skin gets a brand/navigation separator");
     assert.ok(skins.includes('.site-header:not(.site-header-reader) .header-inner::before'),
       "terminal skin also gets its own brand/navigation separator");
-    assert.ok(skins.includes('border-top: 1px dashed color-mix(in srgb, var(--line-strong) 65%, transparent);'),
-      "terminal divider is subtly dashed instead of a line touching content");
-    assert.ok(skins.includes('background: color-mix(in srgb, var(--surface-muted) 55%, var(--paper));'),
-      "terminal navigation gets its own shaded rectangular base");
+    assert.ok(skins.includes('border-top: 1px dashed color-mix(in srgb, var(--line-strong) 40%, transparent);'),
+      "terminal divider is muted and does not touch content");
+    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav {') &&
+      site.includes('background: transparent;') && site.includes('padding-inline: 0;'),
+      "both navigation rows must stay visually integrated with their toolbars");
+    assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
     assert.ok(skins.includes('border-bottom-color: transparent;'),
       "terminal masthead must not draw a dash across first paragraph");
     assert.ok(site.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
       site.includes('padding-top: 22px;'),
       "both skins must share identical 22px intro spacing without modifying article layout");
-    assert.ok(skins.includes('height: 35px;') && skins.includes('margin-block: 4px;') &&
-      skins.includes('border-radius: 0;'), "terminal selected tab stays inset and square");
+    assert.ok(site.includes('height: 40px; margin-block: 1px;') &&
+      skins.includes('border-radius: 0;'),
+      "both skins must share the same 40px nav height with terminal square corners");
     assert.match(skins, /\.header-inner::before\s*\{\s*content:\s*none;/,
       "narrow phone tools cannot be crossed by the divider");
   });
-  it("separates rounded mobile navigation without adding rails to the reader masthead", () => {
+  it("keeps mobile navigation visually unified while leaving the reader masthead untouched", () => {
     assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'));
     assert.ok(site.includes('top: calc(var(--header-bar-height) - 5px);'));
     assert.ok(site.includes('background: linear-gradient(90deg,'));
+    assert.ok(site.includes('color-mix(in srgb, var(--line-strong) 35%, transparent)'));
     assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav'));
-    assert.ok(site.includes('color-mix(in srgb, var(--surface-muted) 55%, var(--paper))'));
-    assert.ok(site.includes('border-radius: 14px;'));
-    assert.ok(site.includes('.header-inner::before { content: none; }'));
+    assert.ok(site.includes('padding-inline: 0;') && site.includes('background: transparent;'));
     assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
+    assert.ok(site.includes('.header-inner::before { content: none; }'));
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
