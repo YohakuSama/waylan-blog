@@ -1407,13 +1407,58 @@ textarea::placeholder {
   max-height: min(85dvh, 740px);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
-.discussion-dialog.thread-dialog { --dialog-motion: sheet; }
+.discussion-dialog.thread-dialog {
+  --dialog-motion: sheet;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+.discussion-dialog.thread-dialog .dialog-header { flex: 0 0 auto; }
 .discussion-dialog.thread-dialog .discussion-panel-body {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
-  max-height: calc(min(85dvh, 740px) - 64px);
+  max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+.discussion-dialog.thread-dialog .thread-dialog-footer {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  padding: 12px var(--space-6) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.discussion-dialog.thread-dialog .panel-comment-entry {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+}
+.discussion-dialog.thread-dialog .panel-original blockquote.quote-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-height: none;
+  overflow: hidden;
+}
+.discussion-dialog.thread-dialog .panel-original blockquote.quote-expanded {
+  display: block;
+  max-height: min(36dvh, 300px);
+  overflow-y: auto;
+}
+.discussion-dialog.thread-dialog .quote-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  color: var(--brand);
+  font-size: var(--text-xs);
+}
+.discussion-dialog.thread-dialog .quote-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 .discussion-panel-body {
   padding: var(--space-6);
@@ -2220,31 +2265,91 @@ body,
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
 }
-/* Keep mobile highlight threads above Safari's browser toolbar / keyboard.
-   The content stays a bottom sheet; only its bottom and available height
-   follow visualViewport, rather than making the composer fullscreen. */
+/* Thread dialogs keep the action OUTSIDE the scrollable content.
+   iPads get a centered reading panel; iPhones get a compact bottom sheet.
+   visualViewport variables account for browser chrome, zoom and keyboards. */
 @media (max-width: 1024px) {
   .discussion-dialog.thread-dialog {
-    bottom: var(--waylan-thread-view-bottom, 0px);
-    box-sizing: border-box;
-    width: min(760px, 100dvw);
-    max-height: min(90dvh, 740px, calc(var(--waylan-thread-view-height, 100dvh) - 8px));
-  }
-  .discussion-dialog.thread-dialog .discussion-panel-body { padding: clamp(14px, 3vw, 24px); }
-  .discussion-dialog.thread-dialog .panel-original { margin-bottom: 14px; padding-bottom: 12px; }
-  .discussion-dialog.thread-dialog .panel-original blockquote { max-height: min(24dvh, 150px); }
-  .discussion-dialog.thread-dialog .panel-comment-entry {
-    position: sticky; bottom: 0; z-index: 2;
-    width: 100%; min-height: 48px;
-    background: var(--brand); color: var(--on-brand);
-    border-color: var(--brand); box-shadow: 0 -8px 14px var(--surface);
+    --dialog-motion: panel;
+    position: fixed;
+    inset: var(--waylan-thread-view-top, 0px) 0 var(--waylan-thread-view-bottom, 0px);
+    margin: auto;
+    width: min(640px, calc(100dvw - 48px));
+    height: fit-content;
+    min-height: 0;
+    max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 24px));
+    padding: 0;
+    border-radius: var(--radius-xl);
   }
   .discussion-dialog.thread-dialog .discussion-panel-body {
+    flex: 0 1 auto;
+    min-height: 0;
     max-height: none;
+    padding: clamp(16px, 2.5vw, 24px);
   }
-  /* Programmatic initial focus belongs to the sheet, not the close button.
-     Tab navigation still shows the normal focus ring on interactive controls. */
+  .discussion-dialog.thread-dialog .panel-original {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+  .discussion-dialog.thread-dialog .panel-original blockquote {
+    max-height: min(26dvh, 210px);
+    margin: 12px 0;
+    line-height: 1.7;
+  }
+  .discussion-dialog.thread-dialog .private-highlight-info {
+    min-height: 36px;
+    margin-bottom: 4px;
+  }
+  .discussion-dialog.thread-dialog .thread-dialog-footer {
+    padding: 12px clamp(16px, 2.5vw, 24px) max(12px, env(safe-area-inset-bottom));
+  }
   .discussion-dialog.thread-dialog:focus-visible { outline: none; }
+}
+@media (max-width: 767px) {
+  .discussion-dialog.thread-dialog {
+    --dialog-motion: sheet;
+    inset: auto 0 var(--waylan-thread-view-bottom, 0px);
+    margin: 0;
+    width: 100%;
+    height: fit-content;
+    max-height: min(74dvh, calc(var(--waylan-thread-view-height, 100dvh) - 12px));
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: 0;
+    padding: 0;
+  }
+  .discussion-dialog.thread-dialog .dialog-header {
+    min-height: 48px;
+    padding: 10px 18px;
+  }
+  .discussion-dialog.thread-dialog .discussion-panel-body {
+    padding: 16px 18px 10px;
+  }
+  .discussion-dialog.thread-dialog .panel-original {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+  .discussion-dialog.thread-dialog .panel-original blockquote {
+    font-size: clamp(14px, 3.65vw, 16px);
+    line-height: 1.65;
+    margin: 10px 0 6px;
+    padding-left: 12px;
+    max-height: 160px;
+  }
+  .discussion-dialog.thread-dialog .panel-original blockquote.quote-expanded {
+    max-height: min(34dvh, 260px);
+  }
+  .discussion-dialog.thread-dialog .thread-dialog-footer {
+    padding: 10px 18px max(12px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 767px) and (orientation: landscape) {
+  .discussion-dialog.thread-dialog {
+    max-height: min(90dvh, calc(var(--waylan-thread-view-height, 100dvh) - 8px));
+  }
+  .discussion-dialog.thread-dialog .discussion-panel-body { padding-top: 10px; }
+  .discussion-dialog.thread-dialog .panel-original blockquote.quote-expanded {
+    max-height: min(30dvh, 140px);
+  }
 }
 @media (max-width: 767px) {
   .discussion-dialog.composer-dialog .discussion-panel-body {
