@@ -1,14 +1,29 @@
 import manifest from "./generated/manifest.json";
 import { getSession, requireSession } from "./auth";
 import { github, parseMarker } from "./github";
-import { HttpError, json, now, type Env } from "./types";
+import { HttpError, json, now, present, type Env } from "./types";
 import { limit, readBody } from "./security";
 
 const published = new Map(manifest.map((post) => [post.id, post]));
 const publishedIds = JSON.stringify(manifest.map((post) => post.id));
 
+// The deployed opt-in alone is insufficient for actual delivery. A missing
+// webhook secret, GitHub reader or D1 migration must not produce a broken inbox.
 export const notificationsReady = (env: Env) =>
-  env.NOTIFICATIONS_ENABLED === "true" && !!env.DB;
+  env.NOTIFICATIONS_ENABLED === "true" && !!env.DB &&
+  present(env.GITHUB_WEBHOOK_SECRET) && present(env.GITHUB_READ_TOKEN);
+
+export async function notificationsAvailable(env: Env): Promise<boolean> {
+  if (!notificationsReady(env)) return false;
+  try {
+    const row = await env.DB!.prepare(
+      "SELECT COUNT(*) AS count FROM sqlite_master WHERE type='table' AND name IN ('notifications', 'notification_settings')",
+    ).first<{ count: number }>();
+    return row?.count === 2;
+  } catch {
+    return false;
+  }
+}
 
 type NotificationRow = {
   id: string;
@@ -24,7 +39,7 @@ type NotificationRow = {
 export async function inbox(request: Request, env: Env) {
   const session = await getSession(request, env);
   if (!session) return json({ enabled: false, unread: 0, items: [] });
-  if (!notificationsReady(env))
+  if (!(await notificationsAvailable(env)))
     return json({ enabled: false, unread: 0, items: [] });
   const login = session.user.login.toLowerCase();
   const enabled = (await env.DB!.prepare(
@@ -57,8 +72,8 @@ export async function inbox(request: Request, env: Env) {
 }
 
 export async function updateInbox(request: Request, env: Env) {
-  if (!notificationsReady(env))
-    throw new HttpError(503, "NOTIFICATIONS_OFF", "站内通知尚未启用。");
+  if (!(await notificationsAvailable(env)))
+    throw new HttpError(503, "NOTIFICATIONS_OFF", "站内通知尚未完成配置。");
   const session = await requireSession(request, env);
   const login = session.user.login.toLowerCase();
   const body = (await readBody(request, 2048)) as {
@@ -99,8 +114,8 @@ export async function updateInbox(request: Request, env: Env) {
  * No GitHub Discussion is posted; the test entry stays private in D1.
  */
 export async function testInbox(request: Request, env: Env) {
-  if (!notificationsReady(env))
-    throw new HttpError(503, "NOTIFICATIONS_OFF", "站内通知尚未启用。");
+  if (!(await notificationsAvailable(env)))
+    throw new HttpError(503, "NOTIFICATIONS_OFF", "站内通知尚未完成配置。");
   const session = await requireSession(request, env);
   const login = session.user.login.toLowerCase();
   const moderator = (env.ADMIN_GITHUB_LOGINS || "")
@@ -153,7 +168,7 @@ export async function commentNotification(
   discussionId: string,
   payload: any,
 ) {
-  if (!notificationsReady(env) || !env.GITHUB_READ_TOKEN) return;
+  if (!(await notificationsAvailable(env))) return;
   const commentId = payload.comment?.node_id;
   if (typeof commentId !== "string" || commentId.length > 240) return;
   if (payload.action === "deleted") {
