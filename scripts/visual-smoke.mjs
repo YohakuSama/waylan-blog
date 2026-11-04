@@ -515,7 +515,7 @@ try {
                 footerBottom: footerRect?.bottom,
                 buttons: buttons.map((button) => {
                   const r = button.getBoundingClientRect();
-                  return { top: r.top, bottom: r.bottom, height: r.height };
+                  return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, height: r.height };
                 }),
                 navScrollable: nav ? getComputedStyle(nav).overflowY === "auto" : false,
               };
@@ -524,7 +524,8 @@ try {
               `${label}: directory list must scroll separately from the footer`);
             assert.equal(tocLayout.buttons.length, 2, `${label}: directory requires two distinct footer actions`);
             assert.ok(tocLayout.buttons.every((b) => b.height >= 44) &&
-              tocLayout.buttons[0].bottom <= tocLayout.buttons[1].top + 1 &&
+              (tocLayout.buttons[0].bottom <= tocLayout.buttons[1].top + 1 ||
+                tocLayout.buttons[0].right <= tocLayout.buttons[1].left + 1) &&
               tocLayout.footerBottom <= 480,
               `${label}: directory actions overlap or escape the viewport`);
             if (width <= 700) assert.ok(bounds.y >= 100,
