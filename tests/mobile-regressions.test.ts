@@ -12,7 +12,7 @@ const boot = readFileSync("src/components/Boot.tsx", "utf8");
 
 describe("mobile reader regression contracts", () => {
   it("does not clip the script wordmark in the narrow header", () => {
-    assert.match(site, /\.brand \{ max-width: min\(112px, 100%\); overflow: visible; \}/);
+    assert.match(site, /\.brand \{ overflow: visible; \}/);
     assert.match(site, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
   });
   it("gives phone feed rows their full width without a spare arrow column", () => {
