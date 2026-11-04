@@ -2236,7 +2236,8 @@ body,
   .discussion-dialog.thread-dialog .panel-comment-entry {
     position: sticky; bottom: 0; z-index: 2;
     width: 100%; min-height: 48px;
-    background: var(--surface); box-shadow: 0 -8px 14px var(--surface);
+    background: var(--brand); color: var(--on-brand);
+    border-color: var(--brand); box-shadow: 0 -8px 14px var(--surface);
   }
   .discussion-dialog.thread-dialog .discussion-panel-body {
     max-height: none;
