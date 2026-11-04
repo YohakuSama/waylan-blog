@@ -137,9 +137,9 @@ describe("mobile reader regression contracts", () => {
       const start = skins.indexOf(selector);
       assert.ok(start >= 0, `missing palette for ${selector}`);
       const block = skins.slice(start, skins.indexOf("}", start));
-      const background = block.match(/--toast-bg:\\s*(#[\\da-f]{6})/i)?.[1];
-      const foreground = block.match(/--toast-ink:\\s*(#[\\da-f]{6})/i)?.[1];
-      const border = block.match(/--toast-border:\\s*(#[\\da-f]{6})/i)?.[1];
+      const background = block.match(/--toast-bg:\s*(#[\da-f]{6})/i)?.[1];
+      const foreground = block.match(/--toast-ink:\s*(#[\da-f]{6})/i)?.[1];
+      const border = block.match(/--toast-border:\s*(#[\da-f]{6})/i)?.[1];
       assert.ok(background && foreground && border, `incomplete toast palette for ${selector}`);
       backgrounds.add(background);
       const a = luminance(background), b = luminance(foreground);
