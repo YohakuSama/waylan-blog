@@ -2159,30 +2159,32 @@ body,
 }
 .discussion-dialog.composer-dialog .discussion-panel-body {
   display: flex; flex-direction: column;
-  flex: 1 1 auto; min-height: 0; overflow: hidden;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
   overscroll-behavior: contain;
   padding: clamp(16px, 3vw, 28px);
 }
-/* Keep the quote separately scrollable so the publish/login footer never
-   disappears beneath an oversized excerpt or an iOS software keyboard. */
+/* One scrolling editor body for the quote and input, with the action footer
+   outside of it. A long quote must not create nested scrollbars. */
 .discussion-dialog.composer-dialog .discussion-panel-body > .panel-original {
-  flex: 0 1 auto; min-height: 0; overflow-y: auto;
-  overscroll-behavior: contain;
+  flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible;
+}
+.discussion-dialog.composer-dialog .panel-original blockquote {
+  max-height: none; overflow: visible;
 }
 .discussion-dialog.composer-dialog .comment-composer {
-  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; flex: 1 0 auto; min-height: 260px;
   margin-top: 0;
 }
 .discussion-dialog.composer-dialog .comment-composer > textarea {
   flex: 1 1 180px;
-  min-height: 0; max-height: none;
+  min-height: 130px; max-height: none;
   resize: none;
 }
 .discussion-dialog.composer-dialog .composer-bottom {
   /* A normal flex footer cannot layer over the preview after OAuth reload. */
   position: relative; flex: 0 0 auto; z-index: 1;
-  margin-top: auto;
-  padding-top: 12px; padding-bottom: max(8px, env(safe-area-inset-bottom));
+  margin-top: 0;
+  padding: 12px clamp(16px, 3vw, 28px) max(8px, env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
@@ -2244,7 +2246,10 @@ body,
   width: 100%; max-width: 900px; margin-left: auto; margin-right: auto;
 }
 .discussion-dialog.composer-fullscreen .comment-composer > textarea {
-  min-height: min(38dvh, 320px);
+  min-height: 130px;
+}
+.discussion-dialog.composer-fullscreen > .composer-bottom {
+  padding-inline: max(clamp(16px, 3vw, 28px), calc((100dvw - 900px) / 2));
 }
 @media (max-width: 1024px) {
   .discussion-dialog.composer-dialog,
@@ -2271,7 +2276,7 @@ body,
     padding: 18px clamp(16px, 4vw, 40px);
   }
   .discussion-dialog.composer-dialog .comment-composer > textarea {
-    min-height: 0;
+    min-height: 130px;
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
 }
@@ -2366,7 +2371,7 @@ body,
     padding: 16px;
   }
   .discussion-dialog.composer-dialog .composer-bottom {
-    gap: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom));
+    gap: 8px; padding: 10px 16px max(12px, env(safe-area-inset-bottom));
   }
   .discussion-dialog.composer-dialog .comment-composer > textarea {
     font-size: 16px; line-height: 1.7;
