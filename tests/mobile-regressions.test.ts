@@ -30,7 +30,7 @@ describe("mobile reader regression contracts", () => {
     ]) assert.ok(tray.includes(declaration), declaration);
   });
   it("docks highlight threads at the bottom instead of using a right-hand panel", () => {
-    assert.match(style, /\.discussion-dialog\.thread-dialog \{ --dialog-motion: sheet; \}/);
+    assert.match(style, /\.discussion-dialog\.thread-dialog \{\s*--dialog-motion: sheet;/);
     assert.ok(style.includes("inset: auto 0 0;"));
     assert.ok(motion.includes(".discussion-dialog { --dialog-motion: panel; }"),
       "the thread-specific rule must override the generic dialog motion");
