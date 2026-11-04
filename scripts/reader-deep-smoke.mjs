@@ -88,9 +88,8 @@ async function run(engine,name,width){
 
       // Use a genuine client-side article navigation; WebKit can stall a
       // second document-level navigation during a just-finished View Transition.
-      await page.locator(".post-card-link").first().click();
-      await page.waitForURL(/\/post\/[^/?]+$/,{timeout:12000});
-      // Let any prior page View Transition settle before measuring a new widget.
+      // Settings remain available on browsing pages; an immersive article
+      // intentionally replaces the global header with a single reader row.
       await page.waitForTimeout(650);
       await page.getByRole("button",{name:"阅读设置",exact:true}).click();
       const dialog=page.getByRole("dialog",{name:"阅读设置",exact:true});
@@ -114,6 +113,45 @@ async function run(engine,name,width){
       await page.goto(origin+"/post/a-room-on-the-internet/",{waitUntil:"domcontentloaded"});
       await page.locator('.reader-prose [data-block-id="h-hydration"]').waitFor();
       await page.evaluate(()=>document.fonts.ready);
+      const isReaderHeaderShown=await page.locator(".site-header").isVisible();
+      if(width<=1024) {
+        assert.equal(isReaderHeaderShown,false,"phone/tablet article must not repeat global navigation");
+        const compact=await page.evaluate(()=>{
+          const bar=document.querySelector(".reader-topbar");
+          return {position:getComputedStyle(bar).position,top:getComputedStyle(bar).top,
+            controls:bar.querySelectorAll(".reader-controls button").length,
+            height:bar.getBoundingClientRect().height};
+        });
+        assert.equal(compact.position,"sticky");
+        assert.equal(compact.top,"0px");
+        assert.ok(compact.height<=60,"reader row is taller than 60px: "+JSON.stringify(compact));
+        // Start at the top and use user-like wheel scrolling; a single
+        // programmatic scrollTo can be a no-op when history restores position.
+        await page.evaluate(()=>window.scrollTo(0,0));
+        await page.waitForFunction(()=>window.scrollY<10);
+        await page.mouse.move(100,420);
+        await page.mouse.wheel(0,320);
+        await page.mouse.wheel(0,320);
+        try {
+          await page.waitForFunction(()=>document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
+        } catch {
+          const state=await page.evaluate(()=>({y:window.scrollY,match:matchMedia("(max-width: 1024px)").matches,
+            hidden:document.querySelector(".reader-topbar")?.className,
+            selection:window.getSelection()?.toString()?.slice(0,20),
+            dialog:!!document.querySelector("dialog[open]"),
+            mainHeight:document.documentElement.scrollHeight}));
+          throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
+        }
+        // Upward content movement must reveal the row. WebKit's synthetic
+        // desktop mouse wheel can be swallowed under a touch emulation, so
+        // drive the actual document scroll position for this direction.
+        await page.evaluate(()=>window.scrollBy(0,-130));
+        await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
+        await page.evaluate(()=>window.scrollTo(0,0));
+        observations.push({browser:name,width,scenario:"immersive reader hides global chrome and restores tools on upward scroll",compact});
+      } else {
+        assert.ok(isReaderHeaderShown,"desktop keeps its browsing header");
+      }
       if(width<=1040) await page.locator(".mobile-toc").click();
       await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
       await page.waitForTimeout(120);
@@ -133,6 +171,7 @@ async function run(engine,name,width){
       assert.equal(tocPosition.focused,"h-hydration");
       assert.equal(tocPosition.active,"水合一致性");
       await page.screenshot({path:dir+"/"+name+"-"+width+"-toc-hydration.png",animations:"disabled"});
+      await page.evaluate(()=>window.scrollTo(0,0));
       // Model iPhone Safari's visible viewport shrinking under browser chrome
       // while a native fixed dialog remains anchored to the layout viewport.
       if (width <= 1366) {
@@ -166,14 +205,13 @@ async function run(engine,name,width){
           await quoteToggle.click();
           assert.equal(await quoteToggle.getAttribute("aria-expanded"), "false");
         }
-        // ResizeObserver recenters on the next animation frame after the
-        // quotation collapses/expands; assert the settled geometry, not the
-        // transient between the quote click and ResizeObserver delivery.
+        // A bottom-anchored sheet must keep its action visible when the quote
+        // expands or Safari's browser controls move, without centering it.
         await page.waitForFunction(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
           const viewport = window.visualViewport;
-          return dialog && viewport && Math.abs(parseFloat(dialog.style.top) -
-            (viewport.offsetTop + (viewport.height - dialog.offsetHeight) / 2)) <= 3;
+          return dialog && viewport && Math.abs(dialog.getBoundingClientRect().bottom -
+            (viewport.offsetTop + viewport.height - 8)) <= 3;
         });
         const geometry = await page.evaluate(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
@@ -213,27 +251,21 @@ async function run(engine,name,width){
           "The thread action must be outside the scrolling excerpt: " + JSON.stringify(geometry));
         assert.ok(geometry.dialogTop >= geometry.visualTop - 3,
           "Thread dialog crosses Safari top chrome: " + JSON.stringify(geometry));
-        {
-          const viewportMid = (geometry.visualTop + geometry.visibleBottom) / 2;
-          const dialogMid = (geometry.dialogTop + geometry.dialogBottom) / 2;
-          assert.ok(Math.abs(viewportMid - dialogMid) <= 35,
-            "Phone/tablet thread dialog is not centered in the visible viewport: " + JSON.stringify(geometry));
-          assert.ok(geometry.dialogWidth <= (width >= 768 ? 640 : width - 30) + 2,
-            "Thread dialog touches the viewport edge: " + JSON.stringify(geometry));
-        }
-        assert.ok(geometry.inlineTop && geometry.inlineBottom === "auto" &&
-          Number.parseFloat(geometry.marginBlock) === 0, "Thread must use measured top, not CSS auto margins: " + JSON.stringify(geometry));
-        assert.ok(Math.abs(parseFloat(geometry.inlineTop) -
-          (geometry.visualTop + (geometry.visibleBottom - geometry.visualTop - geometry.dialogHeight) / 2)) <= 3,
-          "Measured thread top does not match visible-viewport center: " + JSON.stringify(geometry));
+        assert.ok(geometry.dialogWidth <= (width >= 768 ? 640 : width - 30) + 2,
+          "Thread dialog touches the viewport edge: " + JSON.stringify(geometry));
+        assert.ok(geometry.inlineTop === "auto" && Number.parseFloat(geometry.inlineBottom) >= 8 &&
+          Number.parseFloat(geometry.marginBlock) === 0,
+          "Thread must be docked to the visible bottom: " + JSON.stringify(geometry));
+        assert.ok(Math.abs(geometry.dialogBottom - (geometry.visibleBottom - 8)) <= 3,
+          "Thread sheet must remain 8px above Safari chrome: " + JSON.stringify(geometry));
         assert.ok(geometry.dialogBottom <= geometry.visibleBottom + 3,
           "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
         assert.ok(geometry.actionBottom <= geometry.visibleBottom + 3,
           "Thread action cannot be scrolled into the visible viewport: " + JSON.stringify(geometry));
         assert.ok(geometry.actionLabel?.length > 0 && geometry.actionContrast >= 4.5,
           "Thread action has invisible or low-contrast text: " + JSON.stringify(geometry));
-        // Safari's toolbars can move the visual viewport downward after open.
-        // Recenter without relying on CSS auto margin or the modal's initial position.
+        // Safari's toolbars can move the visual viewport after opening.
+        // Keep the same bottom gap instead of recentering the sheet.
         await page.evaluate(() => {
           const viewport = window.visualViewport;
           Object.defineProperty(viewport, "offsetTop", {configurable:true,value:36});
@@ -241,11 +273,47 @@ async function run(engine,name,width){
         });
         await page.waitForFunction(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
-          return dialog && Math.abs(parseFloat(dialog.style.top) -
-            (36 + (window.visualViewport.height - dialog.offsetHeight) / 2)) <= 3;
+          return dialog && Math.abs(dialog.getBoundingClientRect().bottom -
+            (36 + window.visualViewport.height - 8)) <= 3;
         });
-        observations.push({browser:name,width,scenario:"thread recenters after Safari toolbar offset",ok:true});
+        observations.push({browser:name,width,scenario:"bottom sheet follows Safari toolbar offset",ok:true});
         await page.screenshot({path:dir+"/"+name+"-"+width+"-thread-viewport.png",animations:"disabled"});
+      } else {
+        // Desktop regression: select an actual paragraph, save it and open
+        // the thread. This was formerly a centered or side-mounted panel.
+        const target=page.locator('.reader-prose .article-block[data-type="paragraph"]').first();
+        await target.scrollIntoViewIfNeeded();
+        await target.evaluate(el=>{
+          const p=el.querySelector("p")||el;
+          const selection=window.getSelection(),range=document.createRange();
+          range.selectNodeContents(p);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event("selectionchange"));
+        });
+        await page.locator(".selection-toolbar").waitFor({state:"visible"});
+        await page.locator(".selection-toolbar-actions button").filter({hasText:"划线"}).click();
+        await page.locator("mark.private-mark").first().click();
+        const thread=page.locator("dialog.discussion-dialog.thread-dialog[open]");
+        await thread.waitFor({state:"visible"});
+        await page.waitForTimeout(420);
+        const desktop=await thread.evaluate(dialog=>{
+          const rect=dialog.getBoundingClientRect(),style=getComputedStyle(dialog);
+          return {bottom:rect.bottom,viewport:window.innerHeight,motion:style.getPropertyValue("--dialog-motion").trim(),
+            top:dialog.style.top,bottomInline:dialog.style.bottom,action:!!dialog.querySelector(".panel-comment-entry")};
+        });
+        assert.equal(desktop.motion,"sheet","desktop comments must slide up from the bottom");
+        assert.equal(desktop.top,"auto","desktop must not use viewport centering");
+        assert.ok(Math.abs(desktop.viewport-desktop.bottom-8)<=3,
+          "desktop paragraph sheet must stay at bottom: "+JSON.stringify(desktop));
+        assert.ok(desktop.action,"desktop discussion action is missing");
+        await thread.locator(".panel-comment-entry").click();
+        const composer=page.locator("dialog.discussion-dialog.composer-dialog[open]");
+        await composer.waitFor({state:"visible"});
+        assert.equal(await composer.evaluate(el=>getComputedStyle(el).getPropertyValue("--dialog-motion").trim()),
+          "sheet","desktop composition must use the same bottom-up motion");
+        observations.push({browser:name,width,scenario:"desktop paragraph and composer both open as bottom sheets",desktop});
+        await page.screenshot({path:dir+"/"+name+"-"+width+"-desktop-thread-and-composer.png",animations:"disabled"});
       }
       assert.deepEqual(errors,[], "runtime errors");
     }finally{await ctx.close()}

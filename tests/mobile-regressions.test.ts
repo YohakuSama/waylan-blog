@@ -29,33 +29,36 @@ describe("mobile reader regression contracts", () => {
       "border: 1px solid var(--line-strong);",
     ]) assert.ok(tray.includes(declaration), declaration);
   });
-  it("keeps highlight threads in a visible phone-centered dialog", () => {
-    assert.match(style, /\.discussion-dialog\.thread-dialog \{\s*--dialog-motion: sheet;/);
-    assert.ok(style.includes("inset: auto 0 0;"), "desktop retains its existing layout");
-    assert.ok(style.includes("inset: var(--waylan-thread-view-top, 0px) 0 var(--waylan-thread-view-bottom, 0px);"),
-      "phones and tablets must center the dialog in the visual viewport");
-    assert.ok(motion.includes(".discussion-dialog { --dialog-motion: panel; }"),
-      "the thread-specific rule must override the generic dialog motion");
+  it("docks paragraph threads at the visual-viewport bottom on phone, tablet and desktop", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    assert.ok(style.includes(".discussion-dialog.thread-dialog {"));
+    assert.ok(style.includes("inset: auto 0 8px;"), "desktop thread must rise from the bottom");
+    assert.ok(style.includes("inset: auto 0 calc(var(--waylan-thread-view-bottom, 0px) + 8px);"),
+      "phone/tablet sheets must stop above Safari browser chrome");
+    assert.ok(reader.includes('dialog.style.top = "auto"'), "old explicit centering must be removed");
+    assert.ok(reader.includes("Math.ceil(obscured) + 8"), "visual viewport must determine bottom clearance");
+    assert.ok(style.includes("--dialog-motion: sheet;"), "thread entrance must match composer");
+    assert.ok(style.includes("width: min(640px, calc(100dvw - 48px))"), "tablet sheet keeps a readable width");
+    assert.ok(style.includes("width: min(600px, calc(100dvw - 32px))"), "phone sheet keeps side margins");
   });
   it("keeps thread actions outside scrolling excerpts on iPhone and iPad", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
     assert.ok(reader.includes('className="thread-dialog-footer"'));
     assert.ok(reader.includes('aria-expanded={quoteExpanded}'));
-    assert.ok(reader.includes("--waylan-thread-view-top"));
-    assert.ok(reader.includes("dialog.style.top ="), "thread dialog must use explicit visual-viewport top");
-    assert.ok(reader.includes("dialog.offsetHeight"), "thread centering must measure rendered height");
-    assert.ok(reader.includes("new ResizeObserver(schedule)"), "expanded quotes must trigger recentering");
-    assert.ok(reader.includes('dialog.style.bottom = "auto"'), "bottom docking must not override centering");
+    assert.ok(!reader.includes("--waylan-thread-view-top"), "the obsolete viewport-top centering path is gone");
+    assert.ok(reader.includes('dialog.style.bottom ='), "the thread bottom must update when Safari chrome moves");
+    assert.ok(reader.includes("viewport?.addEventListener(\"scroll\", sync)"),
+      "Safari toolbar changes must update the bottom without waiting for an animation frame");
     assert.ok(style.includes("flex: 0 0 auto;"), "action footer must not scroll with paragraph content");
-    assert.ok(style.includes('max-height: min(82dvh, calc(var(--waylan-thread-view-height, 100dvh) - 24px))'),
-      "phone dialog needs a visual-viewport height cap");
+    assert.ok(style.includes('max-height: min(82dvh, calc(var(--waylan-thread-view-height, 100dvh) - 16px))'),
+      "phone sheet must remain short enough to show the action and browser chrome");
     assert.ok(style.includes('width: min(600px, calc(100dvw - 32px))'),
       "phone dialog must not touch viewport sides");
     assert.ok(style.includes('width: min(640px, calc(100dvw - 48px))'),
       "tablet dialog must not stretch across the screen");
-    assert.ok(style.includes("max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 24px))"));
+    assert.ok(style.includes("max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 16px))"));
     assert.ok(style.includes("@media (max-width: 1024px), (pointer: coarse) {"),
-      "iPad Pro landscape and other large touch tablets must use the centered thread layout");
+      "iPad Pro landscape and other large touch tablets must use the bottom sheet");
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
@@ -71,10 +74,12 @@ describe("mobile reader regression contracts", () => {
     const reader=readFileSync("src/components/Reader.tsx","utf8");
     assert.ok(reader.includes('className="icon-button excerpt-toggle"'));
     assert.ok(reader.includes('aria-pressed={excerptMode}'));
-    assert.ok(reader.includes('className="reader-topbar"'));
+    assert.ok(reader.includes('reader-topbar-hidden'), "scroll behavior must hide only the shared tool row");
     assert.ok(!reader.includes('className={`excerpt-access'));
     assert.ok(style.includes('.reader-controls .excerpt-toggle'));
-    assert.ok(style.includes('top: var(--header-height);'));
+    assert.ok(style.includes('.site-header-reader { display: none; }'));
+    assert.ok(style.includes('.reader-topbar.reader-topbar-hidden'));
+    assert.ok(style.includes('top: 0;'), "immersive controls attach to the visible top edge");
   });
   it("keeps the brand separator visible on phones", () => {
     assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);
