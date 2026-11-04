@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { posts } from "../src/lib/data";
 
 const style = readFileSync("src/styles.css", "utf8");
@@ -282,10 +283,50 @@ describe("mobile reader regression contracts", () => {
     assert.ok(skins.includes("background: var(--code-ink);"));
     assert.ok(skins.includes("color: var(--code-bg);"));
   });
-  it("keeps the loading mark and track legible on both skins", () => {
-    assert.ok(boot.includes('className="boot-label"'));
-    assert.ok(style.includes("width: clamp(92px, 13vmin, 140px);"));
-    assert.ok(style.includes("width: clamp(176px, 26vmin, 252px);"));
+  it("keeps prerendered content visible instead of flashing a W mask on reload", () => {
+    const script = readFileSync("public/theme.js", "utf8");
+    for (const readyState of ["loading", "complete"]) {
+      const names = new Set(["font-wait", "font-loader", "font-loader-out"]);
+      let bootRemoved = false;
+      let onReady: (() => void) | undefined;
+      const document = {
+        documentElement: {
+          dataset: {} as Record<string, string>,
+          classList: {
+            remove: (...items: string[]) => items.forEach((item) => names.delete(item)),
+            add: (...items: string[]) => items.forEach((item) => names.add(item)),
+          },
+        },
+        querySelector: () => null,
+        getElementById: (id: string) => id === "boot" ? { remove: () => { bootRemoved = true; } } : null,
+        readyState,
+        addEventListener: (name: string, callback: () => void) => {
+          assert.equal(name, "DOMContentLoaded");
+          onReady = callback;
+        },
+      };
+      runInNewContext(script, {
+        document,
+        localStorage: { getItem: () => null },
+        matchMedia: () => ({ matches: false }),
+      });
+      assert.deepEqual([...names], [], "the root may not be hidden on reload");
+      if (readyState === "loading") {
+        assert.equal(bootRemoved, false);
+        assert.ok(onReady);
+        onReady();
+      }
+      assert.equal(bootRemoved, true, "the inert boot node should be discarded");
+    }
+    assert.ok(style.includes(".boot {") && style.includes("display: none;"));
+    assert.ok(boot.includes('className="boot"'));
+    assert.doesNotMatch(script, /classList\.add\(["\x27]font-wait/);
+  });
+  it("does not fade the entire reading surface when navigating on touch devices", () => {
+    const source = readFileSync("src/lib/motion.ts", "utf8");
+    assert.ok(source.includes('!motionAllowed() || matchMedia("(pointer: coarse)").matches'));
+    assert.ok(source.includes('[{ opacity: 0.25 }, { opacity: 1 }]'),
+      "non-touch desktop navigation keeps its previous animation");
   });
   it("keeps built table-of-contents entries identical to the corresponding text blocks", () => {
     for (const post of posts) {
