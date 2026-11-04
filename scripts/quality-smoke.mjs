@@ -164,6 +164,26 @@ async function publicBrowsers() {
               await page.waitForFunction((position) =>
                 Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
             }
+            if (width === 390 && motion === "reduced") {
+              stage = "404 recovery and interactive search";
+              const errorPage = await page.goto(origin + "/404.html", { waitUntil: "domcontentloaded" });
+              assert.ok(errorPage?.ok(), name + ": built 404 document not served");
+              await page.getByRole("heading", { name: "页面不存在" }).waitFor();
+              await noOverflow(page, name + "/404");
+              assert.equal(await page.locator(".not-found .lost-latest a").count(), 3);
+              await page.locator(".not-found .lost-page").click();
+              await page.locator(".not-found .echo-trail").waitFor();
+              await page.locator(".header-search").click();
+              const searchDialog = page.locator(".search-dialog[open]");
+              await searchDialog.waitFor();
+              assert.equal(await searchDialog.locator('[role="listbox"]').count(), 0);
+              await searchDialog.locator('input[type="search"]').fill("D1");
+              assert.ok(await searchDialog.locator('[role="listbox"] [role="option"]').count() > 0);
+              await page.keyboard.press("Escape");
+              await searchDialog.waitFor({ state: "hidden" });
+              await page.locator('.not-found a[href="/archive"]').click();
+              await page.waitForURL(/\/archive$/, { timeout: 15000 });
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }

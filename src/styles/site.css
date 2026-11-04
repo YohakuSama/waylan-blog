@@ -1490,6 +1490,7 @@ h3 {
 .footer-links a {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   gap: 3px;
 }
 /* ---------- Reader alignment with the new chrome ---------- */

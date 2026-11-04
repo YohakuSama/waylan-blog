@@ -320,6 +320,11 @@ describe("React navigation and reading interactions (DOM integration, not browse
       await mount("/archive");
       const links = [...document.querySelectorAll<HTMLAnchorElement>(".archive-year-nav a")];
       assert.deepEqual(links.map((link) => link.textContent?.trim()), ["2026", "2025"]);
+      assert.deepEqual(
+        [...document.querySelectorAll(".archive-year > h2 > span")].map((el) => el.textContent?.trim()),
+        [`${posts.length - 1} 条`, "1 条"],
+        "multi-year counts must describe mixed records, not articles",
+      );
       assert.ok(document.querySelector('.archive-row[href="/post/archive-year-test-only"]'));
       const jumps: string[] = [];
       Object.defineProperty(dom.window.HTMLElement.prototype, "scrollIntoView", {
@@ -1415,6 +1420,34 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.documentElement.dataset.theme, "light");
     assert.ok(document.querySelector<HTMLInputElement>('input[name="theme"][value="light"]')?.checked);
   });
+  it("uses accurate shared counts and only exposes listbox semantics for actual search options", async () => {
+    await mount("/");
+    assert.match(document.querySelector(".footer-stats")?.textContent || "", new RegExp(`${posts.length} 条内容`));
+    assert.match(metadata("/feed").title, /^全部内容/);
+    await click(document.querySelector(".header-search"));
+    const input = document.querySelector<HTMLInputElement>(".search-dialog input")!;
+    const change = async (value: string) => act(async () => {
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+      await pause(25);
+    });
+    assert.equal(document.querySelector(".search-dialog [role=listbox]"), null);
+    assert.equal(input.getAttribute("aria-controls"), null);
+    assert.ok(document.querySelector(".search-suggestions button"), "suggestions remain clickable outside listbox");
+    assert.match(document.querySelector(".search-footer")?.textContent || "", new RegExp(`共 ${posts.length} 条内容`));
+    await change("not-a-real-site-keyword-qwerty");
+    assert.ok(document.querySelector(".search-empty-state"));
+    assert.equal(document.querySelector(".search-dialog [role=listbox]"), null);
+    assert.equal(input.getAttribute("aria-controls"), null);
+    await change("D1");
+    const listbox = document.querySelector(".search-dialog [role=listbox]");
+    assert.ok(listbox);
+    assert.equal(listbox.id, "search-results");
+    assert.equal(input.getAttribute("aria-controls"), "search-results");
+    assert.ok(listbox.querySelector('[role="option"]'));
+    assert.equal(listbox.querySelector(".search-all"), null, "navigation links must not be inside a listbox");
+    assert.ok(document.querySelector(".search-dialog .search-all"));
+  });
   it("focuses the search field, navigates results by keyboard and opens the full result list", async () => {
     await mount();
     await click(document.querySelector(".header-search"));
@@ -1548,6 +1581,18 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     assert.equal(pushes, 1, "only one history navigation for one target");
     assert.equal(replaces, 0, "repeated clicks must not replace history repeatedly");
+  });
+  it("renders helpful 404 destinations and does not invent a match for unrelated slugs", async () => {
+    await mount("/post/this-really-does-not-exist");
+    assert.equal(document.querySelector(".not-found h1")?.textContent, "页面不存在");
+    assert.ok(document.querySelector('.not-found a[href="/"]'));
+    assert.ok(document.querySelector('.not-found a[href="/archive"]'));
+    assert.equal(document.querySelector(".not-found .lost-guess"), null);
+    assert.equal(document.querySelectorAll(".not-found .lost-latest a").length, 3);
+    await click(document.querySelector(".not-found .lost-page"));
+    assert.ok(document.querySelector(".echo-trail"), "the 404 interaction should remain keyboard-clickable");
+    await click(document.querySelector('.not-found a[href="/archive"]'));
+    assert.equal(location.pathname, "/archive");
   });
   it("does not stack duplicate history entries when the current page is clicked again", async () => {
     await mount("/feed");
