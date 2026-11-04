@@ -36,6 +36,16 @@ jobs:
           path: responsive-navigation-report/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Reproduce filmed ghosting across WebKit and Chromium during fast navigation
+        run: node scripts/route-motion-ghost-smoke.mjs
+      - name: Upload route transition frame evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recording-route-motion-regressions
+          path: route-motion-ghost-report/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Save reader flow screenshots and measurements
         if: always()
         uses: actions/upload-artifact@v4
