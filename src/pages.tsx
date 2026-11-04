@@ -112,19 +112,19 @@ export function Home() {
   // The home page is a reading doorway, not a second filtering interface.
   // Detailed type/topic/sort controls belong exclusively on the content page.
   const items = newestFirstList();
-  const sentenceEnd = site.description.indexOf("。");
-  const introduction = sentenceEnd < 0 ? site.description : site.description.slice(0, sentenceEnd + 1);
   return (
     <div className="content-grid home-grid">
       <div className="feed-column">
-        <section className="home-hero" aria-label="站点介绍">
+        <section className="home-hero page-heading" aria-label="站点介绍">
           <div className="intro-copy">
-            <p className="home-identity">{site.author} 的个人博客</p>
+            <p className="eyebrow mono">WAYLAN / HOME</p>
             <HeroTitle />
-            <p className="intro-description">{introduction}</p>
-            <nav className="home-links" aria-label="博客导览">
+            <p className="intro-description">{site.author} 的个人技术博客。{site.description}</p>
+            <nav className="home-links page-heading-actions" aria-label="博客导览">
+              <Link href="/feed" className="home-topic-link">
+                浏览全部内容<ArrowRight size={15} aria-hidden="true" />
+              </Link>
               <Link href="/about">关于本站</Link>
-              <Link href="/feed" className="home-topic-link">浏览主题</Link>
               <a href={assetURL("/rss.xml")}
                 download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
                 <Rss size={15} aria-hidden="true" />订阅 RSS
@@ -449,10 +449,12 @@ export function Archive() {
   return (
     <div className="archive-page">
       <header className="page-heading archive-heading">
+        <p className="eyebrow mono">WAYLAN / ARCHIVE</p>
         <h1>归档</h1>
-        <div className="archive-summary">
-          <span>共 {entries.length} 条记录</span>
+        <p>沿着时间，回看技术记录、实践笔记与思考。</p>
+        <div className="archive-summary page-heading-actions">
           <Link href="/feed">按主题浏览<ArrowUpRight size={14} aria-hidden="true" /></Link>
+          <span>共 {entries.length} 条记录</span>
         </div>
       </header>
       <section className="archive-main" aria-label="归档列表" ref={listRef}>
