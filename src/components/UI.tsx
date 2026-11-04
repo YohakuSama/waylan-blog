@@ -156,7 +156,7 @@ export function Dialog({
         dialog.showModal();
         document.documentElement.classList.add("dialog-open");
         if (focusContainer) dialog.focus({ preventScroll: true });
-        else initialFocus?.current?.focus();
+        else initialFocus?.current?.focus({ preventScroll: true });
       }
       if (motionOK()) {
         fadeBackdrop(0, 1, 240);
