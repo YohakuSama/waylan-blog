@@ -57,8 +57,11 @@ async function run(engine, label, width, height, touch) {
       const shareArticle = page.getByRole("group", { name: "本文操作" })
         .getByRole("button", { name: "分享文章" });
       await shareArticle.click();
-      await page.waitForFunction(() => window.__shareCount > 0, null, { timeout: 15000 });
-      await page.evaluate(() => { window.__shareCount = 0; });
+      // Fine-pointer desktop uses a clipboard fallback, while touch browsers
+      // use navigator.share. Either outcome confirms React hydration.
+      await page.waitForFunction(() => window.__shareCount + window.__copyCount > 0,
+        null, { timeout: 15000 });
+      await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
