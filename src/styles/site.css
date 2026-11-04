@@ -955,7 +955,8 @@ h3 {
   justify-content: center;
 }
 .site-sidebar .side-more,
-.site-sidebar .home-project-end {
+.site-sidebar .home-project-end,
+.site-sidebar .sidebar-row-end {
   flex: 0 0 var(--sidebar-end-slot);
   width: var(--sidebar-end-slot);
   display: inline-grid;
@@ -982,11 +983,6 @@ h3 {
   text-align: center;
 }
 .site-sidebar .link-list a { min-height: 44px; padding-right: 0; }
-.site-sidebar .sidebar-row-arrow {
-  flex: 0 0 var(--sidebar-end-slot);
-  width: var(--sidebar-end-slot);
-  height: 16px;
-}
 
 .site-sidebar {
   position: relative;
