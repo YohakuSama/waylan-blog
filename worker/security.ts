@@ -29,15 +29,15 @@ export function cookieValue(request: Request, name: string) {
       ?.slice(name.length + 1) || ""
   );
 }
-export const cookieName = (request: Request, kind = "session") =>
-  `${new URL(request.url).protocol === "https:" ? "__Host-" : ""}echo_${kind}`;
+export const cookieName = (_request: Request, kind = "session") =>
+  `__Host-echo_${kind}`;
 export function cookie(
-  request: Request,
+  _request: Request,
   name: string,
   value: string,
   age: number,
 ) {
-  return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${new URL(request.url).protocol === "https:" ? "; Secure" : ""}`;
+  return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}; Secure`;
 }
 export function safeReturn(path: string | null) {
   if (
