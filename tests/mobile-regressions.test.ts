@@ -123,7 +123,7 @@ describe("mobile reader regression contracts", () => {
       "whole-paragraph mode remains discoverable inside the contents panel");
     assert.doesNotMatch(reader, /reader-floating|floatingVisible|floatingTucked|floatingOpen/,
       "scrolling must never summon or animate a floating reader ball");
-    assert.doesNotMatch(style, /\\.reader-floating-tools|\\.reader-floating-trigger/);
+    assert.doesNotMatch(style, /\.reader-floating-tools|\.reader-floating-trigger/);
     assert.ok(!reader.includes('className={\x60reader-topbar'), "no duplicate sticky reader row");
     assert.ok(settings.includes('name="reader-font-size"') &&
       settings.includes('waylan:font-size-changed') &&
