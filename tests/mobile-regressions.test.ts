@@ -325,6 +325,8 @@ describe("mobile reader regression contracts", () => {
   it("does not fade the entire reading surface when navigating on touch devices", () => {
     const source = readFileSync("src/lib/motion.ts", "utf8");
     assert.ok(source.includes('!motionAllowed() || matchMedia("(pointer: coarse)").matches'));
+    assert.ok(source.includes('!matchMedia("(pointer: coarse)").matches'),
+      "touch-device list transitions must not request root snapshots");
     assert.ok(source.includes('[{ opacity: 0.25 }, { opacity: 1 }]'),
       "non-touch desktop navigation keeps its previous animation");
   });
