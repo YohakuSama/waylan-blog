@@ -76,11 +76,12 @@ describe("mobile reader regression contracts", () => {
       "terminal navigation gets its own shaded rectangular base");
     assert.ok(skins.includes('border-bottom-color: transparent;'),
       "terminal masthead must not draw a dash across first paragraph");
-    assert.ok(skins.includes('.home-hero { padding-top: 22px; }'),
-      "terminal opening copy needs space below navigation");
+    assert.ok(skins.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
+      skins.includes('padding-top: 22px;'),
+      "terminal opening copy needs space below navigation without modifying article layout");
     assert.ok(skins.includes('height: 35px;') && skins.includes('margin-block: 4px;') &&
       skins.includes('border-radius: 0;'), "terminal selected tab stays inset and square");
-    assert.ok(skins.includes('.header-inner::before {\n    content: none;'),
+    assert.match(skins, /\.header-inner::before\s*\{\s*content:\s*none;/,
       "narrow phone tools cannot be crossed by the divider");
   });
   it("separates rounded mobile navigation without adding rails to the reader masthead", () => {
