@@ -129,7 +129,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("keeps long selected quotes on one scroll surface and pins composer actions", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
-    const composerCSS = style.slice(style.indexOf("/* Waylan immersive comment composer."));
+    const composerCSS = style.slice(style.indexOf("/* Waylan immersive comment composer.")).replace(/\r\n/g, "\n");
     assert.ok(composerCSS.includes("overflow-y: auto; overflow-x: hidden;"),
       "the editor content, including long quotes, must own one scroll area");
     assert.ok(composerCSS.includes(".panel-original blockquote {\n  max-height: none; overflow: visible;"),
