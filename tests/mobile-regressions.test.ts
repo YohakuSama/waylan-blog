@@ -89,8 +89,11 @@ describe("mobile reader regression contracts", () => {
       "animated actions must slide behind, not over, the retained masthead");
     assert.ok(style.includes('transform: translate3d(0, calc(-100% - 2px), 0)'),
       "keep smooth scroll hide/show animation");
-    assert.ok(style.includes('top: calc(var(--reader-brand-height) - 2px)'),
-      "reading progress should sit on the masthead border");
+    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress {') &&
+      site.includes('top: calc(var(--reader-brand-height) - 2px)'),
+      "reading progress must be anchored in the last effective masthead stylesheet");
+    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {') &&
+      site.includes('animation: none;'), "mobile reader progress marker must not pulse");
   });
   it("keeps the brand separator visible on phones", () => {
     assert.match(site, /\.brand-rule\s*\{\s*display:\s*block;/);
