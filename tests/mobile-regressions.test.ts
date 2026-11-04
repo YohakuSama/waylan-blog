@@ -29,9 +29,11 @@ describe("mobile reader regression contracts", () => {
       "border: 1px solid var(--line-strong);",
     ]) assert.ok(tray.includes(declaration), declaration);
   });
-  it("docks highlight threads at the bottom instead of using a right-hand panel", () => {
+  it("keeps highlight threads in a visible phone-centered dialog", () => {
     assert.match(style, /\.discussion-dialog\.thread-dialog \{\s*--dialog-motion: sheet;/);
-    assert.ok(style.includes("inset: auto 0 0;"));
+    assert.ok(style.includes("inset: auto 0 0;"), "desktop retains its existing layout");
+    assert.ok(style.includes("inset: var(--waylan-thread-view-top, 0px) 0 var(--waylan-thread-view-bottom, 0px);"),
+      "phones and tablets must center the dialog in the visual viewport");
     assert.ok(motion.includes(".discussion-dialog { --dialog-motion: panel; }"),
       "the thread-specific rule must override the generic dialog motion");
   });
@@ -41,8 +43,10 @@ describe("mobile reader regression contracts", () => {
     assert.ok(reader.includes('aria-expanded={quoteExpanded}'));
     assert.ok(reader.includes("--waylan-thread-view-top"));
     assert.ok(style.includes("flex: 0 0 auto;"), "action footer must not scroll with paragraph content");
-    assert.ok(style.includes('max-height: min(74dvh, calc(var(--waylan-thread-view-height, 100dvh) - 12px))'),
-      "phone sheet needs a visual-viewport height cap");
+    assert.ok(style.includes('max-height: min(82dvh, calc(var(--waylan-thread-view-height, 100dvh) - 24px))'),
+      "phone dialog needs a visual-viewport height cap");
+    assert.ok(style.includes('width: min(600px, calc(100dvw - 32px))'),
+      "phone dialog must not touch viewport sides");
     assert.ok(style.includes('width: min(640px, calc(100dvw - 48px))'),
       "tablet dialog must not stretch across the screen");
     assert.ok(style.includes("max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 24px))"));
