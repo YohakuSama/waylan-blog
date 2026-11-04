@@ -2251,7 +2251,7 @@ body,
 .discussion-dialog.composer-fullscreen > .composer-bottom {
   padding-inline: max(clamp(16px, 3vw, 28px), calc((100dvw - 900px) / 2));
 }
-@media (max-width: 1024px), (pointer: coarse) {
+@media (max-width: 1024px) {
   .discussion-dialog.composer-dialog,
   .discussion-dialog.composer-dialog.composer-fullscreen {
     position: fixed;
@@ -2279,6 +2279,15 @@ body,
     min-height: 130px;
   }
   .discussion-dialog.composer-dialog .composer-expand { display: none; }
+}
+/* Wide touch tablets keep the regular editor sheet until the reader expands
+   it; full screen must still track the keyboard's visual viewport. */
+@media (min-width: 1025px) and (pointer: coarse) {
+  .discussion-dialog.composer-dialog.composer-fullscreen {
+    top: var(--waylan-editor-view-top, 0px);
+    height: var(--waylan-editor-view-height, 100dvh);
+    max-height: var(--waylan-editor-view-height, 100dvh);
+  }
 }
 /* Every device uses the same bottom-up paragraph thread sheet;
    Safari's visual viewport moves its bottom above browser chrome/keyboard.
