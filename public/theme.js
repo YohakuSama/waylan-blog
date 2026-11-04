@@ -7,8 +7,12 @@ try{var skin=JSON.parse(localStorage.getItem('echo:skin')||'null');document.docu
 try {
   var last = JSON.parse(localStorage.getItem("echo:reading") || "null");
   if (last && typeof last.slug === "string" && typeof last.title === "string" &&
-      typeof last.progress === "number" && last.progress > 0 && last.progress < 100)
-    document.documentElement.dataset.resumePending = "true";
+      typeof last.progress === "number" && last.progress > 0 && last.progress < 100) {
+    var root = document.documentElement;
+    root.dataset.resumePending = "true";
+    root.style.setProperty("--resume-preload-title", JSON.stringify(last.title.slice(0, 240)));
+    root.style.setProperty("--resume-preload-progress", JSON.stringify(last.progress + "%"));
+  }
 } catch (e) {}
 // Pages are already prerendered as readable HTML, with their visible fonts
 // preloaded. Never hide #root while waiting for document.fonts.ready: on iOS
