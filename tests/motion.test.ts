@@ -105,33 +105,29 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
       ),
     );
   });
-  it("scopes shared post titles and covers away from collection-to-collection routes", async () => {
-    const stylesheet = readFileSync("src/styles/motion.css", "utf8");
-    assert.match(stylesheet, /data-route-motion="collection"/);
-    assert.match(stylesheet, /\.feed-item \.feed-body h2/);
-    assert.match(stylesheet, /\.feed-item \.feed-media/);
-    assert.match(stylesheet, /view-transition-name: none !important/);
-    let release!: () => void;
-    const pending = new Promise<void>((resolve) => { release = resolve; });
-    const observed: string[] = [];
+  it("never captures old/new document snapshots during route changes", async () => {
+    let nativeCalls = 0;
+    const states: string[] = [];
     Object.defineProperty(document, "startViewTransition", {
       configurable: true,
-      value: (update: () => void) => {
-        observed.push(document.documentElement.dataset.routeMotion || "");
-        update();
-        return { finished: pending, skipTransition() {} };
+      value: () => {
+        nativeCalls++;
+        throw new Error("Native route snapshots cause overlapped page text");
       },
     });
-    const first = navigateWithMotion(() => {}, "forward", "collection");
-    assert.deepEqual(observed, ["collection"]);
-    assert.equal(document.documentElement.dataset.routeMotion, "collection");
-    const next = navigateWithMotion(() => {}, "back", "reader");
-    assert.equal(document.documentElement.dataset.routeMotion, "reader");
-    release();
-    await Promise.all([first.finished, next.finished]);
-    await Promise.resolve();
-    assert.equal(document.documentElement.dataset.routeMotion, undefined,
-      "a stale route must not delete the newer route's transition marker");
+    const first = navigateWithMotion(
+      () => { states.push(document.documentElement.dataset.routeMotion || ""); },
+      "forward", "collection",
+    );
+    const second = navigateWithMotion(
+      () => { states.push(document.documentElement.dataset.routeMotion || ""); },
+      "forward", "reader",
+    );
+    await Promise.all([first.finished, second.finished]);
+    assert.deepEqual(states, ["collection", "reader"]);
+    assert.equal(nativeCalls, 0, "no cross-route View Transition API calls");
+    assert.equal(document.documentElement.dataset.routeMotion, undefined);
+    assert.equal(document.querySelector(".shared-cover-ghost"), null);
   });
   it("never creates floating shared-cover ghosts when moving between collection pages in fallback mode", async () => {
     const t = navigateWithMotion(sharedScene(), "back", "collection");
@@ -152,20 +148,16 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     await transition.finished;
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
   });
-  it("moves the shared image from its original geometry when native transitions are unavailable", async () => {
-    const transition = navigateWithMotion(sharedScene());
-    assert.equal(document.getElementById("target")!.style.visibility, "hidden");
-    const ghost = calls.find((call) =>
-      call.element.classList.contains("shared-cover-ghost"),
-    );
-    assert.ok(ghost);
-    assert.equal(
-      ghost.frames[1].transform,
-      "translate(100px,160px) scale(2.5,2.5)",
-    );
-    await transition.finished;
+  it("does not fly article covers or titles between list and reader on any engine", async () => {
+    const transition = navigateWithMotion(sharedScene(), "forward", "reader");
     assert.equal(document.getElementById("target")!.style.visibility, "");
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
+    assert.ok(calls.some(call =>
+      call.element.tagName === "MAIN" &&
+      Number(call.options.duration) <= 200 &&
+      call.frames.every(frame => frame.transform === undefined)
+    ), "only the mounted main should fade; no translation or resizing");
+    await transition.finished;
   });
   it("respects reduced motion while keeping navigation fully usable", async () => {
     reduced = true;
@@ -190,37 +182,25 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     await navigateWithMotion(() => {}).finished;
     assert.ok(calls.length > 0);
   });
-  it("falls back after a rejected native transition and applies the target only once", async () => {
+  it("ignores unreliable native route View Transitions and applies navigation once", async () => {
+    let nativeCalls = 0, changes = 0;
     Object.defineProperty(document, "startViewTransition", {
-      value: () => ({
-        finished: Promise.reject(new Error("not supported")),
-        skipTransition() {},
-      }),
+      value: () => { nativeCalls++; throw new Error("WebKit native snapshot failed"); },
       configurable: true,
     });
-    let changes = 0;
     await navigateWithMotion(() => changes++).finished;
     assert.equal(changes, 1);
-    assert.ok(calls.length > 0);
+    assert.equal(nativeCalls, 0);
+    assert.ok(calls.some(call => call.element.tagName === "MAIN"));
   });
-  it("does not apply an obsolete target after a transition was cancelled", async () => {
-    let reject!: (error: Error) => void;
-    const pending = new Promise<void>((_, fail) => (reject = fail));
-    Object.defineProperty(document, "startViewTransition", {
-      value: () => ({
-        finished: pending,
-        skipTransition() {
-          reject(new Error("cancelled"));
-        },
-      }),
-      configurable: true,
-    });
+  it("applies a new route immediately even if its fade is cancelled by another tap", async () => {
     let changes = 0;
     const transition = navigateWithMotion(() => changes++);
+    assert.equal(changes, 1);
     transition.skipTransition();
     await transition.finished;
-    assert.equal(changes, 0);
-    assert.equal(calls.length, 0);
+    assert.equal(changes, 1);
+    assert.equal(document.documentElement.dataset.routeMotion, undefined);
   });
   it("restores hidden target images immediately when a fallback is interrupted", async () => {
     const transition = navigateWithMotion(sharedScene());
