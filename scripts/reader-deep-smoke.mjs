@@ -260,6 +260,42 @@ async function run(engine,name,width){
         });
         observations.push({browser:name,width,scenario:"bottom sheet follows Safari toolbar offset",ok:true});
         await page.screenshot({path:dir+"/"+name+"-"+width+"-thread-viewport.png",animations:"disabled"});
+      } else {
+        // Desktop regression: select an actual paragraph, save it and open
+        // the thread. This was formerly a centered or side-mounted panel.
+        const target=page.locator('.reader-prose .article-block[data-type="paragraph"]').first();
+        await target.scrollIntoViewIfNeeded();
+        await target.evaluate(el=>{
+          const p=el.querySelector("p")||el;
+          const selection=window.getSelection(),range=document.createRange();
+          range.selectNodeContents(p);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.dispatchEvent(new Event("selectionchange"));
+        });
+        await page.locator(".selection-toolbar").waitFor({state:"visible"});
+        await page.locator(".selection-toolbar-actions button").filter({hasText:"划线"}).click();
+        await page.locator("mark.private-mark").first().click();
+        const thread=page.locator("dialog.discussion-dialog.thread-dialog[open]");
+        await thread.waitFor({state:"visible"});
+        await page.waitForTimeout(420);
+        const desktop=await thread.evaluate(dialog=>{
+          const rect=dialog.getBoundingClientRect(),style=getComputedStyle(dialog);
+          return {bottom:rect.bottom,viewport:window.innerHeight,motion:style.getPropertyValue("--dialog-motion").trim(),
+            top:dialog.style.top,bottomInline:dialog.style.bottom,action:!!dialog.querySelector(".panel-comment-entry")};
+        });
+        assert.equal(desktop.motion,"sheet","desktop comments must slide up from the bottom");
+        assert.equal(desktop.top,"auto","desktop must not use viewport centering");
+        assert.ok(Math.abs(desktop.viewport-desktop.bottom-8)<=3,
+          "desktop paragraph sheet must stay at bottom: "+JSON.stringify(desktop));
+        assert.ok(desktop.action,"desktop discussion action is missing");
+        await thread.locator(".panel-comment-entry").click();
+        const composer=page.locator("dialog.discussion-dialog.composer-dialog[open]");
+        await composer.waitFor({state:"visible"});
+        assert.equal(await composer.evaluate(el=>getComputedStyle(el).getPropertyValue("--dialog-motion").trim()),
+          "sheet","desktop composition must use the same bottom-up motion");
+        observations.push({browser:name,width,scenario:"desktop paragraph and composer both open as bottom sheets",desktop});
+        await page.screenshot({path:dir+"/"+name+"-"+width+"-desktop-thread-and-composer.png",animations:"disabled"});
       }
       assert.deepEqual(errors,[], "runtime errors");
     }finally{await ctx.close()}
