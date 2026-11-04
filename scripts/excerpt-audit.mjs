@@ -148,13 +148,15 @@ async function run(engine,browser,width){
           extraStrip:!!document.querySelector(".excerpt-access"),
           active:toggle?.getAttribute("aria-pressed"),
           toggleTop:rect?.top,headerBottom:head?.bottom,
-          siteHidden:site?getComputedStyle(site).display==="none":false,
+          siteVisible:!!site && getComputedStyle(site).display!=="none",
+          navHidden:getComputedStyle(document.querySelector("#site-nav")).display==="none",
+          logoVisible:!!site?.querySelector(".brand"),
           style:bar?getComputedStyle(bar).position:null
         };
       });
       record(browser,width,"excerpt lives in the shared reader tool row",controls,
         !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||
-          controls.style!=="sticky"||!controls.siteHidden);
+          controls.style!=="sticky"||!controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
