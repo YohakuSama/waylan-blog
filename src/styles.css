@@ -2506,10 +2506,10 @@ body,
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 9px;
-  padding: 11px 0 13px;
-  margin: 0 0 var(--space-6);
-  border-block: 1px solid var(--line);
+  gap: 6px 14px;
+  padding: 2px 0;
+  margin: var(--space-4) 0 var(--space-5);
+  border: 0;
 }
 .article-actions .article-action,
 .article-actions .article-action-save {
@@ -2534,8 +2534,7 @@ body,
   border-color: var(--line-strong);
   background: var(--surface-muted);
 }
-.article-actions .article-action-save.is-saved,
-.article-actions .article-action.is-active {
+.article-actions .article-action-save.is-saved {
   color: var(--brand);
   background: var(--brand-soft);
 }
@@ -2545,103 +2544,36 @@ body,
   .article-actions .article-action-toc { display: inline-flex; }
 }
 @media (max-width: 620px) {
-  .article-actions { gap: 5px; padding-block: 8px; }
+  .article-actions { gap: 8px; padding-block: 0; }
   .article-actions .article-action,
-  .article-actions .article-action-save { gap: 5px; padding: 8px 9px; font-size: 11px; }
+  .article-actions .article-action-save { gap: 5px; padding: 8px 9px; font-size: 12px; }
 }
 
-/* Contextual floating controls: only visible after the inline actions scroll
-   away. The small edge handle stays tappable as the page scrolls down. */
-.reader-floating-tools {
-  position: fixed;
-  z-index: 74;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: calc(max(92px, env(safe-area-inset-bottom) + 80px) + var(--waylan-reader-obscured-bottom, 0px));
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 210ms ease, transform 240ms cubic-bezier(.22,1,.36,1), visibility 210ms;
-}
-.reader-floating-tools.is-visible {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-.reader-floating-tools.is-tucked:not(.is-open) {
-  transform: translate3d(11px,0,0);
-  opacity: .67;
-}
-.reader-floating-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  margin-left: auto;
-  border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  color: var(--ink-soft);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  cursor: pointer;
-}
-.reader-floating-trigger:hover,
-.reader-floating-trigger:focus-visible,
-.reader-floating-tools.is-open .reader-floating-trigger {
-  color: var(--brand);
-  border-color: var(--brand);
-}
-.reader-floating-panel {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 11px);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(92px, 1fr));
-  gap: 5px;
-  width: min(224px, calc(100vw - 48px));
-  padding: 9px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-.reader-floating-panel > button {
+/* Optional whole-paragraph excerpt mode lives inside the contents panel.
+   Native text selection remains the default way to show quote actions. */
+.toc-excerpt-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 9px 8px;
-  border: 0;
+  margin-bottom: var(--space-3);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: transparent;
   color: var(--ink-soft);
+  background: transparent;
+  font-size: var(--text-xs);
   text-align: left;
-  font-size: 12px;
   cursor: pointer;
 }
-.reader-floating-panel > button:hover,
-.reader-floating-panel > button:focus-visible,
-.reader-floating-panel > button[aria-pressed="true"] {
-  background: var(--brand-soft);
+.toc-excerpt-toggle:hover,
+.toc-excerpt-toggle:focus-visible,
+.toc-excerpt-toggle[aria-pressed="true"] {
   color: var(--brand);
+  border-color: var(--brand);
+  background: var(--brand-soft);
 }
-@media (min-width: 1041px) {
-  .reader-floating-tools {
-    top: 44%;
-    bottom: auto;
-    right: clamp(18px, 3vw, 48px);
-  }
-  .reader-floating-panel {
-    top: 0;
-    bottom: auto;
-    right: calc(100% + 12px);
-    width: 126px;
-    grid-template-columns: 1fr;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .reader-floating-tools { transition: none; }
-}
+.reader-font-choices label { min-height: 44px; }
 @media print {
-  .reader-floating-tools, .article-actions, .reader-back { display: none !important; }
+  .article-actions, .reader-back, .toc-excerpt-toggle { display: none !important; }
 }
