@@ -883,6 +883,23 @@ html {
 :root[data-skin="terminal"] .site-header {
   border-bottom: 1px dashed var(--line-strong);
 }
+@media (max-width: 860px) {
+  /* The mobile nav draws its own theme-aware inset divider pair. */
+  :root:not([data-skin="terminal"]) .site-header,
+  :root[data-skin="terminal"] .site-header { border-bottom-color: transparent; }
+  :root[data-skin="terminal"] #site-nav { --nav-divider-inset: 0px; }
+  :root[data-skin="terminal"] #site-nav::before,
+  :root[data-skin="terminal"] #site-nav::after {
+    height: 0;
+    background: none;
+    border-top: 1px dashed var(--line-strong);
+  }
+  :root[data-skin="terminal"] #site-nav .nav-link {
+    height: 43px;
+    margin-block: 0;
+    border-radius: 0;
+  }
+}
 :root[data-skin="terminal"] .brand-wordmark,
 :root[data-skin="terminal"] .footer-brand .wordmark {
   display: none;
