@@ -85,6 +85,14 @@ export function navigateWithMotion(
   kind: RouteMotion = "reader",
 ): Transition {
   const root = document.documentElement;
+  // A filter/sort transition can still be in flight when a reader link is
+  // clicked. Cancel its top-layer screenshot before changing routes.
+  const list = activeListDocuments.get(document);
+  if (list) {
+    list.queued?.onFinished?.();
+    list.queued = null;
+    list.abort?.();
+  }
   const serial = ++routeMotionSerial;
   root.dataset.navDir = direction;
   root.dataset.routeMotion = kind;
@@ -136,7 +144,7 @@ export function navigateWithMotion(
 // Only list-changing actions share this gate. Never lock typing, browser
 // navigation, dialog dismissal or assistive controls behind a global click timer.
 type QueuedListChange = { change: () => void; onFinished?: () => void };
-type ListTransaction = { queued: QueuedListChange | null };
+type ListTransaction = { queued: QueuedListChange | null; abort?: () => void };
 const activeListDocuments = new WeakMap<Document, ListTransaction>();
 export function listTransition(change: () => void, onFinished?: () => void) {
   const doc = document as ViewTransitionDocument;
@@ -179,6 +187,7 @@ export function listTransition(change: () => void, onFinished?: () => void) {
   // A safety valve, not a debounce: normal release is driven by actual
   // animation completion. A stalled browser API must never freeze interaction.
   const watchdog = setTimeout(finish, 1500);
+  transaction.abort = finish;
   const commit = () => {
     if (changed) return;
     changed = true;
@@ -206,6 +215,9 @@ export function listTransition(change: () => void, onFinished?: () => void) {
     root.dataset.vt = "list";
     try {
       const transition = doc.startViewTransition(commit);
+      transaction.abort = () => {
+        try { transition.skipTransition(); } finally { finish(); }
+      };
       void transition.finished.then(afterVisuals, () => {
         try {
           // A rejected transition must still apply the requested state once.
