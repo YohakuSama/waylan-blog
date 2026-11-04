@@ -1153,6 +1153,13 @@ export default function Reader({ post }: { post: Post }) {
     }
     event.preventDefault();
     event.stopPropagation();
+    // Keep pointerup routed to this button even if opening Safari's bottom
+    // browser chrome changes the visual viewport while the finger is down.
+    if (needsActivation) {
+      try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch {
+        // Older WebKit may not support capture; touchend remains a fallback.
+      }
+    }
     lastToolbarTouch.current = {
       target: event.currentTarget, at: performance.now(), handled: !needsActivation,
     };
