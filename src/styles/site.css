@@ -2198,7 +2198,26 @@ h3 {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: 55px;
   }
-  .site-header-reader .brand { grid-row: 1; grid-column: 1; }
+  /* With four 44px shortcuts on a 320px screen, the quote cannot fit
+     horizontally beside the logo. Stack the two brand lines in the same
+     compact masthead slot instead of cropping the quote or tools. */
+  .site-header-reader .brand {
+    grid-row: 1;
+    grid-column: 1;
+    display: flex;
+    height: 55px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+  }
+  .site-header-reader .brand-wordmark { height: 24px; margin: 0; }
+  .site-header-reader .brand .brand-tagline {
+    display: inline-flex;
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  .site-header-reader .brand-motto-quote { font-size: 14px; }
   .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
 }
 
