@@ -125,10 +125,25 @@ async function run(engine,name,width){
         assert.equal(compact.position,"sticky");
         assert.equal(compact.top,"0px");
         assert.ok(compact.height<=60,"reader row is taller than 60px: "+JSON.stringify(compact));
-        await page.evaluate(()=>window.scrollTo(0,700));
-        await page.waitForFunction(()=>document.querySelector(".reader-topbar.reader-topbar-hidden"));
-        await page.evaluate(()=>window.scrollBy(0,-90));
-        await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"));
+        // Start at the top and use user-like wheel scrolling; a single
+        // programmatic scrollTo can be a no-op when history restores position.
+        await page.evaluate(()=>window.scrollTo(0,0));
+        await page.waitForFunction(()=>window.scrollY<10);
+        await page.mouse.move(100,420);
+        await page.mouse.wheel(0,320);
+        await page.mouse.wheel(0,320);
+        try {
+          await page.waitForFunction(()=>document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
+        } catch {
+          const state=await page.evaluate(()=>({y:window.scrollY,match:matchMedia("(max-width: 1024px)").matches,
+            hidden:document.querySelector(".reader-topbar")?.className,
+            selection:window.getSelection()?.toString()?.slice(0,20),
+            dialog:!!document.querySelector("dialog[open]"),
+            mainHeight:document.documentElement.scrollHeight}));
+          throw Error("Reader controls did not hide after downward scrolling: "+JSON.stringify(state));
+        }
+        await page.mouse.wheel(0,-110);
+        await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"),null,{timeout:6000});
         await page.evaluate(()=>window.scrollTo(0,0));
         observations.push({browser:name,width,scenario:"immersive reader hides global chrome and restores tools on upward scroll",compact});
       } else {
