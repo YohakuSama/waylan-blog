@@ -861,6 +861,34 @@ describe("OAuth, cryptography and rendering", () => {
     });
     assert.equal((await call("/api/notifications/test", { method: "POST", headers })).status, 429);
   });
+  it("advertises an enabled inbox only with configured webhook, read token and D1 migration", async () => {
+    env.NOTIFICATIONS_ENABLED = "true";
+    const status = () => call("/api/status").then((r) => r.json()) as Promise<{ notifications: boolean }>;
+    assert.equal((await status()).notifications, true, "the migrated opt-in inbox should be available");
+    delete env.GITHUB_WEBHOOK_SECRET;
+    assert.equal((await status()).notifications, false,
+      "missing webhook credentials must not advertise a broken notification service");
+    env.GITHUB_WEBHOOK_SECRET = "test-webhook-secret";
+    delete env.GITHUB_READ_TOKEN;
+    assert.equal((await status()).notifications, false,
+      "delivery without GitHub read access cannot send notifications");
+    env.GITHUB_READ_TOKEN = "test-read-only-token";
+    db.sqlite.exec("DROP TABLE notification_settings");
+    assert.equal((await status()).notifications, false,
+      "an unmigrated D1 database must return disabled instead of a 500");
+    const inbox = await call("/api/notifications", {
+      headers: { Cookie: `__Host-echo_session=${rawSession}` },
+    });
+    assert.equal(inbox.status, 200);
+    assert.equal(((await inbox.json()) as { enabled: boolean }).enabled, false);
+    const update = await call("/api/notifications", {
+      method: "POST",
+      headers: { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf },
+      body: JSON.stringify({ subscribed: false }),
+    });
+    assert.equal(update.status, 503,
+      "writes must fail closed if notification migrations are missing");
+  });
   it("keeps notifications disabled until migrations and webhook setup are enabled", async () => {
     const response = await call("/api/notifications");
     assert.deepEqual(await response.json(), { enabled: false, unread: 0, items: [] });

@@ -40,27 +40,30 @@ export function NotificationBell() {
   const refreshInbox = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     let active = true;
+    let requestSerial = 0;
     async function refresh() {
+      const serial = ++requestSerial;
       try {
         const session = await api<{ user: { login: string } | null; csrf?: string; moderator?: boolean }>("/api/session");
-        if (!active) return;
+        if (!active || serial !== requestSerial) return;
         if (!session.user || !session.csrf) {
           setBox(empty);
           setCsrf("");
           setModerator(false);
           const status = await api<{ notifications?: boolean }>("/api/status");
-          if (active) setAvailability(status.notifications ? "enabled" : "disabled");
+          if (active && serial === requestSerial)
+            setAvailability(status.notifications ? "enabled" : "disabled");
           return;
         }
         setCsrf(session.csrf);
         setModerator(!!session.moderator);
         const next = await api<Inbox>("/api/notifications");
-        if (active) {
+        if (active && serial === requestSerial) {
           setBox(next);
           setAvailability(next.enabled ? "enabled" : "disabled");
         }
       } catch {
-        if (active) {
+        if (active && serial === requestSerial) {
           setBox(empty);
           setCsrf("");
           setModerator(false);
@@ -74,13 +77,24 @@ export function NotificationBell() {
       if (document.visibilityState === "visible") void refresh();
     }, 70000);
     const onFocus = () => void refresh();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
+      ++requestSerial;
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
+  useEffect(() => {
+    // Open is an intentional request to see the latest unread notifications,
+    // rather than waiting for the 70-second background refresh.
+    if (open) void refreshInbox.current();
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     // Non-modal dialog: move keyboard focus into the panel when opening.

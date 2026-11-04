@@ -959,7 +959,9 @@ html {
 :root[data-skin="terminal"] .brand-term {
   display: inline-flex;
   align-items: center;
-  font: 600 15px var(--font-mono);
+  /* Match the visual weight/slot of Editorial's wordmark with shared tokens. */
+  font: 700 calc(var(--masthead-wordmark-height) * .9)/1.05 var(--font-mono);
+  letter-spacing: -.045em;
   white-space: nowrap;
 }
 .brand-term b {
@@ -1218,7 +1220,6 @@ html {
     height: 32px;
   }
   :root[data-skin="terminal"] .brand-term {
-    font-size: 13px;
     min-width: 0;
   }
   :root[data-skin="terminal"] .home-hero .hero-visual {

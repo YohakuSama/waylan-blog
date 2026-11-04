@@ -36,6 +36,43 @@ describe("mobile reader regression contracts", () => {
     assert.ok(motion.includes(".comment-skeleton {"));
     assert.ok(motion.includes("min-height: 218px;"));
   });
+  it("removes obsolete animation presets and respects system accessibility", () => {
+    const settings = readFileSync("src/components/Settings.tsx", "utf8");
+    const bootScript = readFileSync("public/theme.js", "utf8");
+    assert.ok(!settings.includes('name="motion-preference"') &&
+      !settings.includes('<legend>动效</legend>') &&
+      !settings.includes('const motions:'),
+      "the three unused animation presets should not clutter reading settings");
+    assert.ok(settings.includes('applyMotionPreference("system")') &&
+      settings.includes('storage.remove("motion")'),
+      "old stored overrides must not silently defeat system reduced motion");
+    assert.ok(bootScript.includes("dataset.motionPreference='system'") &&
+      bootScript.includes("prefers-reduced-motion: reduce") &&
+      !bootScript.includes("localStorage.getItem('echo:motion')"),
+      "first paint must follow the operating system before React hydrates");
+  });
+  it("matches terminal wordmark scale to the shared editorial logo slot", () => {
+    const css = skins;
+    assert.ok(css.includes('font: 700 calc(var(--masthead-wordmark-height) * .9)/1.05 var(--font-mono);'),
+      "the terminal logo must use the same responsive masthead size token");
+    assert.ok(!css.includes('font: 600 15px var(--font-mono);') &&
+      !css.includes('font-size: 13px;\n    min-width: 0;'),
+      "small legacy terminal font-size overrides must be removed");
+    assert.ok(site.includes('--masthead-wordmark-height: 38px;') &&
+      site.includes('--masthead-wordmark-height: 32px;'));
+  });
+  it("keeps notification readiness and inbox refresh responsive to real configuration", () => {
+    const bell = readFileSync("src/components/NotificationBell.tsx", "utf8");
+    const worker = readFileSync("worker/notifications.ts", "utf8");
+    const wrangler = readFileSync("wrangler.jsonc", "utf8");
+    assert.match(wrangler, /"NOTIFICATIONS_ENABLED"\s*:\s*"true"/);
+    assert.ok(worker.includes('notificationsAvailable(env)') &&
+      worker.includes("sqlite_master") && worker.includes("GITHUB_WEBHOOK_SECRET"));
+    assert.ok(bell.includes('document.addEventListener("visibilitychange", onVisible)') &&
+      bell.includes('if (open) void refreshInbox.current()') &&
+      bell.includes("serial !== requestSerial"),
+      "opening notifications and resuming the phone must refresh without stale requests racing");
+  });
   it("does not clip the script wordmark in the narrow header", () => {
     assert.match(site, /\.brand \{ overflow: visible; \}/);
     assert.match(site, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
