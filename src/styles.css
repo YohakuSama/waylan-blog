@@ -2307,14 +2307,14 @@ body,
 }
 @media (max-width: 767px) {
   .discussion-dialog.thread-dialog {
-    --dialog-motion: sheet;
-    inset: auto 0 var(--waylan-thread-view-bottom, 0px);
-    margin: 0;
-    width: 100%;
+    --dialog-motion: panel;
+    inset: var(--waylan-thread-view-top, 0px) 0 var(--waylan-thread-view-bottom, 0px);
+    margin: auto;
+    width: min(600px, calc(100dvw - 32px));
     height: fit-content;
-    max-height: min(74dvh, calc(var(--waylan-thread-view-height, 100dvh) - 12px));
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    border-bottom: 0;
+    max-height: min(82dvh, calc(var(--waylan-thread-view-height, 100dvh) - 24px));
+    border-radius: var(--radius-xl);
+    border-bottom: 1px solid var(--line-strong);
     padding: 0;
   }
   .discussion-dialog.thread-dialog .dialog-header {
