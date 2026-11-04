@@ -489,6 +489,10 @@ export function About() {
       </header>
       <div className="content-grid about-layout">
         <section className="feed-column about-text" aria-label="关于本站">
+          <figure className="about-motto" aria-label="站点理念，Dieter Rams 的名言">
+            <blockquote lang="en">Less, but better.</blockquote>
+            <figcaption>— Dieter Rams</figcaption>
+          </figure>
           {/* Rendered from content/about.md at build time, already sanitised. */}
           <div
             className="about-prose"
