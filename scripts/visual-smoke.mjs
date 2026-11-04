@@ -274,11 +274,11 @@ try {
               const actual = geometry.controls[i], original = home.controls[i];
               assert.ok(actual && original &&
                 Math.abs(actual.height - original.height) <= 1 &&
-                Math.abs(actual.width - (i === 0 && width > 480 && width <= 860
+                Math.abs(actual.width - (i === 0 && width >= 480 && width <= 860
                   ? 44 : original.width)) <= 1 &&
                 Math.abs(actual.top - original.top) <= 1,
                 `${label}: global action ${i} differs from the home masthead`);
-              if (width <= 480) assert.ok(Math.abs(actual.left - original.left) <= 1,
+              if (width < 480) assert.ok(Math.abs(actual.left - original.left) <= 1,
                 `${label}: compact phone action ${i} shifts between home and reader`);
             }
             assert.ok(geometry.brand && geometry.brandWordmark,
