@@ -41,9 +41,17 @@ async function run(engine,browser,width){
       await excerptToggle.click();
       assert.equal(await excerptToggle.getAttribute("aria-pressed"),"true",
         "optional paragraph excerpt mode must activate from the contents panel");
+      const hint=page.locator(".excerpt-mode-hint");
+      await hint.waitFor({state:"visible"});
+      assert.ok((await hint.innerText()).includes("无时间限制"),
+        "excerpt mode must be explained as an ongoing state, not a temporary effect");
       const paragraph=page.locator(".reader-prose .article-block[data-type='paragraph']").first();
+      assert.notEqual(await paragraph.evaluate(el=>getComputedStyle(el).outlineStyle),"dashed",
+        "an untouched paragraph must not flash a fake countdown outline");
       await paragraph.click();
       await page.locator(".selection-toolbar").waitFor({state:"visible",timeout:10000});
+      assert.equal(await page.locator(".selection-toolbar-mode-exit").isVisible(),true,
+        "reader must be able to leave excerpt mode without opening the TOC again");
       const state=await paragraph.evaluate(el=>{
         const computed=getComputedStyle(el), selection=window.getSelection();
         return {
@@ -56,7 +64,7 @@ async function run(engine,browser,width){
       record(browser,width,"excerpt visual selection after tap",state,
         state.attrs["data-excerpt-selected"] !== "true" ||
         state.outline.includes("rgba(0, 0, 0, 0)") ||
-        state.outlineStyle === "none");
+        state.outlineStyle !== "solid");
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-tapped.png",animations:"disabled"});
       // Check every excerpt toolbar side effect independently, without an
       // actual GitHub login or publishing any comment.
@@ -132,11 +140,20 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
-      // Only the byline's quiet actions remain; optional paragraph mode is
-      // still available inside the directory instead of a roaming overlay.
-      await page.evaluate(()=>window.scrollTo(0,0));
+      // The persistent inline indicator provides a direct off switch.
+      await hint.getByRole("button",{name:"退出摘录"}).click();
+      assert.equal(await excerptToggle.getAttribute("aria-pressed"),"false",
+        "inline exit must turn off paragraph mode without reopening the TOC");
+      await hint.waitFor({state:"hidden"});
+      // Re-enter and exit from a selected paragraph farther down the article.
       await page.locator(".article-action-toc").click();
       await excerptToggle.click();
+      await paragraph.click();
+      await page.locator(".selection-toolbar-mode-exit").click();
+      assert.equal(await excerptToggle.getAttribute("aria-pressed"),"false",
+        "selection tray exit must turn off paragraph mode directly");
+      await page.locator(".selection-toolbar").waitFor({state:"hidden"});
+      await page.locator(".article-action-toc").click();
       const controls=await page.evaluate(()=>{
         const toggle=document.querySelector(".toc-excerpt-toggle");
         const articleActions=document.querySelector(".article-actions");

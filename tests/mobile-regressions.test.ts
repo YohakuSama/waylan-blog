@@ -145,6 +145,13 @@ describe("mobile reader regression contracts", () => {
       "the action menu must hide reliably and the comment jump must avoid the sticky header");
     assert.ok(reader.includes('className="toc-excerpt-toggle"'),
       "whole-paragraph mode remains discoverable inside the contents panel");
+    assert.ok(reader.includes('className="excerpt-mode-hint"') &&
+      reader.includes('className="selection-toolbar-mode-exit"'),
+      "active excerpt mode needs direct exits both at the article and in the selected-text tray");
+    assert.ok(style.includes('.excerpt-mode-hint > button {') &&
+      style.includes('.selection-toolbar-context > .selection-toolbar-mode-exit {') &&
+      !style.includes('outline: 1px dashed transparent;'),
+      "active excerpt mode must not be mistaken for a short-lived dashed animation");
     assert.ok(reader.includes('className="toc-footer"') &&
       reader.includes('tocButton.current?.focus({ preventScroll: true })'),
       "TOC actions must share a separate footer and restore focus when closing");

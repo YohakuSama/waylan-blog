@@ -969,26 +969,6 @@ textarea::placeholder {
     outline-offset: -2px;
   }
   .excerpt-toggle-text { font-size: 12px; }
-  .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
-    cursor: pointer;
-    outline: 1px dashed transparent;
-    outline-offset: 3px;
-    transition: outline-color var(--motion-fast) var(--ease-out);
-  }
-  .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]):active {
-    outline-color: var(--brand);
-  }
-  /* Keep the chosen paragraph visibly tied to the fixed action tray.
-     Previously the only outline was :active; after release there was no
-     visible selection, even though the toolbar claimed "已选". */
-  .reader-prose.excerpt-mode .article-block[data-type][data-excerpt-selected="true"]:not([data-type="code"]) {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
-    background: color-mix(in srgb, var(--brand) 7%, transparent);
-    /* WebKit otherwise animates from transparent :active outline and the
-       freshly tapped excerpt briefly looks unselected. Feedback is immediate. */
-    transition: none;
-  }
   .selection-toolbar {
     position: fixed;
     inset: auto auto calc(12px + env(safe-area-inset-bottom)) 50% !important;
@@ -2641,6 +2621,78 @@ body,
   background: var(--brand-soft);
 }
 .reader-font-choices label { min-height: 44px; }
+
+
+/* Selected excerpts retain a solid outline until the selection is closed.
+   The dashed touch flash was not a timer and is intentionally removed. */
+.reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
+  cursor: pointer;
+}
+.reader-prose.excerpt-mode .article-block[data-type][data-excerpt-selected="true"]:not([data-type="code"]) {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  background: color-mix(in srgb, var(--brand) 7%, transparent);
+  transition: none;
+}
+/* Excerpt mode is persistent, not an animation or a timed interaction.
+   Keep its status and off switch visible without reopening the TOC. */
+.excerpt-mode-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: calc(-1 * var(--space-2)) 0 var(--space-5);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--brand);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  color: var(--ink-soft);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.excerpt-mode-hint > svg { flex: none; color: var(--brand); }
+.excerpt-mode-hint > span {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.excerpt-mode-hint strong { color: var(--ink); font-weight: 550; }
+.excerpt-mode-hint small { color: var(--muted); font-size: 11px; }
+.excerpt-mode-hint > button {
+  flex: none;
+  min-width: 68px;
+  min-height: 40px;
+  padding: 6px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.excerpt-mode-hint > button:hover,
+.excerpt-mode-hint > button:focus-visible {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.selection-toolbar-context > .selection-toolbar-mode-exit {
+  width: auto;
+  flex: none;
+  min-width: 66px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  color: var(--brand);
+  white-space: nowrap;
+  font-size: 11px;
+}
+@media (max-width: 380px) {
+  .excerpt-mode-hint { gap: 7px; padding: 9px; }
+  .excerpt-mode-hint small { font-size: 10px; }
+}
 
 /* Responsive contents panel: a bounded reading aid, never a tall floating
    window across the article. Keep the TOC list independently scrollable and
