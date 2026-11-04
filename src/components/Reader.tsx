@@ -393,6 +393,7 @@ export default function Reader({ post }: { post: Post }) {
   const dismissedTap = useRef<{ target: Element | null; until: number } | null>(null);
   const [panel, setPanel] = useState(false),
     [panelIds, setPanelIds] = useState<string[]>([]),
+    [quoteExpanded, setQuoteExpanded] = useState(false),
     [image, setImage] = useState<Zoomed | null>(null),
     [toast, setToast] = useState("");
   const [draft, setDraft] = useState<Draft>({
@@ -490,8 +491,9 @@ export default function Reader({ post }: { post: Post }) {
         0,
         window.innerHeight - viewport.offsetTop - viewport.height,
       );
+      root.style.setProperty("--waylan-thread-view-top", `${Math.max(0, Math.ceil(viewport.offsetTop))}px`);
       root.style.setProperty("--waylan-thread-view-bottom", `${Math.ceil(obscured)}px`);
-      root.style.setProperty("--waylan-thread-view-height", `${viewport.height}px`);
+      root.style.setProperty("--waylan-thread-view-height", `${Math.floor(viewport.height)}px`);
     };
     sync();
     viewport.addEventListener("resize", sync);
@@ -501,6 +503,7 @@ export default function Reader({ post }: { post: Post }) {
       viewport.removeEventListener("resize", sync);
       viewport.removeEventListener("scroll", sync);
       window.removeEventListener("resize", sync);
+      root.style.removeProperty("--waylan-thread-view-top");
       root.style.removeProperty("--waylan-thread-view-bottom");
       root.style.removeProperty("--waylan-thread-view-height");
     };
@@ -829,6 +832,7 @@ export default function Reader({ post }: { post: Post }) {
     if (!/^[\w=+/-]{1,200}$/.test(id)) return;
     handledHash.current = hash;
     setPanelIds([id]);
+    setQuoteExpanded(false);
     setPanel(true);
     setPanelBatch(1);
   }, [router.path, post]);
@@ -899,6 +903,7 @@ export default function Reader({ post }: { post: Post }) {
       requestId: prev.uncertain ? prev.requestId : newId(),
     }));
     setPanelIds([]);
+    setQuoteExpanded(false);
     setSendError("");
     setPreviewDraft(false);
     setComposerFullscreen(false);
@@ -908,6 +913,7 @@ export default function Reader({ post }: { post: Post }) {
   function openHighlights(ids: string[]) {
     setComposerFullscreen(false);
     setPanelIds(ids);
+    setQuoteExpanded(false);
     setSelection(null);
     setPanel(true);
     setPanelBatch(1);
@@ -1074,6 +1080,8 @@ export default function Reader({ post }: { post: Post }) {
   const panelQuote = panelIds.length
     ? chosenAnnotation?.anchor || null
     : draft.anchor;
+  const panelQuoteText = panelQuote ? anchorQuote(panelQuote) : "";
+  const canExpandPanelQuote = panelIds.length > 0 && panelQuoteText.length > 90;
   const prev = posts[posts.findIndex((p) => p.id === post.id) + 1],
     next = posts[posts.findIndex((p) => p.id === post.id) - 1];
   // Native browser menus usually appear ABOVE the highlighted line.
@@ -1776,7 +1784,22 @@ export default function Reader({ post }: { post: Post }) {
           {panelQuote && (
             <div className="panel-original">
               <span className="eyebrow">我们停在这句话旁边</span>
-              <blockquote>{anchorQuote(panelQuote)}</blockquote>
+              <blockquote
+                id="thread-original-quote"
+                className={canExpandPanelQuote ? (quoteExpanded ? "quote-expanded" : "quote-collapsed") : undefined}
+              >{panelQuoteText}</blockquote>
+              {canExpandPanelQuote && (
+                <button
+                  type="button"
+                  className="text-button quote-toggle"
+                  aria-controls="thread-original-quote"
+                  aria-expanded={quoteExpanded}
+                  onClick={() => setQuoteExpanded((value) => !value)}
+                >
+                  {quoteExpanded ? "收起引用" : "展开完整引用"}
+                  <ChevronDown size={14} aria-hidden="true" />
+                </button>
+              )}
               {chosenAnnotation && (
                 <button
                   className="text-button"
@@ -1876,15 +1899,7 @@ export default function Reader({ post }: { post: Post }) {
               </button>
             </div>
           )}
-          {panelIds.length > 0 ? (
-            <button
-              className="primary-button panel-comment-entry"
-              onClick={() => newComment(panelQuote, pageComments[0] || null)}
-            >
-              <MessageSquare size={16} />
-              {panelQuote ? "对这句话写下想法" : "参与这段评论"}
-            </button>
-          ) : (
+          {!panelIds.length && (
             <div className="comment-composer" data-preview={previewDraft ? "true" : undefined}>
               {draft.replyTo && (
                 <div className="replying-to">
@@ -2010,6 +2025,17 @@ export default function Reader({ post }: { post: Post }) {
             </div>
           )}
         </div>
+        {panelIds.length > 0 && (
+          <div className="thread-dialog-footer">
+            <button
+              className="primary-button panel-comment-entry"
+              onClick={() => newComment(panelQuote, pageComments[0] || null)}
+            >
+              <MessageSquare size={16} />
+              {panelQuote ? "对这句话写下想法" : "参与这段评论"}
+            </button>
+          </div>
+        )}
       </Dialog>
       <ImageViewer image={image} onClose={() => setImage(null)} />
       {toast && (

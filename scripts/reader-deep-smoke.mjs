@@ -14,7 +14,7 @@ const observations=[];
 async function run(engine,name,width){
   const browser=await engine.launch({headless:true});
   try{
-    const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:"no-preference"});
+    const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:"no-preference",hasTouch:width>1024&&width<=1366});
     try{
       await ctx.addInitScript(()=>{localStorage.setItem("echo:motion",JSON.stringify("full"));localStorage.setItem("echo:skin",JSON.stringify("editorial"));localStorage.setItem("echo:theme",JSON.stringify("light"))});
       const page=await ctx.newPage();
@@ -141,7 +141,7 @@ async function run(engine,name,width){
       await page.screenshot({path:dir+"/"+name+"-"+width+"-toc-hydration.png",animations:"disabled"});
       // Model iPhone Safari's visible viewport shrinking under browser chrome
       // while a native fixed dialog remains anchored to the layout viewport.
-      if (width <= 600) {
+      if (width <= 1366) {
         await page.getByRole("button",{name:"开启摘录段落模式"}).click();
         await page.locator('.reader-prose .article-block[data-type="paragraph"]').first().click();
         await page.locator(".selection-toolbar").waitFor({state:"visible"});
@@ -165,11 +165,21 @@ async function run(engine,name,width){
           Object.defineProperty(viewport,"offsetTop",{configurable:true,value:0});
           viewport.dispatchEvent(new Event("resize"));
         });
+        const quoteToggle = thread.locator(".quote-toggle");
+        if (await quoteToggle.count()) {
+          await quoteToggle.click();
+          assert.equal(await quoteToggle.getAttribute("aria-expanded"), "true");
+          await quoteToggle.click();
+          assert.equal(await quoteToggle.getAttribute("aria-expanded"), "false");
+        }
         const geometry = await page.evaluate(() => {
           const dialog = document.querySelector(".discussion-dialog.thread-dialog[open]");
           const body = dialog.querySelector(".discussion-panel-body");
-          body.scrollTop = body.scrollHeight;
           const action = dialog.querySelector(".panel-comment-entry");
+          const footer = dialog.querySelector(".thread-dialog-footer");
+          const beforeScroll = action.getBoundingClientRect().top;
+          body.scrollTop = body.scrollHeight;
+          const actionStable = Math.abs(beforeScroll - action.getBoundingClientRect().top) < 2;
           const visibleBottom = window.visualViewport.offsetTop + window.visualViewport.height;
           // Regression: a light surface behind a light primary-button label
           // made the mobile "发表评论" action effectively invisible.
@@ -182,13 +192,28 @@ async function run(engine,name,width){
           }, 0);
           const fg = luminance(style.color), bg = luminance(style.backgroundColor);
           const actionContrast = (Math.max(fg,bg)+0.05)/(Math.min(fg,bg)+0.05);
-          return {visibleBottom,dialogBottom:dialog.getBoundingClientRect().bottom,
+          return {visibleBottom,visualTop:window.visualViewport.offsetTop,
+            dialogTop:dialog.getBoundingClientRect().top,
+            dialogBottom:dialog.getBoundingClientRect().bottom,
             actionBottom:action.getBoundingClientRect().bottom,actionContrast,
-            actionLabel:action.textContent?.trim(),
+            actionLabel:action.textContent?.trim(),actionStable,
+            footerOutsideScrollableBody:!body.contains(footer) && footer.contains(action),
+            dialogWidth:dialog.getBoundingClientRect().width,
             threadBottomStyle:getComputedStyle(dialog).bottom,
             bodyScrollHeight:body.scrollHeight,bodyHeight:body.clientHeight};
         });
         observations.push({browser:name,width,scenario:"Safari thread sheet avoids obscured browser chrome",geometry});
+        assert.ok(geometry.footerOutsideScrollableBody && geometry.actionStable,
+          "The thread action must be outside the scrolling excerpt: " + JSON.stringify(geometry));
+        assert.ok(geometry.dialogTop >= geometry.visualTop - 3,
+          "Thread dialog crosses Safari top chrome: " + JSON.stringify(geometry));
+        if (width >= 768) {
+          assert.ok(geometry.dialogWidth <= 640 + 2, "Tablet thread dialog is too wide");
+          const viewportMid = (geometry.visualTop + geometry.visibleBottom) / 2;
+          const dialogMid = (geometry.dialogTop + geometry.dialogBottom) / 2;
+          assert.ok(Math.abs(viewportMid - dialogMid) <= 35,
+            "iPad thread dialog is not centered in the visible viewport: " + JSON.stringify(geometry));
+        }
         assert.ok(geometry.dialogBottom <= geometry.visibleBottom + 3,
           "Thread dialog extends under mobile browser chrome: " + JSON.stringify(geometry));
         assert.ok(geometry.actionBottom <= geometry.visibleBottom + 3,
@@ -205,6 +230,9 @@ try{
   await ready();
   await run(chromium,"chromium",1440);
   await run(webkit,"webkit",390);
+  await run(webkit,"webkit",820);
+  await run(webkit,"webkit",1024);
+  await run(webkit,"webkit",1194);
   console.log("Reader audit observations:",JSON.stringify(observations));
   assert.ok(observations.filter(x=>x.scenario.includes("返回列表")).every(x=>!x.defect),
     "RETURN_LIST_MISMATCH: 返回列表 must return to content list, not previous article");

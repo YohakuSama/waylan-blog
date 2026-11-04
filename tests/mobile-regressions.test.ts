@@ -30,10 +30,26 @@ describe("mobile reader regression contracts", () => {
     ]) assert.ok(tray.includes(declaration), declaration);
   });
   it("docks highlight threads at the bottom instead of using a right-hand panel", () => {
-    assert.match(style, /\.discussion-dialog\.thread-dialog \{ --dialog-motion: sheet; \}/);
+    assert.match(style, /\.discussion-dialog\.thread-dialog \{\s*--dialog-motion: sheet;/);
     assert.ok(style.includes("inset: auto 0 0;"));
     assert.ok(motion.includes(".discussion-dialog { --dialog-motion: panel; }"),
       "the thread-specific rule must override the generic dialog motion");
+  });
+  it("keeps thread actions outside scrolling excerpts on iPhone and iPad", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    assert.ok(reader.includes('className="thread-dialog-footer"'));
+    assert.ok(reader.includes('aria-expanded={quoteExpanded}'));
+    assert.ok(reader.includes("--waylan-thread-view-top"));
+    assert.ok(style.includes("flex: 0 0 auto;"), "action footer must not scroll with paragraph content");
+    assert.ok(style.includes('max-height: min(74dvh, calc(var(--waylan-thread-view-height, 100dvh) - 12px))'),
+      "phone sheet needs a visual-viewport height cap");
+    assert.ok(style.includes('width: min(640px, calc(100dvw - 48px))'),
+      "tablet dialog must not stretch across the screen");
+    assert.ok(style.includes("max-height: min(78dvh, 680px, calc(var(--waylan-thread-view-height, 100dvh) - 24px))"));
+    assert.ok(style.includes("@media (max-width: 1024px), (pointer: coarse) {"),
+      "iPad Pro landscape and other large touch tablets must use the centered thread layout");
+    assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
+      "the action cannot remain inside the scrollable body");
   });
   it("renders an actual subtitle slot at mobile and narrow-phone sizes", () => {
     assert.match(app, /className="mobile-brand-tagline"/);
