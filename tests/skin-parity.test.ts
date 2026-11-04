@@ -36,7 +36,7 @@ describe("both visual themes share home geometry and focus treatments", () => {
   });
 
   it("uses the same compact phone content-type selector for both skins", () => {
-    const phone = site.slice(site.lastIndexOf("@media (max-width: 700px)"));
+    const phone = site.slice(site.lastIndexOf("@media (max-width: 767px)"));
     assert.ok(phone.includes(".feed-controls .type-tabs { display: none; }"),
       "the six desktop category links must not occupy two phone rows");
     assert.ok(phone.includes(".feed-controls .mobile-type-select { display: inline-flex; }"),
