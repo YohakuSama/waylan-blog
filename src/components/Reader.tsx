@@ -96,6 +96,30 @@ const copyText = (block: ContentBlock) => {
     .map((line) => line.slice(2))
     .join("\n");
 };
+/** The composer preview and published comments must use identical rendering. */
+function CommentMarkdown({ body, preview = false }: { body: string; preview?: boolean }) {
+  return (
+    <div
+      id={preview ? "echo-preview" : undefined}
+      className={preview ? "comment-markdown composer-preview" : "comment-markdown"}
+      aria-label={preview ? "评论效果预览" : undefined}
+      role={preview ? "region" : undefined}
+    >
+      <ReactMarkdown
+        skipHtml
+        components={{
+          a: ({ children, href }) => (
+            <a href={href} rel="nofollow noopener noreferrer" target="_blank">{children}</a>
+          ),
+          img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
+        }}
+      >
+        {body || (preview ? "预览会显示在这里。" : "")}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 function CommentItem({
   comment,
   onQuote,
@@ -239,21 +263,7 @@ function CommentItem({
           </div>
         </div>
       ) : (
-        <div className="comment-markdown">
-          <ReactMarkdown
-            skipHtml
-            components={{
-              a: ({ children, href }) => (
-                <a href={href} rel="nofollow noopener noreferrer" target="_blank">
-                  {children}
-                </a>
-              ),
-              img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
-            }}
-          >
-            {comment.body}
-          </ReactMarkdown>
-        </div>
+        <CommentMarkdown body={comment.body} />
       )}
       {error && <p role="alert" className="small-error">{error}</p>}
       {!editing && (
@@ -1104,7 +1114,7 @@ export default function Reader({ post }: { post: Post }) {
       <div className="reader-topbar">
         <button className="text-button" onClick={router.backToList}>
           <ArrowLeft size={16} />
-          返回列表
+          返回来源
         </button>
         <div className="reader-controls">
           <button
@@ -1875,7 +1885,7 @@ export default function Reader({ post }: { post: Post }) {
               {panelQuote ? "对这句话写下想法" : "参与这段评论"}
             </button>
           ) : (
-            <div className="comment-composer">
+            <div className="comment-composer" data-preview={previewDraft ? "true" : undefined}>
               {draft.replyTo && (
                 <div className="replying-to">
                   回复 @{draft.replyTo.author?.login || "读者"}
@@ -1910,28 +1920,22 @@ export default function Reader({ post }: { post: Post }) {
                 disabled={sending || draft.uncertain} maxLength={6000} />
               <div className="composer-hint">
                 <span>支持代码块与表情 · 评论公开可见</span>
-                <button type="button" className="text-button" onClick={() => setPreviewDraft((v) => !v)}>
-                  {previewDraft ? "关闭预览" : "预览"}
+                <button type="button" className="text-button" aria-pressed={previewDraft}
+                  aria-controls="echo-preview" onClick={() => setPreviewDraft((v) => !v)}>
+                  {previewDraft ? "继续编辑" : "效果预览"}
                 </button>
                 <span>{draft.body.length} / 6000</span>
               </div>
-              {previewDraft && (
-                <div className="comment-markdown composer-preview" aria-label="评论预览">
-                  <ReactMarkdown skipHtml components={{
-                    a: ({ children, href }) => <a href={href} target="_blank" rel="nofollow noopener noreferrer">{children}</a>,
-                    img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
-                  }}>{draft.body || "预览会显示在这里。"}</ReactMarkdown>
-                </div>
-              )}
+              {previewDraft && <CommentMarkdown body={draft.body} preview />}
               {sendError && (
                 <p role="alert" className="composer-error">
                   {sendError}
                 </p>
               )}
               {session.loading ? (
-                <p className="muted">正在确认你的身份…</p>
+                <div className="composer-bottom composer-status" role="status">正在确认你的身份…</div>
               ) : session.error ? (
-                <div className="inline-notice">
+                <div className="composer-bottom composer-status inline-notice">
                   身份服务暂时没有回应。文字会保留。
                   <button className="text-button" onClick={session.reload}>
                     重试
@@ -1986,7 +1990,7 @@ export default function Reader({ post }: { post: Post }) {
                   </button>
                 </div>
               ) : (
-                <div className="login-invitation">
+                <div className="composer-bottom login-invitation">
                   <p>
                     {session.data?.configured
                       ? "通过 GitHub 留下真实的声音。登录后会回到这一页，保留刚才的文字。"
