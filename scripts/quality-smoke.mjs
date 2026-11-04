@@ -78,6 +78,15 @@ async function publicBrowsers() {
             await page.locator("a[href='/feed']").first().click();
             await page.waitForURL(/\/feed(?:\?.*)?$/, { timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/feed");
+            // Browsing routes keep the global settings button. On mobile an
+            // article intentionally replaces that chrome with one reader row.
+            stage = "browsing settings";
+            const settingsButton = page.locator('.header-tools > button[aria-label="阅读设置"]');
+            await settingsButton.click();
+            const dialog = page.getByRole("dialog", { name: "阅读设置", exact: true });
+            await dialog.waitFor({ state: "visible" });
+            await page.keyboard.press("Escape");
+            await dialog.waitFor({ state: "hidden" });
             stage = "article hydration";
             // Vite preview serves prerendered /post/:slug/index.html at trailing-slash
             // URLs. Cloudflare production canonicalizes back to /post/:slug.
@@ -85,13 +94,8 @@ async function publicBrowsers() {
             await page.waitForTimeout(500);
             await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15000 });
             await noOverflow(page, name + "/" + width + "/" + motion + "/post");
-            stage = "article settings";
-            const settingsButton = page.locator('.header-tools > button[aria-label="阅读设置"]');
-            await settingsButton.click();
-            const dialog = page.getByRole("dialog", { name: "阅读设置", exact: true });
-            await dialog.waitFor({ state: "visible" });
-            await page.keyboard.press("Escape");
-            await dialog.waitFor({ state: "hidden" });
+            if (width <= 1024) assert.equal(await page.locator(".site-header").isVisible(), false,
+              name + ": immersive article unexpectedly retained global header");
             // Simulate navigation churn with real (not reduced) transitions.
             stage = "archive navigation";
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
