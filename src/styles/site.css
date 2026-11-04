@@ -2042,6 +2042,14 @@ h3 {
     row-gap: 0;
   }
   .site-header-reader #site-nav { display: none; }
+  /* site.css defines the global progress position after styles.css loads.
+     Override it here only for articles with the retained Waylan masthead. */
+  .site-header-reader + .site-body .reading-progress {
+    top: calc(var(--reader-brand-height) - 2px);
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
   .site-header-reader .brand {
     grid-row: 1;
     grid-column: 1;
