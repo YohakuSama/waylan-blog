@@ -142,6 +142,16 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     await t.finished;
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
   });
+  it("keeps resume transitions free of floating images and title morphs", async () => {
+    const stylesheet = readFileSync("src/styles/motion.css", "utf8");
+    assert.match(stylesheet, /data-route-motion="resume"/);
+    assert.match(stylesheet, /data-route-motion="resume"\] \.article-heading h1/);
+    const transition = navigateWithMotion(sharedScene(), "forward", "resume");
+    assert.equal(document.querySelector(".shared-cover-ghost"), null);
+    assert.ok(calls.some((call) => call.element.tagName === "MAIN"));
+    await transition.finished;
+    assert.equal(document.querySelector(".shared-cover-ghost"), null);
+  });
   it("moves the shared image from its original geometry when native transitions are unavailable", async () => {
     const transition = navigateWithMotion(sharedScene());
     assert.equal(document.getElementById("target")!.style.visibility, "hidden");
