@@ -6,7 +6,7 @@
 - Replies notify the intended GitHub author. New comments (including replies) notify the configured site admin unless authored by that admin.
 - Self-replies never notify. GitHub redelivery is deduplicated by (recipient, comment ID, kind).
 - Moderators can still use GitHub's native mail/inbox subscription.
-- Inbox polling operates while the blog is open; this does NOT implement device push or email.
+- Inbox refreshes when opened, when the tab becomes visible again, and during periodic checks while the blog is open; this does NOT implement device push or email.
 
 ## Safe production activation
 1. In GitHub Desktop, Fetch/Pull latest from main on the private `YohakuSama/waylan-blog` repository.
@@ -14,11 +14,11 @@
 3. Generate one cryptographically random 32-byte webhook secret. Do not commit or share it.
 4. Open GitHub Settings → Developer settings → GitHub Apps → Waylan Comments Login. Activate Webhook and set URL `https://waylan.org/api/webhook/github`, Content type JSON, and the generated secret. In Permissions & events subscribe to `Discussion comment` and `Discussion` events. Leave Repository permissions = Discussions Read and write. Ensure installation remains only `waylan-comments`.
 5. Cloudflare → Worker `waylan-blog` → Settings → **Runtime variables and secrets** → Production: add `GITHUB_WEBHOOK_SECRET` as **Secret** containing the same value.
-6. Finally add `NOTIFICATIONS_ENABLED` as **Variable** with value `true`. Deploy.
+6. `NOTIFICATIONS_ENABLED=true` is now versioned in `wrangler.jsonc`, so subsequent Workers Builds cannot silently drop a dashboard-only flag. Deploy the latest `main`. The notification status will report **disabled** until the D1 tables, GitHub reader token and signed webhook secret are all available; this avoids advertising a broken inbox.
 7. Test: as a second GitHub user, reply to an existing comment or post a new comment. The notification bell is always visible between the reading shelf and settings. Sign in to read private notifications; disabled services and network failures are shown inside the panel, with retry. Check mark-read and opt-out; check GitHub webhook recent deliveries for response 200.
 
 ## Rollback
-Delete `NOTIFICATIONS_ENABLED` or set it to `false`, redeploy. The comment system is unaffected. The optional notification tables may remain in D1 without being read.
+Set `NOTIFICATIONS_ENABLED` to `false` in `wrangler.jsonc` and redeploy (do not rely on editing a dashboard-only variable that the next Wrangler deploy may overwrite). The comment system is unaffected. The optional notification tables may remain in D1 without being read.
 
 ## Privacy and security
 - Keep the webhook secret confidential; Cloudflare runtime Secret and GitHub App Webhook secret must match exactly.
