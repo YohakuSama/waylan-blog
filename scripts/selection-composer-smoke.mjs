@@ -52,6 +52,14 @@ async function run(engine, label, width, height, touch) {
       }));
       await page.goto(origin + "/post/a-room-on-the-internet/", { waitUntil: "domcontentloaded" });
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
+      // SSR markup exists before React hydrates. Prove the reader's handlers
+      // are live before generating a programmatic Selection and selectionchange.
+      const font = page.locator(".reader-topbar .font-button");
+      const initialFont = await font.getAttribute("aria-label");
+      await font.click();
+      await page.waitForFunction((before) =>
+        document.querySelector(".reader-topbar .font-button")?.getAttribute("aria-label") !== before,
+        initialFont, { timeout: 15000 });
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
