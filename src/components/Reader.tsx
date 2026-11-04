@@ -1148,6 +1148,27 @@ export default function Reader({ post }: { post: Post }) {
           >
             <Share2 size={17} />
           </button>
+          {/* Excerpt is a mode of the existing reader controls, never a spare sticky row. */}
+          {!panel && (
+            <button
+              type="button"
+              className="icon-button excerpt-toggle"
+              aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
+              aria-pressed={excerptMode}
+              title={excerptMode ? "退出摘录模式" : "摘录段落"}
+              onClick={() => {
+                setExcerptMode(!excerptMode);
+                setSelection(null);
+                window.getSelection()?.removeAllRanges();
+              }}
+            >
+              <Highlighter size={18} />
+              <span className="excerpt-toggle-text">{excerptMode ? "结束摘录" : "摘录"}</span>
+            </button>
+          )}
+          <span className="sr-only" role="status">
+            {excerptMode ? "摘录模式已开启：点选正文段落可划线或评论。" : ""}
+          </span>
           <button
             ref={tocButton}
             className="icon-button mobile-toc"
@@ -1159,35 +1180,6 @@ export default function Reader({ post }: { post: Post }) {
             <List size={20} />
           </button>
         </div>
-      </div>
-      {/* Keep this control in the reader's sticky tool rail, not over prose. */}
-      <div className={`excerpt-access${panel ? " excerpt-access-hidden" : ""}`}>
-        {!excerptMode && !selection && !panel && (
-          <button type="button" className="excerpt-fab" aria-label="开启摘录段落模式"
-            title="摘录段落" onClick={() => {
-              setExcerptMode(true);
-              setSelection(null);
-              window.getSelection()?.removeAllRanges();
-            }}>
-            <Highlighter size={18} />
-            <span>摘录</span>
-          </button>
-        )}
-        {excerptMode && !selection && (
-          <div className="excerpt-mode-hint" role="status">
-            <Highlighter size={16} />
-            <span>摘录模式：点选正文段落，可划线或评论。长按仍可精确选择文字。</span>
-            <button type="button" onClick={() => { setExcerptMode(false); setSelection(null); }} aria-label="退出摘录模式">
-              <X size={17} />
-            </button>
-          </div>
-        )}
-        {selection && (
-          <span className="excerpt-access-selected">
-            <Highlighter size={16} />
-            已选 {anchorQuote(selection.anchor).length} 字 · 选择下方操作
-          </span>
-        )}
       </div>
       <div className="reader-layout">
         <div className="reader-column">
