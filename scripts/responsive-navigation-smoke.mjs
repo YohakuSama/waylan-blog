@@ -92,6 +92,10 @@ try {
             assert.ok(header.brand.right <= header.tools.left + 2,
               label + ": mobile actions overlap logo or subtitle");
           }
+          if (width <= 860) {
+            assert.ok(header.nav.top >= header.tools.bottom,
+              label + ": mobile navigation row overlaps the touch controls");
+          }
           assert.ok(Math.abs(header.header.bottom - header.body.top) <= 1,
             label + ": gap between header and page");
           assert.ok(Math.abs(header.main.top - header.hero.top) <= 1,
