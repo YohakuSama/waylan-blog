@@ -65,7 +65,7 @@ describe("mobile reader regression contracts", () => {
     const bell = readFileSync("src/components/NotificationBell.tsx", "utf8");
     const worker = readFileSync("worker/notifications.ts", "utf8");
     const wrangler = readFileSync("wrangler.jsonc", "utf8");
-    assert.equal(JSON.parse(wrangler.replace(/^\s*\/\/.*$/gm, "")).vars.NOTIFICATIONS_ENABLED, "true");
+    assert.match(wrangler, /"NOTIFICATIONS_ENABLED"\s*:\s*"true"/);
     assert.ok(worker.includes('notificationsAvailable(env)') &&
       worker.includes("sqlite_master") && worker.includes("GITHUB_WEBHOOK_SECRET"));
     assert.ok(bell.includes('document.addEventListener("visibilitychange", onVisible)') &&
