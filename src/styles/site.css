@@ -2146,68 +2146,50 @@ h3 {
   .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
 }
 
-/* Article-only global menu. Browsing routes keep all four header shortcuts.
-   The drawer distinguishes the reading list from "收藏本文" inside each post. */
-.reader-global-menu-trigger { display: none; }
-.reader-global-menu { display: contents; }
+/* Keep all four site tools visible in the article's compact masthead.
+   The reading-progress indicator remains a separate 2px line. */
 @media (max-width: 1024px) {
-  .site-header-reader .header-tools { gap: 0; }
-  .site-header-reader .reader-global-menu-trigger {
+  .site-header-reader .header-tools {
+    grid-row: 1;
+    grid-column: 2;
+    gap: 0;
+    border-left: 0;
+    padding-left: 0;
+  }
+  .site-header-reader .header-search,
+  .site-header-reader .header-tools .icon-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    min-width: 44px;
+    width: 40px;
+    min-width: 40px;
     height: 44px;
-    border: 0;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--ink-soft);
+    min-height: 44px;
+    flex-shrink: 0;
+    margin-right: 0;
+    padding: 0;
   }
-  .site-header-reader .reader-global-menu-trigger[aria-expanded="true"],
-  .site-header-reader .reader-global-menu-trigger:focus-visible {
-    color: var(--brand);
-    background: var(--brand-soft);
-  }
-  .site-header-reader .reader-global-menu {
-    position: absolute;
-    right: var(--page-gutter);
-    top: calc(100% + 6px);
-    z-index: 95;
-    display: none;
-    width: min(216px, calc(100vw - 36px));
-    padding: 7px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    box-shadow: var(--shadow);
-  }
-  .site-header-reader .reader-global-menu.is-open { display: grid; gap: 3px; }
-  .site-header-reader .reader-global-menu .notification-root { width: 100%; }
-  .site-header-reader .reader-global-menu .shelf-trigger,
-  .site-header-reader .reader-global-menu .notification-trigger,
-  .site-header-reader .reader-global-menu .settings-button {
+  .site-header-reader .header-tools .notification-root {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 13px;
-    width: 100%;
-    min-width: 100%;
-    min-height: 46px;
-    height: 46px;
-    padding: 0 13px;
-    border-radius: var(--radius-md);
-    color: var(--ink-soft);
-    text-align: left;
-    font-size: 13px;
+    flex: 0 0 40px;
+    min-width: 40px;
   }
-  .site-header-reader .reader-global-menu .shelf-trigger::after { content: "阅读清单"; }
-  .site-header-reader .reader-global-menu .notification-trigger::after { content: "消息通知"; }
-  .site-header-reader .reader-global-menu .settings-button::after { content: "界面设置"; }
-  .site-header-reader .reader-global-menu .shelf-count { right: 8px; }
-  .site-header-reader .reader-global-menu .icon-button:hover,
-  .site-header-reader .reader-global-menu .icon-button:focus-visible {
-    color: var(--brand);
-    background: var(--brand-soft);
+}
+/* Keep the branding, but give interactive tools priority on phone widths. */
+@media (max-width: 680px) {
+  .site-header-reader .brand-rule,
+  .site-header-reader .brand-tagline { display: none; }
+}
+@media (max-width: 370px) {
+  .site-header-reader .brand-wordmark { height: 26px; }
+  .site-header-reader .header-search,
+  .site-header-reader .header-tools .icon-button {
+    width: 36px;
+    min-width: 36px;
+  }
+  .site-header-reader .header-tools .notification-root {
+    min-width: 36px;
+    flex-basis: 36px;
   }
 }

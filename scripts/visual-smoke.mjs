@@ -66,8 +66,8 @@ try {
           const label = `${route === "/" ? "home" : route.slice(1).replaceAll("/", "-")}-${width}-${variant.skin}-${variant.theme}`;
           assert.ok(response?.ok(), `${label}: HTTP response failed`);
           const isImmersive = route.startsWith("/post/") && width <= 1024;
-          // Article pages on phones/tablets deliberately hide global search
-          // and navigation; wait for the replacement reader row instead.
+          // Article pages keep destination navigation hidden while exposing
+          // the same four global shortcuts and independent inline reader actions.
           if (isImmersive) await page.locator(".article-actions").waitFor({state:"visible"});
           else await page.getByRole("button", { name: "搜索 Ctrl K", exact: true }).waitFor();
           await page.evaluate(() => document.fonts.ready);
@@ -213,11 +213,13 @@ try {
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
             assert.equal(geometry.nav,null,`${label}: article must not restore the duplicate destination row`);
-            assert.ok(geometry.tools && geometry.controls[0] && geometry.controls[0].height>=40 &&
-              geometry.globalMenuButton && geometry.globalMenuButton.height>=40,
-              `${label}: logo masthead needs search and a global menu button`);
-            assert.ok(geometry.controls.slice(1).every(box=>!box),
-              `${label}: reading-list and notifications must be inside the closed labeled menu`);
+            assert.ok(geometry.tools && geometry.controls.length===4 &&
+              geometry.controls.every(box=>box && box.height>=40 && box.width>=36),
+              `${label}: compact masthead must show four direct global shortcuts`);
+            assert.equal(geometry.globalMenuButton,null,
+              `${label}: compact masthead must not add a collapsed site menu`);
+            assert.ok(geometry.controls.every(box=>box.left>=-1 && box.right<=geometry.viewport+1),
+              `${label}: global shortcut overflows the iPhone viewport`);
             assert.ok(geometry.brand.right<=geometry.tools.left+3,
               `${label}: wordmark intersects the masthead actions`);
             assert.ok(geometry.articleActions && geometry.articleActions.height>=40 &&

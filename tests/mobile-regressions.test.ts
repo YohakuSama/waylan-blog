@@ -146,9 +146,12 @@ describe("mobile reader regression contracts", () => {
       "font controls must be in reading settings and update the active article");
     assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
-    assert.ok(app.includes('className="reader-global-menu-trigger icon-button"'));
-    assert.ok(site.includes('.site-header-reader .reader-global-menu.is-open'));
-    assert.ok(site.includes('content: "阅读清单"'));
+    assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);
+    assert.doesNotMatch(site, /\.reader-global-menu/);
+    assert.ok(site.includes('.site-header-reader .header-tools .icon-button'));
+    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'));
+    assert.ok(site.includes('.site-header-reader .brand-tagline { display: none; }'),
+      "narrow readers keep all four masthead shortcuts without a collapsed menu");
     assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
     assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));

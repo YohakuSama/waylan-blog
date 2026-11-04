@@ -447,15 +447,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(save);
     assert.match(save.textContent || "", /收藏本文|已收藏/);
     assert.equal(document.querySelectorAll(".article-actions .bookmark-button").length,1);
-    const menu=document.querySelector<HTMLButtonElement>(".reader-global-menu-trigger")!;
-    assert.ok(menu, "site menu should be separate from article actions");
-    assert.equal(menu.getAttribute("aria-expanded"),"false");
-    await click(menu);
-    assert.equal(menu.getAttribute("aria-expanded"),"true");
-    assert.ok(document.querySelector(".reader-global-menu.is-open .shelf-trigger"),
-      "reading-list entry must be in the labeled site menu");
-    await click(menu);
-    assert.equal(menu.getAttribute("aria-expanded"),"false");
+    assert.ok(document.querySelector(".site-header-reader .header-tools > .shelf-trigger"),
+      "reading list remains a direct site shortcut separate from the post bookmark");
+    assert.ok(document.querySelector(".site-header-reader .header-tools .notification-trigger"));
+    assert.ok(document.querySelector(".site-header-reader .header-tools > .settings-button"));
+    assert.equal(document.querySelector(".reader-global-menu-trigger"), null,
+      "article header must not collapse the site shortcuts into another menu");
   });
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
