@@ -472,6 +472,34 @@ try {
             await page.locator(".home-topic-link").click();
             await page.waitForURL("**/feed");
           }
+          // Regression: opening search on a scrolled feed must never position
+          // the native full-screen dialog midway down the document.
+          if (route === "/feed" && width === 390 &&
+              variant.skin === "editorial" && variant.theme === "light") {
+            await page.evaluate(() => window.scrollTo(0, 650));
+            assert.ok(await page.evaluate(() => window.scrollY) > 100,
+              "search regression requires a scrolled source page");
+            await page.locator(".header-search").evaluate((button) => button.click());
+            const search = page.locator(".search-dialog[open]");
+            await search.waitFor();
+            const bounds = await search.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return { top: rect.top, left: rect.left, right: rect.right, height: rect.height,
+                width: window.innerWidth, viewportHeight: window.innerHeight };
+            });
+            assert.ok(Math.abs(bounds.top) <= 1 && Math.abs(bounds.left) <= 1 &&
+              Math.abs(bounds.right - bounds.width) <= 1 &&
+              Math.abs(bounds.height - bounds.viewportHeight) <= 2,
+              `scrolled mobile search must cover viewport: ${JSON.stringify(bounds)}`);
+            const field = search.locator('input[type="search"]');
+            assert.equal(await field.evaluate((element) => document.activeElement === element), true,
+              "search field should receive initial focus");
+            await field.fill("D1");
+            assert.ok(await search.locator('[role="option"]').count() > 0,
+              "typing after scroll should reveal search results");
+            await page.keyboard.press("Escape");
+            await search.waitFor({ state: "hidden" });
+          }
           if (route === "/404" && (width === 320 || width === 390)) {
             await page.locator(".header-search").click();
             const dialog = page.locator(".search-dialog[open]");
