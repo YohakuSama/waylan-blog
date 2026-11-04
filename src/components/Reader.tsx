@@ -366,7 +366,7 @@ export default function Reader({ post }: { post: Post }) {
       if (event.key !== "Escape") return;
       event.preventDefault();
       setTocOpen(false);
-      (floatAvailable ? floatingTocButton.current : tocButton.current)?.focus({ preventScroll: true });
+      (floatAvailable ? floatingTrigger.current : tocButton.current)?.focus({ preventScroll: true });
     };
     const outside = (event: PointerEvent) => {
       const target = event.target as Node;
