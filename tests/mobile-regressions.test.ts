@@ -276,55 +276,54 @@ describe("mobile reader regression contracts", () => {
     assert.ok(style.includes('--reader-brand-height: var(--header-bar-height);'),
       "toc, reading-progress and scroll offsets should track the same masthead height");
   });
-  it("keeps a distinct footer and separately attributed About quote in each skin", () => {
+  it("uses the header as the sole branded logo across both skins and all routes", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     const pages = readFileSync("src/pages.tsx", "utf8");
-    assert.ok(app.includes('className="footer-blog-script" aria-hidden="true">Blog</span>'));
-    assert.ok(app.includes('className="footer-terminal-wordmark" aria-hidden="true"'));
-    assert.ok(app.includes('footer-terminal-cursor'));
-    assert.ok(!app.includes('className="brand-tagline"'));
+    const footer = app.slice(app.indexOf('<footer className="site-footer">'));
+    assert.ok(footer.startsWith('<footer className="site-footer">'));
+    assert.doesNotMatch(footer, /<Wordmark\s*\/>|footer-(?:brand|identity|blog-script|terminal-wordmark)/,
+      "the shared footer may not duplicate the masthead identity");
+    assert.ok(footer.includes('className="footer-copy"') &&
+      footer.includes('className="footer-stats mono"') &&
+      footer.includes('className="footer-links"'),
+      "the footer must remain a practical site colophon");
+    assert.ok(site.includes('grid-template-areas: "copy links";') &&
+      site.includes('grid-template-areas: "copy" "links";'),
+      "desktop/tablet and phone footers must follow one coherent two-row system");
+    assert.ok(!site.includes('Waylan Great Vibes') &&
+      !site.includes('"copy brand"') && !site.includes('"links brand"') &&
+      !skins.includes('.footer-terminal-wordmark'),
+      "obsolete second-brand typography and layouts should be removed");
     assert.ok(pages.includes('className="about-motto"') &&
       pages.includes('<blockquote lang="en">Less, but better.</blockquote>') &&
       pages.includes('— Dieter Rams</figcaption>'));
-    assert.ok(site.includes('great-vibes-latin-400-normal.woff2') &&
-      site.includes('.footer-blog-script {'), "Editorial keeps its self-hosted script footer");
-    assert.ok(skins.includes(':root[data-skin="terminal"] .footer-terminal-wordmark {') &&
-      skins.includes(':root[data-skin="terminal"] .footer-blog-script { display: none; }'),
-      "Terminal uses its own monospace footer rather than Editorial lettering");
     assert.ok(skins.includes('.about-motto blockquote::before,'),
-      "Terminal's attribution appears in the form of code comments");
+      "terminal About attribution should keep its code-comment style");
     assert.doesNotMatch(app, /mobile-brand-tagline|brand-motto-quote/);
   });
-  it("keeps home discovery compact and footer branding coherent across device widths", () => {
-    const app = readFileSync("src/App.tsx", "utf8");
+  it("aligns index-page sidebar labels and trailing controls as one design system", () => {
     const pages = readFileSync("src/pages.tsx", "utf8");
+    const sidebar = readFileSync("src/components/Sidebar.tsx", "utf8");
+    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
     assert.ok(pages.includes('className="home-project-copy"') &&
       pages.includes('className="home-project-state"') &&
-      pages.includes('className="home-project-arrow"'),
-      "project links must use a compact title/status/arrow layout");
-    assert.match(site, /\.home-projects a \{[\s\S]*?min-height: 60px;[\s\S]*?padding: 9px 2px;/);
-    assert.ok(site.includes(".home-sidebar .home-reading-note summary { min-height: 44px; }"),
-      "home reading tip must remain touch accessible");
-    assert.ok(app.includes('className="footer-identity"') &&
-      app.includes('className="footer-description"') &&
-      app.includes('className="footer-copy"'),
-      "brand, description and copyright must occupy distinct footer rows");
-    assert.ok(site.includes('grid-template-areas: "identity links" "copy copy";') &&
-      site.includes('grid-template-areas: "identity" "copy" "links";'),
-      "desktop/tablet and phone need deliberate footer compositions");
-    assert.ok(site.includes('.site-footer .footer-blog-script { display: none; }'),
-      "phones must not display a second oversized decorative Blog signature");
-    assert.ok(!site.includes('"copy brand"') && !site.includes('"links brand"'),
-      "old floating-right colophon layout must not return");
+      pages.includes('className="home-project-end"'),
+      "homepage project rows need a shared trailing arrow column");
+    assert.ok(sidebar.includes('className="sidebar-row-end"') &&
+      !sidebar.includes('ArrowUpRight'),
+      "internal sidebar navigation must use one right-arrow convention");
+    assert.ok(site.includes('--sidebar-end-slot: 28px;') &&
+      site.includes('.site-sidebar .explore-count {') &&
+      site.includes('.site-sidebar .sidebar-note summary::after {') &&
+      site.includes('.site-sidebar .sidebar-row-end {'),
+      "theme-independent side-rail controls must align");
+    assert.ok(site.includes('.home-sidebar .home-reading-note summary { min-height: 44px; }'));
     assert.ok(site.includes('@media (min-width: 768px) and (max-width: 1119px)') &&
       site.includes('grid-column: 1 / -1;'),
-      "tablet discovery tips must span both columns");
-    assert.ok(skins.includes(':root[data-skin="terminal"] .footer-terminal-wordmark {'),
-      "terminal must retain its own wordmark while sharing the grid");
-    const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
+      "tablet discovery disclosure spans both columns");
     assert.ok(shelf.includes('footerTop > visibleBottom - 56') &&
       shelf.includes('window.visualViewport?.addEventListener("resize", check)'),
-      "floating back-to-top must retreat when Safari reveals the footer");
+      "back-to-top must not overlap the now smaller footer");
   });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
     assert.ok(style.includes(".discussion-dialog.composer-dialog .composer-bottom {"));
