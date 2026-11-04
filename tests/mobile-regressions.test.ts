@@ -37,7 +37,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("renders an actual subtitle slot at mobile and narrow-phone sizes", () => {
     assert.match(app, /className="mobile-brand-tagline"/);
-    assert.match(site, /\.mobile-brand-tagline \{\n    display: block;/);
+    assert.match(site, /\.mobile-brand-tagline \{\r?\n    display: block;/);
     assert.ok(site.includes("grid-template-rows: var(--header-bar-height) 26px 44px;"));
   });
   it("uses one footer geometry for signed-in and logged-out composer actions", () => {
