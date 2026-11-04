@@ -24,6 +24,7 @@
     "GITHUB_REPO_NAME": "waylan-comments",
     "GITHUB_CATEGORY_NAME": "Blog",
     "ADMIN_GITHUB_LOGINS": "YohakuSama",
+    "NOTIFICATIONS_ENABLED": "true",
     "CONTENT_REPO": "YohakuSama/waylan-blog",
     "CONTENT_BRANCH": "main",
   },
