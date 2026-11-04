@@ -25,7 +25,7 @@ export function BookmarkButton({
       type="button"
       className={`bookmark-button${saved ? " is-saved" : ""} ${className}`}
       aria-pressed={saved}
-      aria-label={saved ? `从阅读清单移除：${post.title}` : `加入阅读清单：${post.title}`}
+      aria-label={saved ? (showLabel ? `已收藏：${post.title}` : `从阅读清单移除：${post.title}`) : (showLabel ? `收藏本文：${post.title}` : `加入阅读清单：${post.title}`)}
       data-tip={saved ? "已在阅读清单" : "稍后再读"}
       onClick={() => {
         if (!shelf.toggle(post.slug))
