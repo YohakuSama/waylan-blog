@@ -2066,12 +2066,10 @@ h3 {
     display: flex;
     gap: 0;
   }
-  /* The reader has its own bookmark and excerpt controls. Keep global search
-     and appearance settings, not another set of nearly identical icons. */
-  .site-header-reader .header-tools > .shelf-trigger,
-  .site-header-reader .header-tools > .notification-trigger { display: none; }
+  /* Preserve all four global actions, including saved items and notifications.
+     The reader's local controls remain independent beneath the masthead. */
   .site-header-reader .header-search,
-  .site-header-reader .header-tools > .settings-button {
+  .site-header-reader .header-tools > .icon-button {
     width: 44px;
     height: 44px;
     min-width: 44px;
