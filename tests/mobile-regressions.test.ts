@@ -190,15 +190,22 @@ describe("mobile reader regression contracts", () => {
       "saving the current article needs a visible label");
     assert.ok(reader.includes('className="article-action article-action-toc"'),
       "the directory remains directly reachable on phones and tablets");
-    assert.ok(reader.includes('className="article-action article-action-more"') &&
-      reader.includes('aria-label="更多阅读操作"') && reader.includes('hidden={!moreOpen}'),
-      "the optional reader actions stay in a dismissible inline menu");
-    assert.ok(reader.includes('void copyArticleLink()') && reader.includes('onClick={jumpToDiscussion}') &&
-      reader.includes('changeFontSize(size)'),
-      "direct copy, comment shortcut and font-size controls must be usable");
-    assert.ok(style.includes(".article-more-panel[hidden] { display: none; }") &&
-      style.includes(".discussion-section { scroll-margin-top:"),
-      "the action menu must hide reliably and the comment jump must avoid the sticky header");
+    assert.ok(!reader.includes('className="article-action article-action-more"') &&
+      !reader.includes('aria-label="更多阅读操作"') &&
+      !reader.includes('className="article-action" type="button" aria-label="分享文章"'),
+      "reader header should not compete with the article using redundant actions");
+    assert.ok(reader.includes('className="reading-end-actions"') &&
+      reader.includes('className="reading-end-save" showLabel />') &&
+      reader.includes('className="quiet-button reading-end-share"'),
+      "save and share actions should be available after the article");
+    assert.ok(style.includes(".reading-end-actions {") &&
+      style.includes(".reading-article .article-actions {") &&
+      !style.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"),
+      "article header should use a lightweight two-item layout rather than four columns");
+    assert.ok(reader.includes('post.toc.length ? "本文目录" : "阅读工具"'),
+      "short articles need a meaningful reading-tools label instead of an empty table of contents");
+    assert.ok(style.includes(".discussion-section { scroll-margin-top:"),
+      "the comment section must still avoid the sticky header");
     assert.ok(reader.includes('className="toc-excerpt-toggle"'),
       "whole-paragraph mode remains discoverable inside the contents panel");
     assert.ok(reader.includes('className="excerpt-mode-hint"') &&
@@ -224,8 +231,10 @@ describe("mobile reader regression contracts", () => {
       reader.includes('addEventListener("waylan:font-size-changed"'),
       "font controls must be in reading settings and update the active article");
     assert.ok(settings.includes('addEventListener("waylan:font-size-changed", sync)') &&
-      settings.includes('"echo:font-size"'),
-      "the global settings and inline size control must stay synchronized");
+      settings.includes('"echo:font-size"') &&
+      !reader.includes("changeFontSize(size)") &&
+      !reader.includes("article-font-options"),
+      "font size must have only one editing home: reading settings");
     assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
     assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);
