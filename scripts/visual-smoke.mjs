@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
-const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 600, 390, 320];
+const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", '.header-tools > button[aria-label="阅读设置"]'];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet"];
 const variants = [
@@ -113,16 +113,23 @@ try {
               sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
                 ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
               })),
-              sideHeadingRows: [...document.querySelectorAll(".content-grid .site-sidebar .side-head")].map((head) => ({
-                top: rect(head)?.top,
-                linkTop: rect(head.querySelector(".side-heading-link"))?.top,
-                arrowDisplay: getComputedStyle(head.querySelector(".side-more svg")).display,
-              })),
+              sideHeadingRows: [...document.querySelectorAll(".content-grid .site-sidebar .side-head")]
+                .filter((head) => head.getClientRects().length)
+                .map((head) => {
+                  const arrow = head.querySelector(".side-more svg");
+                  return {
+                    top: rect(head)?.top,
+                    linkTop: rect(head.querySelector(".side-heading-link"))?.top,
+                    isLink: !!head.querySelector("a.side-heading-link"),
+                    arrowDisplay: arrow ? getComputedStyle(arrow).display : null,
+                  };
+                }),
               homeDensity: document.querySelector(".home-list")?.className,
               homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
               homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
               resume: select(".home-resume"),
               densityControls: [...document.querySelectorAll(".view-toggle button")].map(rect),
+              resetLink: select(".feed-clear-filters"),
               homeHeadingBars: document.querySelectorAll(".home-feed-heading").length,
               archiveRows: document.querySelectorAll(".archive-row").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
@@ -147,7 +154,8 @@ try {
           }
           if (geometry.sideHeadingRows.length) {
             assert.ok(geometry.sideHeadingRows.every((row) =>
-              Math.abs(row.linkTop - row.top) <= 2 && row.arrowDisplay !== "none"),
+              Math.abs(row.linkTop - row.top) <= 2 &&
+              (row.isLink ? row.arrowDisplay !== "none" && row.arrowDisplay !== null : row.arrowDisplay === null)),
               `${label}: sidebar heading prefix wrapped or destination arrow hidden`);
           }
           if (geometry.column && geometry.sidebar) {
@@ -162,7 +170,10 @@ try {
               `${label}: save target escaped its metadata row`);
           }
           if (route === "/feed") {
-            if (width <= 700) {
+            if (width < 1120) assert.equal(geometry.sidebar, null, `${label}: redundant feed sidebar should be hidden`);
+            else assert.ok(geometry.sidebar, `${label}: desktop discovery rail disappeared`);
+            assert.equal(geometry.resetLink, null, `${label}: reset filter appears without active filters`);
+            if (width <= 767) {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
               assert.ok(geometry.feedControls && geometry.feedControls.height < 150,
@@ -221,6 +232,12 @@ try {
             await page.getByRole("button", { name: "图文 · 详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
             assert.equal(await page.locator(".feed-media-link").first().isVisible(), true, `${label}: cannot restore detailed view`);
+            if (width <= 767) {
+              const tag = await page.locator(".feed-layout .tag-list a").first().boundingBox();
+              assert.ok(tag && tag.height >= 40, `${label}: tag tap target too small`);
+              const more = await page.locator(".feed-layout .load-more").boundingBox();
+              assert.ok(more && more.height >= 44, `${label}: load-more target too small`);
+            }
             await page.locator(".sort-control select").selectOption("oldest");
             await page.waitForURL("**sort=oldest");
             assert.notEqual(await page.locator(".feed-item time").first().getAttribute("datetime"), newest, `${label}: sort not applied`);
@@ -240,6 +257,21 @@ try {
             await page.getByRole("button", { name: "图文 · 详细列表", exact: true }).click();
             await page.locator(".feed-list.density-full").waitFor();
             if ([320, 768, 1440].includes(width)) await page.screenshot({ path: `${out}/${label}-detailed.png`, animations: "disabled" });
+            if (variant.skin === "editorial" && variant.theme === "light") {
+              await page.goto(origin + "/feed/?sort=oldest", { waitUntil: "domcontentloaded" });
+              const tagLink = page.locator(".feed-layout .tag-list a").first();
+              await tagLink.waitFor();
+              const destination = await tagLink.getAttribute("href");
+              assert.ok(destination?.includes("sort=oldest") && destination.includes("tag="),
+                `${label}: tag navigation discards existing sort`);
+              await tagLink.click();
+              await page.waitForURL(/\/feed\?[^#]*tag=/);
+              assert.equal(new URL(page.url()).searchParams.get("sort"), "oldest",
+                `${label}: tag click lost sort filter`);
+              await page.locator(".feed-clear-filters").click();
+              await page.waitForURL(/\/feed$/);
+              assert.equal(new URL(page.url()).search, "", `${label}: reset did not clear all filters`);
+            }
           }
           if (route.startsWith("/post/") && [320, 768, 1024].includes(width)) {
             await page.setViewportSize({ width, height: 480 });

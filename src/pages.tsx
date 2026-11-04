@@ -206,6 +206,8 @@ export function Feed() {
     sort = params.get("sort") === "oldest" ? "oldest" : "newest";
   const type: TypeFilter =
     rawType === "all" || isContentType(rawType) ? rawType : "all";
+  const hasActiveFilters =
+    type !== "all" || topic !== "all" || !!query || !!tag || sort !== "newest";
   const [density, setDensity] = useDensity();
   const scoped = posts.filter(
     (p) =>
@@ -243,7 +245,7 @@ export function Feed() {
         <h1>{title}</h1>
         <p>{deck}</p>
       </header>
-      <div className="content-grid">
+      <div className="content-grid feed-layout">
         <section className="feed-column" aria-label={title}>
           <div className="feed-controls">
             <div className="feed-toolbar">
@@ -343,6 +345,11 @@ export function Feed() {
               )}
               <span className="meta-dot">·</span>
               {filtered.length} 条
+              {hasActiveFilters && (
+                <Link className="feed-clear-filters" href="/feed">
+                  清除筛选
+                </Link>
+              )}
             </span>
             <ViewToggle density={density} onChange={setDensity} />
           </div>
@@ -350,6 +357,7 @@ export function Feed() {
               items={filtered}
               resetKey={router.path}
               density={density}
+              tagHref={(selectedTag) => href({ tag: selectedTag })}
               empty={
                 <div className="empty-state">
                   <Search size={26} />
@@ -371,7 +379,7 @@ export function Feed() {
               }
             />
         </section>
-        <Sidebar current={type === "note" ? "/feed?type=note" : undefined} />
+        <Sidebar current={type === "note" ? "/feed?type=note" : undefined} mode="feed" />
       </div>
     </>
   );

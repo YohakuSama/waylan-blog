@@ -975,7 +975,8 @@ h3 {
   border-radius: var(--radius-sm);
   color: inherit;
 }
-.side-heading-link:hover { color: var(--brand); }
+.side-heading-link:not(.side-heading-static):hover { color: var(--brand); }
+.side-heading-static { cursor: default; }
 .side-heading-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .side-heading-icon { display: inline-flex; align-items: center; flex: 0 0 auto; }
 .side-heading-text { flex: 1; min-width: 0; }
@@ -1263,6 +1264,17 @@ h3 {
   overflow-wrap: anywhere;
 }
 .feed-result-line > a { min-height: 44px; white-space: nowrap; }
+.feed-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-left: 8px;
+  padding-inline: 4px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.feed-clear-filters:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .feed-result-line a {
   display: inline-flex;
   align-items: center;
@@ -1540,6 +1552,9 @@ h3 {
 /* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
 @media (max-width: 1119px) {
   .home-links > .home-topic-link { display: inline-flex; }
+  /* Feed already has type/topic filters and global navigation. Unlike the
+     home page, repeating the entire desktop rail after the list adds no route. */
+  .feed-layout .site-sidebar { display: none; }
 }
 @media (max-width: 1024px) {
   .content-grid {
@@ -1711,13 +1726,15 @@ h3 {
   .home-list .feed-excerpt { font-size: 14px; }
   .home-list .tag-list { margin-top: 10px; }
   .feed-item.is-article .feed-media { aspect-ratio: 2.25 / 1; }
-  /* All six type filters remain visible; the single-layer selected state
-     works across flex rows without an animated duplicate. */
-  .type-tabs {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: 100%; overflow: visible; margin-right: 0; padding-right: 0; gap: 8px;
+  /* One native type picker replaces the six tabs throughout phone widths. */
+  .feed-layout .tag-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 12px;
   }
-  .type-tabs .type-tab { width: 100%; padding-inline: 6px; }
+  .feed-layout .load-more { min-height: 44px; height: auto; }
+  .feed-layout .project-facts a { min-height: 40px; }
   .sort-control select {
     width: 100%;
   }
@@ -1768,26 +1785,6 @@ h3 {
     height: 100%;
     margin: 0;
     opacity: .16;
-  }
-  /* Five categories stay completely visible as balanced 3+2 rows on phones,
-     instead of four pills and one orphan or an unmarked horizontal scroller. */
-  .type-tabs {
-    display: grid;
-    width: 100%;
-    flex: 1 1 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .type-tabs .type-tab {
-    width: 100%;
-    min-width: 0;
-    justify-content: center;
-    padding: 0 6px;
-  }
-  .type-tab {
-    height: 32px;
-    padding: 0 10px 0 14px;
-    font-size: 14px;
   }
   .feed-body h2 {
     font-size: 19px;
@@ -1932,7 +1929,7 @@ h3 {
   pointer-events: none;
   color: var(--muted);
 }
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   .feed-controls .type-tabs { display: none; }
   .feed-controls .mobile-type-select { display: inline-flex; }
 }

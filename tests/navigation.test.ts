@@ -1017,6 +1017,52 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(trigger.getAttribute("aria-expanded"), "false");
     assert.equal(document.activeElement, section);
   });
+  it("adds a tag to the current content filters without losing type, topic or sort", async () => {
+    const post = posts.find((p) => p.type === "article" && p.tags.length)!;
+    assert.ok(post, "test data needs a tagged article");
+    await mount(`/feed?type=article&topic=${post.topic}&sort=oldest`);
+    const link = document.querySelector<HTMLAnchorElement>(
+      `#card-${post.id} .tag-list a`,
+    )!;
+    assert.ok(link, "scoped post must be reachable");
+    const expectedTag = post.tags[0];
+    const target = new URL(link.href);
+    assert.equal(target.pathname, "/feed");
+    assert.equal(target.searchParams.get("type"), "article");
+    assert.equal(target.searchParams.get("topic"), post.topic);
+    assert.equal(target.searchParams.get("sort"), "oldest");
+    assert.equal(target.searchParams.get("tag"), expectedTag);
+    await click(link);
+    await settle();
+    const selected = new URLSearchParams(location.search);
+    assert.equal(selected.get("tag"), expectedTag);
+    assert.equal(selected.get("type"), "article");
+    assert.equal(selected.get("topic"), post.topic);
+    assert.equal(selected.get("sort"), "oldest");
+    await click(document.querySelector(".feed-clear-filters"));
+    assert.equal(location.pathname, "/feed");
+    assert.equal(location.search, "");
+  });
+  it("shows no reset link by default and keeps feed sidebar section headings honest", async () => {
+    await mount("/feed");
+    assert.equal(document.querySelector(".feed-clear-filters"), null);
+    const headings = [...document.querySelectorAll(".feed-layout .side-head")];
+    assert.ok(headings.length >= 3);
+    for (const name of ["写作主题", "站内导航"]) {
+      const heading = headings.find((el) => el.textContent?.includes(name))!;
+      assert.ok(heading?.querySelector(".side-heading-static"), `${name} must not link to itself`);
+      assert.equal(heading.querySelector("a"), null);
+    }
+    assert.equal(document.querySelector('.feed-layout .side-heading-link[href="/feed"]'), null);
+    assert.equal(document.querySelector('.feed-layout .popular-block a[href="/archive"]'), null);
+    assert.ok(document.querySelector('.feed-layout .recent-list a[href^="/post/"]'));
+  });
+  it("leaves homepage article tags as independent whole-site tag links", async () => {
+    await mount("/");
+    const tag = document.querySelector<HTMLAnchorElement>(".home-list .tag-list a")!;
+    assert.ok(tag);
+    assert.match(tag.getAttribute("href") || "", /^\/feed\?tag=/);
+  });
   it("filters by tag across content types and keeps permalinks stable", async () => {
     const tag = posts.find((p) => p.type !== "article" && p.tags.length)!.tags[0];
     await mount("/feed?tag=" + encodeURIComponent(tag));
