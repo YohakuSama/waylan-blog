@@ -1,5 +1,7 @@
 try{var theme=JSON.parse(localStorage.getItem('echo:theme')||'null');document.documentElement.dataset.theme=theme==='light'||theme==='dark'?theme:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}catch{document.documentElement.dataset.theme='light';}
-try{var motion=JSON.parse(localStorage.getItem('echo:motion')||'null');motion=motion==='full'||motion==='reduced'||motion==='system'?motion:'system';document.documentElement.dataset.motionPreference=motion;document.documentElement.dataset.motion=motion==='reduced'||motion==='system'&&matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}catch{document.documentElement.dataset.motionPreference='system';document.documentElement.dataset.motion=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}
+// The system accessibility preference is the only motion setting now.
+// Old manual presets are intentionally ignored from the very first paint.
+try{document.documentElement.dataset.motionPreference='system';document.documentElement.dataset.motion=matchMedia('(prefers-reduced-motion: reduce)').matches?'reduced':'full';}catch{document.documentElement.dataset.motionPreference='system';document.documentElement.dataset.motion='full';}
 try{var skin=JSON.parse(localStorage.getItem('echo:skin')||'null');document.documentElement.dataset.skin=skin==='terminal'?'terminal':'editorial';}catch{document.documentElement.dataset.skin='editorial';}
 (function(){try{var d=document.documentElement.dataset,m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d.skin==='terminal'?(d.theme==='dark'?'#0b0d0c':'#eef0e8'):(d.theme==='dark'?'#16151a':'#f7f4ee');}catch(e){}})();
 // Mark the locally remembered reading slot before the first stylesheet paints.

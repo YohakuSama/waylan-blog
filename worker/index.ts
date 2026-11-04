@@ -16,7 +16,7 @@ import {
 import { readViews, recordView } from "./views";
 import { admin } from "./admin";
 import { ensurePostCatalog } from "./post-sync";
-import { inbox, updateInbox, testInbox, commentNotification, notificationsReady } from "./notifications";
+import { inbox, updateInbox, testInbox, commentNotification, notificationsAvailable } from "./notifications";
 async function webhook(request: Request, env: Env) {
   if (!env.DB || !env.GITHUB_WEBHOOK_SECRET)
     throw new HttpError(503, "WEBHOOK_DISABLED", "Webhook 尚未配置。");
@@ -139,7 +139,7 @@ const worker = {
       }
       let response: Response;
       if (url.pathname === "/api/status" && request.method === "GET")
-        response = json({ comments: readReady(env), login: authReady(env), notifications: notificationsReady(env) });
+        response = json({ comments: readReady(env), login: authReady(env), notifications: await notificationsAvailable(env) });
       else if (url.pathname === "/api/session" && request.method === "GET") {
         const session = await getSession(request, env);
         response = json({
@@ -283,7 +283,7 @@ const worker = {
       console.error(JSON.stringify({ event: "post_catalog_sync_failed", source: "scheduled" }));
     }
     const t = now();
-    if (env.NOTIFICATIONS_ENABLED === "true") {
+    if (await notificationsAvailable(env)) {
       // Keep a bounded, private inbox; notification metadata is not archived.
       await env.DB.prepare("DELETE FROM notifications WHERE created_at<?")
         .bind(t - 180 * 86400).run();
