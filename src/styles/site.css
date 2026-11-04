@@ -1677,24 +1677,10 @@ h3 {
   #site-nav {
     display: flex; grid-row: 2; grid-column: 1 / -1;
     position: relative; align-items: center; gap: 0;
-    width: 100%; min-width: 0; border-top: 0;
-    --nav-divider-inset: 12px;
+    width: 100%; min-width: 0; border: 0;
   }
-  /* Both rules belong to the nav row, rather than extending under the
-     rounded selected tab or all the way across the rounded mobile frame. */
-  #site-nav::before,
-  #site-nav::after {
-    content: "";
-    position: absolute;
-    pointer-events: none;
-    z-index: 1;
-    left: var(--nav-divider-inset);
-    right: var(--nav-divider-inset);
-    height: 1px;
-    background: var(--line);
-  }
-  #site-nav::before { top: 0; }
-  #site-nav::after { bottom: 0; }
+  /* The selected tab already supplies the mobile navigation hierarchy.
+     Decorative rules above and below it only make the rounded pill look boxed. */
   .nav-link {
     flex: 1; width: auto; min-width: 0;
     height: 35px; margin-block: 4px;

@@ -884,15 +884,14 @@ html {
   border-bottom: 1px dashed var(--line-strong);
 }
 @media (max-width: 860px) {
-  /* The mobile nav draws its own theme-aware inset divider pair. */
-  :root:not([data-skin="terminal"]) .site-header,
-  :root[data-skin="terminal"] .site-header { border-bottom-color: transparent; }
-  :root[data-skin="terminal"] #site-nav { --nav-divider-inset: 0px; }
-  :root[data-skin="terminal"] #site-nav::before,
-  :root[data-skin="terminal"] #site-nav::after {
-    height: 0;
-    background: none;
-    border-top: 1px dashed var(--line-strong);
+  /* Editorial: a quiet, borderless navigation row with the active rounded tab.
+     Keep the transparent border to preserve sticky header height and offsets. */
+  :root:not([data-skin="terminal"]) .site-header {
+    border-bottom-color: transparent;
+  }
+  /* Terminal: one straight rule at the bottom, never a pair around the tabs. */
+  :root[data-skin="terminal"] .site-header {
+    border-bottom: 1px dashed var(--line-strong);
   }
   :root[data-skin="terminal"] #site-nav .nav-link {
     height: 43px;

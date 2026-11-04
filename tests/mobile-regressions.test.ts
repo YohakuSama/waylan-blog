@@ -62,11 +62,14 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!style.includes(".panel-comment-entry {\n    position: sticky;"),
       "the action cannot remain inside the scrollable body");
   });
-  it("keeps rounded nav dividers inside the mobile frame and terminal dividers square", () => {
-    assert.ok(site.includes("--nav-divider-inset: 12px;"));
-    assert.ok(site.includes("#site-nav::before,"));
-    assert.ok(site.includes("#site-nav::after { bottom: 0; }"));
-    assert.ok(skins.includes('--nav-divider-inset: 0px;'));
+  it("removes both editorial mobile rails while terminal keeps one square separator", () => {
+    assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
+    assert.doesNotMatch(skins, /#site-nav::(?:before|after)/);
+    assert.doesNotMatch(site, /--nav-divider-inset/);
+    assert.ok(skins.includes('border-bottom-color: transparent;'),
+      "editorial mobile header must not frame the rounded tab with rules");
+    assert.ok(skins.includes('border-bottom: 1px dashed var(--line-strong);'),
+      "terminal header retains a single bottom line");
     assert.ok(skins.includes('border-radius: 0;'));
     assert.ok(site.includes("height: 35px; margin-block: 4px;"));
   });
