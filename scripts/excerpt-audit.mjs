@@ -131,6 +131,10 @@ async function run(engine,browser,width){
       },!canReselect||unintendedDialog>0);
       if(unintendedDialog)await page.locator("dialog.thread-dialog[open] button[aria-label='关闭']").first().click();
       if(canReselect)await page.getByRole("button",{name:"关闭摘录工具栏"}).click();
+      // Reveal the shared toolbar by returning to the top; it is intentionally
+      // hidden during uninterrupted reading after a downward scroll.
+      await page.evaluate(()=>window.scrollTo(0,0));
+      await page.waitForFunction(()=>!document.querySelector(".reader-topbar.reader-topbar-hidden"));
       // Excerpt now shares the ordinary reader controls and must not create
       // a second sticky strip or a floating overlay.
       await page.getByRole("button",{name:"退出摘录模式"}).click();
@@ -144,11 +148,13 @@ async function run(engine,browser,width){
           extraStrip:!!document.querySelector(".excerpt-access"),
           active:toggle?.getAttribute("aria-pressed"),
           toggleTop:rect?.top,headerBottom:head?.bottom,
+          siteHidden:site?getComputedStyle(site).display==="none":false,
           style:bar?getComputedStyle(bar).position:null
         };
       });
       record(browser,width,"excerpt lives in the shared reader tool row",controls,
-        !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||controls.style!=="sticky");
+        !controls.inReaderControls||controls.extraStrip||controls.active!=="false"||
+          controls.style!=="sticky"||!controls.siteHidden);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
   }finally{await b.close()}
