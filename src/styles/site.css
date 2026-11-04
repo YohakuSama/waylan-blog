@@ -1541,7 +1541,6 @@ h3 {
   }
 }
 @media (max-width: 1100px) {
-  .brand-rule { display: none; }
   /* Keep the identity readable beside the logo instead of moving its
      description to a second header line when space tightens. */
   .brand-tagline {
@@ -1650,6 +1649,14 @@ h3 {
     gap: 7px;
   }
   .brand-wordmark { flex: 0 0 auto; }
+  .brand-rule {
+    display: block;
+    flex: 0 0 1px;
+    width: 1px;
+    height: 18px;
+    margin: 0 2px;
+  }
+  .brand { gap: 5px; }
   .brand .brand-tagline {
     display: block;
     flex: 0 1 auto;
@@ -1669,10 +1676,30 @@ h3 {
   }
   #site-nav {
     display: flex; grid-row: 2; grid-column: 1 / -1;
-    position: static; align-items: center; gap: 0;
-    width: 100%; min-width: 0; border-top: 1px solid var(--line);
+    position: relative; align-items: center; gap: 0;
+    width: 100%; min-width: 0; border-top: 0;
+    --nav-divider-inset: 12px;
   }
-  .nav-link { flex: 1; width: auto; min-width: 0; height: 43px; font-size: 13px; }
+  /* Both rules belong to the nav row, rather than extending under the
+     rounded selected tab or all the way across the rounded mobile frame. */
+  #site-nav::before,
+  #site-nav::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 1;
+    left: var(--nav-divider-inset);
+    right: var(--nav-divider-inset);
+    height: 1px;
+    background: var(--line);
+  }
+  #site-nav::before { top: 0; }
+  #site-nav::after { bottom: 0; }
+  .nav-link {
+    flex: 1; width: auto; min-width: 0;
+    height: 35px; margin-block: 4px;
+    font-size: 13px; border-radius: 10px;
+  }
   .nav-description { display: none; }
   .nav-indicator { bottom: 3px; }
   .notification-popover {

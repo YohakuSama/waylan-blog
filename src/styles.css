@@ -937,54 +937,38 @@ textarea::placeholder {
   width: 15px;
   height: 15px;
 }
-.excerpt-access,
-.excerpt-fab,
-.excerpt-mode-hint { display: none; }
+.reader-controls .excerpt-toggle { display: none; }
 @media (max-width: 1024px), (pointer: coarse) {
-  .excerpt-access {
+  /* The reader's existing action row stays below the site navigation.
+     It replaces the former single-button sticky strip. */
+  .reader-topbar {
     position: sticky;
     top: var(--header-height);
-    z-index: 70;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    min-height: 54px;
-    padding: 6px 0;
-    margin-bottom: var(--space-3);
+    z-index: 75;
     background: var(--paper);
     border-bottom: 1px solid var(--line);
+    padding-inline: 8px;
+    margin-inline: -8px;
   }
-  .excerpt-access.excerpt-access-hidden { display: none; }
-  .excerpt-access-selected {
+  .reader-controls .excerpt-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    color: var(--brand);
-    font-size: 12px;
-  }
-  .excerpt-fab {
-    position: static;
-    z-index: auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    min-width: 82px;
-    min-height: 42px;
-    padding: 9px 13px;
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius-full);
-    background: var(--surface);
-    color: var(--ink);
-    box-shadow: none;
-    font-size: 12px;
+    gap: 5px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 8px;
+    color: var(--muted);
     touch-action: manipulation;
   }
-  .excerpt-fab:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 3px;
+  .reader-controls .excerpt-toggle[aria-pressed="true"] {
+    color: var(--brand);
+    background: var(--brand-soft);
   }
+  .reader-controls .excerpt-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+  }
+  .excerpt-toggle-text { font-size: 12px; }
   .reader-prose.excerpt-mode .article-block[data-type]:not([data-type="code"]) {
     cursor: pointer;
     outline: 1px dashed transparent;
@@ -1717,12 +1701,18 @@ textarea::placeholder {
     font-size: 11px;
   }
   .reader-controls {
-    gap: var(--space-1);
+    gap: 0;
   }
   .reader-controls .icon-button {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 40px;
+    min-height: 40px;
   }
+  .reader-controls .excerpt-toggle {
+    min-width: 40px;
+    min-height: 44px;
+  }
+  .excerpt-toggle-text { display: none; }
+
   .reader-layout {
     display: block;
   }
@@ -2002,6 +1992,18 @@ textarea::placeholder {
   .font-button {
     min-height: 44px;
   }
+}
+@media (max-width: 370px) {
+  .reader-topbar { gap: 0; }
+  .reader-topbar > .text-button { gap: 4px; white-space: nowrap; }
+  .reader-topbar .reader-controls .icon-button,
+  .reader-topbar .reader-controls .font-button,
+  .reader-topbar .reader-controls .excerpt-toggle {
+    min-width: 40px;
+    min-height: 44px;
+  }
+  .reader-topbar .font-button { padding-inline: 8px; }
+  .reader-topbar .font-button span { display: none; }
 }
 
 /* Stable editorial slots, including network and empty states. */

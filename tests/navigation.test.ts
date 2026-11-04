@@ -414,12 +414,13 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("uses tap-to-excerpt mode without triggering iOS native text selection", async () => {
     await mount("/post/a-room-on-the-internet");
     const toggle = document.querySelector<HTMLButtonElement>(
-      '.excerpt-fab[aria-label="开启摘录段落模式"]',
+      '.excerpt-toggle[aria-label="开启摘录段落模式"]',
     )!;
     assert.ok(toggle);
     await click(toggle);
-    assert.equal(document.querySelector(".excerpt-fab"), null, "floating trigger hides while excerpting");
-    assert.ok(document.querySelector(".excerpt-mode-hint"));
+    assert.equal(document.querySelector(".excerpt-toggle")?.getAttribute("aria-pressed"), "true",
+      "the excerpt toggle must stay visible and indicate its active mode");
+    assert.match(document.querySelector(".reader-topbar [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
     assert.equal(window.getSelection()?.toString(), "");
     const paragraph = document.querySelector<HTMLElement>(
       '.reader-prose .article-block[data-type="paragraph"]',
@@ -431,12 +432,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"));
     assert.ok(document.querySelector(".selection-toolbar-context"));
     assert.ok(document.querySelector(".selection-toolbar-actions"));
-    assert.equal(document.querySelector(".excerpt-mode-hint"), null);
+    assert.ok(document.querySelector(".reader-topbar .excerpt-toggle[aria-pressed=\"true\"]"));
     await click(document.querySelector<HTMLButtonElement>(
       '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
     ));
     assert.equal(document.querySelector(".selection-toolbar"), null);
-    assert.ok(document.querySelector(".excerpt-mode-hint"));
+    assert.match(document.querySelector(".reader-topbar [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
     await click(paragraph);
     const mark = [...document.querySelectorAll(".selection-toolbar-actions button")]
       .find((b) => b.textContent === "划线")!;
@@ -445,7 +446,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("keeps a visible excerpt selected on scroll and allows retapping an already marked passage", async () => {
     await mount("/post/a-room-on-the-internet");
-    await click(document.querySelector<HTMLButtonElement>(".excerpt-fab"));
+    await click(document.querySelector<HTMLButtonElement>(".excerpt-toggle"));
     const paragraph = document.querySelector<HTMLElement>(
       '.reader-prose .article-block[data-type="paragraph"]',
     )!;
@@ -632,7 +633,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("does not reselect the tapped paragraph while dismissing an excerpt-mode toolbar", async () => {
     await mount("/post/a-room-on-the-internet");
-    await click(document.querySelector(".excerpt-fab"));
+    await click(document.querySelector(".excerpt-toggle"));
     const paragraph = document.querySelector(".reader-prose .article-block[data-type='paragraph']")!;
     await click(paragraph);
     assert.ok(document.querySelector(".selection-toolbar"));
