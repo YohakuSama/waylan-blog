@@ -162,7 +162,14 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('.brand { gap: 5px; }'));
   });
   it("keeps the identity beside the logo across mobile and tablet sizes", () => {
-    assert.match(app, /<small className="brand-tagline">\{site.tagline\}<\/small>/);
+    assert.ok(app.includes('className="brand-motto-quote">Less, but better.</span>'));
+    assert.ok(app.includes('className="brand-motto-credit">— Dieter Rams</span>'));
+    assert.ok(app.includes('className="footer-blog-script" aria-hidden="true">Blog</span>'));
+    assert.ok(site.includes('@font-face {') &&
+      site.includes('great-vibes-latin-400-normal.woff2') &&
+      site.includes('.footer-blog-script {'), "both brand positions must share local script font");
+    assert.match(skins, /:root\[data-skin="terminal"\] \.footer-brand \.wordmark \{\s*display: block;/,
+      "terminal variant must keep the signature footer");
     assert.doesNotMatch(app, /mobile-brand-tagline/);
     assert.doesNotMatch(site, /mobile-brand-tagline/);
     assert.ok(site.includes(".brand .brand-tagline {"), "phone and tablet must reuse the same subtitle");

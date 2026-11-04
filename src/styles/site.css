@@ -19,6 +19,15 @@ h2,
 h3 {
   letter-spacing: 0;
 }
+/* The logo outline and the short motto share Great Vibes (OFL).
+   Served locally to avoid extra third-party requests. */
+@font-face {
+  font-family: "Waylan Great Vibes";
+  src: url("../assets/fonts/great-vibes-latin-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
 /* ---------- Header ---------- */
 .site-header {
   position: sticky;
@@ -61,12 +70,29 @@ h3 {
   background: var(--line-strong);
   margin: 0 6px;
 }
-.brand-tagline {
-  font-size: 12px;
-  color: var(--muted);
+.brand .brand-tagline {
+  display: inline-flex;
+  align-items: baseline;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 230px;
+  gap: 8px;
+  color: var(--ink-soft);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+.brand-motto-quote {
+  font: 400 21px/1.2 "Waylan Great Vibes", cursive;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.brand-motto-credit {
+  font: 400 10px/1.3 var(--font-sans);
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 #site-nav {
   display: flex;
@@ -1477,9 +1503,18 @@ h3 {
   font-weight: 600;
   color: var(--ink);
 }
-.footer-brand svg {
-  width: 18px;
-  height: 18px;
+.site-footer .footer-brand .wordmark {
+  width: auto;
+  height: 36px;
+}
+.footer-blog-script {
+  display: inline-block;
+  margin-left: -3px;
+  color: var(--ink);
+  font: 400 35px/1 "Waylan Great Vibes", cursive;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transform: translateY(2px);
 }
 .footer-copy {
   flex: 1;
@@ -1522,6 +1557,10 @@ h3 {
   left: 50%;
 }
 /* ---------- Responsive ---------- */
+@media (max-width: 1279px) {
+  /* Avoid pushing navigation or header tools out of narrower desktop bars. */
+  .brand-motto-credit { display: none; }
+}
 @media (max-width: 1280px) {
   :root {
     --sidebar-width: 280px;
@@ -1536,19 +1575,15 @@ h3 {
   .header-search {
     width: 180px;
   }
-  .brand-tagline {
-    max-width: 150px;
-  }
+  .brand .brand-tagline { max-width: 150px; }
 }
 @media (max-width: 1100px) {
   /* Keep the identity readable beside the logo instead of moving its
      description to a second header line when space tightens. */
-  .brand-tagline {
+  .brand .brand-tagline {
     max-width: min(124px, 10vw);
-    white-space: normal;
-    line-height: 1.35;
-    font-size: 10px;
   }
+  .brand-motto-quote { font-size: 18px; }
   .header-search {
     width: auto;
   }
@@ -1676,16 +1711,14 @@ h3 {
   }
   .brand { gap: 5px; }
   .brand .brand-tagline {
-    display: block;
+    display: inline-flex;
     flex: 0 1 auto;
     min-width: 0;
     max-width: 155px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    text-wrap: balance;
-    line-height: 1.35;
-    font-size: clamp(10px, 1.6vw, 12px);
+    white-space: nowrap;
+    overflow: hidden;
   }
+  .brand-motto-quote { font-size: clamp(17px, 2.2vw, 21px); }
   .header-tools {
     grid-row: 1; grid-column: 2;
     border-left: 0;
@@ -1844,6 +1877,14 @@ h3 {
   /* Keep the full wordmark curves visible without increasing the header slot. */
   .brand { overflow: visible; }
   .brand-wordmark { max-width: 100%; overflow: visible; }
+  .site-header:not(.site-header-reader) .brand-wordmark { height: 32px; }
+  .site-header:not(.site-header-reader) .brand .brand-tagline {
+    max-width: 96px;
+  }
+  .site-header:not(.site-header-reader) .brand-motto-quote {
+    font-size: clamp(13px, 3.5vw, 16px);
+  }
+  .site-header:not(.site-header-reader) .brand-rule { display: none; }
   .header-tools {
     gap: 0;
   }
@@ -2112,11 +2153,8 @@ h3 {
     flex-shrink: 0;
   }
   .site-header-reader .brand-rule { height: 15px; }
-  .site-header-reader .brand-tagline {
-    max-width: 135px;
-    font-size: 10px;
-    line-height: 1.25;
-  }
+  .site-header-reader .brand .brand-tagline { max-width: 145px; }
+  .site-header-reader .brand-motto-quote { font-size: 17px; }
   .site-header-reader .header-tools {
     grid-row: 1;
     grid-column: 2;
@@ -2132,17 +2170,54 @@ h3 {
     min-width: 44px;
   }
 }
+/* On smaller landscape phones, article chrome may compact optional brand
+   children. Keep the short quote in the available 56px masthead slot while
+   preserving the full 44px shortcut targets. */
+@media (min-width: 371px) and (max-width: 700px) {
+  .site-header-reader .brand .brand-tagline {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 108px;
+    visibility: visible;
+  }
+  .site-header-reader .brand-rule { display: none; }
+}
 @media (max-width: 420px) {
-  /* Retain the full signature even on the narrowest iPhone. */
-  .site-header-reader .brand-rule,
-  .site-header-reader .brand-tagline { display: none; }
+  /* Short original-source motto stays beside the compact reader wordmark. */
+  .site-header-reader .brand-rule { display: none; }
+  .site-header-reader .brand .brand-tagline {
+    display: inline-flex;
+    max-width: 138px;
+    overflow: hidden;
+  }
+  .site-header-reader .brand-motto-quote { font-size: 16px; }
 }
 @media (max-width: 370px) {
   .site-header-reader .header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: 55px;
   }
-  .site-header-reader .brand { grid-row: 1; grid-column: 1; }
+  /* With four 44px shortcuts on a 320px screen, the quote cannot fit
+     horizontally beside the logo. Stack the two brand lines in the same
+     compact masthead slot instead of cropping the quote or tools. */
+  .site-header-reader .brand {
+    grid-row: 1;
+    grid-column: 1;
+    display: flex;
+    height: 55px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+  }
+  .site-header-reader .brand-wordmark { height: 24px; margin: 0; }
+  .site-header-reader .brand .brand-tagline {
+    display: inline-flex;
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  .site-header-reader .brand-motto-quote { font-size: 14px; }
   .site-header-reader .header-tools { grid-row: 1; grid-column: 2; }
 }
 

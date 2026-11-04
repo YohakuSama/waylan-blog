@@ -54,12 +54,14 @@ async function run(engine, label, width, height, touch) {
       await page.locator(".reader-prose .article-block[data-type='paragraph']").first().waitFor();
       // SSR markup exists before React hydrates. Prove the reader's handlers
       // are live before generating a programmatic Selection and selectionchange.
-      const font = page.getByRole("group", { name: "本文操作" }).getByRole("button", { name: /正文字号/ });
-      const initialFont = await font.getAttribute("aria-label");
-      await font.click();
-      await page.waitForFunction((before) =>
-        document.querySelector(".article-actions button[aria-label^=\"正文字号\"]")?.getAttribute("aria-label") !== before,
-        initialFont, { timeout: 15000 });
+      const shareArticle = page.getByRole("group", { name: "本文操作" })
+        .getByRole("button", { name: "分享文章" });
+      await shareArticle.click();
+      // Fine-pointer desktop uses a clipboard fallback, while touch browsers
+      // use navigator.share. Either outcome confirms React hydration.
+      await page.waitForFunction(() => window.__shareCount + window.__copyCount > 0,
+        null, { timeout: 15000 });
+      await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
 
       const selectLongText = async () => {
         const length = await page.evaluate(() => {
