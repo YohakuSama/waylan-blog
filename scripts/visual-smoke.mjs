@@ -92,14 +92,21 @@ try {
               theme: document.documentElement.dataset.theme,
               brand: select(".brand"),
               brandWordmark: select(".brand .brand-wordmark") || select(".brand .brand-term"),
-              brandTagline: select(".brand .brand-tagline"),
-              mottoQuote: select(".brand-motto-quote"),
-              mottoText: document.querySelector(".brand-motto-quote")?.textContent?.trim(),
-              mottoFont: getComputedStyle(document.querySelector(".brand-motto-quote")).fontFamily,
-              footerBlog: select(".footer-blog-script"),
-              footerBlogText: document.querySelector(".footer-blog-script")?.textContent?.trim(),
-              footerBlogFont: getComputedStyle(document.querySelector(".footer-blog-script")).fontFamily,
+              headerHasTagline: !!document.querySelector(".brand .brand-tagline, .brand-motto-quote"),
+              editorialLogo: select(".brand .brand-wordmark"),
+              terminalLogo: select(".brand .brand-term"),
+              searchLabel: select(".header-search-text"),
+              footerScript: select(".footer-blog-script"),
+              footerScriptText: document.querySelector(".footer-blog-script")?.textContent?.trim(),
+              footerScriptFont: getComputedStyle(document.querySelector(".footer-blog-script")).fontFamily,
               footerWordmark: select(".footer-brand .wordmark"),
+              footerTerminal: select(".footer-terminal-wordmark"),
+              footerTerminalText: document.querySelector(".footer-terminal-wordmark")?.textContent?.trim(),
+              footerTerminalFont: getComputedStyle(document.querySelector(".footer-terminal-wordmark")).fontFamily,
+              aboutQuote: select(".about-motto blockquote"),
+              aboutQuoteText: document.querySelector(".about-motto blockquote")?.textContent?.trim(),
+              aboutQuoteStyle: document.querySelector(".about-motto blockquote") &&
+                getComputedStyle(document.querySelector(".about-motto blockquote")).fontStyle,
               mobileTagline: select(".mobile-brand-tagline"),
               nav: select("#site-nav"),
               mobileNavChrome: (() => {
@@ -213,17 +220,43 @@ try {
           assert.match(geometry.footerCountText || "", /\d+ 条内容/,
             `${label}: mixed content mislabeled as articles`);
           assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: horizontal overflow`);
-          assert.equal(geometry.mottoText, "Less, but better.", `${label}: attributed motto missing`);
-          assert.ok(geometry.mottoQuote?.width >= 24 && geometry.mottoQuote.height >= 10,
-            `${label}: motto clipped away from header`);
-          assert.ok(geometry.mottoFont.includes("Waylan Great Vibes"), `${label}: motto lost script typeface`);
-          assert.equal(geometry.footerBlogText, "Blog", `${label}: footer signature missing`);
-          assert.ok(geometry.footerWordmark?.width > 40 && geometry.footerWordmark.height >= 25 &&
-            geometry.footerBlog?.width >= 20 && geometry.footerBlog.height >= 20,
-            `${label}: Waylan Blog signature hidden or split`);
-          assert.ok(geometry.footerBlogFont.includes("Waylan Great Vibes"), `${label}: footer script typeface changed`);
-          assert.ok(await page.evaluate(() => document.fonts.check('20px "Waylan Great Vibes"')),
-            `${label}: local handwriting font did not load`);
+          assert.equal(geometry.headerHasTagline, false,
+            `${label}: no second slogan may clutter the logo`);
+          if (variant.skin === "editorial") {
+            assert.ok(geometry.editorialLogo && geometry.terminalLogo === null,
+              `${label}: editorial must show only the handwritten Waylan logo`);
+            assert.equal(geometry.footerScriptText, "Blog");
+            assert.ok(geometry.footerWordmark?.width > 40 && geometry.footerWordmark.height >= 25 &&
+              geometry.footerScript?.width >= 20 && geometry.footerScript.height >= 20 &&
+              geometry.footerTerminal === null,
+              `${label}: editorial must show the Waylan Blog script signature only`);
+            assert.ok(geometry.footerScriptFont.includes("Waylan Great Vibes"),
+              `${label}: editorial footer lost its handwriting`);
+            assert.ok(await page.evaluate(() => document.fonts.check('20px "Waylan Great Vibes"')),
+              `${label}: local handwritten font failed to load`);
+          } else {
+            assert.ok(geometry.terminalLogo && geometry.editorialLogo === null,
+              `${label}: terminal header must show only the monospace name`);
+            assert.ok(geometry.footerTerminal?.width > 70 &&
+              geometry.footerTerminal.height >= 20 &&
+              geometry.footerScript === null && geometry.footerWordmark === null,
+              `${label}: terminal footer must be monospace, not handwritten`);
+            assert.equal(geometry.footerTerminalText.replace(/\\s+/g, " "), "> waylan.blog_",
+              `${label}: terminal footer must have its native prompt signature`);
+            assert.ok(!geometry.footerTerminalFont.includes("Waylan Great Vibes"),
+              `${label}: terminal must not inherit editorial script`);
+          }
+          if (route === "/about") {
+            assert.equal(geometry.aboutQuoteText, "Less, but better.",
+              `${label}: the attributed motto belongs in About`);
+            assert.ok(geometry.aboutQuote?.height >= 20,
+              `${label}: the standalone About quote is missing`);
+            assert.equal(geometry.aboutQuoteStyle, variant.skin === "editorial" ? "italic" : "normal",
+              `${label}: the quote must use its own theme's typography`);
+          } else {
+            assert.equal(geometry.aboutQuote, null,
+              `${label}: the motto must not turn into repeated site chrome`);
+          }
           assert.deepEqual(geometry.navigation, ["首页", "内容", "归档", "项目", "关于"], `${label}: destination names changed`);
           if (isImmersive) {
             assert.ok(geometry.header && Math.abs(geometry.header.height-56)<=2,
@@ -253,12 +286,13 @@ try {
             } else {
               assert.ok(geometry.brand.bottom <= geometry.tools.top + 2, `${label}: narrow-phone action row overlaps branding`);
             }
-            assert.ok(geometry.brandTagline && geometry.brandWordmark, `${label}: missing wordmark or subtitle`);
-            assert.equal(geometry.mobileTagline, null, `${label}: subtitle must not float to a detached mobile row`);
-            assert.ok(geometry.brandTagline.left >= geometry.brandWordmark.right - 3 &&
-              geometry.brandTagline.top < geometry.brandWordmark.bottom &&
-              geometry.brandTagline.bottom > geometry.brandWordmark.top,
-              `${label}: site identity must stay beside the wordmark`);
+            assert.ok(geometry.brandWordmark && geometry.brandWordmark.height >= 20,
+              `${label}: the standalone brand must remain legible`);
+            assert.equal(geometry.mobileTagline, null, `${label}: no detached mobile subtitle`);
+            if ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279) || width <= 370) {
+              assert.ok(geometry.searchLabel?.width >= 18,
+                `${label}: expand genuine search into available header space`);
+            }
             assert.ok(Math.abs(geometry.header.bottom - geometry.body.top) <= 1,
               `${label}: an unwanted gap appeared below the header`);
             assert.ok(geometry.nav, `${label}: primary destinations are hidden`);
