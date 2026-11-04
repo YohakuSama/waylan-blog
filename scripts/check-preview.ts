@@ -186,7 +186,16 @@ try {
       .includes(site.name.toLowerCase()),
   );
   await click(dom, doc.querySelector(".hero-browse"));
-  await until(() => dom.window.location.hash === "#/feed" && doc.querySelector(".page-heading"), "homepage to feed");
+  // The homepage has its own .page-heading and six cards. A hash change can
+  // precede React committing the new feed route, so wait for the *feed* DOM
+  // and its expected first batch instead of asserting against stale home cards.
+  await until(
+    () =>
+      dom.window.location.hash === "#/feed" &&
+      doc.querySelector(".feed-layout") &&
+      doc.querySelectorAll(".post-card").length === Math.min(8, posts.length),
+    "homepage to feed",
+  );
   assert.equal(doc.querySelectorAll(".post-card").length, Math.min(8, posts.length));
   await click(
     dom,
