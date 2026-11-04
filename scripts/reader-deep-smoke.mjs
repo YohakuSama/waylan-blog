@@ -163,7 +163,11 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"quiet inline actions and responsive font settings",actionsLayout});
       if(width<=1040) await page.locator(".article-action-toc").click();
       await page.locator('.reader-toc nav a[href="#h-hydration"]').click();
-      await page.waitForTimeout(120);
+      // The scroll target is synchronous, but the active section is updated by
+      // the scroll observer on a subsequent animation frame.
+      await page.waitForFunction(() =>
+        document.querySelector('.reader-toc nav a.active')?.getAttribute("href")==="#h-hydration",
+        null, {timeout:5000});
       const tocPosition=await page.evaluate(()=>{
         const hydration=document.getElementById("h-hydration");
         const stable=document.getElementById("h-ids");
