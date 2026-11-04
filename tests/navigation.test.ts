@@ -571,6 +571,134 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".selection-toolbar"),
       "Safari may collapse the native selection while the action tray is being tapped");
   });
+  it("preserves a touch selection as a visual highlight without the native edit overlay", async () => {
+    const custom = new Map<string, { range: Range }>();
+    Object.defineProperty(dom.window, "CSS", {
+      configurable: true, value: { highlights: custom },
+    });
+    Object.defineProperty(dom.window, "Highlight", {
+      configurable: true,
+      value: class {
+        range: Range;
+        constructor(range: Range) { this.range = range; }
+      },
+    });
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    const quote = range.toString();
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    assert.ok(document.querySelector(".selection-toolbar"), "quote actions must remain available");
+    assert.equal(window.getSelection()!.rangeCount, 0,
+      "WebKit edit handles must be released after retaining the quote");
+    assert.equal(custom.get("waylan-selected-quote")?.range.toString(), quote,
+      "the exact chosen text must remain visibly highlighted without modifying the DOM");
+    await click(document.querySelector(".selection-toolbar button[aria-label='关闭摘录工具栏']"));
+    assert.equal(custom.has("waylan-selected-quote"), false,
+      "closing the toolbar must not leave a ghost quote highlight");
+  });
+  it("copies on the first pointerdown even when Safari does not dispatch touchend or click", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    const copied: string[] = [];
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+      writeText: async (text: string) => { copied.push(text); },
+    } });
+    const button = [...document.querySelectorAll(".selection-toolbar-actions button")]
+      .find((b) => b.textContent === "复制")!;
+    assert.ok(button);
+    const down = new dom.window.Event("pointerdown", { bubbles: true, cancelable: true });
+    Object.defineProperty(down, "pointerType", { value: "touch" });
+    await act(async () => {
+      button.dispatchEvent(down);
+      await pause(30);
+    });
+    assert.deepEqual(copied, [p.textContent!.slice(0, 12)]);
+    assert.equal(down.defaultPrevented, true,
+      "prevent the native edit overlay from reclaiming the touch");
+    assert.ok(document.querySelector(".selection-toolbar"),
+      "copy should not dismiss the selected quote");
+    await act(async () => {
+      button.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 1,
+      }));
+      await pause(20);
+    });
+    assert.equal(copied.length, 1, "compatibility click must not copy twice");
+    await act(async () => {
+      button.dispatchEvent(new dom.window.MouseEvent("click", {
+        bubbles: true, cancelable: true, detail: 0,
+      }));
+      await pause(20);
+    });
+    assert.equal(copied.length, 2, "keyboard click remains independently accessible");
+  });
+  it("executes first-press highlight and comment actions without waiting for click", async () => {
+    const firstPress = async (name: string) => {
+      const p = document.querySelector(".reader-prose p")!;
+      const range = document.createRange();
+      range.setStart(p.firstChild!, 0);
+      range.setEnd(p.firstChild!, 10);
+      window.getSelection()!.removeAllRanges();
+      window.getSelection()!.addRange(range);
+      document.dispatchEvent(new dom.window.Event("selectionchange"));
+      await settle(360);
+      const button = [...document.querySelectorAll(".selection-toolbar-actions button")]
+        .find((b) => b.textContent === name)!;
+      assert.ok(button, name + " must appear on first selection");
+      const down = new dom.window.Event("pointerdown", { bubbles: true, cancelable: true });
+      Object.defineProperty(down, "pointerType", { value: "touch" });
+      await act(async () => {
+        button.dispatchEvent(down);
+        await pause(30);
+      });
+    };
+    await mount("/post/a-room-on-the-internet");
+    await firstPress("划线");
+    assert.ok(document.querySelector("mark.private-mark"),
+      "mark must persist from the first pointerdown");
+    await firstPress("评论");
+    assert.ok(document.querySelector("dialog.composer-dialog[open]"),
+      "composer must open on the first pointerdown");
+  });
+  it("shares on touchstart when Safari never sends a pointerdown or click", async () => {
+    await mount("/post/a-room-on-the-internet");
+    const p = document.querySelector(".reader-prose p")!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, 0);
+    range.setEnd(p.firstChild!, 12);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+    document.dispatchEvent(new dom.window.Event("selectionchange"));
+    await settle(360);
+    const copies: string[] = [];
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+      writeText: async (text: string) => { copies.push(text); },
+    } });
+    const button = [...document.querySelectorAll(".selection-toolbar-actions button")]
+      .find((b) => b.textContent === "分享")!;
+    assert.ok(button);
+    const start = new dom.window.Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(start, "touches", { value: [{ identifier: 7 }] });
+    await act(async () => {
+      button.dispatchEvent(start);
+      await pause(30);
+    });
+    assert.equal(copies.length, 1, "share fallback must run on the first touchstart");
+    assert.ok(copies[0].includes("/post/a-room-on-the-internet"));
+  });
   it("dismisses the selected-text tray and native range on a deliberate blank tap", async () => {
     await mount("/post/a-room-on-the-internet");
     const p = document.querySelector(".reader-prose p")!;
