@@ -119,6 +119,29 @@ async function publicBrowsers() {
               assert.equal(await page.locator(".archive-row .archive-type").count(), 15,
                 name + ": archive labels missing after restoring scroll");
             }
+            if (width === 390 && motion === "reduced") {
+              stage = "projects reader round trip";
+              await page.locator('#site-nav a[href="/projects"]').click();
+              await page.waitForURL(/\/projects$/, { timeout: 15000 });
+              const links = page.locator(".projects-layout .post-card-link");
+              assert.equal(await links.count(), 2, name + ": lost real projects");
+              assert.equal(await page.locator(".projects-layout .site-sidebar").isVisible(), false,
+                name + ": duplicate narrow-screen project sidebar");
+              for (const slug of ["project-waylan", "project-margin-echo"]) {
+                const link = page.locator('.projects-layout .post-card-link[href="/post/' + slug + '"]');
+                await link.scrollIntoViewIfNeeded();
+                const before = await page.evaluate(() => window.scrollY);
+                await link.click();
+                await page.waitForURL(new RegExp("/post/" + slug + "$"), { timeout: 15000 });
+                await page.locator(".reader-topbar > .text-button").click();
+                await page.waitForURL(/\/projects$/, { timeout: 15000 });
+                await page.waitForFunction((y) =>
+                  Math.abs(window.scrollY - y) <= 24, before, { timeout: 10000 });
+              }
+              const label = page.locator(".projects-layout .tag-list a").first();
+              await label.click();
+              await page.waitForURL(/\/feed\?tag=/, { timeout: 15000 });
+            }
             assert.deepEqual(errors, [], name + "/" + width + "/" + motion + ": runtime errors");
             checked.push({ browser: name, width, motion, ok: true });
           } finally { await context.close(); }

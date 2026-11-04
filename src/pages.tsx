@@ -395,7 +395,7 @@ export function Projects() {
           自己做的项目与实验。每个项目注明状态和技术栈，仓库与演示地址仅在真实存在时列出。
         </p>
       </header>
-      <div className="content-grid">
+      <div className="content-grid projects-layout">
         <section className="feed-column" aria-label="项目列表">
           <div className="feed-result-line">
             <span>{items.length} 个项目</span>
@@ -415,7 +415,7 @@ export function Projects() {
             }
           />
         </section>
-        <Sidebar current="/projects" />
+        <Sidebar current="/projects" mode="projects" />
       </div>
     </>
   );

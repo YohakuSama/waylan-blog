@@ -245,7 +245,18 @@ export function SiteLinksBlock({ current, linkHeading = true }: { current?: stri
     </section>
   );
 }
-export function Sidebar({ current, mode }: { current?: string; mode?: "feed" }) {
+export function Sidebar({ current, mode }: { current?: string; mode?: "feed" | "projects" }) {
+  // Project listings are short: keep only contextual discovery on wide
+  // screens, rather than an author profile, heatmap, news and popular rail
+  // stretching well beyond the final project.
+  if (mode === "projects") {
+    return (
+      <aside className="site-sidebar projects-sidebar" aria-label="项目页辅助导航">
+        <TopicsBlock linkHeading={false} />
+        <SiteLinksBlock current={current} linkHeading={false} />
+      </aside>
+    );
+  }
   return (
     <aside className="site-sidebar" aria-label="侧栏">
       <section className="side-block profile-block">
