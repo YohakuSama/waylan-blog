@@ -184,7 +184,7 @@ export function Home() {
           <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
           <ul className="home-projects">
             {items.filter((p) => p.type === "project").slice(0, 3).map((p) => (
-                            <li key={p.id}>
+              <li key={p.id}>
                 <Link href={`/post/${p.slug}`}>
                   <span className="home-project-copy">
                     <strong>{p.title}</strong>
