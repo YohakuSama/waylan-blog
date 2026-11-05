@@ -549,9 +549,9 @@ export function About() {
             <div>
               <h2 className="side-title">隐私与数据</h2>
               <ul>
-                <li>无广告，无第三方统计与追踪脚本。</li>
-                <li>评论存储在 GitHub Discussions，公开可见。</li>
-                <li>私人划线只保存在你的浏览器中。</li>
+                <li>不投放广告；页面包含 Cloudflare 网站分析脚本。</li>
+                <li>GitHub 登录涉及账号与会话，目前旧版 OAuth 仍申请 public_repo 权限。</li>
+                <li>公开评论位于 GitHub Discussions；私人划线只存在本地。数据保留与请求方式见本页上方说明。</li>
               </ul>
             </div>
           </div>
