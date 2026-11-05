@@ -3016,3 +3016,39 @@ body,
   }
   .reading-article .article-deck { margin: 12px 0 18px; line-height: 1.65; }
 }
+
+/* Mobile article flow: reduce stacked spacing rather than shrinking body text. */
+@media (max-width: 700px) {
+  .reading-article .article-heading {
+    padding-top: 4px;
+    padding-bottom: 16px;
+  }
+  .reading-article .reader-back { margin-bottom: 10px; }
+  .reading-article .article-eyebrow { margin-bottom: 10px; }
+  .reading-article .article-heading h1 {
+    font-size: clamp(24px, 6.1vw, 27px);
+    line-height: 1.3;
+    letter-spacing: 0;
+    text-wrap: pretty;
+  }
+  .reading-article .article-deck {
+    margin: 10px 0 14px;
+    line-height: 1.62;
+  }
+  .reading-article .article-byline { gap: 6px; }
+  .reading-article .article-actions { padding-top: 4px; }
+  .reader-content { margin-top: 14px; }
+  .reader-content .article-cover { margin-bottom: 20px; }
+}
+@media (min-width: 701px) and (max-width: 1119px) {
+  .reading-article .article-heading { padding-bottom: 22px; }
+  .reading-article .reader-back { margin-bottom: 16px; }
+  .reading-article .article-eyebrow { margin-bottom: 12px; }
+  .reading-article .article-deck { margin: 12px 0 16px; }
+  .reader-content { margin-top: 20px; }
+}
+@media (min-width: 1120px) {
+  .reading-article .article-heading { padding-bottom: 26px; }
+  .reading-article .article-deck { margin: 14px 0 18px; }
+  .reader-content { margin-top: 24px; }
+}
