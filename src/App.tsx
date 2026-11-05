@@ -174,7 +174,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
       >
         跳到主要内容
       </a>
-      <header className={post ? "site-header site-header-reader" : "site-header"}>
+      <header key={post ? "reader-masthead" : "site-masthead"} className={post ? "site-header site-header-reader" : "site-header"}>
         <div className="header-inner">
           <Link href="/" className="brand">
             <Wordmark className="brand-wordmark" />
