@@ -1,7 +1,7 @@
 import type { Env } from "./types";
 import { authReady, HttpError, json, now, readReady } from "./types";
 import { callback, getSession, logout, startAuth } from "./auth";
-import { clientIP, limit, requireOrigin, verifyWebhook } from "./security";
+import { clientIP, limit, loopbackHttp, requireOrigin, verifyWebhook } from "./security";
 import {
   cursor,
   feedPreviews,
@@ -118,8 +118,12 @@ const worker = {
     _ctx?: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
-    // Redirect before any authentication, database access or Cookie creation.
-    if (url.protocol === "http:") {
+    // Only an explicitly configured loopback origin may use plain HTTP for
+    // local Wrangler development. Every public HTTP request redirects before
+    // authentication, database access, or Cookie creation.
+    const localDev = loopbackHttp(request) &&
+      !!env.SITE_ORIGIN && env.SITE_ORIGIN === url.origin;
+    if (url.protocol === "http:" && !localDev) {
       url.protocol = "https:";
       return Response.redirect(url.toString(), 308);
     }
