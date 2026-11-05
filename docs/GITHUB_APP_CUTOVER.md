@@ -2,7 +2,7 @@
 
 ## 现状
 
-本站已支持 `GITHUB_AUTH_PROVIDER=github-app`，但 `worker/types.ts` 在变量缺失时仍默认选择 `oauth-app`。旧 OAuth 模式的授权 URL 会携带 `scope=public_repo`；GitHub App 模式不会传递该 OAuth scope。**仓库的 GitHub App 支持不等于 Cloudflare 生产环境已经启用。**
+本站已支持 `GITHUB_AUTH_PROVIDER=github-app`，且生产 Wrangler 配置已明确选用该模式。`GITHUB_AUTH_PROVIDER` **缺失时现在拒绝登录**，不会再静默回退到请求 `scope=public_repo` 的旧 OAuth App。显式配置 `oauth-app` 时才允许兼容登录；GitHub App 模式不传递宽权限 OAuth scope。
 
 Cloudflare Workers Builds 用于读取私有源码的 GitHub App，与本站用于读者登录、给 `YohakuSama/waylan-comments` 添加 Discussions 评论的 GitHub App 是两个独立集成。不要将两者的权限或凭据混用。
 
@@ -14,7 +14,7 @@ Cloudflare Workers Builds 用于读取私有源码的 GitHub App，与本站用�
 - `authProvider: "github-app"` 表示 Worker 正在使用 GitHub App 凭据分支。
 - `authProvider: "oauth-app"` 表示 Worker 正在使用旧 OAuth App，仍可能请求 `public_repo`。
 - `authProvider: null` 表示没有满足当前认证模式的必需配置。
-- `authProviderExplicit: false` 表示未显式设置 `GITHUB_AUTH_PROVIDER`，正在使用兼容性回退；应排查生产变量，不能视为完成最小授权切换。
+- `authProviderExplicit: false` 表示未显式设置 `GITHUB_AUTH_PROVIDER`，登录将拒绝启动；应排查生产变量，不能视为完成最小授权切换。
 - 接口**不返回** Client ID、Client Secret、访问令牌或用户会话。
 
 只有返回上述新字段才能说明这个**新 Worker 版本**被部署。若没有字段，先核对 Cloudflare 部署版本。
