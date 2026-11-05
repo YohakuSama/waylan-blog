@@ -17,12 +17,12 @@ flowchart LR
     Front --> Shared
     Worker --> D1["Cloudflare D1"]
     Worker --> GitHub["GitHub Discussions / 内容仓库"]
-    Admin["src/admin/main.tsx → Dashboard → editors → admin/api.ts"] --> Worker
+    Admin["src/admin/main.tsx → Dashboard → ContentList/editors → admin/api.ts"] --> Worker
     Front --> Styles["src/styles/index.ts → base/site/skins/motion"]
 ```
 
 - **浏览器路由及页面装配**：`src/App.tsx`、`src/pages.tsx`、`src/pages/*`。`src/components/*` 实现 UI，`src/lib/*` 提供面向浏览器的路由、动效、公共 JSON API、选区和本地持久化能力。
-- **后台**：`src/admin/main.tsx` 仅管理主题同步、登录会话闸门与挂载；`src/admin/Dashboard.tsx` 负责后台页面切换、部署状态、内容列表与 Discussion 初始化；`PostEditor.tsx`、`SiteEditor.tsx` 分别拥有编辑状态与保存事务。共同通过 `src/admin/api.ts` 保留认证、CSRF、专有超时，不与缓存型公开浏览 API `src/lib/api.ts` 混用。
+- **后台**：`src/admin/main.tsx` 仅管理主题同步、登录会话闸门与挂载；`src/admin/Dashboard.tsx` 负责页面切换、部署状态和请求刷新；`src/admin/ContentList.tsx` 负责文章列表、删除与 Discussion 初始化；`PostEditor.tsx`、`SiteEditor.tsx` 分别拥有编辑状态与保存事务。共同通过 `src/admin/api.ts` 保留认证、CSRF、专有超时，不与缓存型公开浏览 API `src/lib/api.ts` 混用。
 - **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；跨端合同放 `shared/*`。
 - **数据生产线**：`content/*` 为文章/站点配置源；`scripts/content.ts` 构建 `src/generated/*` 与 `worker/generated/*`；不要直接手改生成产物、历史 D1 migrations 或已发布的 `post.id`。
 - **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css`、`src/styles/site.css`、`src/styles/skins.css`、`src/styles/motion.css` 是当前四类规则集合；运行时动画策略在 `src/lib/motion.ts`。
@@ -42,7 +42,7 @@ flowchart LR
 | 长按选区、私人划线、批注定位与分享 | `src/components/Reader.tsx`、`src/lib/selection.ts`、`shared/anchors.ts` | `tests/selection.test.ts`、`tests/anchors.test.ts`、`scripts/selection-composer-smoke.mjs` |
 | 评论加载、提交、重试及缓存 | `src/lib/api.ts`、`worker/comments.ts`、`worker/github.ts`、`worker/auth.ts` | `tests/worker.test.ts`、`tests/transport.test.ts`；必要时跑阅读器浏览器检查 |
 | 登录、CSRF、安全头和权限 | `worker/auth.ts`、`worker/security.ts`、`worker/index.ts`、`worker/types.ts` | `tests/worker.test.ts`、`tests/github-app-config.test.ts` |
-| 后台登录、管理看板、编辑内容、媒体上传与站点设置 | `src/admin/main.tsx`（会话）→ `Dashboard.tsx`（页面状态、列表）→ `PostEditor.tsx` / `SiteEditor.tsx`（表单事务）；通用能力在 `ui.tsx` / `helpers.ts` / `form.ts` / `api.ts`；服务端 `worker/admin.ts` | `tests/admin-modules.test.ts`、`tests/admin.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
+| 后台登录、管理看板、编辑内容、媒体上传与站点设置 | `src/admin/main.tsx`（会话）→ `Dashboard.tsx`（路由与刷新）→ `ContentList.tsx`（内容列表） / `PostEditor.tsx` / `SiteEditor.tsx`（表单事务）；通用能力在 `ui.tsx` / `helpers.ts` / `form.ts` / `api.ts`；服务端 `worker/admin.ts` | `tests/admin-modules.test.ts`、`tests/admin.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
 | 文章新增、永久链接、RSS 和预渲染 | `content/*`、`scripts/content.ts`、`scripts/prerender.tsx`、`shared/redirects.ts`、`worker/post-sync.ts` | `tests/post-sync.test.ts`、`tests/redirects.test.ts`、`scripts/check-build.ts` |
 | 深浅主题、editorial / terminal 和动效 | `src/styles/skins.css`、`src/styles/motion.css`、`src/lib/appearance.ts`、`src/lib/motion.ts` | `tests/skin-parity.test.ts`、`tests/motion.test.ts`、`scripts/quality-smoke.mjs` |
 | 通知状态、阅读清单与浏览量 | `src/components/NotificationBell.tsx` / `Shelf.tsx`、`src/lib/shelf.ts` / `views.ts`、`worker/notifications.ts` / `views.ts` | 相关单测、`scripts/quality-smoke.mjs` |
@@ -71,7 +71,8 @@ flowchart LR
 | 维护问题 | 唯一主要修改路径 | 依赖与风险 |
 | --- | --- | --- |
 | 登录、权限提示、主题同步、后台启动失败 | `src/admin/main.tsx` | 通过 `setAdminCsrf`、`adminApi` 访问会话，不在客户端增加权限规则 |
-| 站点概览、部署进度、列表刷新、文章搜索/删除、为文章建立 Discussion | `src/admin/Dashboard.tsx` | 负责页面切换及异步刷新序号，编辑器收到 `onSaved` / `onClose` 回调 |
+| 站点概览、部署进度与视图切换 | `src/admin/Dashboard.tsx` | 负责异步刷新序号与编辑器 `onSaved` / `onClose` 回调，不处理每条内容的删除状态 |
+| 内容列表搜索、单条内容删除、创建 Discussion | `src/admin/ContentList.tsx` | 列表与删除确认、Discussion 建立统一走 `admin/api.ts`，不复制看板刷新逻辑 |
 | 文章撰写/保存、发布日期、slug、上传图片、草稿 | `src/admin/PostEditor.tsx` | 使用 `form.ts` 的 `toForm/toData`、`helpers.ts` 的上传校验；不自行操作 GitHub Token |
 | 站点头像、标签、介绍、联系方式、关于页 | `src/admin/SiteEditor.tsx` | 一个站点表单和一次保存事务；保留原来的 `/api/admin/site` 路径 |
 | 后台字段、Markdown 预览、确认对话框 | `src/admin/ui.tsx` | 两种编辑器复用一套 UI/图片选择逻辑，CSS class、DOM 语义保持 |
@@ -79,7 +80,7 @@ flowchart LR
 | API JSON、CSRF、保存超时 | `src/admin/api.ts` | 与公开只读缓存客户端分离，禁止 UI 直接 `fetch` 绕过它 |
 | 管理数据类型和视图 DTO | `src/admin/types.ts` | 前端内部类型，不擅自变更 Worker 响应或 D1 Schema |
 
-**内部依赖方向：** `main → Dashboard → PostEditor/SiteEditor → ui/helpers/form → types`；所有 API 调用从各层统一走 `admin/api`。依赖应避免反向从 Editor 访问 Dashboard 内部状态；扩展新后台页面在 Dashboard 增加视图分发和明确的回调，不必修改认证入口。
+**内部依赖方向：** `main → Dashboard → ContentList/PostEditor/SiteEditor → ui/helpers/form → types`；所有 API 调用从各层统一走 `admin/api`。依赖应避免反向从 Editor 访问 Dashboard 内部状态；扩展新后台页面在 Dashboard 增加视图分发和明确的回调，不必修改认证入口。
 
 **不变量：** 发布文章 `post.id`、301 slug 规则、图片限制、同源 CSRF、GitHub 乐观并发 OID、Cloudflare 构建语义、草稿未保存警告和编辑器快捷键均保持旧逻辑。本次不变动 Worker、数据库、依赖、Admin CSS 或打包入口。
 
@@ -113,7 +114,7 @@ shared/                跨前后端的类型、定位、输入规则
 
 1. **P0｜建立地图和变更记录（已完成）**：为模块建立归属、影响半径、异常定位和维护报告，无业务改动。
 2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
-3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 保留后台入口/认证闸门，`Dashboard.tsx` 负责管理视图，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
+3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 保留后台入口/认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表及 Discussion，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
 4. **P3｜CSS 归属与级联清理**：四份主要 CSS 文件共约 216 KB；先建立样式选择器→所属组件表，减少重复覆盖，再逐组移入明确位置。不能批量搬移改变 `src/styles/index.ts` 的加载顺序、层叠优先级、媒体查询和两个 skin 的尺寸一致性；所有布局修改必须实际验证手机、平板、桌面、明暗主题。
 5. **P4｜Worker 读写职责分离**：`worker/comments.ts` 和 `worker/admin.ts` 的鉴权、校验、GitHub 传输、缓存、幂等写入边界明确后，再按单一职能抽取实现。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
 6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
