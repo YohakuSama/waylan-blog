@@ -37,7 +37,7 @@
 
 ## 手动清理分支
 
-详见 [分支档案](BRANCH_ARCHIVE.md)。在 Actions → **Waylan CI** → **Run workflow**，选择 `branches-preview` 或 `branches-prune`，后者需填入确认串。删除必须发生在已经合并档案和脚本的可信 `main` 分支。
+详见 [分支档案](BRANCH_ARCHIVE.md)。在 Actions → **Waylan CI** → **Run workflow**，选择 `branches-preview` 或 `branches-prune`，后者需填入确认串。删除必须发生在已经合并档案和脚本的可信 `main` 分支。当前变更另设一个带唯一合并提交标记的**一次性清理入口**，仅在本次合并时自动尝试删除快照中 SHA 与已合并 PR 都匹配的分支；后续正常 push 不会自动清理分支。若执行未成功，可手工使用上述入口重试。
 
 ## 额度事实
 
