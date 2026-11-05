@@ -1116,6 +1116,9 @@ export default function Reader({ post }: { post: Post }) {
     needsActivation = false,
   ) {
     if (event.touches.length !== 1) return;
+    // Prevent a Safari compatibility click from hitting content under a
+    // selection toolbar that has already been dismissed on touchstart.
+    event.preventDefault();
     event.stopPropagation();
     const last = lastToolbarTouch.current;
     if (last?.target === event.currentTarget && performance.now() - last.at < 300) return;
@@ -1416,13 +1419,20 @@ export default function Reader({ post }: { post: Post }) {
                         });
                       }
                     }}
-                    onClick={(e) =>
+                    onClick={(e) => {
+                      // WebKit can retarget the late click after a toolbar
+                      // action removes its button from the document.
+                      const last = lastToolbarTouch.current;
+                      if (last && performance.now() - last.at < 1500) {
+                        e.preventDefault();
+                        return;
+                      }
                       setImage({
                         src: post.cover!,
                         alt: post.coverAlt || "",
                         from: e.currentTarget,
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
                 <figcaption>
