@@ -178,7 +178,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("routes pages but leaves static assets and admin URLs to the browser", () => {
     for (const path of ["/", "/feed", "/archive", "/projects",
-      "/about", "/404", "/post/a-room-on-the-internet"])
+      "/about", "/privacy", "/404", "/post/a-room-on-the-internet"])
       assert.equal(isAppRoute(path), true, path);
     for (const path of ["/feed/", "/admin", "/admin/", "/api/status",
       "/art/room.svg", "/assets/index.js", "/images/photo.png", "/post/note.md",
@@ -1568,7 +1568,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".about-layout .about-prose h2"));
     assert.deepEqual(
       [...document.querySelectorAll(".about-details > div > h2")].map((h) => h.textContent?.trim()),
-      ["写作主题", "技术实现", "隐私与数据"],
+      ["写作主题", "技术实现"],
     );
     assert.equal(document.querySelectorAll(".about-details > div > h3").length, 0);
     assert.ok(document.querySelectorAll(".about-details > div > ul > li").length > 0);
@@ -1590,6 +1590,20 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".about-text > .primary-button")?.textContent?.trim(), "浏览全部内容");
     assert.equal(document.querySelector(".about-text > .primary-button")?.getAttribute("href"), "/feed");
     assert.equal(document.querySelector("#site-nav .selected .nav-label")?.textContent, "关于");
+  });
+  it("keeps the privacy notice on its own route and leaves About uncluttered", async () => {
+    await mount("/about");
+    assert.equal(document.querySelector(".about-details > div")?.textContent?.includes("隐私与数据"), false);
+    assert.equal(document.querySelector(".about-prose")?.textContent?.includes("保存期限"), false);
+    const footerLink = document.querySelector<HTMLAnchorElement>('.site-footer a[href="/privacy"]');
+    assert.ok(footerLink, "privacy is available from the footer without a new header tab");
+    await click(footerLink);
+    assert.equal(location.pathname, "/privacy");
+    assert.equal(document.querySelector(".page-heading h1")?.textContent, "隐私说明");
+    assert.equal(document.querySelectorAll(".privacy-page section h2").length, 6);
+    assert.match(document.querySelector(".privacy-page")?.textContent || "", /Cloudflare Web Analytics/);
+    assert.match(document.querySelector(".privacy-page")?.textContent || "", /GitHub Discussions/);
+    assert.equal(document.querySelector(".about-details"), null);
   });
   it("returns to the about reading position after opening the complete feed", async () => {
     await mount("/about");

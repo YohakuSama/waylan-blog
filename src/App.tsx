@@ -19,6 +19,7 @@ import { Wordmark } from "./components/Wordmark";
 import { PageScrollbar } from "./components/Scrollbar";
 import { Tooltips } from "./components/Tooltip";
 import { Home, Feed, Projects, About, Archive, NotFound } from "./pages";
+import Privacy from "./pages/Privacy";
 const SEARCH_LIMIT = 8;
 // Derived from content rather than the clock so prerendered HTML and hydration agree.
 const postYears = posts.map((p) => p.date.slice(0, 4)).sort();
@@ -260,6 +261,8 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <Archive />
           ) : pathname === "/about" ? (
             <About />
+          ) : pathname === "/privacy" ? (
+            <Privacy />
           ) : (
             <NotFound />
           )}
@@ -278,6 +281,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
             <nav className="footer-links" aria-label="页脚导航">
               <Link href="/archive">归档</Link>
               <Link href="/about">关于</Link>
+              <Link href="/privacy">隐私</Link>
               <a
                 href={assetURL("/rss.xml")}
                 download={offlinePreview() ? `${site.name}-rss.xml` : undefined}

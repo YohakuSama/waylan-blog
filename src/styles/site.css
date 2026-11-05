@@ -1438,6 +1438,30 @@ h3 {
 .archive-row:hover > span {
   color: var(--accent);
 }
+/* Separate privacy notice, following the site's existing editorial typography. */
+.privacy-page {
+  max-width: 720px;
+  padding: 4px 0 72px;
+}
+.privacy-page > section {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+.privacy-page > section h2 {
+  margin: 0 0 10px;
+  font-size: clamp(21px, 2.2vw, 24px);
+}
+.privacy-page .privacy-updated {
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.privacy-page .privacy-intro {
+  color: var(--ink);
+  font-size: 16px;
+}
 /* Prose keeps a reading measure inside the shared main column. */
 .about-text > * {
   max-width: 720px;

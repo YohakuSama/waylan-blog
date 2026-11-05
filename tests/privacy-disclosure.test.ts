@@ -3,29 +3,34 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const about = readFileSync("content/about.md", "utf8");
-const page = readFileSync("src/pages.tsx", "utf8");
+const aboutPage = readFileSync("src/pages.tsx", "utf8");
+const privacy = readFileSync("src/pages/Privacy.tsx", "utf8");
+const app = readFileSync("src/App.tsx", "utf8");
+const layout = readFileSync("src/styles/site.css", "utf8");
 
-describe("privacy disclosure stays aligned with deployed features", () => {
-  it("does not claim that the site has no third-party analytics", () => {
-    assert.ok(about.includes("Cloudflare Web Analytics"));
-    assert.ok(page.includes("包含 Cloudflare 网站分析脚本"));
-    assert.equal(page.includes("无第三方统计与追踪脚本"), false);
+describe("layered, accurate privacy disclosure", () => {
+  it("keeps the personal About page free of long-form privacy text", () => {
+    assert.ok(!about.includes("### 隐私与数据说明"));
+    assert.ok(!aboutPage.includes('<h2 className="side-title">隐私与数据</h2>'));
+    assert.ok(!about.includes("防重复提交记录"));
   });
-  it("describes GitHub App as active and legacy OAuth as conditional", () => {
-    assert.ok(about.includes("生产配置已显式选择 GitHub App"));
-    assert.ok(about.includes("若站长切回旧版 OAuth"));
-    assert.ok(page.includes("GitHub App 登录"));
-    assert.ok(page.includes("若启用旧版 OAuth"));
-    assert.ok(!page.includes("目前旧版 OAuth 仍申请"));
+  it("provides a discoverable notice without changing primary navigation", () => {
+    assert.ok(app.includes('pathname === "/privacy"'));
+    assert.ok(app.includes('<Link href="/privacy">隐私</Link>'));
+    assert.ok(!app.includes('{ url: "/privacy", label:'));
+    assert.ok(layout.includes(".privacy-page {"));
   });
-  it("discloses login scope, local and server data, retention and a contact route", () => {
+  it("states data uses, retention, third parties and available choices", () => {
     for (const fact of [
-      "public_repo", "GitHub Discussions", "AES-GCM", "PKCE",
-      "90 天", "180 天", "两日", "GitHub 主页",
+      "Cloudflare Web Analytics", "GitHub App", "GitHub Discussions",
+      "哈希", "会话", "私人划线", "90 天", "180 天",
+      "www.cloudflare.com/privacypolicy", "github-general-privacy-statement",
+      "站长 GitHub 主页",
     ]) {
-      assert.ok(about.includes(fact), `Missing privacy disclosure: ${fact}`);
+      assert.ok(privacy.includes(fact), `Missing privacy disclosure: ${fact}`);
     }
-    assert.ok(about.includes("https://github.com/YohakuSama"));
-    assert.ok(about.includes("非公开权利请求联系渠道"));
+    assert.ok(!privacy.includes("无第三方统计"));
+    assert.ok(!privacy.includes("目前旧版 OAuth 仍申请"));
+    assert.ok(!privacy.includes("已完全符合"));
   });
 });

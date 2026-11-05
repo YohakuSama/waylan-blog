@@ -455,7 +455,7 @@ try {
             }
           }
           if (route === "/about") {
-            assert.deepEqual(geometry.aboutHeadingLevels, ["写作主题", "技术实现", "隐私与数据"],
+            assert.deepEqual(geometry.aboutHeadingLevels, ["写作主题", "技术实现"],
               `${label}: about section heading levels are inconsistent`);
             assert.equal(geometry.aboutStatsHeadingIsLink, false,
               `${label}: site statistics heading incorrectly navigates to archive`);

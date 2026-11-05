@@ -7,6 +7,7 @@ for (const path of [
   "feed/index.html",
   "projects/index.html",
   "about/index.html",
+  "privacy/index.html",
   "archive/index.html",
   "404.html",
   ...posts.map((p) => `post/${p.slug}/index.html`),
@@ -55,6 +56,16 @@ for (const path of [
       "feed type counts must add up",
     );
   }
+  if (path === "privacy/index.html") {
+    assert.equal(doc.querySelector(".page-heading h1")?.textContent, "隐私说明");
+    assert.equal(doc.querySelectorAll(".privacy-page section h2").length, 6);
+    assert(doc.body.textContent?.includes("Cloudflare Web Analytics"), "privacy analytics disclosure");
+    assert(doc.body.textContent?.includes("GitHub Discussions"), "privacy discussions disclosure");
+  }
+  if (path === "about/index.html") {
+    assert.equal(doc.querySelectorAll(".about-details > div").length, 2, "about remains editorial");
+    assert.equal(doc.querySelector(".privacy-page"), null, "privacy content must stay off About");
+  }
   if (path === "archive/index.html") {
     assert.equal(doc.querySelectorAll(".archive-row").length, posts.length, "yearbook complete");
     assert.equal(doc.querySelectorAll(".archive-main .type-tabs").length, 0, "yearbook has no duplicate type filters");
@@ -90,6 +101,7 @@ for (const path of [
           "/feed",
           "/projects",
           "/about",
+          "/privacy",
           "/archive",
           ...posts.map((p) => `/post/${p.slug}`),
         ].includes(href),
