@@ -1,5 +1,102 @@
 # 架构、API 与数据边界
 
+## 模块职责与故障定位地图（维护规划，2026-11-05）
+
+> 本节区分 **当前代码已存在的事实** 和 **未来渐进改造的目标**。现有 API、数据库和离线预览契约仍以本文后半部分为准。本节只规定维护边界，不代表下述建议目录已经实施。操作、PR、记录模板见 [维护手册](MAINTENANCE.md)。
+
+### 当前请求链和依赖方向
+
+```mermaid
+flowchart LR
+    Content["content/posts + site.json"] --> Build["scripts/content.ts"]
+    Build --> Generated["src/generated + worker/generated"]
+    Generated --> Front["src/App.tsx / pages / components"]
+    Front --> BrowserApi["src/lib/api.ts"]
+    BrowserApi --> Worker["worker/index.ts → auth/comments/admin/notifications"]
+    Worker --> Shared["shared/* contracts"]
+    Front --> Shared
+    Worker --> D1["Cloudflare D1"]
+    Worker --> GitHub["GitHub Discussions / 内容仓库"]
+    Admin["src/admin/main.tsx → admin/api.ts"] --> Worker
+    Front --> Styles["src/styles/index.ts → base/site/skins/motion"]
+```
+
+- **浏览器路由及页面装配**：`src/App.tsx`、`src/pages.tsx`、`src/pages/*`。`src/components/*` 实现 UI，`src/lib/*` 提供面向浏览器的路由、动效、公共 JSON API、选区和本地持久化能力。
+- **后台**：`src/admin/main.tsx`（现有界面聚合）与 `src/admin/api.ts`（保留认证、CSRF、专有超时）；与公开浏览 API `src/lib/api.ts` 是两个明确的访问场景，**不为了“统一”混用后台凭据和缓存**。
+- **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；跨端合同放 `shared/*`。
+- **数据生产线**：`content/*` 为文章/站点配置源；`scripts/content.ts` 构建 `src/generated/*` 与 `worker/generated/*`；不要直接手改生成产物、历史 D1 migrations 或已发布的 `post.id`。
+- **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css`、`src/styles/site.css`、`src/styles/skins.css`、`src/styles/motion.css` 是当前四类规则集合；运行时动画策略在 `src/lib/motion.ts`。
+- **验证和部署**：`tests/*` 是单测与契约测试；`scripts/*-smoke.mjs` 为真实浏览器审核；`.github/workflows/verify.yml` 是唯一 GitHub Actions 入口，按 `scripts/ci-plan.mjs` 选择检查。
+
+依赖应单向：`App / pages → components → lib → shared`；`worker 路由 → worker 业务模块 → shared`。`shared` 不应依赖 React、浏览器 DOM、Worker 运行时、GitHub 客户端或 D1；前端业务代码不得直接连接 D1、使用服务器 Token，服务端也不得 import 浏览器组件。跨端交互走版本稳定的 HTTP/共享类型，不允许跨功能深层 import 内部私有实现。
+
+### 从问题直接找到文件
+
+**先查入口模块和相邻依赖，再扩大搜索范围。** 表中是排查起点，不保证每次故障都由该文件引起。涉及数据、权限、生成文件时按请求链向上或向下追踪。
+
+| 用户反馈 / 故障类型 | 第一定位路径 | 关联检查（仅在影响范围内运行） |
+| --- | --- | --- |
+| 三端两主题排版、标题换行、导航或留白 | `src/styles.css`、`src/styles/site.css`、`src/styles/skins.css`；组件 DOM 在 `src/App.tsx` / `src/components/Feed.tsx` / `Reader.tsx` | `tests/mobile-regressions.test.ts`、`tests/skin-parity.test.ts`、`scripts/visual-smoke.mjs`、`scripts/responsive-navigation-smoke.mjs` |
+| 搜索、URL 筛选、排序、返回位置 | `src/pages/Feed.tsx`、`src/components/Feed.tsx`、`src/lib/router.tsx`、`src/App.tsx` | `tests/navigation.test.ts`、`scripts/interaction-state-smoke.mjs` |
+| 文章阅读、目录、代码块、图片放大 | `src/components/Reader.tsx`、`MarkdownTools.tsx`、`src/lib/reader-loader.ts` | `scripts/reader-deep-smoke.mjs`、`scripts/quality-smoke.mjs` |
+| 长按选区、私人划线、批注定位与分享 | `src/components/Reader.tsx`、`src/lib/selection.ts`、`shared/anchors.ts` | `tests/selection.test.ts`、`tests/anchors.test.ts`、`scripts/selection-composer-smoke.mjs` |
+| 评论加载、提交、重试及缓存 | `src/lib/api.ts`、`worker/comments.ts`、`worker/github.ts`、`worker/auth.ts` | `tests/worker.test.ts`、`tests/transport.test.ts`；必要时跑阅读器浏览器检查 |
+| 登录、CSRF、安全头和权限 | `worker/auth.ts`、`worker/security.ts`、`worker/index.ts`、`worker/types.ts` | `tests/worker.test.ts`、`tests/github-app-config.test.ts` |
+| 后台编辑、媒体上传、站点设置 | `src/admin/main.tsx`、`src/admin/form.ts`、`src/admin/api.ts`、`worker/admin.ts`、`shared/content-rules.ts` / `uploads.ts` | `tests/admin.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
+| 文章新增、永久链接、RSS 和预渲染 | `content/*`、`scripts/content.ts`、`scripts/prerender.tsx`、`shared/redirects.ts`、`worker/post-sync.ts` | `tests/post-sync.test.ts`、`tests/redirects.test.ts`、`scripts/check-build.ts` |
+| 深浅主题、editorial / terminal 和动效 | `src/styles/skins.css`、`src/styles/motion.css`、`src/lib/appearance.ts`、`src/lib/motion.ts` | `tests/skin-parity.test.ts`、`tests/motion.test.ts`、`scripts/quality-smoke.mjs` |
+| 通知状态、阅读清单与浏览量 | `src/components/NotificationBell.tsx` / `Shelf.tsx`、`src/lib/shelf.ts` / `views.ts`、`worker/notifications.ts` / `views.ts` | 相关单测、`scripts/quality-smoke.mjs` |
+| Actions 消耗、测试分类与手动运维 | `.github/workflows/verify.yml`、`scripts/ci-plan.mjs`、`scripts/maintenance.test.mjs`；策略见 `docs/ops/ACTIONS_POLICY.md` | `node --test scripts/maintenance.test.mjs`，必要时手动全套 CI |
+| 部署、D1 迁移与仓库转私有 | `wrangler.jsonc`、`scripts/validate-deploy.ts`、`migrations/*`、`worker/auth.ts`；清单见 `docs/MAINTENANCE.md` | `npm run check`、真实 Worker 验证、受控发布与回滚检查 |
+
+### 目标模块组织（渐进方案，**尚未实施**）
+
+先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：
+
+```text
+src/
+  app/                 路由装配、页眉/搜索/全站状态（从 App 局部提取）
+  pages/               保留独立页面和稳定路由入口
+  features/
+    reader/            阅读容器 / 目录 / 封面 / 阅读进度
+    annotations/       选区、私人划线、定位、浮动工具
+    discussions/       评论 UI、草稿、分页与发送状态
+    feed/              列表、筛选、排序与推荐
+    admin/             后台编辑器、站点编辑、内容列表
+  lib/                 跨功能且与业务无关的轻量基础能力
+  styles/              tokens / base / layout / features / skins / motion
+worker/
+  index.ts             入口与路由分发
+  auth.ts / security.ts / ...    原有服务边界先保持
+shared/                跨前后端的类型、定位、输入规则
+```
+
+**迁移规则：** 只在改动相应功能且有验证环境时动一块；外部继续通过稳定的模块入口引用；内部实现原则上不跨功能深层导入。若出现为复用两行代码而创建新的三层抽象，通常应保留局部实现；真正共用且策略一致的能力再提升至 `lib/` 或 `shared/`。
+
+建议优先顺序及约束：
+
+1. **P0｜建立地图和变更记录（本次）**：为模块建立归属、影响半径、异常定位和维护报告，无业务改动。
+2. **P1｜阅读器拆分**：现有 `src/components/Reader.tsx` 约 2,234 行，先识别评论、选区、目录、图像预览这些独立生命周期，再抽出子组件/纯逻辑；保持 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为不变。每个可验证的小 PR 只处理一个边界。
+3. **P2｜后台编辑器拆分**：`src/admin/main.tsx` 约 1,286 行；按 PostEditor、SiteEditor、Dashboard 拆分，不重新实现已有的 `admin/api.ts`、表单规则与上传事务。
+4. **P3｜CSS 归属与级联清理**：四份主要 CSS 文件共约 216 KB；先建立样式选择器→所属组件表，减少重复覆盖，再逐组移入明确位置。不能批量搬移改变 `src/styles/index.ts` 的加载顺序、层叠优先级、媒体查询和两个 skin 的尺寸一致性；所有布局修改必须实际验证手机、平板、桌面、明暗主题。
+5. **P4｜Worker 读写职责分离**：`worker/comments.ts` 和 `worker/admin.ts` 的鉴权、校验、GitHub 传输、缓存、幂等写入边界明确后，再按单一职能抽取实现。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
+6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
+
+行数是**审查信号，不是重构 KPI**。可以用“文件是否只有一个清晰的变更理由”“一次修改影响哪些功能”“能否单独回滚”判断是否应该拆分。避免把 1 个大文件机械切成 30 个相互依赖的小文件。
+
+### 依赖图算法与智能化边界
+
+- 优先使用简单、确定性且可审计的依赖图：TypeScript import / export 与动态加载入口构成有向图；用拓扑排序判断层级，用强连通分量（如 Tarjan）识别循环依赖，用有限深度遍历寻找 PR 变更的影响范围。
+- 图谱可在**结构变更/定期审计**时生成，保存版本和生成时间；平时故障按上面的定位表寻找责任目录，不要求每次全仓扫描。
+- 神经网络/AI 可用于**提示可能关联的模块、总结异常和建议测试**，不得代替确定性的依赖解析、类型检查、权限判断和合并门禁。当前项目没有必要因此引入新的运行时 AI 框架或服务费用。
+- 后续如实现依赖图生成器，先给它设定可验证的目标：没有漏掉静态依赖、循环依赖有报告、动态 import 需要人工标记、报告可追溯到 commit；未达到要求不将其作为自动决定 QA 的依据。
+
+### 验收指标与不可变契约
+
+每次结构性 PR 必须有基线及对比：相关测试不减少、前端预渲染/离线预览不回退、API 状态码/错误合同不漂移、`post.id` / Discussion / annotation / OAuth / D1 数据兼容、两皮肤两主题关键布局坐标不改变（除非目标明确要求）。记录首次定位时间、跨模块修改数量、复发率、受影响文件和 CI 使用量；**真实指标优先于文件数或代码行减少量**。
+
+遵循基于风险的安全开发流程；可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final) 的安全需求、设计决策追踪和漏洞响应原则，但本项目并未宣称取得任何标准认证。
+
 ## 请求与持久化
 
 ```mermaid
