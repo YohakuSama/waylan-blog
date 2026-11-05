@@ -37,18 +37,18 @@ export function discussionView(state: CommentPage, focused: Comment | null, pane
 
 /** Pure reconciliation keeps optimistic edits/deletes consistent across cached pages and opened threads. */
 export const updateCommentNodes = (nodes: Comment[], id: string, next: Comment | null): Comment[] =>
-      nodes.flatMap((c) => {
-        if (c.id === id) return next ? [{ ...c, ...next }] : [];
-        if (!c.replies) return [c];
-        const replies = c.replies.nodes.flatMap((r) =>
-          r.id === id ? (next ? [{ ...r, ...next }] : []) : [r],
-        );
-        return [{ ...c, replies: {
-          ...c.replies,
-          nodes: replies,
-          totalCount: Math.max(0, c.replies.totalCount + (next ? 0 : replies.length - c.replies.nodes.length)),
-        } }];
-      });
+  nodes.flatMap((c) => {
+    if (c.id === id) return next ? [{ ...c, ...next }] : [];
+    if (!c.replies) return [c];
+    const replies = c.replies.nodes.flatMap((r) =>
+      r.id === id ? (next ? [{ ...r, ...next }] : []) : [r],
+    );
+    return [{ ...c, replies: {
+      ...c.replies,
+      nodes: replies,
+      totalCount: Math.max(0, c.replies.totalCount + (next ? 0 : replies.length - c.replies.nodes.length)),
+    } }];
+  });
 
 export function updateCommentPage(prev: CommentPage, id: string, next: Comment | null): CommentPage {
   return {
