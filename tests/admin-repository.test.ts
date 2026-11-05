@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { repo, POSTS, files, blobOid } from "../worker/admin-repo";
+import { repo, POSTS, files, blobOid, conflict } from "../worker/admin-repo";
 import type { Env } from "../worker/types";
 
 describe("Admin source repository boundary", () => {
@@ -27,6 +27,13 @@ describe("Admin source repository boundary", () => {
     });
     assert.equal(repo({ CONTENT_REPO: "example/project" } as Env).branch, "main");
     assert.equal(POSTS, "content/posts");
+  });
+
+  it("preserves the exact 409 Git branch conflict contract for all callers", () => {
+    const error = conflict();
+    assert.equal(error.status, 409);
+    assert.equal(error.code, "CONFLICT");
+    assert.match(error.message, /仓库刚刚在别处被修改过/);
   });
 
   it("returns an empty result without network access when no files were requested", async () => {
