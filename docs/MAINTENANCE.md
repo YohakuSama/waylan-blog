@@ -236,6 +236,14 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **保留不强拆：** `Reader.tsx` 中原生 WebKit 手势、目录焦点与评论草稿事务存在同步时序，`worker/comments.ts` 中 `sending/sent/failed` 与恢复窗口依赖原子顺序；缺乏真实端到端证据时继续维持现状。CSS 冗余/综合清理 C/D 未纳入 A/B，仍需独立任务和 PR；不删除测试、工作流或迁移文件。
 
+
+### 评论边界及动态入口定向加固（2026-11-06）
+
+- **问题与定位**：`worker/comments.ts` 的 10 分钟重复内容查询原只限定用户和 payload 哈希，跨文章同文案可能误判为重复。查询增加 `post_id` 限定；`requestId` 的原始 payload 哈希及同 ID 恢复规则保持不变，避免历史提交意图失效。
+- **持久批注安全**：`worker/comment-reads.ts` 在 GitHub GraphQL 返回 `null` 时不能确认评论永久删除，因此只在返回值中过滤暂不可见的批注，不依赖不确定响应删除 D1 `annotations`。作者显式删除、经验证的 Webhook 清理仍使用原路径。需接受真正失联的孤立 D1 锚点可能暂时保留，后续清理由可靠删除事件驱动。
+- **审计范围**：`tests/architecture.test.ts` 分别跟踪静态 TypeScript 导入与可解析的相对动态 `import()`；动态边只参与入口可达性而不参与静态循环判定，保护 `router → reader-loader ⇢ Reader` 的按需加载关系。变量表达式、外部包、CSS/JSON 和运行时注入不在此静态图的完备性承诺内。
+- **验证与回滚**：回归用例位于 `tests/worker.test.ts` 和 `tests/architecture.test.ts`；以本次 PR 对应的 CI job 及 squash SHA 为证。问题定位后只回滚本次改动，不改 D1 migrations、OAuth、API 路径、动画与 CSS；Cloudflare 部署/生产 OAuth/真机行为仍需独立验收。
+
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |

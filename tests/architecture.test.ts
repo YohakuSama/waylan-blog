@@ -99,6 +99,9 @@ describe("maintainable module boundaries", () => {
 
     const known = new Set(files);
     const edges = new Map<string, string[]>();
+    // Lazy imports are part of entrypoint reachability, but do not turn an
+    // intentionally split browser chunk into a static import/cycle.
+    const lazyEdges = new Map<string, string[]>();
     const label = (p: string) => relative(process.cwd(), p).replaceAll("\\", "/");
     for (const path of files) {
       const source = ts.createSourceFile(path, file(path), ts.ScriptTarget.Latest, false);
@@ -132,6 +135,24 @@ describe("maintainable module boundaries", () => {
         dependencies.push(dependency);
       }
       edges.set(path, [...new Set(dependencies)]);
+      const lazy: string[] = [];
+      const visitLazy = (node: ts.Node): void => {
+        if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+          const arg = node.arguments[0];
+          if (arg && ts.isStringLiteral(arg) && arg.text.startsWith(".")) {
+            const target = resolve(dirname(path), arg.text);
+            const dependency = [
+              target, target + ".ts", target + ".tsx",
+              join(target, "index.ts"), join(target, "index.tsx"),
+            ].find((candidate) => known.has(candidate));
+            assert.ok(dependency, "unresolved relative lazy TS import: " + label(path) + " -> " + arg.text);
+            lazy.push(dependency);
+          }
+        }
+        ts.forEachChild(node, visitLazy);
+      };
+      visitLazy(source);
+      lazyEdges.set(path, [...new Set(lazy)]);
     }
 
     const resolved = new Set<string>(), visiting: string[] = [];
@@ -157,7 +178,7 @@ describe("maintainable module boundaries", () => {
     const walk = (path: string) => {
       if (reached.has(path)) return;
       reached.add(path);
-      for (const target of edges.get(path) || []) walk(target);
+      for (const target of [...(edges.get(path) || []), ...(lazyEdges.get(path) || [])]) walk(target);
     };
     for (const path of [
       "src/client.tsx", "src/offline.tsx", "src/admin/main.tsx",
@@ -175,6 +196,12 @@ describe("maintainable module boundaries", () => {
       "reader selection helper remains a production dependency, not merely a test fixture");
     assert.ok(edges.get(resolve("scripts/setup-github.ts"))?.includes(resolve("shared/discussions.ts")),
       "GitHub setup CLI keeps its shared discussion contract");
+    assert.ok(edges.get(resolve("src/lib/router.tsx"))?.includes(resolve("src/lib/reader-loader.ts")),
+      "route keeps the single reader loader entry");
+    assert.ok(lazyEdges.get(resolve("src/lib/reader-loader.ts"))?.includes(resolve("src/components/Reader.tsx")),
+      "literal lazy Reader target remains a reachable source module");
+    assert.equal(edges.get(resolve("src/lib/reader-loader.ts"))?.includes(resolve("src/components/Reader.tsx")), false,
+      "lazy Reader must not become a static eager import");
   });
 
 });

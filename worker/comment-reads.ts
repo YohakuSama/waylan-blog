@@ -268,18 +268,9 @@ export async function readAnnotations(
           checkDiscussion(node.discussion, env, map);
           visible.add(node.id);
         }
-        const deleted = page.filter((row) => !visible.has(row.comment_id));
-        if (deleted.length)
-          await env.DB!.batch(
-            deleted.map((row) =>
-              env
-                .DB!.prepare(
-                  "DELETE FROM annotations WHERE comment_id=? AND post_id=?",
-                )
-                .bind(row.comment_id, postId),
-            ),
-          );
-
+        // A null GitHub node can mean deleted OR temporarily inaccessible.
+        // Keep its D1 anchor for a later read; exclude it from the response.
+        // Explicit author deletion and verified webhooks handle durable cleanup.
         return {
           nodes: page
             .filter((r) => visible.has(r.comment_id))
