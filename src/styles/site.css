@@ -2358,3 +2358,22 @@ h3 {
     margin-top: 0;
   }
 }
+
+/* Editorial spacing: preserve the site identity while adapting feed headlines to width. */
+@media (min-width: 1120px) {
+  .home-list .feed-item:first-child .feed-body h2 { font-size: 26px; line-height: 1.36; }
+  .home-list .feed-excerpt { line-height: 1.7; }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .home-list .feed-item:first-child .feed-body h2 { font-size: clamp(22px, 2.7vw, 25px); line-height: 1.36; }
+  .home-list .feed-excerpt { margin-top: 6px; line-height: 1.7; }
+}
+@media (max-width: 767px) {
+  .home-list .feed-item:first-child .feed-body h2,
+  .feed-list .feed-item.is-article .feed-body h2 {
+    font-size: clamp(20px, 5.15vw, 22px);
+    line-height: 1.38;
+    margin-top: 5px;
+  }
+  .home-list .feed-excerpt { margin-top: 6px; line-height: 1.65; }
+}
