@@ -29,6 +29,8 @@ npm run build        # 生成 dist/ 完整 HTML、JS、CSS、RSS、Sitemap
 npm run preview      # 预览静态构建；API 需完整 Worker 模式
 ```
 
+GitHub Actions 已统一为 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围选择必要测试，完整回归及 Windows 本地检查通过手动选项执行；历史分支与安全清理流程见 [分支档案](docs/ops/BRANCH_ARCHIVE.md)。
+
 `dist/` 是正式 HTTP 部署产物，必须经由 Web 服务器访问；请勿双击 `dist/index.html` 测试站内链接。只有生成的 `preview/index.html` 可直接本地打开。根目录的 `index.html` 是 Vite 开发入口；运行 `npm run build` 会重新生成 `preview/index.html`。
 
 重新生成独立浏览文件可运行 `npm run build`，或在已有 dist/RSS 后执行 `npm run build:preview`。离线构建使用单一普通脚本和 fragment 路由；正式网站仍使用独立 URL、预渲染和真实 API。
