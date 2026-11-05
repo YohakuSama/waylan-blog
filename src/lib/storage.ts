@@ -1,12 +1,15 @@
+/** Shared JSON read semantics: both backends return their own fallback on denied storage, missing keys or malformed JSON. */
+function readJSON<T>(read: () => string | null, fallback: T): T {
+  try {
+    return JSON.parse(read() || "null") ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const storage = {
   get<T>(key: string, fallback: T): T {
-    try {
-      return (
-        JSON.parse(localStorage.getItem(`echo:${key}`) || "null") ?? fallback
-      );
-    } catch {
-      return fallback;
-    }
+    return readJSON(() => localStorage.getItem(`echo:${key}`), fallback);
   },
   set(key: string, value: unknown) {
     try {
@@ -27,13 +30,7 @@ export const storage = {
 };
 export const transient = {
   get<T>(key: string, fallback: T): T {
-    try {
-      return (
-        JSON.parse(sessionStorage.getItem(`echo:${key}`) || "null") ?? fallback
-      );
-    } catch {
-      return fallback;
-    }
+    return readJSON(() => sessionStorage.getItem(`echo:${key}`), fallback);
   },
   set(key: string, value: unknown) {
     try {
