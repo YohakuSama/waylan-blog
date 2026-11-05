@@ -64,18 +64,18 @@ describe("Shared CSS ownership and cascade safety", () => {
   it("keeps only the effective phone composer gap and compact reader grid placement", () => {
     const base = read("src/styles.css");
     const responsive = read("src/styles/responsive.css");
-    const composer = [...base.matchAll(/\\.discussion-dialog\\.composer-dialog \\.composer-bottom\\s*\\{([^}]*)\\}/g)]
+    const composer = [...base.matchAll(/\.discussion-dialog\.composer-dialog \.composer-bottom\s*\{([^}]*)\}/g)]
       .map((match) => match[1]);
     assert.equal(composer.length, 1, "the identical later composer gap rule was redundant");
-    assert.match(composer[0], /gap:\\s*8px;/);
+    assert.match(composer[0], /gap:\s*8px;/);
     assert.match(composer[0], /safe-area-inset-bottom/);
 
-    const tools = [...responsive.matchAll(/\\.site-header-reader \\.header-tools\\s*\\{([^}]*)\\}/g)]
+    const tools = [...responsive.matchAll(/\.site-header-reader \.header-tools\s*\{([^}]*)\}/g)]
       .map((match) => match[1]);
-    assert.equal(tools.filter((body) => /grid-row:\\s*1;/.test(body)).length, 1);
-    assert.equal(tools.filter((body) => /grid-column:\\s*2;/.test(body)).length, 1);
-    assert.equal(tools.filter((body) => /gap:\\s*0;/.test(body)).length, 1);
-    assert.ok(tools.some((body) => /display:\\s*flex;/.test(body)),
+    assert.equal(tools.filter((body) => /grid-row:\s*1;/.test(body)).length, 1);
+    assert.equal(tools.filter((body) => /grid-column:\s*2;/.test(body)).length, 1);
+    assert.equal(tools.filter((body) => /gap:\s*0;/.test(body)).length, 1);
+    assert.ok(tools.some((body) => /display:\s*flex;/.test(body)),
       "the original compact reader tool layout must remain flex");
   });
 
@@ -96,8 +96,8 @@ describe("Shared CSS ownership and cascade safety", () => {
       assert.match(motionRule, new RegExp(`\\b${property}\\s*:`),
         `${property} must retain its original winning value`);
     }
-    assert.match(skinRule, /width:\\s*32%/);
-    assert.match(skinRule, /background:\\s*linear-gradient/);
-    assert.match(motionRule, /animation:\\s*waylan-reader-loading/);
+    assert.match(skinRule, /width:\s*32%/);
+    assert.match(skinRule, /background:\s*linear-gradient/);
+    assert.match(motionRule, /animation:\s*waylan-reader-loading/);
   });
 });
