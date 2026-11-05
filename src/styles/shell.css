@@ -1,5 +1,6 @@
-/* Waylan site chrome: header, home, feed, sidebar and index pages.
-   Reader, dialogs and motion settings stay in ../styles.css. */
+/* Shared site shell: tokens, header, home hero and top controls.
+   Feed, sidebar, index layouts and breakpoint choreography have separate owners;
+   reader, dialogs and motion settings remain in their existing modules. */
 :root {
   --content-width: 1366px;
   --page-gutter: 40px;
