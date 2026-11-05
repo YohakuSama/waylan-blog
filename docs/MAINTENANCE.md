@@ -171,6 +171,8 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **D 续核（2026-11-06，实际 CI 范围复核）：** 通过 [#121 第 2 次尝试的 job 日志](https://github.com/YohakuSama/waylan-blog/actions/runs/42091154426) 核实了上述按需测试分类与实际步骤。第 1 次失败的 `visual-report/notifications.json` 最后记录为 768px / terminal / light 通知错误面板，随后重试等待登录按钮超时；故障现场未保留足够状态来确认根因，相同 SHA 重跑成功仅表示未复现。`main@233da61b` 的 [Waylan CI #42093606484](https://github.com/YohakuSama/waylan-blog/actions/runs/42093606484) 为文档级分类，只执行变更路径判定，不是重新构建或生产验收；该 SHA 的 GitHub 检查列表未显示 Cloudflare Workers Builds，不能据此推断部署成功或失败。本次仅纠正证据口径，未修改生产源、测试、工作流或数据库。
 
+**D 无引用源码的二次核对（PR [#124](https://github.com/YohakuSama/waylan-blog/pull/124)）：** 已按实际 import/运行入口复核 `src/lib/selection.ts`（Reader 生产引用）、`src/pages.tsx`（App 路由兼容门面）、`src/pages/Privacy.tsx`（App 单独入口）、`src/components/Boot.tsx`（SSR/离线）、`worker/comments.ts`（路由兼容 re-export）和 `shared/discussions.ts`（仅 `npm run setup:github` 的维护 CLI 引用）。这些文件有明确职责，**不能因为入口表面无引用或为减少行数而删除**。原 AST 扫描未把 `scripts/setup-github.ts` 列为可达性根；本 PR 只在现有 `tests/architecture.test.ts` 加入该根及必要的可达/直接引用断言，不增加库或 Action，不触碰路由、CSS、D1、OAuth 与 GitHub 写入。CI 与合并状态以 PR 的最终 head 和唯一 Waylan CI 为证；真实 CLI/GitHub 写入仍是受控验收项。若断言发生误报，可独立 revert 此测试/文档 PR 并重验，无线上数据回滚。
+
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
 **结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。
