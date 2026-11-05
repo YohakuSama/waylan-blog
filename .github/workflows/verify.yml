@@ -6,22 +6,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      suite:
-        description: What to run
-        required: true
-        type: choice
-        default: full
-        options:
-          - full
-          - branches-preview
-          - branches-prune
-      confirmation:
-        description: "For branches-prune only: DELETE_VERIFIED_MERGED_BRANCHES"
-        type: string
-        required: false
-        default: ""
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -32,7 +17,6 @@ concurrency:
 
 jobs:
   check:
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.suite == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -46,7 +30,7 @@ jobs:
         env:
           CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           CI_HEAD_SHA: ${{ github.sha }}
-          CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'full' }}
+          CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' }}
         run: node scripts/ci-plan.mjs
       - name: Validate CI policy and safe branch handling
         if: ${{ steps.plan.outputs.code == 'true' }}
@@ -115,7 +99,7 @@ jobs:
             WAYLAN_AUDIT_OUTPUT=preview-motion-report \
             node scripts/live-sort-motion-audit.mjs
       - name: Read-only production motion comparison (manual full only)
-        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.suite == 'full' && steps.browsers.outcome == 'success' }}
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && steps.browsers.outcome == 'success' }}
         continue-on-error: true
         run: node scripts/live-sort-motion-audit.mjs
         env:
@@ -124,7 +108,7 @@ jobs:
 
       # Screenshots/storage are useful for failures or requested audits, not every PR.
       - name: Upload QA evidence if failed or explicitly requested
-        if: ${{ !cancelled() && (failure() || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')) }}
+        if: ${{ !cancelled() && (failure() || (github.event_name == 'workflow_dispatch')) }}
         uses: actions/upload-artifact@v4
         with:
           name: waylan-qa-evidence
@@ -143,28 +127,3 @@ jobs:
           retention-days: 3
 
 
-  branches:
-    # One-time, owner-authorized GC of a second explicitly reviewed snapshot;
-    # otherwise only an owner dispatch on trusted main may prune.
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune')) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[branch-gc-20261106-round2]')) }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout archived cleanup plan from trusted main
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Review/prune SHA-verified merged or explicitly superseded branches
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRUNE_CONFIRM: ${{ github.event_name == 'push' && 'DELETE_VERIFIED_MERGED_BRANCHES' || inputs.confirmation }}
-          MODE: ${{ github.event_name == 'push' && 'branches-prune' || inputs.suite }}
-          GC_ONCE: ${{ github.event_name == 'push' && 'branch-gc-20261106-round2' || '' }}
-        run: |
-          if [ "$MODE" = "branches-prune" ]; then
-            node scripts/branch-maintenance.mjs prune
-          else
-            node scripts/branch-maintenance.mjs preview
-          fi

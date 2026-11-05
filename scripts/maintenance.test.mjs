@@ -1,8 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { classify } from "./ci-plan.mjs";
-import { pruneEligibility } from "./branch-maintenance.mjs";
 
 test("docs-only changes keep a successful, low-cost status", () => {
   assert.deepEqual(classify(["README.md", "docs/ops/BRANCH_ARCHIVE.md"]),
@@ -39,33 +37,6 @@ test("owner-requested full suite bypasses file filtering", () => {
   assert.ok(Object.values(p).every(Boolean));
 });
 
-const record = { name: "fix/example", sha: "a".repeat(40),
-  kind: "merged", pr: 42, mergedAt: "2026-11-05T10:00:00Z" };
-const live = { name: "fix/example", commit: { sha: record.sha }, protected: false };
-const prs = [{ number: 42, state: "closed", merged_at: record.mergedAt,
-  head: { ref: record.name, sha: record.sha } }];
-test("only the archived merged SHA can be removed", () => {
-  assert.equal(pruneEligibility(record, live, prs), "eligible");
-  assert.equal(pruneEligibility(record, { ...live, commit: { sha: "b".repeat(40) } }, prs), "sha-changed");
-  assert.equal(pruneEligibility({ ...record, kind: "closed-unmerged" }, live, prs), "not-approved");
-  assert.equal(pruneEligibility({ ...record, name: "main" }, live, prs), "protected");
-  assert.equal(pruneEligibility(record, { ...live, protected: true }, prs), "protected");
-  assert.equal(pruneEligibility(record, live, [...prs,
-    { state: "open", head: { ref: record.name } }]), "open-pr");
-  assert.equal(pruneEligibility(record, live, []), "merge-unverified");
-});
-
-test("only explicitly archived closed and replaced PR branches are deletable", () => {
-  const original = { number: 126, state: "closed", merged_at: null,
-    head: { ref: "fix/example", sha: record.sha } };
-  const replacement = { number: 125, state: "closed", merged_at: "2026-11-05T19:54:30Z" };
-  const superseded = { ...record, kind: "superseded", mergedAt: null, pr: 126, replacedBy: 125 };
-  assert.equal(pruneEligibility(superseded, live, [original, replacement]), "eligible");
-  assert.equal(pruneEligibility(superseded, live, [original]), "supersession-unverified");
-  assert.equal(pruneEligibility(superseded, live, [{ ...original, head: { ref: "fix/example", sha: "b".repeat(40) } }, replacement]), "supersession-unverified");
-  assert.equal(pruneEligibility(superseded, { ...live, protected: true }, [original, replacement]), "protected");
-});
-
 test("published Markdown never counts as documentation-only", () => {
   assert.deepEqual(classify(["content/notes/example.md"]), {
     code: true, browser: true, reader: true, feed: true, motion: false,
@@ -77,24 +48,6 @@ test("public assets and routes still trigger visual QA", () => {
     assert.equal(p.code, true);
     assert.equal(p.browser, true);
   }
-});
-
-test("archived branch category counts and prose stay in sync", () => {
-  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-05.json", "utf8"));
-  const count = (kind) => archive.branches.filter((b) => b.kind === kind).length;
-  assert.equal(archive.branches.length, 98);
-  assert.deepEqual({
-    default: count("default"),
-    merged: count("merged"),
-    open: count("open-pr"),
-    closed: count("closed-unmerged"),
-    unlinked: count("unlinked"),
-  }, { default: 1, merged: 85, open: 2, closed: 8, unlinked: 2 });
-  assert.ok(!archive.branches.some((b) =>
-    b.name === "ops/actions-budget-and-branch-archive-20261105"));
-  const prose = readFileSync("docs/ops/BRANCH_ARCHIVE.md", "utf8");
-  assert.match(prose, /总计 98 分支/);
-  assert.match(prose, /无关联 PR 2/);
 });
 
 test("reader feature submodules select reader QA without unrelated feed/motion groups", () => {
