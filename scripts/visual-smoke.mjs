@@ -216,8 +216,26 @@ try {
               articleNeighbors: select(".article-neighbors"),
               siteFooter: select(".site-footer"),
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
+              headingTextWrap: (() => {
+                const element = document.querySelector(".reading-article .article-heading h1, .feed-list .feed-body h2");
+                return element ? getComputedStyle(element).textWrap : null;
+              })(),
+              deckTextWrap: (() => {
+                const element = document.querySelector(".reading-article .article-deck");
+                return element ? getComputedStyle(element).textWrap : null;
+              })(),
             };
           }, headerControls);
+          // Regression for premature, balanced Chinese title wrapping.
+          // Applied to all 16 viewport widths and editorial/terminal x light/dark.
+          if (route === "/" || route === "/feed" || route.startsWith("/post/")) {
+            assert.equal(geometry.headingTextWrap, "wrap",
+              `${label}: article heading must fill each line naturally, not text-wrap: balance/pretty`);
+          }
+          if (route.startsWith("/post/")) {
+            assert.equal(geometry.deckTextWrap, "wrap",
+              `${label}: article excerpt must use normal line wrapping`);
+          }
           results.push({ route, width, ...variant, ...geometry });
           // Capture before assertions so a failing state is available to review.
           if ([1440, 768, 390, 320].includes(width))
