@@ -154,7 +154,7 @@ async function publicBrowsers() {
               stage = "about navigation and scroll restoration";
               await page.locator('#site-nav a[href="/about"]').click();
               await page.waitForURL(/\/about$/, { timeout: 15000 });
-              assert.equal(await page.locator(".about-details > div > h2").count(), 3,
+              assert.equal(await page.locator(".about-details > div > h2").count(), 2,
                 name + ": about independent sections have incorrect heading levels");
               assert.equal(await page.locator(".about-layout .site-sidebar").isVisible(), false,
                 name + ": about appended a redundant small-screen rail");
@@ -171,6 +171,14 @@ async function publicBrowsers() {
               await page.waitForURL(/\/about$/, { timeout: 15000 });
               await page.waitForFunction((position) =>
                 Math.abs(window.scrollY - position) <= 24, before, { timeout: 10000 });
+              stage = "standalone privacy page";
+              const privacyLink = page.locator('.site-footer .footer-links a[href="/privacy"]');
+              await privacyLink.scrollIntoViewIfNeeded();
+              await privacyLink.click();
+              await page.waitForURL(/\/privacy$/, { timeout: 15000 });
+              assert.equal(await page.locator(".privacy-page section h2").count(), 6,
+                name + ": privacy notice sections missing");
+              await noOverflow(page, name + "/" + width + "/privacy");
             }
             if (width === 390 && motion === "reduced") {
               stage = "404 recovery and interactive search";
