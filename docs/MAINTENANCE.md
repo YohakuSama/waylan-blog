@@ -118,6 +118,35 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **风险 R3 与回滚**：本批已合并 `0708fa5b`（PR #106），对应最终 CI 见 [#42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)。尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
 - **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
 
+### 四阶段结项核验（2026-11-06，代码与自动化层面）
+
+**结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。
+
+| 阶段 | 已交付的实际边界 | PR / 合并 SHA | 可追溯的自动化证据 |
+| --- | --- | --- | --- |
+| P1 阅读器 | `src/features/reader/` 负责头部/目录/图片预览，`src/features/discussions/` 负责评论显示；`Reader.tsx` 仍保留交互状态与入口 | [#101](https://github.com/YohakuSama/waylan-blog/pull/101) · `31797ff3` | [CI #42040153620](https://github.com/YohakuSama/waylan-blog/actions/runs/42040153620)：核心、布局、三浏览器、WCAG、阅读器/选区/路由和动效回归通过 |
+| P2 后台 | `main/Gate/Dashboard/ContentList/Discussions/PostEditor/SiteEditor` 分责；`admin/api.ts` 是后台专有 HTTP 边界 | [#102](https://github.com/YohakuSama/waylan-blog/pull/102) · `49de396e`；[#104](https://github.com/YohakuSama/waylan-blog/pull/104) · `1f2f4606` | [CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)、[CI #42048949781](https://github.com/YohakuSama/waylan-blog/actions/runs/42048949781)：核心、布局、后台浏览器和 WCAG 通过 |
+| P3 CSS | `styles/index.ts` 统一加载；`shell/feed/sidebar/site/responsive/skins/motion` 按职责与固定级联顺序分离 | [#105](https://github.com/YohakuSama/waylan-blog/pull/105) · `f9503ed3` | [CI #42056032731](https://github.com/YohakuSama/waylan-blog/actions/runs/42056032731)：核心、四种外观/多屏宽、三浏览器、WCAG、阅读器、信息流和动效专项通过 |
+| P4 Worker | `worker/admin-repo.ts` 负责私有内容仓库 GitHub 读写与原子提交；`admin.ts` 保持权限校验与 HTTP 编排 | [#106](https://github.com/YohakuSama/waylan-blog/pull/106) · `0708fa5b` | [CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)：核心、Worker 契约、构建/离线、布局、后台三浏览器、WCAG、信息流专项通过 |
+
+**交付基线**：P4 合并后 [main 核心检查 #42066763832](https://github.com/YohakuSama/waylan-blog/actions/runs/42066763832) 成功；随后 `main` 的 `5f446d4d` 仅更新 `docs/ARCHITECTURE.md` 和 `docs/MAINTENANCE.md`，对应 [CI #42067004377](https://github.com/YohakuSama/waylan-blog/actions/runs/42067004377) 是**文档级检查**，没有重复运行 npm、构建或浏览器。不能把文档级绿色状态当成 P4 的完整重新验收。
+
+**收尾核对**：上表全部 PR 已合并、阶段对应模块在 `main` 中存在、统一工作流仍为 `.github/workflows/verify.yml` 一份；README、架构、维护及运维文档的仓库内 Markdown 相对链接已检查，没有发现缺失目标（仅验证路径存在，不代表外部链接或所有锚点都可达）。本收尾只修改文档，不改变生产功能、依赖、D1、OAuth、API 或 CI 策略。
+
+#### 交付后尚未验收 / 不在本阶段中继续拆解
+
+| 风险 | 状态与后续动作 | 是否阻止“代码阶段结项” |
+| --- | --- | --- |
+| **R3：真实私有内容仓库写入** | PR #106 在模拟 GitHub 契约下通过；尚无可核对的生产/预发布 GitHub 内容提交、409 冲突、回滚、Token 权限验收。使用受控测试稿与可恢复版本独立验收。 | 不阻止“代码/CI 完成”，但**阻止宣称生产写入已验证** |
+| **R3：Cloudflare Worker、OAuth、D1 与公开 Discussions** | 未从可审计的部署记录确认生产 SHA、真实登录、评论发表、D1 关联及 webhook。发布负责人按本文“转私有前清单”核对，记录 Cloudflare 部署 ID 和回滚版本。 | 同上；转私有前必须完成 |
+| **R2：线上真实设备与双皮肤** | PR 浏览器回归通过，但未据此宣称线上 iPhone/iPad/桌面实际部署一致。部署后按 `docs/RESPONSIVE_LAYOUT.md` 验收。 | 不影响 PR 验收；影响上线确认 |
+| **已有未完成分支/PR** | [#57](https://github.com/YohakuSama/waylan-blog/pull/57)（移动页眉）和 [#23](https://github.com/YohakuSama/waylan-blog/pull/23)（Cloudflare 手动备用部署）仍开放；不能擅自合并或关闭。新近已合并分支的审计名单见 `docs/ops/BRANCH_ARCHIVE.md`。 | 不阻止已交付阶段，但需人工决策 |
+| **技术债（非本次收尾）** | `src/components/Reader.tsx`、`src/styles.css`、`worker/comments.ts` 仍较大。已抽出的功能边界应保持；若真实问题证明需要进一步拆分，再单独 PR、单独基线、按需测试，禁止单纯为减少行数重写。 | 不阻止结项 |
+
+**回滚路径**：先定位具体阶段的 squash SHA 和关联测试证据，确认后对故障阶段单独 revert / 修复并重新部署；不要无差别回滚四阶段，也不要修改已应用的 D1 migrations。源代码可以回滚不等于已提交到 GitHub 的内容或 D1 数据自动回滚，写入路径须单独核验。
+
+**结项判断**：P1～P4 **约定的首批代码改造与相应 CI：已完成并通过**；**真实部署、OAuth/内容写入/数据和私有化转换：未取得足够验收证据**。需要分别记录状态，不将 PR 合并等同生产完成。
+
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |
