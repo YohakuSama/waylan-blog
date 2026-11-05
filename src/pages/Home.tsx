@@ -9,7 +9,7 @@ import { FeedList } from "../components/Feed";
 import { SideTitle, TopicsBlock } from "../components/Sidebar";
 
 function HeroTitle() {
-  return <h1 className="hero-title">{site.tagline}</h1>;
+  return <h1 className="hero-title">首页</h1>;
 }
 const newestFirstList = () => [...posts].sort(newestFirst);
 /** Terminal-skin hero: the same real data, printed as a shell session. */

@@ -25,7 +25,7 @@ export const dateLabel = (d: string) =>
   }).format(new Date(`${d}T12:00:00+08:00`));
 export const shortDate = (d: string) => d.replaceAll("-", ".");
 const pageTitles: Record<string, string> = {
-  "/": site.tagline,
+  "/": "首页",
   "/feed": "全部内容",
   "/projects": "项目",
   "/archive": "归档",

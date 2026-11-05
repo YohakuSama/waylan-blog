@@ -360,9 +360,9 @@ export function RouterProvider({
         back: () => {
           if (offlinePreview()) {
             if (fileHistory.current.index > 0) history.back();
-            else void navigate(lastOrigin.current);
+            else void navigate("/feed");
           } else if (history.state?.echoFrom) history.back();
-          else void navigate(lastOrigin.current);
+          else void navigate("/feed");
         },
         backToList: () => {
           // Return to the real origin, skipping neighboring articles when necessary.

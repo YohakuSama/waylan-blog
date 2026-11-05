@@ -1039,24 +1039,40 @@ html {
 }
 :root[data-skin="terminal"] .page-heading h1::before,
 :root[data-skin="terminal"] .article-heading h1::before {
-  content: "# ";
+  content: "#";
   color: var(--brand);
 }
-:root[data-skin="terminal"] .page-heading h1,
-:root[data-skin="terminal"] .article-heading h1 {
-  font-weight: 700;
-}
 :root[data-skin="terminal"] .reader-prose h2::before {
-  content: "## ";
+  content: "##";
   color: var(--brand);
 }
 :root[data-skin="terminal"] .reader-prose h3::before {
-  content: "### ";
+  content: "###";
   color: var(--brand);
 }
+/* Keep decorative prefixes in the gutter so heading text aligns with prose. */
+:root[data-skin="terminal"] .page-heading h1,
+:root[data-skin="terminal"] .article-heading h1,
 :root[data-skin="terminal"] .reader-prose h2,
 :root[data-skin="terminal"] .reader-prose h3 {
+  position: relative;
   font-weight: 700;
+}
+:root[data-skin="terminal"] .page-heading h1::before,
+:root[data-skin="terminal"] .article-heading h1::before,
+:root[data-skin="terminal"] .reader-prose h2::before,
+:root[data-skin="terminal"] .reader-prose h3::before {
+  position: absolute;
+  top: 0;
+  right: calc(100% + .45em);
+  white-space: nowrap;
+}
+@media (max-width: 860px) {
+  /* Narrow screen gutters cannot contain a syntax prefix. */
+  :root[data-skin="terminal"] .page-heading h1::before,
+  :root[data-skin="terminal"] .article-heading h1::before,
+  :root[data-skin="terminal"] .reader-prose h2::before,
+  :root[data-skin="terminal"] .reader-prose h3::before { display: none; }
 }
 :root[data-skin="terminal"] .feed-item,
 :root[data-skin="terminal"] .feed-result-line,
@@ -1325,6 +1341,7 @@ html {
 /* v1.6.6: image viewer and consistent author identity */
 .image-dialog {
   width: min(1080px, calc(100vw - 64px));
+  height: fit-content;
   max-height: calc(100dvh - 48px);
   border: 1px solid color-mix(in srgb, var(--line-strong) 65%, transparent);
   border-radius: var(--radius-lg);
@@ -1355,12 +1372,10 @@ html {
 .image-dialog .dialog-header .icon-button { border-radius: var(--radius-md); }
 .image-dialog > img {
   display: block;
-  flex: 0 1 auto;
-  width: auto;
+  width: 100%;
   height: auto;
   max-width: 100%;
   max-height: calc(100dvh - 150px);
-  min-height: 0;
   object-fit: contain;
   margin-inline: auto;
 }
@@ -1380,6 +1395,7 @@ html {
   .image-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 26px); border-radius: var(--radius-md); }
   .image-dialog > img { max-height: calc(100dvh - 128px); }
   .image-dialog .dialog-header { padding: 8px 12px; }
+  .image-dialog:has(> img)::after { display: none; }
 }
 :root[data-skin="terminal"] .image-dialog { border-radius: 0; }
 :root[data-skin="terminal"] .image-dialog .dialog-header .icon-button { border-radius: 0; }
@@ -1414,8 +1430,15 @@ html {
 
 /* Keep closed native dialogs out of layout; keep the image dialog compact on touch. */
 .echo-dialog:not([open]) { display:none !important; }
+/* iOS Safari should size the image dialog to its contents, not stretch it. */
+.echo-dialog.image-dialog {
+  display: block;
+  height: fit-content !important;
+  min-height: 0;
+  margin: auto;
+}
 @media (max-width:700px) {
-  .echo-dialog.image-dialog { height:auto !important; max-height:calc(100dvh - 24px) !important; margin:auto !important; border:1px solid var(--line-strong) !important; border-radius:var(--radius-md) !important; }
+  .echo-dialog.image-dialog { width:calc(100vw - 20px); max-height:calc(100dvh - 24px) !important; border:1px solid var(--line-strong) !important; border-radius:var(--radius-md) !important; }
   :root[data-skin="terminal"] .echo-dialog.image-dialog { border-radius:0 !important; }
 }
 
