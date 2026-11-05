@@ -109,6 +109,15 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **不变合同**：不改 CSS class、HTML/React DOM、页面路由、字体、API、D1、动效库和后台权限；不引入 CSS-in-JS、`@layer` 或新框架。若出现错位或换行，优先复核导入与某个屏宽的后置覆盖，不额外追加新的临时 CSS。
 - **合并与回滚**：本批 [PR #105](https://github.com/YohakuSama/waylan-blog/pull/105) 头部 `e92e0525` 已通过 [Waylan CI #42056032731](https://github.com/YohakuSama/waylan-blog/actions/runs/42056032731) 的构建/单测、三端四外观、跨浏览器、WCAG、阅读器、选区、信息流状态机和三引擎动效预览；已合并 `main`，squash 提交 `f9503ed3`。若出现回归，可审核后 revert 此提交并重新部署，无数据库回迁。本轮只覆盖第三阶段首批，旧 `styles.css` / `skins.css` 复杂规则尚未完成全面去重；生产部署和真实设备验证仍需独立确认。
 
+### 第四阶段 Worker 解耦（首批：管理员内容仓库访问）
+
+- **改动理由**：`worker/admin.ts` 原约 743 行将管理员授权、输入校验、GraphQL/REST、Git OID 和提交事务交织在一起。认证安全和 Git 内容仓库访问有独立的变更原因，应有独立责任路径。
+- **实施范围**：完整抽取原 GitHub I/O 与 `repo/head/files/posts/commit/blobOid` 到 `worker/admin-repo.ts`；`worker/admin.ts` 仍控制身份和权限检查、内容/上传校验及各个 HTTP API 的处理顺序。原 `worker/github.ts` 公共 GraphQL transport 保留，不与私有内容 Token 建立新的共享状态。
+- **原样保留**：Git Data API 请求地址、headers、20 秒超时、409 冲突、403/429/404 等错误映射、OID/UTF-8 blob 计算、force:false 提交、D1 表结构、评论重试/幂等语义，以及所有 CSRF/同源/登录步骤。只移动函数与导入，不修改原函数内部的请求次序。
+- **验证**：新增 `tests/admin-repository.test.ts` 记录分支配置、UTF-8 Git blob OID、空文件读取、权限模块与内容仓库客户端互不反向依赖的边界；原 `tests/admin.test.ts` 的模拟 Git API 和实际 SQLite 仍验证并发版本冲突、文章和图片的原子保存与内容规则；`npm run check` 包含所有 Worker/构建/静态完整性回归。已有 CI 选择器对 `worker/` 改动自动运行跨浏览器质量/无障碍基线。
+- **风险 R3 与回滚**：尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
+- **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
+
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |
