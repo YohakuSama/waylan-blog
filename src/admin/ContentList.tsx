@@ -4,7 +4,7 @@ import { adminApi as api } from "./api";
 import { Confirm } from "./ui";
 import type { Overview, Summary } from "./types";
 
-/** Content listing and Discussion bootstrap are one focused dashboard section. */
+/** Content search, editing entrypoints, and deletion; Discussions are isolated. */
 export function Posts({
   overview,
   onEdit,
