@@ -8,3 +8,27 @@ dist/
 *.log
 artifacts/
 preview/
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tsbuildinfo
+
+# Test/browser output (not source or fixture files)
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+visual-report/
+quality-report/
+accessibility-report/
+reader-audit-report/
+responsive-navigation-report/
+route-motion-ghost-report/
+excerpt-audit-report/
+interaction-report/
+preview-motion-report/
+live-motion-report/
+mobile-layout-report/
