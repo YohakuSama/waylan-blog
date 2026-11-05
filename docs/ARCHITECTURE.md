@@ -64,7 +64,7 @@ flowchart LR
 - CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
 - 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
 
-### 后台模块化第二批（代码已迁移，合并状态以对应 PR 为准）
+### 后台模块化第二批（已合并，PR #102）
 
 现有管理后台是独立入口 `/admin`，并没有引入新的管理框架。本次保留所有提交与上传协议、CSS、前端表单 DTO 及原始 API 路径，仅将原约 1,286 行的 `src/admin/main.tsx` 依责任切分：
 
@@ -81,11 +81,13 @@ flowchart LR
 | API JSON、CSRF、保存超时 | `src/admin/api.ts` | 与公开只读缓存客户端分离，禁止 UI 直接 `fetch` 绕过它 |
 | 管理数据类型和视图 DTO | `src/admin/types.ts` | 前端内部类型，不擅自变更 Worker 响应或 D1 Schema |
 
+**功能增减规则：** 新增后台页面优先在 `Dashboard.tsx` 注册一个独立视图，并用具名 props / 回调连接新模块；只有跨文章/站点编辑器真正一致的 UI/校验才归 `ui.tsx` / `helpers.ts`。新增管理数据调用必须走 `admin/api.ts`，不得从 `Gate.tsx` 或 `main.tsx` 绕过 CSRF，也不得在组件间相互引用彼此的内部表单状态。每次变更同时更新本表对应故障入口、`tests/admin-modules.test.ts`（边界）及关联权限/写入回归，继续使用唯一 `Waylan CI`，不增加工作流。
+
 **内部依赖方向：** `main → Gate → Dashboard → ContentList/PostEditor/SiteEditor → ui/helpers/form → types`；所有 API 调用从各层统一走 `admin/api`。依赖应避免反向从 Editor 访问 Dashboard 内部状态；扩展新后台页面在 Dashboard 增加视图分发和明确的回调，不必修改认证入口。
 
 **不变量：** 发布文章 `post.id`、301 slug 规则、图片限制、同源 CSRF、GitHub 乐观并发 OID、Cloudflare 构建语义、草稿未保存警告和编辑器快捷键均保持旧逻辑。本次不变动 Worker、数据库、依赖、Admin CSS 或打包入口。
 
-**回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。通过全部当前 CI 后再合并；出现回归可单独回滚本次 PR，**不需要反向数据库迁移**。
+**回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。PR [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 的头部提交 `7edeb4f0` 已通过 [Waylan CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)：类型检查、构建、单元/契约测试、多端布局、Chromium/Firefox/WebKit 后台交互和 WCAG；合并提交 `49de396e` 的 [main 核心检查 #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) 亦通过。本次按需分类正确跳过与后台无关的阅读器、摘录、动效专项。**生产环境 OAuth、真实 GitHub 写入/上传、Cloudflare 部署尚未单独验收。** 如出现回归，可回滚本次前端重构并重新部署；本 PR 无数据库迁移，因此无需反向迁移 D1。
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
