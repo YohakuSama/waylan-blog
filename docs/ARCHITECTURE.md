@@ -18,14 +18,14 @@ flowchart LR
     Worker --> D1["Cloudflare D1"]
     Worker --> GitHub["GitHub Discussions / 内容仓库"]
     Admin["src/admin/main.tsx → Gate → Dashboard → editors → admin/api.ts"] --> Worker
-    Front --> Styles["src/styles/index.ts → base/site/skins/motion"]
+    Front --> Styles["src/styles/index.ts → base/shell/feed/sidebar/site/responsive/skins/motion"]
 ```
 
 - **浏览器路由及页面装配**：`src/App.tsx`、`src/pages.tsx`、`src/pages/*`。`src/components/*` 实现 UI，`src/lib/*` 提供面向浏览器的路由、动效、公共 JSON API、选区和本地持久化能力。
 - **后台**：`src/admin/main.tsx` 仅管理主题同步与挂载；`src/admin/Gate.tsx` 独立管理登录会话、CSRF 初始化及权限提示；`src/admin/Dashboard.tsx` 负责页面切换、部署状态和请求刷新；`src/admin/ContentList.tsx` 只负责文章列表与删除；`src/admin/Discussions.tsx` 单独负责评论区初始化及批处理终止条件；`PostEditor.tsx`、`SiteEditor.tsx` 分别拥有编辑状态与保存事务。共同通过 `src/admin/api.ts` 保留认证、CSRF、专有超时，不与缓存型公开浏览 API `src/lib/api.ts` 混用。
 - **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；跨端合同放 `shared/*`。
 - **数据生产线**：`content/*` 为文章/站点配置源；`scripts/content.ts` 构建 `src/generated/*` 与 `worker/generated/*`；不要直接手改生成产物、历史 D1 migrations 或已发布的 `post.id`。
-- **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css`、`src/styles/site.css`、`src/styles/skins.css`、`src/styles/motion.css` 是当前四类规则集合；运行时动画策略在 `src/lib/motion.ts`。
+- **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css` 是阅读器与基础规则；`src/styles/shell.css`、`feed.css`、`sidebar.css`、`site.css` 分别负责页眉首页、信息流、侧栏、索引/页脚；`responsive.css` 负责跨页面断点；`skins.css` 是双皮肤主题覆盖；`motion.css` 负责动画与可访问性动效规则；运行时动画策略在 `src/lib/motion.ts`。
 - **验证和部署**：`tests/*` 是单测与契约测试；`scripts/*-smoke.mjs` 为真实浏览器审核；`.github/workflows/verify.yml` 是唯一 GitHub Actions 入口，按 `scripts/ci-plan.mjs` 选择检查。
 
 依赖应单向：`App / pages → components → lib → shared`；`worker 路由 → worker 业务模块 → shared`。`shared` 不应依赖 React、浏览器 DOM、Worker 运行时、GitHub 客户端或 D1；前端业务代码不得直接连接 D1、使用服务器 Token，服务端也不得 import 浏览器组件。跨端交互走版本稳定的 HTTP/共享类型，不允许跨功能深层 import 内部私有实现。
@@ -36,7 +36,7 @@ flowchart LR
 
 | 用户反馈 / 故障类型 | 第一定位路径 | 关联检查（仅在影响范围内运行） |
 | --- | --- | --- |
-| 三端两主题排版、标题换行、导航或留白 | `src/styles.css`、`src/styles/site.css`、`src/styles/skins.css`；组件 DOM 在 `src/App.tsx` / `src/components/Feed.tsx` / `Reader.tsx` | `tests/mobile-regressions.test.ts`、`tests/skin-parity.test.ts`、`scripts/visual-smoke.mjs`、`scripts/responsive-navigation-smoke.mjs` |
+| 三端两主题排版、标题换行、导航或留白 | `src/styles/shell.css`（页眉与首页）、`src/styles/feed.css`（条目）、`src/styles/responsive.css`（断点）、`src/styles/skins.css`（皮肤）；阅读页见 `src/styles.css`；组件 DOM 在 `src/App.tsx` / `src/components/Feed.tsx` / `Reader.tsx` | `tests/mobile-regressions.test.ts`、`tests/skin-parity.test.ts`、`scripts/visual-smoke.mjs`、`scripts/responsive-navigation-smoke.mjs` |
 | 搜索、URL 筛选、排序、返回位置 | `src/pages/Feed.tsx`、`src/components/Feed.tsx`、`src/lib/router.tsx`、`src/App.tsx` | `tests/navigation.test.ts`、`scripts/interaction-state-smoke.mjs` |
 | 文章阅读、目录、代码块、图片放大 | `src/components/Reader.tsx`、`MarkdownTools.tsx`、`src/lib/reader-loader.ts` | `scripts/reader-deep-smoke.mjs`、`scripts/quality-smoke.mjs` |
 | 长按选区、私人划线、批注定位与分享 | `src/components/Reader.tsx`、`src/lib/selection.ts`、`shared/anchors.ts` | `tests/selection.test.ts`、`tests/anchors.test.ts`、`scripts/selection-composer-smoke.mjs` |
@@ -92,6 +92,25 @@ flowchart LR
 
 **回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。PR [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 的头部提交 `7edeb4f0` 已通过 [Waylan CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)：类型检查、构建、单元/契约测试、多端布局、Chromium/Firefox/WebKit 后台交互和 WCAG；合并提交 `49de396e` 的 [main 核心检查 #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) 亦通过。本次按需分类正确跳过与后台无关的阅读器、摘录、动效专项。**生产环境 OAuth、真实 GitHub 写入/上传、Cloudflare 部署尚未单独验收。** 如出现回归，可回滚本次前端重构并重新部署；本 PR 无数据库迁移，因此无需反向迁移 D1。
 
+### 第三阶段 CSS 责任边界（首批，已提交待验收）
+
+> 单一入口：`src/styles/index.ts`。在线/离线同时加载它；不要直接在单个组件 import 此处的功能样式，更不能把覆盖规则追加到任意文件尾部。
+
+| CSS 模块（按级联顺序） | 负责内容 | 最先追踪的组件 / 文档 |
+| --- | --- | --- |
+| `src/styles.css` | 基础颜色/字阶、阅读器、对话框、评论编辑区 | `src/components/Reader.tsx`、`docs/DESIGN_SYSTEM.md` |
+| `src/styles/shell.css` | 页面外壳 token、页眉、首页介绍与搜索/切换控件 | `src/App.tsx`、首页组件 |
+| `src/styles/feed.css` | 内容卡片结构、缩略图、摘要与列表基础规则 | `src/components/Feed.tsx` |
+| `src/styles/sidebar.css` | 首页及索引的统一侧栏/目录结构 | `src/components/Sidebar.tsx`（如有分布在页面组件，以实际 JSX 为准） |
+| `src/styles/site.css` | 归档/项目/关于等索引页、页脚、阅读页和站点外壳对齐 | `src/pages/*`、页脚/阅读组件 |
+| `src/styles/responsive.css` | 跨页面的 1280/1120/860/767/700 等断点布局及手机信息流密度 | `docs/RESPONSIVE_LAYOUT.md` 与实际页面 DOM |
+| `src/styles/skins.css` | editorial / terminal 的配色、字体和必要差异覆盖 | `docs/DESIGN_SYSTEM.md` |
+| `src/styles/motion.css` | 转场、悬停、键盘/触摸反馈和减少动效 | `src/lib/motion.ts` |
+
+**按需修改规则：** 单个组件的样式改动先查对应负责文件，再查 `responsive.css`，需要区分皮肤才查 `skins.css`，动效问题最后查 `motion.css`。不要把 `--header-height` 一类布局 token 的修复仅写进 skin；此类值必须跨皮肤共享。新拆分不得移动规则到相反的导入位置，以免同优先级覆盖出现相反结果。此表不代表已完成所有重复样式清除；本批只处理了顺序可证明保持的边界与两组被完全覆盖的手机标题规则。
+
+**回归基线：** `tests/css-ownership.test.ts` 约束导入次序和明确责任，`tests/skin-parity.test.ts` 按真实拥有者查找规则；`npm run check` 和 `scripts/visual-smoke.mjs` 检查打包、离线预览和跨皮肤/跨屏宽几何。涉及 CSS 的 PR 必须明确说明原始规则顺序和其后覆盖关系。
+
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
 先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：
@@ -121,7 +140,7 @@ shared/                跨前后端的类型、定位、输入规则
 1. **P0｜建立地图和变更记录（已完成）**：为模块建立归属、影响半径、异常定位和维护报告，无业务改动。
 2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
 3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 仅保留后台挂载与主题，`Gate.tsx` 单独负责认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表、`Discussions.tsx` 负责评论区初始化，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
-4. **P3｜CSS 归属与级联清理**：四份主要 CSS 文件共约 216 KB；先建立样式选择器→所属组件表，减少重复覆盖，再逐组移入明确位置。不能批量搬移改变 `src/styles/index.ts` 的加载顺序、层叠优先级、媒体查询和两个 skin 的尺寸一致性；所有布局修改必须实际验证手机、平板、桌面、明暗主题。
+4. **P3｜CSS 归属与级联清理（首批实施）**：先把原 `site.css` 按顶层规则段落顺序拆分为 `shell.css`、`feed.css`、`sidebar.css`、`site.css`、`responsive.css`，保持已存在的 `styles.css → site → skins → motion` 原始相对级联次序；删除两组被最终手机标题声明完全覆盖的旧规则。`styles.css` 的阅读器与基础规则、双皮肤覆盖暂不搬动；未来清理必须先检查原选择器的 @media 作用域、优先级及导入顺序，且实测手机、平板、桌面、明暗模式。
 5. **P4｜Worker 读写职责分离**：`worker/comments.ts` 和 `worker/admin.ts` 的鉴权、校验、GitHub 传输、缓存、幂等写入边界明确后，再按单一职能抽取实现。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
 6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
 
