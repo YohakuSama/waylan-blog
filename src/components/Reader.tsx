@@ -489,7 +489,7 @@ export default function Reader({ post }: { post: Post }) {
     if (prose.current)
       setOrphans(applyHighlights(prose.current, post, allAnnotations));
   }, [post, annotations, localMarks]);
-  const { progress, activeSection } = useReadingProgress(post, article, prose, excerptMode, setSelection);
+  const { progress, activeSection, setActiveSection } = useReadingProgress(post, article, prose, excerptMode, setSelection);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;

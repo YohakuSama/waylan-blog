@@ -90,5 +90,5 @@ export function useReadingProgress(
       cancelAnimationFrame(frame);
     };
   }, [post, excerptMode]);
-  return { progress, activeSection };
+  return { progress, activeSection, setActiveSection };
 }
