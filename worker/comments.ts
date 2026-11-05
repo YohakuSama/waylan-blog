@@ -46,6 +46,20 @@ function checkPublicLinks(body: string) {
     throw new HttpError(400, "LINK_LIMIT", "每条评论最多包含 2 个链接。");
 }
 
+/** Keep public comment validation identical for new posts and edits.
+ * The legacy length message differs between endpoints and is part of their HTTP contract.
+ */
+function validatedCommentBody(value: unknown, action: "create" | "edit"): string {
+  if (typeof value !== "string" || !value.trim() || value.trim().length > 6000)
+    throw new HttpError(400, "COMMENT_LENGTH",
+      action === "create" ? "请写下 1 到 6000 字的想法。" : "评论需要 1 到 6000 字。");
+  const body = value.trim();
+  checkPublicLinks(body);
+  if (/<!--\s*echo:/i.test(body))
+    throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
+  return body;
+}
+
 export async function writeComment(request: Request, env: Env, postId: string) {
   const post = requirePost(postId);
   if (!readReady(env))
@@ -59,16 +73,7 @@ export async function writeComment(request: Request, env: Env, postId: string) {
     };
   if (!data || typeof data !== "object" || Array.isArray(data))
     throw new HttpError(400, "BODY", "评论内容必须是一个 JSON 对象。");
-  if (
-    typeof data.body !== "string" ||
-    data.body.trim().length < 1 ||
-    data.body.trim().length > 6000
-  )
-    throw new HttpError(400, "COMMENT_LENGTH", "请写下 1 到 6000 字的想法。");
-  const body = data.body.trim();
-  checkPublicLinks(body);
-  if (/<!--\s*echo:/i.test(body))
-    throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
+  const body = validatedCommentBody(data.body, "create");
   if (
     typeof data.requestId !== "string" ||
     !/^[a-zA-Z0-9-]{20,80}$/.test(data.requestId)
@@ -294,14 +299,9 @@ export async function manageComment(
   await limit(env, `manage:user:${session.row.user_id}`, 20, 600);
   if (request.method === "PUT") {
     const data = (await readBody(request, 48000)) as { body?: unknown };
-    if (!data || typeof data !== "object" || Array.isArray(data) ||
-      typeof data.body !== "string" ||
-      !data.body.trim() || data.body.trim().length > 6000)
+    if (!data || typeof data !== "object" || Array.isArray(data))
       throw new HttpError(400, "COMMENT_LENGTH", "评论需要 1 到 6000 字。");
-    const body = data.body.trim();
-    checkPublicLinks(body);
-    if (/<!--\s*echo:/i.test(body))
-      throw new HttpError(400, "RESERVED", "评论中包含了保留的内部标记。");
+    const body = validatedCommentBody(data.body, "edit");
     // Keep the original annotation and nested-reply metadata after editing.
     const marker = parseMarker(current.body);
     const original = marker?.postId === postId
