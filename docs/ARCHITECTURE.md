@@ -146,7 +146,7 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
-### 评论 Worker 重复输入校验清理（2026-11-06，PR 待验收）
+### 评论 Worker 重复输入校验清理（2026-11-06，PR #113 待验收）
 
 - **修改前**：`worker/comments.ts` 中发表评论和编辑评论分别实现正文长度/保留元数据标记/公开链接数量验证；重复逻辑容易在修改一个接口时产生限制差异，但 HTTP 错误文案不同，不能直接删除分支条件。
 - **处理**：在原写入模块内部复用 `validatedCommentBody`，集中 1–6000 字、可点击链接上限及 `echo:` 保留标记校验；创建与编辑仍分别返回原 `COMMENT_LENGTH` 文案，并在相同请求阶段验证。共享文章/仓库核验仍由 `comment-shared.ts` 负责，不增加跨层抽象或新文件。
