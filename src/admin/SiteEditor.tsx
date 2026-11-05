@@ -17,7 +17,7 @@ type SiteForm = {
   socials: { label: string; url: string }[];
   about: string;
 };
-const toSiteForm = (o: Overview): SiteForm => ({
+export const toSiteForm = (o: Overview): SiteForm => ({
   name: str(o.site.data.name),
   author: str(o.site.data.author),
   tagline: str(o.site.data.tagline),
