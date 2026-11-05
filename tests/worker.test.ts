@@ -115,6 +115,7 @@ beforeEach(async () => {
     GITHUB_REPO_OWNER: "test-owner",
     GITHUB_REPO_NAME: "test-blog",
     GITHUB_READ_TOKEN: "test-read-only-token",
+    GITHUB_AUTH_PROVIDER: "oauth-app",
     GITHUB_CLIENT_ID: "test-client",
     GITHUB_CLIENT_SECRET: "test-secret",
     SESSION_SECRET: "test-only-random-secret-longer-than-32-bytes",
@@ -601,8 +602,17 @@ describe("OAuth, cryptography and rendering", () => {
     const original = await (await call("/api/status")).json() as any;
     assert.equal(original.login, true);
     assert.equal(original.authProvider, "oauth-app");
-    assert.equal(original.authProviderExplicit, false);
+    assert.equal(original.authProviderExplicit, true);
     assert.ok(!JSON.stringify(original).includes(env.GITHUB_CLIENT_SECRET!));
+
+    delete env.GITHUB_AUTH_PROVIDER;
+    const unconfigured = await (await call("/api/status")).json() as any;
+    assert.equal(unconfigured.login, false);
+    assert.equal(unconfigured.authProvider, null);
+    assert.equal(unconfigured.authProviderExplicit, false);
+    assert.equal((await call("/api/auth/github")).status, 503);
+
+    env.GITHUB_AUTH_PROVIDER = "oauth-app";
 
     env.GITHUB_AUTH_PROVIDER = "github-app";
     const missing = await (await call("/api/status")).json() as any;
