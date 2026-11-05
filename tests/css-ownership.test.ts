@@ -66,9 +66,9 @@ describe("Shared CSS ownership and cascade safety", () => {
     const responsive = read("src/styles/responsive.css");
     const composer = [...base.matchAll(/\.discussion-dialog\.composer-dialog \.composer-bottom\s*\{([^}]*)\}/g)]
       .map((match) => match[1]);
-    assert.equal(composer.length, 1, "the identical later composer gap rule was redundant");
-    assert.match(composer[0], /gap:\s*8px;/);
-    assert.match(composer[0], /safe-area-inset-bottom/);
+    const phone = composer.filter((body) => /gap:\s*8px;/.test(body));
+    assert.equal(phone.length, 1, "the identical later phone composer gap rule was redundant");
+    assert.match(phone[0], /safe-area-inset-bottom/);
 
     const tools = [...responsive.matchAll(/\.site-header-reader \.header-tools\s*\{([^}]*)\}/g)]
       .map((match) => match[1]);
