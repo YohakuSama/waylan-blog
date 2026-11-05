@@ -80,10 +80,10 @@ async function main() {
   for (const branch of eligible) {
     try {
       // Re-check immediately before deletion to avoid racing a new commit.
-      const current = await github(apiBase + "/branches/" +
+      const current = await github(apiBase + "/git/ref/heads/" +
         branch.name.split("/").map(encodeURIComponent).join("/"));
-      if (current.commit.sha !== branch.sha || current.protected)
-        throw new Error("Branch moved or became protected");
+      if (current.object.sha !== branch.sha)
+        throw new Error("Branch moved since snapshot");
       await github(apiBase + "/git/refs/heads/" +
         branch.name.split("/").map(encodeURIComponent).join("/"), "DELETE");
       deleted.push(branch.name);
