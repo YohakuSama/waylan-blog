@@ -334,7 +334,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("uses the header as the sole branded logo across both skins and all routes", () => {
     const app = readFileSync("src/App.tsx", "utf8");
-    const pages = readFileSync("src/pages.tsx", "utf8");
+    const pages = readFileSync("src/pages/About.tsx", "utf8");
     const footer = app.slice(app.indexOf('<footer className="site-footer">'));
     assert.ok(footer.startsWith('<footer className="site-footer">'));
     assert.doesNotMatch(footer, /<Wordmark\s*\/>|footer-(?:brand|identity|blog-script|terminal-wordmark)/,
@@ -358,7 +358,7 @@ describe("mobile reader regression contracts", () => {
     assert.doesNotMatch(app, /mobile-brand-tagline|brand-motto-quote/);
   });
   it("aligns index-page sidebar labels and trailing controls as one design system", () => {
-    const pages = readFileSync("src/pages.tsx", "utf8");
+    const pages = readFileSync("src/pages/Home.tsx", "utf8");
     const sidebar = readFileSync("src/components/Sidebar.tsx", "utf8");
     const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
     assert.ok(pages.includes('className="home-project-copy"') &&
@@ -466,7 +466,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("preserves the homepage reading-card height and text on Safari reload", () => {
     const script = readFileSync("public/theme.js", "utf8");
-    const page = readFileSync("src/pages.tsx", "utf8");
+    const page = readFileSync("src/pages/Home.tsx", "utf8");
     assert.ok(page.includes('className="home-resume home-resume-placeholder"'),
       "prerendered home must reserve an empty reading slot until hydration");
     assert.ok(page.includes('className="resume-preview-title"') &&
