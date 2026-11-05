@@ -23,7 +23,7 @@ flowchart LR
 
 - **浏览器路由及页面装配**：`src/App.tsx`、`src/pages.tsx`、`src/pages/*`。`src/components/*` 实现 UI，`src/lib/*` 提供面向浏览器的路由、动效、公共 JSON API、选区和本地持久化能力。
 - **后台**：`src/admin/main.tsx` 仅管理主题同步与挂载；`src/admin/Gate.tsx` 独立管理登录会话、CSRF 初始化及权限提示；`src/admin/Dashboard.tsx` 负责页面切换、部署状态和请求刷新；`src/admin/ContentList.tsx` 只负责文章列表与删除；`src/admin/Discussions.tsx` 单独负责评论区初始化及批处理终止条件；`PostEditor.tsx`、`SiteEditor.tsx` 分别拥有编辑状态与保存事务。共同通过 `src/admin/api.ts` 保留认证、CSRF、专有超时，不与缓存型公开浏览 API `src/lib/api.ts` 混用。
-- **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；跨端合同放 `shared/*`。
+- **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；后台源码仓库的 GitHub GraphQL/REST 访问、分支 OID 与单次原子提交在 `worker/admin-repo.ts`，`worker/admin.ts` 保留鉴权、输入校验和 API 编排；跨端合同放 `shared/*`。
 - **数据生产线**：`content/*` 为文章/站点配置源；`scripts/content.ts` 构建 `src/generated/*` 与 `worker/generated/*`；不要直接手改生成产物、历史 D1 migrations 或已发布的 `post.id`。
 - **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css` 是阅读器与基础规则；`src/styles/shell.css`、`feed.css`、`sidebar.css`、`site.css` 分别负责页眉首页、信息流、侧栏、索引/页脚；`responsive.css` 负责跨页面断点；`skins.css` 是双皮肤主题覆盖；`motion.css` 负责动画与可访问性动效规则；运行时动画策略在 `src/lib/motion.ts`。
 - **验证和部署**：`tests/*` 是单测与契约测试；`scripts/*-smoke.mjs` 为真实浏览器审核；`.github/workflows/verify.yml` 是唯一 GitHub Actions 入口，按 `scripts/ci-plan.mjs` 选择检查。
@@ -42,7 +42,7 @@ flowchart LR
 | 长按选区、私人划线、批注定位与分享 | `src/components/Reader.tsx`、`src/lib/selection.ts`、`shared/anchors.ts` | `tests/selection.test.ts`、`tests/anchors.test.ts`、`scripts/selection-composer-smoke.mjs` |
 | 评论加载、提交、重试及缓存 | `src/lib/api.ts`、`worker/comments.ts`、`worker/github.ts`、`worker/auth.ts` | `tests/worker.test.ts`、`tests/transport.test.ts`；必要时跑阅读器浏览器检查 |
 | 登录、CSRF、安全头和权限 | `worker/auth.ts`、`worker/security.ts`、`worker/index.ts`、`worker/types.ts` | `tests/worker.test.ts`、`tests/github-app-config.test.ts` |
-| 后台登录、管理看板、编辑内容、媒体上传与站点设置 | `src/admin/main.tsx`（启动）→ `Gate.tsx`（会话）→ `Dashboard.tsx`（路由与刷新）→ `ContentList.tsx`（内容列表） / `Discussions.tsx`（评论区创建） / `PostEditor.tsx` / `SiteEditor.tsx`（表单事务）；通用能力在 `ui.tsx` / `helpers.ts` / `form.ts` / `api.ts`；服务端 `worker/admin.ts` | `tests/admin-modules.test.ts`、`tests/admin.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
+| 后台登录、管理看板、编辑内容、媒体上传与站点设置 | `src/admin/main.tsx`（启动）→ `Gate.tsx`（会话）→ `Dashboard.tsx`（路由与刷新）→ `ContentList.tsx`（内容列表） / `Discussions.tsx`（评论区创建） / `PostEditor.tsx` / `SiteEditor.tsx`（表单事务）；通用能力在 `ui.tsx` / `helpers.ts` / `form.ts` / `api.ts`；服务端入口 `worker/admin.ts`（权限、API、数据校验）→ `worker/admin-repo.ts`（内容仓库读写/版本） | `tests/admin-modules.test.ts`、`tests/admin.test.ts`、`tests/admin-repository.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
 | 文章新增、永久链接、RSS 和预渲染 | `content/*`、`scripts/content.ts`、`scripts/prerender.tsx`、`shared/redirects.ts`、`worker/post-sync.ts` | `tests/post-sync.test.ts`、`tests/redirects.test.ts`、`scripts/check-build.ts` |
 | 深浅主题、editorial / terminal 和动效 | `src/styles/skins.css`、`src/styles/motion.css`、`src/lib/appearance.ts`、`src/lib/motion.ts` | `tests/skin-parity.test.ts`、`tests/motion.test.ts`、`scripts/quality-smoke.mjs` |
 | 通知状态、阅读清单与浏览量 | `src/components/NotificationBell.tsx` / `Shelf.tsx`、`src/lib/shelf.ts` / `views.ts`、`worker/notifications.ts` / `views.ts` | 相关单测、`scripts/quality-smoke.mjs` |
@@ -92,7 +92,7 @@ flowchart LR
 
 **回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。PR [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 的头部提交 `7edeb4f0` 已通过 [Waylan CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)：类型检查、构建、单元/契约测试、多端布局、Chromium/Firefox/WebKit 后台交互和 WCAG；合并提交 `49de396e` 的 [main 核心检查 #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) 亦通过。本次按需分类正确跳过与后台无关的阅读器、摘录、动效专项。**生产环境 OAuth、真实 GitHub 写入/上传、Cloudflare 部署尚未单独验收。** 如出现回归，可回滚本次前端重构并重新部署；本 PR 无数据库迁移，因此无需反向迁移 D1。
 
-### 第三阶段 CSS 责任边界（首批，已提交待验收）
+### 第三阶段 CSS 责任边界（首批，已验收合并 PR #105）
 
 > 单一入口：`src/styles/index.ts`。在线/离线同时加载它；不要直接在单个组件 import 此处的功能样式，更不能把覆盖规则追加到任意文件尾部。
 
@@ -110,6 +110,26 @@ flowchart LR
 **按需修改规则：** 单个组件的样式改动先查对应负责文件，再查 `responsive.css`，需要区分皮肤才查 `skins.css`，动效问题最后查 `motion.css`。不要把 `--header-height` 一类布局 token 的修复仅写进 skin；此类值必须跨皮肤共享。新拆分不得移动规则到相反的导入位置，以免同优先级覆盖出现相反结果。此表不代表已完成所有重复样式清除；本批只处理了顺序可证明保持的边界与两组被完全覆盖的手机标题规则。
 
 **回归基线：** `tests/css-ownership.test.ts` 约束导入次序和明确责任，`tests/skin-parity.test.ts` 按真实拥有者查找规则；`npm run check` 和 `scripts/visual-smoke.mjs` 检查打包、离线预览和跨皮肤/跨屏宽几何。涉及 CSS 的 PR 必须明确说明原始规则顺序和其后覆盖关系。
+
+### 第四阶段 Worker 后台仓库访问边界（首批，待 CI 验收）
+
+```text
+HTTP request → worker/index.ts → worker/admin.ts
+                                    ├─ requireAdmin/session + CSRF/origin（沿用原入口）
+                                    ├─ payload/content/site/upload validation
+                                    ├─ admin-repo.ts → GitHub REST/GraphQL / branch HEAD / blobs / tree / commit
+                                    └─ syncDiscussions → 现有公开 GitHub Discussions + D1
+```
+
+| 处理的问题 | 第一责任文件 | 不得绕过的合同 |
+| --- | --- | --- |
+| 后台账号和内容权限、403/503、安全错误 | `worker/admin.ts` → `worker/auth.ts`、`worker/security.ts` | 原身份会话、CSRF、同源/速率限制顺序 |
+| 获取内容仓库分支版本、枚举文章、读取/查找内容 | `worker/admin-repo.ts` 的 `repo/head/posts/files` | GitHub GraphQL 仓库与分支、404、OID 和版本检查 |
+| 文章/站点写入、图片 blob、提交冲突 | `worker/admin-repo.ts` 的 `commit/blobOid`；调用方在 `admin.ts` | Git Data REST 的 base tree → commit → 非强制更新 HEAD；409 冲突、403 token 错误映射；不可变 `post.id` |
+| 公共评论加载、批注映射与写入幂等恢复 | `worker/comments.ts`、`worker/github.ts` | 不与后台 GitHub **内容仓库**混用 token、缓存或重试流程 |
+| 公开 Discussions 创建和 D1 登记 | `worker/admin.ts` 的 `syncDiscussions`（当前仍在编排层） | 管理员权限、D1 发布文章映射、公开仓库验证，每次不超过 10 篇 |
+
+此次把 `worker/admin.ts` 的 ~190 行完整 GitHub 内容仓库 I/O 放到 `admin-repo.ts`，不生成第二份 GitHub 客户端，不将私有内容 Token 混入公共评论访问 `worker/github.ts` 的调用路径；`worker/github.ts` 仍是现有通用 GraphQL transport。移动代码不改变任何请求或提交次序。新增 `tests/admin-repository.test.ts` 覆盖分支选择、空请求与 UTF-8 Git blob OID，原 `tests/admin.test.ts` 继续验证令牌失败、并发冲突、上传与不可逆写入。**后续拆分必须以独立 PR 进行，不能在这个提交中更改评论的幂等写入语义。**
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
@@ -141,7 +161,7 @@ shared/                跨前后端的类型、定位、输入规则
 2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
 3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 仅保留后台挂载与主题，`Gate.tsx` 单独负责认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表、`Discussions.tsx` 负责评论区初始化，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
 4. **P3｜CSS 归属与级联清理（首批实施）**：先把原 `site.css` 按顶层规则段落顺序拆分为 `shell.css`、`feed.css`、`sidebar.css`、`site.css`、`responsive.css`，保持已存在的 `styles.css → site → skins → motion` 原始相对级联次序；删除两组被最终手机标题声明完全覆盖的旧规则。`styles.css` 的阅读器与基础规则、双皮肤覆盖暂不搬动；未来清理必须先检查原选择器的 @media 作用域、优先级及导入顺序，且实测手机、平板、桌面、明暗模式。
-5. **P4｜Worker 读写职责分离**：`worker/comments.ts` 和 `worker/admin.ts` 的鉴权、校验、GitHub 传输、缓存、幂等写入边界明确后，再按单一职能抽取实现。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
+5. **P4｜Worker 读写职责分离（首批进行中）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。`worker/comments.ts` 的缓存/重复提交恢复等写入状态机仍保持原样，后续独立 PR 先建立测试边界再细拆。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
 6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
 
 行数是**审查信号，不是重构 KPI**。可以用“文件是否只有一个清晰的变更理由”“一次修改影响哪些功能”“能否单独回滚”判断是否应该拆分。避免把 1 个大文件机械切成 30 个相互依赖的小文件。
