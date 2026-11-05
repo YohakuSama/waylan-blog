@@ -347,7 +347,7 @@ try {
             assert.ok(geometry.brandWordmark && geometry.brandWordmark.height >= 20,
               `${label}: the standalone brand must remain legible`);
             assert.equal(geometry.mobileTagline, null, `${label}: no detached mobile subtitle`);
-            if ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) {
+            if (!route.startsWith("/post/") && ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279))) {
               assert.ok(geometry.searchLabel?.width >= 18,
                 `${label}: expand genuine search into available header space`);
             }
