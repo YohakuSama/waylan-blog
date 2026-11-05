@@ -1,0 +1,25 @@
+name: Windows self-hosted runner connectivity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-connectivity:
+    # Manual, read-only connectivity test. Never runs untrusted PR code.
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Confirm Windows runner is accepting jobs
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host 'Self-hosted Windows runner accepted this Actions job.'
+          Write-Host "Runner OS: $env:RUNNER_OS"
+          Write-Host "Runner architecture: $env:RUNNER_ARCH"
+          if ($env:RUNNER_OS -ne 'Windows') {
+            throw 'Expected a Windows self-hosted runner.'
+          }
+          Write-Host 'Connectivity check passed.'
