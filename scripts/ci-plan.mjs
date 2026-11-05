@@ -8,14 +8,16 @@ import { pathToFileURL } from "node:url";
 
 const docOnly = (p) =>
   p.startsWith("docs/") || p === "README.md" || p === "LICENSE" ||
-  p.endsWith(".md") || p.startsWith(".github/ISSUE_TEMPLATE/");
+  p.startsWith(".github/ISSUE_TEMPLATE/");
 
 const sharedUI = (p) =>
   p === "src/App.tsx" || p === "src/client.tsx" || p === "src/offline.tsx" ||
   p === "src/styles.css" || p.startsWith("src/styles/") ||
   p === "src/lib/router.tsx" || p === "src/lib/motion.ts" ||
-  p === "src/lib/data.ts" || p.startsWith("content/") ||
-  p.startsWith("shared/");
+  p === "src/lib/data.ts" || p === "src/lib/appearance.ts" ||
+  p === "src/lib/runtime.ts" || p === "src/lib/storage.ts" ||
+  p === "src/lib/api.ts" || p.startsWith("content/") ||
+  p.startsWith("shared/") || p.startsWith("public/") || p === "index.html";
 
 const relevant = (paths, fn) => paths.some(fn);
 
@@ -25,8 +27,8 @@ export function classify(paths, event = "pull_request", forceFull = false) {
   const ui = relevant(paths, (p) =>
     p.startsWith("src/") || p.startsWith("content/") ||
     p.startsWith("worker/") || p.startsWith("shared/") ||
-    p.startsWith("scripts/") || p.startsWith("tests/") ||
-    p.startsWith(".github/workflows/") ||
+    p.startsWith("scripts/") || p.startsWith("tests/") || p.startsWith("public/") ||
+    p === "index.html" || p.startsWith(".github/workflows/") ||
     ["package.json", "package-lock.json", "vite.config.ts"].includes(p));
   // An accepted PR has run browser gates; do not repeat all browser installs
   // on the ensuing main push. Direct main pushes still run the core check.
@@ -34,11 +36,12 @@ export function classify(paths, event = "pull_request", forceFull = false) {
   const infrastructure = (p) => p.startsWith(".github/workflows/") ||
     p === "scripts/ci-plan.mjs" || p === "package.json" || p === "package-lock.json";
   const reader = browser && relevant(paths, (p) =>
-    sharedUI(p) || infrastructure(p) ||
-    /^(src\/components\/(Reader|UI|Settings|Feed|Network)|src\/lib\/(selection|reader|appearance|reveal)|scripts\/(reader|responsive-navigation|selection-composer|route-motion))/i.test(p));
+    sharedUI(p) || infrastructure(p) || p.startsWith("src/components/Notification") ||
+    p.startsWith("src/components/Shelf") ||
+    /^(src\/components\/(Reader|UI|Settings|Feed|Network)|src\/lib\/(selection|reader|appearance|reveal)|scripts\/(reader|responsive-navigation|selection-composer|route-motion)|tests\/(selection|navigation|mobile-regressions))/i.test(p));
   const feed = browser && relevant(paths, (p) =>
     sharedUI(p) || infrastructure(p) ||
-    /^(src\/pages\/(Feed|Home|Archive)|src\/components\/(Feed|Sidebar|UI)|src\/lib\/(api|views)|scripts\/(excerpt|interaction-state|visual))/i.test(p));
+    /^(src\/pages\/(Feed|Home|Archive)|src\/components\/(Feed|Sidebar|UI)|src\/lib\/(api|views)|scripts\/(excerpt|interaction-state|visual)|tests\/(navigation|mobile-regressions|home-responsive))/i.test(p));
   const motion = browser && relevant(paths, (p) =>
     infrastructure(p) || p === "src/lib/motion.ts" ||
     p === "src/lib/router.tsx" || p === "src/App.tsx" ||
