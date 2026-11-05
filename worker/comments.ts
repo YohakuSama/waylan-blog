@@ -186,8 +186,8 @@ export async function writeComment(request: Request, env: Env, postId: string) {
   if (intent?.status === "sending") return recover();
   // Duplicate submissions with fresh request IDs should not create more posts.
   const recentDuplicate = await env.DB!.prepare(
-    "SELECT request_id FROM write_intents WHERE user_id=? AND payload_hash=? AND request_id<>? AND status IN (\x27sent\x27,\x27sending\x27) AND created_at>? LIMIT 1",
-  ).bind(session.row.user_id, payloadHash, requestId, now() - 600).first();
+    "SELECT request_id FROM write_intents WHERE user_id=? AND post_id=? AND payload_hash=? AND request_id<>? AND status IN (\x27sent\x27,\x27sending\x27) AND created_at>? LIMIT 1",
+  ).bind(session.row.user_id, postId, payloadHash, requestId, now() - 600).first();
   if (recentDuplicate)
     throw new HttpError(429, "DUPLICATE_COMMENT", "相同内容刚刚发表过，请不要重复发送。");
   const ip = clientIP(request);
