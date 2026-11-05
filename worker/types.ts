@@ -58,14 +58,14 @@ export const readReady = (env: Env) =>
   present(env.GITHUB_READ_TOKEN) &&
   present(env.GITHUB_REPO_OWNER) &&
   present(env.GITHUB_REPO_NAME);
-export const authProvider = (env: Env) => env.GITHUB_AUTH_PROVIDER || "oauth-app";
+// No implicit OAuth fallback: a missing provider must never request public_repo.
+export const authProvider = (env: Env) => env.GITHUB_AUTH_PROVIDER;
 export const authClientId = (env: Env) =>
   authProvider(env) === "github-app" ? env.GITHUB_APP_CLIENT_ID : env.GITHUB_CLIENT_ID;
 export const authClientSecret = (env: Env) =>
   authProvider(env) === "github-app" ? env.GITHUB_APP_CLIENT_SECRET : env.GITHUB_CLIENT_SECRET;
 export const authReady = (env: Env) =>
-  (env.GITHUB_AUTH_PROVIDER === undefined ||
-    env.GITHUB_AUTH_PROVIDER === "oauth-app" ||
+  (env.GITHUB_AUTH_PROVIDER === "oauth-app" ||
     env.GITHUB_AUTH_PROVIDER === "github-app") &&
   !!env.DB &&
   present(authClientId(env)) &&
