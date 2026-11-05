@@ -47,7 +47,7 @@ describe("local and session storage boundary contracts", () => {
       assert.equal(transient.set("reader", { draft: "saved" }), undefined);
       assert.deepEqual(transient.get("reader", fallback), { draft: "saved" });
       assert.equal(session.values.get("echo:reader"), '{"draft":"saved"}');
-      assert.equal(storage.get("reader", fallback).progress, 34);
+      assert.deepEqual(storage.get("reader", fallback), { progress: 34 });
       local.values.set("echo:bad", "{broken");
       session.values.set("echo:bad", "undefined");
       assert.equal(storage.get("bad", fallback), fallback);
