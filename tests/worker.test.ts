@@ -470,6 +470,42 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(result.status, 400);
     assert.equal(((await result.json()) as any).code, "LINK_LIMIT");
   });
+  it("keeps create/edit body validation codes, messages and rejected-write behavior identical", async () => {
+    const invalid = [
+      { value: null, code: "COMMENT_LENGTH" },
+      { value: "   ", code: "COMMENT_LENGTH" },
+      { value: "字".repeat(6001), code: "COMMENT_LENGTH" },
+      { value: "<!-- echo:v1:forged -->", code: "RESERVED" },
+      { value: "https://a.example https://b.example https://c.example", code: "LINK_LIMIT" },
+    ];
+    for (const { value, code } of invalid) {
+      const result = await send(requestBody({ body: value }));
+      assert.equal(result.status, 400);
+      const error = (await result.json()) as { code: string; message: string };
+      assert.equal(error.code, code);
+      if (code === "COMMENT_LENGTH") assert.equal(error.message, "请写下 1 到 6000 字的想法。");
+    }
+    assert.equal(writeTokens.length, 0);
+    const created = (await (await send(requestBody())).json()) as { comment: Comment };
+    const original = created.comment.body;
+    const route = `/api/posts/${postId}/comments/${created.comment.id}`;
+    const edit = (body: unknown) => call(route, {
+      method: "PUT",
+      headers: { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf },
+      body: JSON.stringify({ body }),
+    });
+    for (const { value, code } of invalid) {
+      const result = await edit(value);
+      assert.equal(result.status, 400);
+      const error = (await result.json()) as { code: string; message: string };
+      assert.equal(error.code, code);
+      if (code === "COMMENT_LENGTH") assert.equal(error.message, "评论需要 1 到 6000 字。");
+    }
+    assert.equal(writeTokens.length, 1, "invalid edits must not send GitHub mutations");
+    assert.equal((await edit("更新内容")).status, 200);
+    assert.equal(writeTokens.length, 2, "only one create and one valid edit should reach GitHub");
+    assert.equal(original.includes("echo:v1"), false, "published comment remains scrubbed");
+  });
   it("limits comments across many GitHub accounts sharing one IP", async () => {
     for (let i = 0; i < 8; i++) {
       // Simulate different authenticated users, all behind the same client IP.
