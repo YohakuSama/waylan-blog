@@ -755,7 +755,7 @@ h3 {
   line-height: 1.45;
   font-weight: 600;
   color: var(--ink);
-  text-wrap: pretty;
+  text-wrap: wrap;
 }
 .is-article .feed-body h2 {
   font-size: clamp(22px, 1.8vw, 24px);
@@ -2285,14 +2285,8 @@ h3 {
   }
 }
 
-/* Reading density v2: balanced editorial headlines and a quieter colophon.
-   Applies to both skins; terminal retains its own typeface and square geometry. */
-@supports (text-wrap: balance) {
-  .feed-body h2,
-  .reading-article .article-heading h1 {
-    text-wrap: balance;
-  }
-}
+/* Article headlines use natural wrapping at all widths and skins.
+   Balancing Chinese text makes lines break early and leaves empty space. */
 @media (max-width: 1024px) {
   .site-main {
     padding-bottom: 40px;
