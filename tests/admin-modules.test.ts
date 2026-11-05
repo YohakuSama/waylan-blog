@@ -1,3 +1,6 @@
+import { usedUploads } from "../src/admin/helpers";
+import { toSiteForm } from "../src/admin/SiteEditor";
+import type { Overview, Upload } from "../src/admin/types";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -7,9 +10,11 @@ const read = (path: string) => readFileSync(path, "utf8");
 describe("Admin feature boundaries", () => {
   it("keeps /admin entry focused on appearance, authentication and root mount", () => {
     const entry = read("src/admin/main.tsx");
-    assert.match(entry, /function Gate\(/);
-    assert.match(entry, /setAdminCsrf\(next\.csrf \|\| ""\)/);
-    assert.match(entry, /<Dashboard session=\{session\}/);
+    const gate = read("src/admin/Gate.tsx");
+    assert.match(entry, /import \{ Gate \} from "\.\/Gate"/);
+    assert.match(gate, /export function Gate\(/);
+    assert.match(gate, /setAdminCsrf\(next\.csrf \|\| ""\)/);
+    assert.match(gate, /<Dashboard session=\{session\}/);
     assert.match(entry, /createRoot\(document\.getElementById\("admin"\)!\)/);
     assert.doesNotMatch(entry, /function (PostEditor|SiteEditor|Posts|Discussions)\(/);
     assert.doesNotMatch(entry, /await fetch\(/);
@@ -57,6 +62,7 @@ describe("Admin feature boundaries", () => {
     assert.match(helpers, /const stop = \(event: BeforeUnloadEvent\)/);
     assert.match(helpers, /event\.key\.toLowerCase\(\) === "s"/);
     assert.equal(read("src/admin/main.tsx").includes("<ReactMarkdown"), false);
+    assert.equal(read("src/admin/main.tsx").includes("/api/admin/"), false);
   });
 
   it("keeps admin transport isolated from public cached GET API", () => {
@@ -69,5 +75,44 @@ describe("Admin feature boundaries", () => {
     assert.ok(post.includes('from "./api"') && site.includes('from "./api"'));
     assert.equal(post.includes('from "../lib/api"'), false);
     assert.equal(site.includes('from "../lib/api"'), false);
+  });
+});
+
+describe("admin data contracts after extraction", () => {
+  it("deduplicates referenced unsent media without mutating uploaded records", () => {
+    const uploads: Upload[] = [
+      { path: "images/a.jpg", data: "a", url: "" },
+      { path: "images/a.jpg", data: "duplicate", url: "" },
+      { path: "images/b.jpg", data: "b", url: "", sent: true },
+      { path: "images/c.jpg", data: "c", url: "" },
+    ];
+    assert.deepEqual(usedUploads(uploads, "images/a.jpg images/b.jpg images/c.jpg"), [
+      { path: "images/a.jpg", data: "a" },
+      { path: "images/c.jpg", data: "c" },
+    ]);
+    assert.equal(uploads[2].sent, true);
+    const many: Upload[] = Array.from({ length: 9 }, (_, i) => ({
+      path: `images/${i}.jpg`, data: "x", url: "",
+    }));
+    assert.throws(() => usedUploads(many, many.map(u => u.path).join(" ")), /8 张/);
+  });
+
+  it("preserves site metadata, social links and about text conversion", () => {
+    const overview: Overview = {
+      head: { oid: "head", date: "2026-11-05" },
+      live: "head",
+      repo: { name: "owner/repo", branch: "main" },
+      site: { oid: "site", data: {
+        name: "Waylan", author: "Waylan", profileTags: ["React", "Cloudflare"],
+        socials: [{ url: "https://github.com/example" }],
+      } },
+      about: { oid: "about", text: "About the site.\n" },
+      topics: [], posts: [], discussions: { enabled: false, pending: [] },
+    };
+    const form = toSiteForm(overview);
+    assert.equal(form.name, "Waylan");
+    assert.equal(form.profileTags, "React, Cloudflare");
+    assert.deepEqual(form.socials, [{ label: "", url: "https://github.com/example" }]);
+    assert.equal(form.about, "About the site.");
   });
 });
