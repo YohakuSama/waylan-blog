@@ -72,7 +72,7 @@ describe("maintainable module boundaries", () => {
     assert.equal(reads.includes('from "./comments"'), false);
     assert.equal(shared.includes('from "./comments"'), false);
     assert.equal(shared.includes('from "./comment-reads"'), false);
-    assert.ok(reads.includes("checkDiscussion(node, env, map)"));
+    assert.ok(reads.includes("checkDiscussion(data.node, env, map)"));
     assert.ok(writes.includes("checkDiscussion(check.node, env, map)"));
     assert.ok(writes.includes('intent?.status === "sending"'));
     assert.ok(writes.includes('"DELIVERY_UNKNOWN"'));
