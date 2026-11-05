@@ -180,6 +180,12 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **A/B 增量收尾（仅代码与自动化层面）：** A 的纯数据模型迁入现有 `features/discussions/model.ts`，B 的重复校验留在现有 `worker/comments.ts` 中复用；相较原 `main@5ed46df`，没有新增中间层、外部库、迁移、生产资源或 Actions 工作流。最终 A [PR #112](https://github.com/YohakuSama/waylan-blog/pull/112) · [CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) · `cc6e3512`；最终 B [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113) · [CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) · `0fe9adb6`。回滚时仅 revert 发生回归的对应 squash（若两个都需回滚，按 B 后 A 的反向合并顺序），重新部署并重新执行验证。代码回滚不会自动撤销已发布的 GitHub 评论或 D1 数据。生产部署 SHA、真实 iOS Safari、OAuth/D1/Discussion 写入和 Cloudflare Workers Builds 状态**仍未单独取得完成证据**，不能将合并或 CI 通过视作生产验收。
 
+### A/B 合并后 Cloudflare Workers Builds 实际失败（待定位）
+
+- **可核实事实**：A 合并后的 `main@cc6e3512` 在 [Cloudflare Workers Builds #127432120025](https://github.com/YohakuSama/waylan-blog/runs/127432120025) 显示 `success`，构建 ID `16c92c56-ddfb-4b99-83b3-2ccffbbdc5ba`；B 合并后的 `main@0fe9adb6` 在 [Cloudflare Workers Builds #127445052566](https://github.com/YohakuSama/waylan-blog/runs/127445052566) 显示 `failure`，构建 ID `269a636e-16d0-422e-b67d-3af534ce0adc`。与此同时 [Waylan CI #42083772289](https://github.com/YohakuSama/waylan-blog/actions/runs/42083772289) 在 B 合并后的 main 上通过，文档提交 `05a4d0d8` 的 [CI #42084038307](https://github.com/YohakuSama/waylan-blog/actions/runs/42084038307) 也通过（文档级，不是构建重验）。
+- **根因未知**：GitHub Cloudflare 检查摘要只有 Build ID，没有失败阶段/错误栈；历史无关文档 PR 和部分 main 也发生过 Workers Builds 失败。单靠此对比不能证明 B 引入构建回退，更不能声称 B 生产部署成功。应通过 Cloudflare 后台构建日志比对前后构建命令、Node/npm 版本、环境变量、构建输出、Worker 发布版本与部署触发条件；只在根因确认后实施修复或单独 revert B 的 `0fe9adb6`。
+- **发布边界**：此项为**未关闭的发布风险**。不把 Waylan CI 绿色视为 Cloudflare 生产部署成功；不修改 D1 migrations、Cloudflare 配置、原生 iOS 或 GitHub OAuth/Discussion 生产写入；仅记录可审计事实，后续需受控发布/实际设备验证。
+
 ### A/B 后续发布验收与剩余技术债（2026-11-06）
 
 本次仅在源代码与现有自动化验收层面结项，**不代表 Cloudflare 生产部署已核实**：GitHub 中的 Cloudflare Workers Builds 在 A/B 修改前的 `main` 基线 `815102af` 就有失败检查，在 PR 分支也出现失败；GitHub 检查摘要不包含可确认的 Cloudflare 失败根因，不将其归因于本轮拆分，也不声称部署成功。发布负责人需要到 Cloudflare dashboard 读取对应构建日志，确认部署版本 SHA、可回滚生产版本及静态资产。
