@@ -460,7 +460,7 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(writeTokens.length, 1);
   });
   it("allows identical text on another post without changing old requestId hashes", async () => {
-    const second = manifest.find((post) => post.id !== postId);
+    const second = manifest.find((post) => post.id === "echo-002");
     assert.ok(second);
     db.sqlite.prepare("INSERT INTO discussions VALUES(?,?,?,?)")
       .run(second.id, "D_other", 2, "https://github.com/test-owner/test-blog/discussions/2");
