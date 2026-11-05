@@ -143,6 +143,10 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"article reading → reading settings → light-to-dark theme segment",sampled,intermediate,settled});
       assert.equal(settled.thumbContent,"none", "the selected background must stay attached to its label, not lag behind on a separate animated thumb");
       assert.notEqual(settled.activeBackground,"rgba(0, 0, 0, 0)", "selected label must show a real background");
+      // Close the native settings dialog before the next document navigation.
+      // Navigating while a WebKit top-layer dialog is open can crash its renderer.
+      await dialog.getByRole("button",{name:"关闭",exact:true}).click();
+      await dialog.waitFor({state:"hidden"});
       // End-to-end TOC regression: the original report was a jump from
       // "水合一致性" into the later "稳定的标识" section. DOM-only
       // title/ID checks cannot catch a bad physical scroll landing.

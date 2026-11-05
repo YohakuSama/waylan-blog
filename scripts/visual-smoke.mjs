@@ -811,8 +811,21 @@ try {
           assert.ok(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= width && errorBounds.y + errorBounds.height <= 900,
             `${label}: error panel escaped viewport`);
           notificationsStatus = "enabled";
+          const recoveredStatus = page.waitForResponse(response =>
+            new URL(response.url()).pathname === "/api/status" && response.status() === 200,
+            { timeout: 14000 });
           await inbox.getByRole("button", { name: "重试", exact: true }).click();
-          await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor();
+          await recoveredStatus;
+          try {
+            await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor({ timeout: 12000 });
+          } catch (error) {
+            const state = await inbox.evaluate(element => ({
+              text: element.textContent?.trim(),
+              trigger: document.querySelector(".notification-trigger")?.getAttribute("aria-label"),
+            }));
+            await page.screenshot({ path: `${out}/${label}-retry-failure.png`, animations: "disabled" });
+            throw new Error(`${label}: notification recovery did not render login state: ${JSON.stringify(state)}; ${error}`);
+          }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
       } finally { await context.close(); }
