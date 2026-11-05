@@ -36,6 +36,8 @@ export function routeMotionDirection(from: string, to: string, pop = false): "fo
 }
 const Context = createContext<Router>(null!);
 export const useRouter = () => useContext(Context);
+/** Compatibility export for older components; new code imports from motion. */
+export const motionOK = motionAllowed;
 // Only public application pages belong to the client router. Static files,
 // /admin and API links must use native browser navigation.
 export function isAppRoute(pathname: string) {
