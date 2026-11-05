@@ -1,90 +1,209 @@
-name: Verify blog layout and build
+name: Waylan CI
 
+# One entry point; no duplicate npm ci, builds or browser installations.
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: What to run
+        required: true
+        type: choice
+        default: full
+        options:
+          - full
+          - windows-check
+          - windows-connectivity
+          - branches-preview
+          - branches-prune
+      confirmation:
+        description: "For branches-prune only: DELETE_VERIFIED_MERGED_BRANCHES"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
 
-# PR updates supersede older PR builds. Never cancel main or manual audits.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: waylan-ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.suite == 'full' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
-      - name: Checkout
+      - name: Checkout (include base history for changed-path detection)
         uses: actions/checkout@v4
-      - name: Set up Node 24
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select checks by changed surface
+        id: plan
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.sha }}
+          CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'full' }}
+        run: node scripts/ci-plan.mjs
+      - name: Node 24 with shared npm cache
+        if: ${{ steps.plan.outputs.code == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
-      - name: Install dependencies
+      - name: Install dependencies once
+        if: ${{ steps.plan.outputs.code == 'true' }}
         run: npm ci
-      - name: Typecheck, build and test
+      - name: Typecheck, build, unit and static integrity tests
+        if: ${{ steps.plan.outputs.code == 'true' }}
         run: npm run check
-      - name: Install browser test runner
-        # Run visual checks independently; a separate legacy unit-test failure
-        # must not conceal responsive layout regressions.
-        if: ${{ !cancelled() }}
-        run: |
-          npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
-      - name: Check real desktop, tablet and phone viewports
-        if: ${{ !cancelled() }}
-        run: node scripts/visual-smoke.mjs
-      - name: Upload viewport screenshots and geometry
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: waylan-viewport-smoke
-          path: visual-report/
-          if-no-files-found: ignore
-          retention-days: 7
 
-  quality:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Build static pages and admin
-        run: npm run build
-      - name: Install pinned Chromium Firefox and WebKit
+      # One browser install and build for all applicable frontend regressions.
+      - name: Install browser QA once
+        id: browsers
+        if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' }}
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
           npx playwright install --with-deps chromium firefox webkit
-      - name: Cross-browser motion and admin regression
+      - name: Phone, tablet and desktop layout
+        if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/visual-smoke.mjs
+      - name: Chromium Firefox WebKit and admin interactions
+        if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
         run: node scripts/quality-smoke.mjs
-      - name: Automated WCAG accessibility audit
+      - name: WCAG accessibility checks
+        if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
         run: node scripts/a11y-smoke.mjs
-      - name: Upload WCAG findings
+
+      # Targeted functional groups, not five independent workflows/runners.
+      - name: Reader navigation, TOC and settings
+        if: ${{ !cancelled() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/reader-deep-smoke.mjs
+      - name: iOS excerpt and composer touch behavior
+        if: ${{ !cancelled() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/selection-composer-smoke.mjs
+      - name: Android iPhone iPad and desktop navigation parity
+        if: ${{ !cancelled() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/responsive-navigation-smoke.mjs
+      - name: Rapid-navigation ghosting regression
+        if: ${{ !cancelled() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/route-motion-ghost-smoke.mjs
+      - name: Excerpt and floating control audit
+        if: ${{ !cancelled() && steps.plan.outputs.feed == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/excerpt-audit.mjs
+      - name: Search, sort and state-machine regression
+        if: ${{ !cancelled() && steps.plan.outputs.feed == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/interaction-state-smoke.mjs
+      - name: Preview motion across three engines
+        if: ${{ !cancelled() && steps.plan.outputs.motion == 'true' && steps.browsers.outcome == 'success' }}
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4180 --strictPort > /tmp/waylan-motion-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" || true' EXIT
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:4180/feed/ >/dev/null; then break; fi
+            sleep 1
+          done
+          WAYLAN_AUDIT_ORIGIN=http://127.0.0.1:4180 \
+            WAYLAN_AUDIT_OUTPUT=preview-motion-report \
+            node scripts/live-sort-motion-audit.mjs
+      - name: Read-only production motion comparison (manual full only)
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' && inputs.suite == 'full' && steps.browsers.outcome == 'success' }}
+        continue-on-error: true
+        run: node scripts/live-sort-motion-audit.mjs
+        env:
+          WAYLAN_AUDIT_ORIGIN: https://waylan.org
+          WAYLAN_AUDIT_OUTPUT: live-motion-report
+
+      # Screenshots/storage are useful for failures or requested audits, not every PR.
+      - name: Upload QA evidence if failed or explicitly requested
+        if: ${{ !cancelled() && (failure() || (github.event_name == 'workflow_dispatch' && inputs.suite == 'full')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-qa-evidence
+          path: |
+            visual-report/
+            quality-report/
+            accessibility-report/
+            responsive-navigation-report/
+            reader-audit-report/
+            route-motion-ghost-report/
+            excerpt-audit-report/
+            interaction-report/
+            preview-motion-report/
+            live-motion-report/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  windows-check:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'windows-check' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Install local browser test library
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Local phone tablet and desktop audit
+        run: node scripts/mobile-layout-audit.mjs
+      - name: Preserve Windows audit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: waylan-accessibility-audit
-          path: accessibility-report/
+          name: waylan-windows-layout
+          path: mobile-layout-report/
           if-no-files-found: ignore
-          retention-days: 7
-      - name: Upload cross-browser screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
+          retention-days: 3
+
+  windows-connectivity:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'windows-connectivity' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - name: Confirm the trusted runner is available
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RUNNER_OS -ne 'Windows') { throw 'Expected Windows' }
+          Write-Host "Connected: $env:RUNNER_OS $env:RUNNER_ARCH"
+
+  branches:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout archived cleanup plan from trusted main
+        uses: actions/checkout@v4
         with:
-          name: waylan-quality-smoke
-          path: quality-report/
-          if-no-files-found: ignore
-          retention-days: 7
+          persist-credentials: false
+      - name: Review or prune only merged, SHA-matched branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRUNE_CONFIRM: ${{ inputs.confirmation }}
+          MODE: ${{ inputs.suite }}
+        run: |
+          if [ "$MODE" = "branches-prune" ]; then
+            node scripts/branch-maintenance.mjs prune
+          else
+            node scripts/branch-maintenance.mjs preview
+          fi
