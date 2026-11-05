@@ -113,11 +113,11 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
 
-### C：CSS 可证明覆盖冗余的增量清理（2026-11-06，PR 待验收）
+### C：CSS 可证明覆盖冗余的增量清理（2026-11-06，已合并 PR #116）
 
 - **根因**：相同 media 和选择器内重复的手机版评论工具栏 gap、阅读器工具栏网格定位，以及 `skins.css` 早于 `motion.css` 的同值进度条属性，使样式修改时容易误判真正胜出的规则。
 - **修改**：仅移除实际已被覆盖的重复定义；保留 `src/styles/index.ts` 的原始加载顺序、`motion.css` 的最终胜出属性、`skins.css` 的皮肤变量和动画、阅读器安全区及断点。没有重新排列整站 CSS 或改变 `@media` 条件。
-- **风险与回滚**：任何断点/皮肤间差异均为阻断项；沿 Waylan CI 复验三端、四种外观、阅读器选区/进度条及 reduced-motion。通过后记录精确 PR head、CI 和 squash SHA；必要时可单独 revert，不影响 API、D1、OAuth 和外部 GitHub 数据。真机 Safari 仍需独立验收。
+- **风险与回滚**：[PR #116](https://github.com/YohakuSama/waylan-blog/pull/116) head `e8dcf5b2` 经 [Waylan CI #42086413188 成功](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)（核心、三端、多皮肤、三引擎、WCAG、Reader/iOS 模拟触摸、信息流与动效），合并 `5cf55256f5bc872d20b4cbbf86bad43f9e88503b`。首次 #42085652950 仅新增静态断言范围错误（把原合法桌面规则算作手机重复）而失败，最终修正并重新验收。可单独 revert C squash 并重新部署，不影响 API、D1、OAuth 和 GitHub 既有数据。真机 Safari 与 Cloudflare 生产仍需独立验收。
 
 ### 第三阶段 CSS 样式归属与回归（首批）
 
@@ -153,11 +153,11 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **B 实际验收与合并：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109)，最终分支版本 `c53ce4e1ce6977dce3485674efe3d27d3223662b`，在已合并 A 的 `main` 基础上通过 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817)：类型/构建、全部单元与 Worker 合同、SSR/离线检查、三端视觉、Chromium/Firefox/WebKit 及 WCAG。squash 合并 SHA `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原始 CI #42073247868 新增模块测试因为断言使用了不存在的局部变量名而失败（300/301 项通过），仅修正测试，业务代码未改。回滚为审查后单独 revert 此合并提交并重新部署；不回滚 D1 数据，也不能通过回滚自动撤销已经发布到 GitHub 的评论。
 
-### D：经核对的存储读取与缓存时钟去重（2026-11-06，PR 待验收）
+### D：经核对的存储读取与缓存时钟去重（2026-11-06，已合并 PR #118）
 
 - **依据**：`storage.get` 与 `transient.get` 重复相同 JSON.parse / 回退逻辑，但 API 写入语义不同（前者返回 true/false，后者原样返回 void），不能把整套存储接口合并；`worker/github.ts::cacheGet` 额外计算 `Math.floor(Date.now()/1000)`，项目已有 `worker/types.ts::now`。
 - **处理**：仅抽私有惰性 `readJSON`，既不提前触碰浏览器存储，又在访问全局对象、读取或 JSON 解析抛错时保持 fallback；原 `set/remove` 实现完全不动。缓存仅复用同语义 `now()`，原 TTL、stale 条件及 SQL 不变。
-- **验证/回滚**：新增 `tests/storage-contract.test.ts` 检查两个后端互不串值、读错/缺失/受限访问、原 return 值；原 Worker SQLite/API/缓存契约、`npm run check`、离线构建、三端和三浏览器/阅读器回归必须通过。若有回归单独 revert 本 PR，不能声称覆盖了真实 Safari、Cloudflare 部署、OAuth 或生产 D1。无新依赖、工作流、迁移或协议。
+- **验证/回滚**：`tests/storage-contract.test.ts` 已覆盖两个后端互不串值、读错/缺失/受限访问、原返回值；[PR #118](https://github.com/YohakuSama/waylan-blog/pull/118) 最终 head `22adfcbe` 在 C 合并后的 main 上经 [Waylan CI #42088441135 成功](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)，涵盖 Worker SQLite/API/缓存契约、构建/离线、三端、Chromium/Firefox/WebKit、WCAG、阅读器/模拟 iOS 触摸与导航，合并 `cfeb5c910dbbc63040798152e7e64d248e7e6e64`。原 #117 在 CI 安装阶段长时间卡住，同 SHA 的 #118 独立 PR 完整复验后合并；#117 关闭未合并。若回归单独 revert D squash 并重新部署；没有 D1 migrations，真实 OAuth/生产数据与已提交评论不会通过 Git revert 自动回滚。
 
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
@@ -191,6 +191,8 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 
 **A/B 增量收尾（仅代码与自动化层面）：** A 的纯数据模型迁入现有 `features/discussions/model.ts`，B 的重复校验留在现有 `worker/comments.ts` 中复用；相较原 `main@5ed46df`，没有新增中间层、外部库、迁移、生产资源或 Actions 工作流。最终 A [PR #112](https://github.com/YohakuSama/waylan-blog/pull/112) · [CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) · `cc6e3512`；最终 B [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113) · [CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) · `0fe9adb6`。回滚时仅 revert 发生回归的对应 squash（若两个都需回滚，按 B 后 A 的反向合并顺序），重新部署并重新执行验证。代码回滚不会自动撤销已发布的 GitHub 评论或 D1 数据。生产部署 SHA、真实 iOS Safari、OAuth/D1/Discussion 写入和 Cloudflare Workers Builds 状态**仍未单独取得完成证据**，不能将合并或 CI 通过视作生产验收。
+
+**C/D 交付证据边界：** C [#116](https://github.com/YohakuSama/waylan-blog/pull/116) / [CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)、D [#118](https://github.com/YohakuSama/waylan-blog/pull/118) / [CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135) 均在最终 PR head 完整成功，分别独立 squash 合并；C 和 D 没有修改同一业务文件，D 明确从 C 已合并 main 重新验证。合并后 main 的 CI 根据 `scripts/ci-plan.mjs` 只重复核心检查，不能将 docs-only 或 main 核心成功写成重新跑过完整浏览器。Cloudflare Workers Builds 与实际部署版本、真实 iPhone/iPad Safari、OAuth、D1、GitHub 评论写入仍应按独立生产验收处理；生产失败若定位到某阶段可按上述独立 squash SHA 受控回滚。
 
 ### A/B 合并后 Cloudflare Workers Builds 实际失败（待定位）
 
