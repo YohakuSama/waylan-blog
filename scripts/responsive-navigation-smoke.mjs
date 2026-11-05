@@ -144,7 +144,7 @@ try {
           }
           assert.ok(Math.abs(articleMasthead.logo.height - header.logo.height) <= 1 &&
             Math.abs(articleMasthead.logo.top - header.logo.top) <= 1,
-            label + ": reader logo size/vertical position differs from home");
+            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header}));
           for (let i = 0; i < 4; i++) {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
