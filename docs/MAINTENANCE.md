@@ -86,11 +86,11 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
 
-### A 后续：评论树纯模型归属（2026-11-06，PR 待验收）
+### A 后续：评论树纯模型归属（2026-11-06，已合并 PR #112）
 
 - **原问题**：Reader 直接执行评论可见性过滤、跨主列表/深链/面板评论去重、以及编辑/删除后的局部树形数据修正，导致纯数据和页面生命周期混在一起。
 - **处理**：复用 `features/discussions/model.ts` 的原有评论职责，迁入 `discussionView` 和 `updateCommentNodes/updateCommentPage`，Reader 仍统一负责副作用；保留原排序、空父过滤与引用、回复数量及主评论总数更新规则。未修改 API、数据库、CSS、事件监听和 Safari 原生选区状态机。
-- **验收与回滚**：在现有 `tests/reader-modules.test.ts` 检查可见评论、重复 ID 优先级、编辑/删除后计数与不变性，沿 Waylan CI 执行 `npm run check`、三端/双皮肤、三浏览器、阅读器/选区专项。未验证前不合并；如回归单独 revert 本次 PR，无迁移和外部数据变更。生产 iOS Safari 仍需真机确认。
+- **验收与回滚**：在现有 `tests/reader-modules.test.ts` 检查可见评论、重复 ID 优先级、编辑/删除后计数与不变性，沿 Waylan CI 执行 `npm run check`、三端/双皮肤、三浏览器、阅读器/选区专项。最终 PR head `95dd4a60` 在 [Waylan CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) 全部通过后合并（[#112](https://github.com/YohakuSama/waylan-blog/pull/112)，squash SHA `cc6e3512ee476de30355cdefa3d7d3d595008d5e`）；原运行 #42077573541 因更新 head 被取消。若回归可审核后单独 revert 本次 PR 并重新部署，无迁移和外部数据变更。生产 iOS Safari 仍需真机确认。
 
 ### 阅读器后续增量解耦 A（2026-11-06；已合并 PR #108）
 
@@ -131,11 +131,11 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **风险 R3 与回滚**：本批已合并 `0708fa5b`（PR #106），对应最终 CI 见 [#42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)。尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
 - **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
 
-### B 后续：正文校验消除重复（2026-11-06，PR #113 待验收）
+### B 后续：正文校验消除重复（2026-11-06，已合并 PR #113）
 
 - **根因**：公开评论创建和编辑都校验空白/超长、超过两个正文链接、受保护的 `<!-- echo:` 元数据，但在同一个写入模块重复实现；未来修复可能漏改其中一个接口。
 - **最小改动**：仅在 `worker/comments.ts` 内共享 `validatedCommentBody`，按 create/edit 保留原有不同的 `COMMENT_LENGTH` HTTP 文案、状态和先后顺序。没有另建通用校验库、修改 `worker/comment-reads.ts`、`comment-shared.ts` 或幂等事务。
-- **验证/回滚**：`tests/worker.test.ts` 添加实际 HTTP 边界、错误消息、拒绝副作用回归；Waylan CI 全套通过后独立 PR 合并。没有 D1 迁移；可单独 revert 本 PR。真实 Cloudflare/OAuth/Discussion 写入仍需独立验收。
+- **验证/回滚**：`tests/worker.test.ts` 添加实际 HTTP 边界、错误消息、拒绝副作用回归；在合并 A 的 `main` 上最终 PR head `387fd5cb` 通过 [Waylan CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) 完整核心/多端/三浏览器/WCAG 检查，已合并 [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113)，squash SHA `0fe9adb68c50fa3fca8903d107c64ecf92fc5b07`。旧运行 #42080538682 与 #42080659259 因更新 head 被取消，不是业务测试失败。没有 D1 迁移；若回归可单独 revert 本 PR、重新部署。真实 Cloudflare/OAuth/Discussion 写入仍需独立验收。
 
 ### 评论 Worker 职责整理 B（2026-11-06；已合并 PR #109）
 
@@ -176,6 +176,9 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **结项判断**：P1～P4 **约定的首批代码改造与相应 CI：已完成并通过**；**真实部署、OAuth/内容写入/数据和私有化转换：未取得足够验收证据**。需要分别记录状态，不将 PR 合并等同生产完成。
 
+
+
+**A/B 增量收尾（仅代码与自动化层面）：** A 的纯数据模型迁入现有 `features/discussions/model.ts`，B 的重复校验留在现有 `worker/comments.ts` 中复用；相较原 `main@5ed46df`，没有新增中间层、外部库、迁移、生产资源或 Actions 工作流。最终 A [PR #112](https://github.com/YohakuSama/waylan-blog/pull/112) · [CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) · `cc6e3512`；最终 B [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113) · [CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) · `0fe9adb6`。回滚时仅 revert 发生回归的对应 squash（若两个都需回滚，按 B 后 A 的反向合并顺序），重新部署并重新执行验证。代码回滚不会自动撤销已发布的 GitHub 评论或 D1 数据。生产部署 SHA、真实 iOS Safari、OAuth/D1/Discussion 写入和 Cloudflare Workers Builds 状态**仍未单独取得完成证据**，不能将合并或 CI 通过视作生产验收。
 
 ### A/B 后续发布验收与剩余技术债（2026-11-06）
 
