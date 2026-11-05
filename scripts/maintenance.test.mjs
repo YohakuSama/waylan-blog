@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { classify } from "./ci-plan.mjs";
 import { pruneEligibility } from "./branch-maintenance.mjs";
 
@@ -65,4 +66,22 @@ test("public assets and routes still trigger visual QA", () => {
     assert.equal(p.code, true);
     assert.equal(p.browser, true);
   }
+});
+
+test("archived branch category counts and prose stay in sync", () => {
+  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-05.json", "utf8"));
+  const count = (kind) => archive.branches.filter((b) => b.kind === kind).length;
+  assert.equal(archive.branches.length, 98);
+  assert.deepEqual({
+    default: count("default"),
+    merged: count("merged"),
+    open: count("open-pr"),
+    closed: count("closed-unmerged"),
+    unlinked: count("unlinked"),
+  }, { default: 1, merged: 85, open: 2, closed: 8, unlinked: 2 });
+  assert.ok(!archive.branches.some((b) =>
+    b.name === "ops/actions-budget-and-branch-archive-20261105"));
+  const prose = readFileSync("docs/ops/BRANCH_ARCHIVE.md", "utf8");
+  assert.match(prose, /总计 98 分支/);
+  assert.match(prose, /无关联 PR 2/);
 });
