@@ -2082,6 +2082,13 @@ h3 {
 @media (min-width: 861px) {
   .site-header .brand { min-width: 120px; }
 }
+/* Reserve one shared first-column slot for both editorial SVG and terminal
+   wordmark. Without it, the terminal font moves the desktop navigation 15px. */
+@media (min-width: 1280px) {
+  .site-header:not(.site-header-reader) .header-inner {
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+  }
+}
 /* Compact desktop header gets distinct space for brand, navigation and tools. */
 @media (min-width:861px) and (max-width:1279px) {
   .header-inner { grid-template-columns:auto minmax(0,1fr) auto; gap:20px; }
