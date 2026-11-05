@@ -524,10 +524,11 @@ try {
             assert.ok(geometry.sideHeadingLinks.length >= 2 &&
               geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
               `${label}: sidebar heading not fully tappable`);
-            if (width < 1120)
-              assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
-                geometry.homeLinks.includes("/feed"), `${label}: stacked sidebar buried topic discovery`);
-            else assert.equal(geometry.homeTopicLink, null, `${label}: redundant topic shortcut beside visible sidebar`);
+            // The hero's primary "Browse all" CTA remains available at every
+            // width. Sidebar discovery supplements rather than replaces it.
+            assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
+              geometry.homeLinks.includes("/feed"),
+              `${label}: primary browse entry point is hidden or too small`);
             assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
             assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
