@@ -111,7 +111,7 @@ flowchart LR
 
 **回归基线：** `tests/css-ownership.test.ts` 约束导入次序和明确责任，`tests/skin-parity.test.ts` 按真实拥有者查找规则；`npm run check` 和 `scripts/visual-smoke.mjs` 检查打包、离线预览和跨皮肤/跨屏宽几何。涉及 CSS 的 PR 必须明确说明原始规则顺序和其后覆盖关系。
 
-### 第四阶段 Worker 后台仓库访问边界（首批，待 CI 验收）
+### 第四阶段 Worker 后台仓库访问边界（首批已合并，PR #106）
 
 ```text
 HTTP request → worker/index.ts → worker/admin.ts
@@ -130,6 +130,8 @@ HTTP request → worker/index.ts → worker/admin.ts
 | 公开 Discussions 创建和 D1 登记 | `worker/admin.ts` 的 `syncDiscussions`（当前仍在编排层） | 管理员权限、D1 发布文章映射、公开仓库验证，每次不超过 10 篇 |
 
 此次把 `worker/admin.ts` 的 ~190 行完整 GitHub 内容仓库 I/O 放到 `admin-repo.ts`，不生成第二份 GitHub 客户端，不将私有内容 Token 混入公共评论访问 `worker/github.ts` 的调用路径；`worker/github.ts` 仍是现有通用 GraphQL transport。移动代码不改变任何请求或提交次序。新增 `tests/admin-repository.test.ts` 覆盖分支选择、空请求与 UTF-8 Git blob OID，原 `tests/admin.test.ts` 继续验证令牌失败、并发冲突、上传与不可逆写入。**后续拆分必须以独立 PR 进行，不能在这个提交中更改评论的幂等写入语义。**
+
+**首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
@@ -161,7 +163,7 @@ shared/                跨前后端的类型、定位、输入规则
 2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
 3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 仅保留后台挂载与主题，`Gate.tsx` 单独负责认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表、`Discussions.tsx` 负责评论区初始化，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
 4. **P3｜CSS 归属与级联清理（首批实施）**：先把原 `site.css` 按顶层规则段落顺序拆分为 `shell.css`、`feed.css`、`sidebar.css`、`site.css`、`responsive.css`，保持已存在的 `styles.css → site → skins → motion` 原始相对级联次序；删除两组被最终手机标题声明完全覆盖的旧规则。`styles.css` 的阅读器与基础规则、双皮肤覆盖暂不搬动；未来清理必须先检查原选择器的 @media 作用域、优先级及导入顺序，且实测手机、平板、桌面、明暗模式。
-5. **P4｜Worker 读写职责分离（首批进行中）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。`worker/comments.ts` 的缓存/重复提交恢复等写入状态机仍保持原样，后续独立 PR 先建立测试边界再细拆。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
+5. **P4｜Worker 读写职责分离（首批已合并，PR #106）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。`worker/comments.ts` 的缓存/重复提交恢复等写入状态机仍保持原样，后续独立 PR 先建立测试边界再细拆。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
 6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
 
 行数是**审查信号，不是重构 KPI**。可以用“文件是否只有一个清晰的变更理由”“一次修改影响哪些功能”“能否单独回滚”判断是否应该拆分。避免把 1 个大文件机械切成 30 个相互依赖的小文件。
