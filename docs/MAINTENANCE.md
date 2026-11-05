@@ -113,11 +113,14 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
 
-### C：CSS 可证明覆盖冗余的增量清理（2026-11-06，PR 待验收）
+### C：CSS 可证明覆盖冗余的增量清理（2026-11-06，已合并 PR #116）
 
 - **根因**：相同 media 和选择器内重复的手机版评论工具栏 gap、阅读器工具栏网格定位，以及 `skins.css` 早于 `motion.css` 的同值进度条属性，使样式修改时容易误判真正胜出的规则。
 - **修改**：仅移除实际已被覆盖的重复定义；保留 `src/styles/index.ts` 的原始加载顺序、`motion.css` 的最终胜出属性、`skins.css` 的皮肤变量和动画、阅读器安全区及断点。没有重新排列整站 CSS 或改变 `@media` 条件。
 - **风险与回滚**：任何断点/皮肤间差异均为阻断项；沿 Waylan CI 复验三端、四种外观、阅读器选区/进度条及 reduced-motion。通过后记录精确 PR head、CI 和 squash SHA；必要时可单独 revert，不影响 API、D1、OAuth 和外部 GitHub 数据。真机 Safari 仍需独立验收。
+
+
+- **C 最终证据**：[PR #116](https://github.com/YohakuSama/waylan-blog/pull/116) head `e8dcf5b23747a17d662e930942521492006b0eb2` 通过 [Waylan CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)，含类型/构建/单测、移动/平板/桌面视觉、Chromium/Firefox/WebKit、WCAG、阅读器/iOS 模拟触摸、导航与动效专项；合并 SHA `5cf55256f5bc872d20b4cbbf86bad43f9e88503b`，[main CI #42088034490](https://github.com/YohakuSama/waylan-blog/actions/runs/42088034490) 核心检查成功。Cloudflare Workers Builds 对 C 的 main 合并提交显示成功，**不代替实际生产部署/设备验证**。
 
 ### 第三阶段 CSS 样式归属与回归（首批）
 
@@ -153,7 +156,7 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **B 实际验收与合并：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109)，最终分支版本 `c53ce4e1ce6977dce3485674efe3d27d3223662b`，在已合并 A 的 `main` 基础上通过 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817)：类型/构建、全部单元与 Worker 合同、SSR/离线检查、三端视觉、Chromium/Firefox/WebKit 及 WCAG。squash 合并 SHA `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原始 CI #42073247868 新增模块测试因为断言使用了不存在的局部变量名而失败（300/301 项通过），仅修正测试，业务代码未改。回滚为审查后单独 revert 此合并提交并重新部署；不回滚 D1 数据，也不能通过回滚自动撤销已经发布到 GitHub 的评论。
 
-### D：经核对的存储读取与缓存时钟去重（2026-11-06，PR 待验收）
+### D：经核对的存储读取与缓存时钟去重（2026-11-06，PR #117 待验收）
 
 - **依据**：`storage.get` 与 `transient.get` 重复相同 JSON.parse / 回退逻辑，但 API 写入语义不同（前者返回 true/false，后者原样返回 void），不能把整套存储接口合并；`worker/github.ts::cacheGet` 额外计算 `Math.floor(Date.now()/1000)`，项目已有 `worker/types.ts::now`。
 - **处理**：仅抽私有惰性 `readJSON`，既不提前触碰浏览器存储，又在访问全局对象、读取或 JSON 解析抛错时保持 fallback；原 `set/remove` 实现完全不动。缓存仅复用同语义 `now()`，原 TTL、stale 条件及 SQL 不变。

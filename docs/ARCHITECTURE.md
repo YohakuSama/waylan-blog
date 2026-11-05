@@ -107,11 +107,14 @@ flowchart LR
 
 **回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。PR [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 的头部提交 `7edeb4f0` 已通过 [Waylan CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)：类型检查、构建、单元/契约测试、多端布局、Chromium/Firefox/WebKit 后台交互和 WCAG；合并提交 `49de396e` 的 [main 核心检查 #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) 亦通过。本次按需分类正确跳过与后台无关的阅读器、摘录、动效专项。**生产环境 OAuth、真实 GitHub 写入/上传、Cloudflare 部署尚未单独验收。** 如出现回归，可回滚本次前端重构并重新部署；本 PR 无数据库迁移，因此无需反向迁移 D1。
 
-### C：已确认的 CSS 级联冗余清理（2026-11-06，PR 待验收）
+### C：已确认的 CSS 级联冗余清理（2026-11-06，已合并 PR #116）
 
 - **定位证据**：`src/styles.css` 的同一 ≤767px media 块对评论编辑器 `.composer-bottom` 重复声明 `gap: 8px`；`src/styles/responsive.css` 的两个 ≤1024px 相同选择器重复写入阅读器头部 `grid-row/grid-column/gap`；`skins.css` 的加载进度条与其后导入的 `motion.css` 在同一选择器重复定义六项几何/命中测试声明。后声明与前声明值逐项相同。
 - **最小修复**：只删除后置无效的重复整条规则、前置被同条件同选择器覆盖的重复属性；样式表文件、导入顺序、media、其它属性、变量、皮肤与动效定义原样保留。进度条位置/宽度、移动端安全区及手势区域仍由原有效声明负责。
 - **验收**：在现有 `tests/css-ownership.test.ts` 增加胜出声明、移动端 CSS 边界、`skins.css → motion.css` 导入归属断言；使用同一 `Waylan CI` 的类型/构建/单元、三端双皮肤视觉、三浏览器、WCAG、阅读器及动效回归。**未实测前不把删冗余等同于像素级一致。**
+
+
+- **C 最终证据**：[PR #116](https://github.com/YohakuSama/waylan-blog/pull/116) head `e8dcf5b23747a17d662e930942521492006b0eb2` 通过 [Waylan CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)，含类型/构建/单测、移动/平板/桌面视觉、Chromium/Firefox/WebKit、WCAG、阅读器/iOS 模拟触摸、导航与动效专项；合并 SHA `5cf55256f5bc872d20b4cbbf86bad43f9e88503b`，[main CI #42088034490](https://github.com/YohakuSama/waylan-blog/actions/runs/42088034490) 核心检查成功。Cloudflare Workers Builds 对 C 的 main 合并提交显示成功，**不代替实际生产部署/设备验证**。
 
 ### 第三阶段 CSS 责任边界（首批，已验收合并 PR #105）
 
@@ -173,7 +176,7 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **B 验收与结构审计（2026-11-06）：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 在 A 已合并的最新 `main` 上复验，最终 PR head `c53ce4e1ce6977dce3485674efe3d27d3223662b` 经 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) 的类型、构建、单元/Worker HTTP 契约、离线、布局、Chromium/Firefox/WebKit 和 WCAG 检查通过；squash 合并提交 `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原 `persistWrite/writeComment/manageComment` 及最近回声逻辑搬移后逐段对比一致；校验函数仅更改导出位置。首轮 CI #42073247868 由于新增的静态测试错误匹配变量名而失败（300/301 测试通过）；修正断言并重新完整验收后合并。前后依赖方向：原 `index.ts → comments.ts(读+写+仓库核验)`，现 `index.ts → comments.ts(写入/兼容导出) → comment-reads.ts(公开读取)`，读写共同依赖 `comment-shared.ts`，`comment-shared.ts` 不反向引用读取或写入模块；`github.ts` 传输和缓存仍单例复用。未增加 migrations、npm 依赖或 CI 工作流。
 
-### D：跨模块冗余核查与重复读取约束（2026-11-06，PR 待验收）
+### D：跨模块冗余核查与重复读取约束（2026-11-06，PR #117 待验收）
 
 - **确认的重复**：`src/lib/storage.ts` 中 persistent storage 与 session storage 具有逐字一致的 JSON 解码、缺失键 fallback、非法 JSON 及拒绝访问处理；`worker/github.ts` 的缓存 TTL 时间戳与已有的 `worker/types.ts::now()` 使用完全相同的秒时间计算。
 - **最小处置**：保留公开 `storage/transient` 接口和失败返回值差异、现有 `echo:` 前缀及 local/session 相互隔离，只用私有 `readJSON(read, fallback)` 复用读取语义；Worker 缓存直接引用已有 `now()`，不改变 D1 查询、过期/stale 窗口、GitHub transport、API 或共享平台依赖。
