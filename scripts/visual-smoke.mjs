@@ -410,10 +410,14 @@ try {
               assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
             }
             }
-          assert.ok(geometry.sidebarEndSlots.every((slot) =>
-            Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
-            Math.abs(slot.rightGap) <= 3),
-            `${label}: shared sidebar counts and arrows drift from the trailing column`);
+          // Hidden sidebars retain DOM descendants with zero-size boxes.
+          // Only visible sidebars have trailing-column geometry to verify.
+          if (geometry.sidebar) {
+            assert.ok(geometry.sidebarEndSlots.every((slot) =>
+              Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
+              Math.abs(slot.rightGap) <= 3),
+              `${label}: shared sidebar counts and arrows drift from the trailing column`);
+          }
           if (geometry.sideHeadingRows.length) {
             assert.ok(geometry.sideHeadingRows.every((row) =>
               Math.abs(row.linkTop - row.top) <= 2 &&
