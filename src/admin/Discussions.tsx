@@ -13,7 +13,7 @@ export async function createDiscussionBatches(
   let created = 0;
   for (let round = 0; round < 50; round++) {
     const result = await request();
-    if (!Number.isSafeInteger(result.created) || result.created < 0 ||
+    if (!result || !Number.isSafeInteger(result.created) || result.created < 0 ||
         !Number.isSafeInteger(result.remaining) || result.remaining < 0)
       throw new Error("评论区初始化返回了异常数据，请稍后重试。");
     created += result.created;
@@ -21,7 +21,7 @@ export async function createDiscussionBatches(
     if (result.created === 0)
       throw new Error("评论区初始化没有取得进展，请检查 GitHub 权限后重试。");
   }
-  throw new Error("评论区仍有未完成项，请稍后重试；已创建的内容不会重复处理。");
+  throw new Error("评论区仍有未完成项，请刷新后台状态后重试。");
 }
 
 export function Discussions({
