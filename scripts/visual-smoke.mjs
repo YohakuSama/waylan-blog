@@ -60,7 +60,13 @@ try {
       const page = await context.newPage(), errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
-      await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: false } }));
+      // Keep one deterministic route while simulating unavailable and recovered services.
+      let notificationsStatus = "disabled";
+      await page.route("**/api/status", (route) =>
+        notificationsStatus === "error"
+          ? route.fulfill({ status: 503, json: { error: "unavailable" } })
+          : route.fulfill({ json: { notifications: notificationsStatus === "enabled" } }),
+      );
       try {
         for (const route of routes) {
           const target = origin + (route === "/" ? "/" : route === "/404" ? "/404.html" : route + "/");
@@ -765,7 +771,7 @@ try {
         // All four header actions stay in place when the service is enabled,
         // disabled or unavailable. No signed-in user or messages are invented.
         if ([320, 768].includes(width)) {
-          await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: true } }));
+          notificationsStatus = "enabled";
           await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
           const bell = page.getByRole("button", { name: "消息通知，0 条未读", exact: true });
           await bell.waitFor();
@@ -795,7 +801,7 @@ try {
           await page.keyboard.press("Escape");
           await inbox.waitFor({ state: "hidden" });
           await page.waitForFunction(() => document.activeElement?.classList.contains("notification-trigger"));
-          await page.route("**/api/status", (route) => route.fulfill({ status: 503, json: { error: "unavailable" } }));
+          notificationsStatus = "error";
           await page.reload({ waitUntil: "domcontentloaded" });
           const retryBell = page.getByRole("button", { name: "消息通知", exact: true });
           await retryBell.click();
@@ -804,7 +810,7 @@ try {
           notificationResults.push({ width, ...variant, state: "error", bounds: errorBounds });
           assert.ok(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= width && errorBounds.y + errorBounds.height <= 900,
             `${label}: error panel escaped viewport`);
-          await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: true } }));
+          notificationsStatus = "enabled";
           await inbox.getByRole("button", { name: "重试", exact: true }).click();
           await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor();
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
