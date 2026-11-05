@@ -29,7 +29,7 @@ const isReturnOrigin = (route: string) => {
 /** Top-level navigation follows the visual header order in both directions. */
 export function routeMotionDirection(from: string, to: string, pop = false): "forward" | "back" {
   if (pop || (from.startsWith("/post/") && !to.startsWith("/post/"))) return "back";
-  const sections = ["/", "/feed", "/archive", "/projects", "/about"];
+  const sections = ["/", "/feed", "/archive", "/projects", "/about", "/privacy"];
   const previous = sections.indexOf(from);
   const next = sections.indexOf(to);
   return previous !== -1 && next !== -1 && next < previous ? "back" : "forward";
@@ -40,7 +40,7 @@ export const motionOK = motionAllowed;
 // Only public application pages belong to the client router. Static files,
 // /admin and API links must use native browser navigation.
 export function isAppRoute(pathname: string) {
-  return ["/", "/feed", "/archive", "/projects", "/about", "/404"].includes(pathname)
+  return ["/", "/feed", "/archive", "/projects", "/about", "/privacy", "/404"].includes(pathname)
     || posts.some((post) => pathname === `/post/${post.slug}`);
 }
 export function fragmentId(fragment: string): string | null {
