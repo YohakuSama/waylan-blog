@@ -107,12 +107,13 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **已核对的冗余**：在 ≤767px 条件下，前两处首页/文章卡片标题的 `font-size`、`line-height`、`margin-top` 均被其后同条件、同 specificity 的最终定义覆盖；仅删除这两处旧声明。通过源文件与新模块去注释后的逐字比对，其他非注释 CSS **完全一致**。
 - **影响和验证路径**：`tests/css-ownership.test.ts` 检查共享入口、导入次序与唯一所属；`tests/skin-parity.test.ts` 改为按 `shell.css` / `responsive.css` 找真实规则；`npm run check` 包含预渲染和离线 CSS；`scripts/visual-smoke.mjs` 检查三端四种外观的最终几何，另用 `quality-smoke` / WCAG 检查交互和可用性。
 - **不变合同**：不改 CSS class、HTML/React DOM、页面路由、字体、API、D1、动效库和后台权限；不引入 CSS-in-JS、`@layer` 或新框架。若出现错位或换行，优先复核导入与某个屏宽的后置覆盖，不额外追加新的临时 CSS。
-- **合并与回滚**：以对应独立 PR 和 GitHub Actions 完整结果为准；出现回归，回滚这组纯样式提交并重新部署即可，不需要数据库恢复。本轮只覆盖第 3 阶段首批，不代表整个旧 `styles.css` 已完成彻底去重。
+- **合并与回滚**：本批 [PR #105](https://github.com/YohakuSama/waylan-blog/pull/105) 头部 `e92e0525` 已通过 [Waylan CI #42056032731](https://github.com/YohakuSama/waylan-blog/actions/runs/42056032731) 的构建/单测、三端四外观、跨浏览器、WCAG、阅读器、选区、信息流状态机和三引擎动效预览；已合并 `main`，squash 提交 `f9503ed3`。若出现回归，可审核后 revert 此提交并重新部署，无数据库回迁。本轮只覆盖第三阶段首批，旧 `styles.css` / `skins.css` 复杂规则尚未完成全面去重；生产部署和真实设备验证仍需独立确认。
 
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |
 | --- | --- | --- | --- |
+| 2026-11-05 | [PR #105](https://github.com/YohakuSama/waylan-blog/pull/105) · [CI #42056032731](https://github.com/YohakuSama/waylan-blog/actions/runs/42056032731) | P3 首批 CSS 按页眉/信息流/侧栏/页面/断点职责分拆；顺序未改变，移除两组被完全覆盖的手机标题声明；合并 `f9503ed3`。 | `e92e0525` 核心测试、跨屏四外观、三浏览器/WCAG、Reader/Feed/Motion 完整 CI 通过。生产部署与真机未单独确认；可回滚此纯 CSS 提交，无 D1 迁移。 |
 | 2026-11-05 | [#98](https://github.com/YohakuSama/waylan-blog/pull/98) | 六页面拆分，独立后台 API，统一动效调用与 CSS 入口；修复阅读器相关交互 | 对应 PR CI 已通过；生产站点是否部署以实际 Cloudflare 记录为准 |
 | 2026-11-05 | [#99](https://github.com/YohakuSama/waylan-blog/pull/99)、[分支维护运行](https://github.com/YohakuSama/waylan-blog/actions/runs/42034859036) | 7 个 Actions YAML 合为 1 个，85 个已合并遗留分支安全删除；保留未合并/开放 PR | 主分支与文档-only CI 成功；实际月度分钟节省应日后对比 Usage |
 | 2026-11-05 | [PR #102](https://github.com/YohakuSama/waylan-blog/pull/102) · [PR CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381) · [main CI #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) | 管理后台按职责拆分：`main` 启动、`Gate` 会话/CSRF、`Dashboard` 看板刷新、`ContentList` 列表/删除/Discussion、`PostEditor` / `SiteEditor` 独立表单；`ui` / `helpers` / `types` 公共能力集中。**已合并 SHA `49de396e`**，未改后台 API、OID 乐观锁、Worker、D1 与上传协议。 | PR head `7edeb4f0` 的核心构建/单测、管理权限与保存合同测试、多端视觉、Chromium/Firefox/WebKit 后台交互和 WCAG **成功**；main 核心检查成功。阅读器/摘录/动效专项因按需分类跳过。**生产部署、真实 OAuth 登录、GitHub 写入与 Cloudflare 上传尚未单独验证**。如回归，审核后可 revert 该 squash commit 并重新部署；无 D1 反向迁移。 |
