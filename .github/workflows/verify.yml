@@ -156,7 +156,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Review or prune only merged, SHA-matched branches
+      - name: Review/prune SHA-verified merged or explicitly superseded branches
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRUNE_CONFIRM: ${{ github.event_name == 'push' && 'DELETE_VERIFIED_MERGED_BRANCHES' || inputs.confirmation }}
