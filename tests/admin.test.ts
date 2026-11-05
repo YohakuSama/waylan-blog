@@ -273,6 +273,7 @@ beforeEach(async () => {
     GITHUB_REPO_OWNER: "test-owner",
     GITHUB_REPO_NAME: "test-blog",
     GITHUB_READ_TOKEN: "test-read-only-token",
+    GITHUB_AUTH_PROVIDER: "oauth-app",
     GITHUB_CLIENT_ID: "test-client",
     GITHUB_CLIENT_SECRET: "test-secret",
     SESSION_SECRET: "test-only-random-secret-longer-than-32-bytes",
