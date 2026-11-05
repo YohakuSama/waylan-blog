@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 
 const site = readFileSync("src/styles/site.css", "utf8");
 const feed = readFileSync("src/components/Feed.tsx", "utf8");
-const pages = readFileSync("src/pages.tsx", "utf8");
+const pages = ["Home", "Feed", "Projects", "Archive", "About", "NotFound"]
+  .map((name) => readFileSync(`src/pages/${name}.tsx`, "utf8")).join("\n");
 const sidebarComponent = readFileSync("src/components/Sidebar.tsx", "utf8");
 const skins = readFileSync("src/styles/skins.css", "utf8");
 
