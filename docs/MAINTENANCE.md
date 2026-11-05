@@ -100,6 +100,15 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
 
+### 第三阶段 CSS 样式归属与回归（首批）
+
+- **现状与原因**：原 `src/styles/site.css` 约 66 KB 混合页眉、首页、列表、侧栏、索引页、断点和手机标题的多次覆盖，维护时容易修改错层级。皮肤与动效有独立末尾覆盖，不能改变它们相对顺序。
+- **最小拆分**：`src/styles/index.ts` 顺序不变，仅将原 site 文件内五个连续顶层区块按顺序分配到 `shell.css`（页眉/首页）、`feed.css`（卡片基础）、`sidebar.css`、`site.css`（索引/页脚）、`responsive.css`（跨页面断点）；`skins.css`、`motion.css` 和 `src/styles.css` 不动。
+- **已核对的冗余**：在 ≤767px 条件下，前两处首页/文章卡片标题的 `font-size`、`line-height`、`margin-top` 均被其后同条件、同 specificity 的最终定义覆盖；仅删除这两处旧声明。通过源文件与新模块去注释后的逐字比对，其他非注释 CSS **完全一致**。
+- **影响和验证路径**：`tests/css-ownership.test.ts` 检查共享入口、导入次序与唯一所属；`tests/skin-parity.test.ts` 改为按 `shell.css` / `responsive.css` 找真实规则；`npm run check` 包含预渲染和离线 CSS；`scripts/visual-smoke.mjs` 检查三端四种外观的最终几何，另用 `quality-smoke` / WCAG 检查交互和可用性。
+- **不变合同**：不改 CSS class、HTML/React DOM、页面路由、字体、API、D1、动效库和后台权限；不引入 CSS-in-JS、`@layer` 或新框架。若出现错位或换行，优先复核导入与某个屏宽的后置覆盖，不额外追加新的临时 CSS。
+- **合并与回滚**：以对应独立 PR 和 GitHub Actions 完整结果为准；出现回归，回滚这组纯样式提交并重新部署即可，不需要数据库恢复。本轮只覆盖第 3 阶段首批，不代表整个旧 `styles.css` 已完成彻底去重。
+
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |

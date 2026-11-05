@@ -2,7 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const site = readFileSync("src/styles/site.css", "utf8");
+const shell = readFileSync("src/styles/shell.css", "utf8");
+const responsive = readFileSync("src/styles/responsive.css", "utf8");
 const skin = readFileSync("src/styles/skins.css", "utf8");
 const motion = readFileSync("src/styles/motion.css", "utf8");
 
@@ -30,7 +31,7 @@ describe("both visual themes share home geometry and focus treatments", () => {
     assert.ok(copy.includes("z-index: 1;"));
     assert.equal(visual.includes("mask-image: none;"), false);
     assert.equal(skin.includes("grid-template-columns: minmax(0, 1fr) minmax(0, 440px)"), false);
-    const editorial = rule(site, ".hero-visual");
+    const editorial = rule(shell, ".hero-visual");
     assert.ok(editorial.includes("position: absolute;"));
     assert.ok(editorial.includes("pointer-events: none;"));
   });
@@ -38,17 +39,17 @@ describe("both visual themes share home geometry and focus treatments", () => {
   it("uses the same compact phone content-type selector for both skins", () => {
     // More phone breakpoints occur later in the file. Select the rule that
     // actually owns the six-type native picker rather than the last 767px rule.
-    const pickerRule = site.indexOf(".feed-controls .type-tabs { display: none; }");
-    const phoneStart = site.lastIndexOf("@media (max-width: 767px)", pickerRule);
+    const pickerRule = responsive.indexOf(".feed-controls .type-tabs { display: none; }");
+    const phoneStart = responsive.lastIndexOf("@media (max-width: 767px)", pickerRule);
     assert.ok(phoneStart >= 0, "missing phone category-selector breakpoint");
-    const phone = site.slice(phoneStart, site.indexOf("\n}", phoneStart) + 2);
+    const phone = responsive.slice(phoneStart, responsive.indexOf("\n}", phoneStart) + 2);
     assert.ok(phone.includes(".feed-controls .type-tabs { display: none; }"),
       "the six desktop category links must not occupy two phone rows");
     assert.ok(phone.includes(".feed-controls .mobile-type-select { display: inline-flex; }"),
       "phone category picker must remain visible");
-    assert.ok(site.includes(".mobile-type-select select {"),
+    assert.ok(responsive.includes(".mobile-type-select select {"),
       "the shared phone picker needs a real native select control");
-    assert.ok(site.includes("min-height: 44px;"),
+    assert.ok(responsive.includes("min-height: 44px;"),
       "phone picker must retain a touch target");
     assert.equal(skin.includes(':root[data-skin="terminal"] .type-tabs {'), false,
       "terminal must not restore a legacy phone grid over the shared layout");
