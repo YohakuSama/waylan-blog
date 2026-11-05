@@ -60,4 +60,44 @@ describe("Shared CSS ownership and cascade safety", () => {
       "clamp(20px, 5.15vw, 22px)",
     ]) assert.equal(responsive.includes(superseded), false, `superseded style: ${superseded}`);
   });
+
+  it("keeps only the effective phone composer gap and compact reader grid placement", () => {
+    const base = read("src/styles.css");
+    const responsive = read("src/styles/responsive.css");
+    const composer = [...base.matchAll(/\.discussion-dialog\.composer-dialog \.composer-bottom\s*\{([^}]*)\}/g)]
+      .map((match) => match[1]);
+    const phone = composer.filter((body) => /gap:\s*8px;/.test(body));
+    assert.equal(phone.length, 1, "the identical later phone composer gap rule was redundant");
+    assert.match(phone[0], /safe-area-inset-bottom/);
+
+    const tools = [...responsive.matchAll(/\.site-header-reader \.header-tools\s*\{([^}]*)\}/g)]
+      .map((match) => match[1]);
+    assert.equal(tools.filter((body) => /grid-row:\s*1;/.test(body)).length, 1);
+    assert.equal(tools.filter((body) => /grid-column:\s*2;/.test(body)).length, 1);
+    assert.equal(tools.filter((body) => /gap:\s*0;/.test(body)).length, 1);
+    assert.ok(tools.some((body) => /display:\s*flex;/.test(body)),
+      "the original compact reader tool layout must remain flex");
+  });
+
+  it("keeps loading-indicator geometry in the later motion owner without duplicate skin declarations", () => {
+    const skin = read("src/styles/skins.css");
+    const motion = read("src/styles/motion.css");
+    const selector = ':root[data-navigation="loading"] .site-header::after';
+    const block = (source: string) => {
+      const start = source.indexOf(selector + " {");
+      assert.ok(start >= 0, "missing loading indicator");
+      return source.slice(start, source.indexOf("}", start));
+    };
+    const skinRule = block(skin);
+    const motionRule = block(motion);
+    for (const property of ["content", "position", "left", "bottom", "height", "pointer-events"]) {
+      assert.doesNotMatch(skinRule, new RegExp(`\\b${property}\\s*:`),
+        `${property} must be owned by the later motion layer`);
+      assert.match(motionRule, new RegExp(`\\b${property}\\s*:`),
+        `${property} must retain its original winning value`);
+    }
+    assert.match(skinRule, /width:\s*32%/);
+    assert.match(skinRule, /background:\s*linear-gradient/);
+    assert.match(motionRule, /animation:\s*waylan-reader-loading/);
+  });
 });

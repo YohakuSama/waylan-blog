@@ -2428,7 +2428,6 @@ body,
   .discussion-dialog.composer-dialog .login-invitation { flex-direction: column; align-items: stretch; gap: 8px; }
   .discussion-dialog.composer-dialog .login-invitation p { flex: 0 0 auto; }
   .discussion-dialog.composer-dialog .login-invitation .primary-button { width: 100%; min-width: 0; }
-  .discussion-dialog.composer-dialog .composer-bottom { gap: 8px; }
   .discussion-dialog.composer-dialog .composer-preview { padding: 10px 12px; }
 }
 /* Searchable emoji panel; old 4-column popup rules are superseded. */
