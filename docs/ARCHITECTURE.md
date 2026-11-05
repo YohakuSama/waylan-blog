@@ -64,12 +64,12 @@ flowchart LR
 - CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
 - 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
 
-### 阅读器增量解耦 A（2026-11-06，待 PR 验收）
+### 阅读器增量解耦 A（2026-11-06，已合并 PR #108）
 
 - **根因**：此前 `Reader.tsx` 的滚动事件、进度持久化、目录高亮、返回定位与选区/评论状态耦合；独立的滚动观察职责不能单独定位或复测。
 - **边界**：`src/features/reader/useReadingProgress.ts` 接收文章与 DOM refs，独占滚动监听、requestAnimationFrame、阅读进度/目录高亮、`echo:reading` 存储和 `?resume=1` 恢复；`Reader` 只消费其状态并传入稳定的选区取消 setter。保持原事件注册条件、滚动计算、保存时机与优先选区规则。
 - **刻意保留**：长按/双击、触摸选区、CSS Highlight、浮动工具手势、目录弹层焦点、评论草稿与发送状态、图片放大仍在原控制路径；它们与 Safari 原生手势/弹窗时序紧密相关，缺少真实设备证据前不进行联合重构。
-- **验收**：在原 Waylan CI 执行 `npm run check`、阅读器/返回滚动/目录、iOS 模拟触摸、三引擎与布局回归。WebKit 模拟不能证明真实 iOS Safari 已通过；不改变 API、数据、URL、CSS、构建与工作流。PR 合并 SHA 和生产验证单独记录。
+- **验收**：在原 Waylan CI 执行 `npm run check`、阅读器/返回滚动/目录、iOS 模拟触摸、三引擎与布局回归。WebKit 模拟不能证明真实 iOS Safari 已通过；不改变 API、数据、URL、CSS、构建与工作流。[PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) 已通过 [Waylan CI #42072965186](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186)，squash 合并 SHA `aa52f770`；生产验证尚无证明。
 
 ### 后台模块化第二批（已合并，PR #102）
 
@@ -140,13 +140,13 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
-### 评论 Worker 读写边界 B（2026-11-06，待 PR 验收）
+### 评论 Worker 读写边界 B（2026-11-06，已合并 PR #109）
 
 - **修改前**：`worker/comments.ts` 同时承担读取聚合、缓存、D1 批注绑定、仓库验证、公开预览、写入幂等/恢复、编辑与删除；单个文件很难在不影响写入事务的前提下审查只读逻辑。
 - **改动后**：`worker/comment-reads.ts` 拥有评论分页、单条、回复、信息流预览、批注分页、最近回声与 `attach`；`worker/comment-shared.ts` 拥有文章存在性、游标、公开 Discussion 仓库验证以及空页合同；`worker/comments.ts` 保留写入、审查权限与 `requestId` 恢复状态机，并作为原路由的稳定导出入口。依赖方向：`worker/index.ts → comments.ts → comment-reads.ts → comment-shared.ts`，写入与读取都调用共享校验模块；共享模块不反向依赖其他评论服务。
 - **安全的冗余**：删除 feed preview 中只原样 `throw error` 的无效 catch；错误仍直接传播，绝不将网络或权限失败伪装为零评论。原有 `github.ts` 的 GraphQL、cacheGet、缓存键和过期/旧缓存逻辑原样复用，未增加另一套包装器。
 - **不变合同**：所有 HTTP 路径/状态码、JSON 结构、OAuth 用户 token、CSRF、公开仓库核验、D1 表与批处理、Reply 元数据、Webhook 清缓存不动；`sending/sent/failed` 意图状态、哈希、保留/恢复窗口、发送后失败分类、重复提交拒绝均保留原始实现，未改排序。
-- **验证界限**：`tests/worker.test.ts` 使用真实 SQLite 结构、模拟 GitHub transport，覆盖 401/403、缓存、断线重试/同 ID/不同 ID、Webhook；新增依赖边界断言。Waylan CI 检查类型、构建、单元/浏览器；不等于生产 GitHub 与 D1 真正写入验收。合并 SHA、CI 结果另记。
+- **验证界限**：`tests/worker.test.ts` 使用真实 SQLite 结构、模拟 GitHub transport，覆盖 401/403、缓存、断线重试/同 ID/不同 ID、Webhook；新增依赖边界断言。Waylan CI 检查类型、构建、单元/浏览器；不等于生产 GitHub 与 D1 真正写入验收。[PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 已在同步 A 后的 head `c53ce4e1` 通过 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817)，squash 合并 SHA `1a21bb9d`。
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
@@ -175,10 +175,10 @@ shared/                跨前后端的类型、定位、输入规则
 建议优先顺序及约束：
 
 1. **P0｜建立地图和变更记录（已完成）**：为模块建立归属、影响半径、异常定位和维护报告，无业务改动。
-2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
+2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。增量 PR #108 已进一步把滚动进度、活动目录状态和 `resume=1` 返回位置迁到 `src/features/reader/useReadingProgress.ts`；复杂触摸选区、评论草稿及发送状态保留原职责，未为缩短文件强行拆分。
 3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 仅保留后台挂载与主题，`Gate.tsx` 单独负责认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表、`Discussions.tsx` 负责评论区初始化，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
 4. **P3｜CSS 归属与级联清理（首批实施）**：先把原 `site.css` 按顶层规则段落顺序拆分为 `shell.css`、`feed.css`、`sidebar.css`、`site.css`、`responsive.css`，保持已存在的 `styles.css → site → skins → motion` 原始相对级联次序；删除两组被最终手机标题声明完全覆盖的旧规则。`styles.css` 的阅读器与基础规则、双皮肤覆盖暂不搬动；未来清理必须先检查原选择器的 @media 作用域、优先级及导入顺序，且实测手机、平板、桌面、明暗模式。
-5. **P4｜Worker 读写职责分离（首批已合并，PR #106）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。`worker/comments.ts` 的缓存/重复提交恢复等写入状态机仍保持原样，后续独立 PR 先建立测试边界再细拆。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
+5. **P4｜Worker 读写职责分离（首批已合并，PR #106）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。随后 PR #109 将评论读取与 D1 批注关联迁到 `worker/comment-reads.ts`、文章/仓库来源校验迁到 `worker/comment-shared.ts`；`worker/comments.ts` 的写入、重复提交恢复与管理权限状态机完整保留。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
 6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
 
 行数是**审查信号，不是重构 KPI**。可以用“文件是否只有一个清晰的变更理由”“一次修改影响哪些功能”“能否单独回滚”判断是否应该拆分。避免把 1 个大文件机械切成 30 个相互依赖的小文件。

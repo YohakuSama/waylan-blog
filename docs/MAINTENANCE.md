@@ -86,12 +86,12 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
 
-### 阅读器后续增量解耦 A（2026-11-06；待合并）
+### 阅读器后续增量解耦 A（2026-11-06；已合并 PR #108）
 
 - **修改前/根因**：阅读进度保存、目录当前章检测与 `resume=1` 恢复混在阅读器的选择/评论效果之间；修改滚动逻辑难以独立审查。
 - **处理**：仅把原监听及保存/恢复效果搬入 `src/features/reader/useReadingProgress.ts`；`Reader.tsx` 保持 `Reader({post})` API，并通过稳定的 setter 保持原有触摸设备不主动清空选区的判断。未改 DOM、样式或页面路由，也未增加存储抽象。
 - **风险及保留**：同一效应依赖原样保留 `[post, excerptMode]`；原生 iOS Safari 选择句柄、评论提交、图片缩放状态机不适合与滚动观察同步改写。真实 iOS 设备/生产尚无验收证据。
-- **验收/回滚**：PR 验收后填入 Actions 与合并提交；要求现有 Waylan CI 全部必需步骤通过，可单独 revert 本 PR 的 squash commit，无 D1 迁移。先记录 CI，不把模拟 WebKit 等同真机。
+- **验收/回滚**：[PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) head `f110e720` 的 [Waylan CI #42072965186](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186) 全部通过（`npm run check`、三端布局、Chromium/Firefox/WebKit、WCAG、目录/返回、iOS 模拟触摸/输入面板及导航专项）；squash `aa52f770` 已合并，合并后 [main 核心 CI #42074951873](https://github.com/YohakuSama/waylan-blog/actions/runs/42074951873) 成功。首轮 CI #42072800534 曾因 TOC setter 抽取遗漏而类型检查失败，修正后在最终 head 全套复测。可单独 revert `aa52f770` 并重新部署，无 D1 迁移；模拟 WebKit 不是实体 iOS Safari 验收。
 
 ### 后台第二阶段维护索引与故障处置
 
@@ -123,14 +123,16 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **原样保留**：Git Data API 请求地址、headers、20 秒超时、409 冲突、403/429/404 等错误映射、OID/UTF-8 blob 计算、force:false 提交、D1 表结构、评论重试/幂等语义，以及所有 CSRF/同源/登录步骤。只移动函数与导入，不修改原函数内部的请求次序。
 - **验证**：新增 `tests/admin-repository.test.ts` 记录分支配置、UTF-8 Git blob OID、空文件读取、权限模块与内容仓库客户端互不反向依赖的边界；原 `tests/admin.test.ts` 的模拟 Git API 和实际 SQLite 仍验证并发版本冲突、文章和图片的原子保存与内容规则；`npm run check` 包含所有 Worker/构建/静态完整性回归。已有 CI 选择器对 `worker/` 改动自动运行跨浏览器质量/无障碍基线。
 - **风险 R3 与回滚**：本批已合并 `0708fa5b`（PR #106），对应最终 CI 见 [#42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)。尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
-- **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
+- **后续增量（已另行交付）**：评论读取与写入边界由 PR #109 独立实现并验证；缓存复用原 `github.ts`，`write_intents` 仍原样保留。未来若继续修改重试状态机，须另立 PR 并补充真实失败路径测试，不能沿用本次只读拆分结论。
 
-### 评论 Worker 职责整理 B（2026-11-06；待合并）
+### 评论 Worker 职责整理 B（2026-11-06；已合并 PR #109）
 
 - **根因和边界**：原 `worker/comments.ts` 同时包含 6 类只读端点与高风险写入幂等事务，修改预览时容易影响鉴权写入；将只读端点/批注绑定移至 `worker/comment-reads.ts`，仓库/文章/游标校验移至 `worker/comment-shared.ts`，原 `comments.ts` 保持路由兼容导出和写入状态机。
 - **删除与保留**：删除 feed preview 原样抛出的冗余 catch（上游异常照旧传播）；保留 `worker/github.ts` 单一 transport/cacheGet；所有缓存键、TTL、D1 SQL、`requestId` payload hash、`sending/sent/failed`、网络不确定恢复、限流、授权均保留，不采用泛化 repository 层。
-- **验收证据**：原 `tests/worker.test.ts` 真实 SQLite schema + GitHub Mock 与新架构边界断言；依赖现有 Waylan CI 的 `npm run check` / 三引擎基线。CI、PR 与 squash SHA 在确认后追加记录；模拟不代表 Cloudflare/OAuth/Discussion/D1 真实环境。
+- **验收证据**：保留原 `tests/worker.test.ts` 的真实 SQLite schema + GitHub Mock、增补单向依赖守卫；[PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 在同步 A 的 main 后，head `c53ce4e1` 经 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) 全部通过（类型、构建/离线、单元/Worker 合同、三端布局、三浏览器与 WCAG）。squash 合并 SHA `1a21bb9d`。首次 #42073247868 因新增测试的变量名断言错误而 301 项中失败 1 项；修正后 #42073536567 核心通过但为更新基线被取消，最终在新 head 全套复测。上述均不等于 Cloudflare/OAuth/Discussion/D1 的真实端到端验收。
 - **回滚**：仅代码和文档，按 PR 的单独 squash SHA revert 并重新部署；不运行、修改或回退 migrations，不清除 write_intents（已落地的 GitHub 写入不能靠代码 revert 自动取消）。
+
+本轮 A/B 未引入额外框架、状态管理、Actions workflow、迁移文件或公共 API 变更；不能把 PR CI 成功直接解释为真实生产部署。任务 C（CSS 清理）与任务 D（综合验收）尚未在此轮执行。
 
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
@@ -164,6 +166,10 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |
+| --- | --- | --- | --- |
+| 2026-11-06 | [PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) · [CI #42072965186](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186) · 合并 `aa52f770` | A：阅读进度/目录高亮/续读回到 `features/reader/useReadingProgress.ts`；Reader 对外接口、DOM、Safari 选区与评论事务保持。首次 CI #42072800534 发现 setter 遗漏，修正并全量复测。 | head `f110e720` 核心、离线、三端/多浏览器、WCAG、TOC/返回、iOS 模拟触摸、导航回归全部通过；main 核心 #42074951873 成功。真实 iOS 设备/生产发布未验证。回滚单独 revert `aa52f770` 并重新部署，无 D1 迁移。 |
+| 2026-11-06 | [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) · [CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) · 合并 `1a21bb9d` | B：评论读取、缓存聚合/批注与写入编排分责；共享 Discussion 来源校验；完整保留写入幂等状态机、原路由和 GitHub transport；去掉原样 rethrow catch。首轮 #42073247868 为新增断言错误，已修正。 | head `c53ce4e1`（含 A 新 main）核心、SQLite/Worker Mock 合同、三端布局、三浏览器、WCAG 完成。真实 D1/OAuth/Discussion 生产写入与部署未验证。回滚单独 revert `1a21bb9d` 后重新部署，不逆向迁移也不删除已落库记录。 |
+
 | --- | --- | --- | --- |
 | 2026-11-05 | [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) · [CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) | P4 首批：`worker/admin-repo.ts` 负责 GitHub 内容仓库版本/读取/原子提交，`worker/admin.ts` 保留身份与 API 编排；新增仓库选择、Blob OID、409 冲突与模块边界测试。为消除视觉测试模拟状态叠加，改为一个通知状态 Mock。合并 `0708fa5b`。 | PR head `f5263384` 的类型检查、构建、Worker 合约、三端视觉、三浏览器后台交互、WCAG 和信息流回归均通过；生产真实 GitHub 写入、OAuth、Cloudflare 部署尚未验收。可审核后回滚此提交，不涉及 D1 迁移。 |
 | 2026-11-05 | [PR #105](https://github.com/YohakuSama/waylan-blog/pull/105) · [CI #42056032731](https://github.com/YohakuSama/waylan-blog/actions/runs/42056032731) | P3 首批 CSS 按页眉/信息流/侧栏/页面/断点职责分拆；顺序未改变，移除两组被完全覆盖的手机标题声明；合并 `f9503ed3`。 | `e92e0525` 核心测试、跨屏四外观、三浏览器/WCAG、Reader/Feed/Motion 完整 CI 通过。生产部署与真机未单独确认；可回滚此纯 CSS 提交，无 D1 迁移。 |
