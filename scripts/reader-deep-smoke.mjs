@@ -150,7 +150,16 @@ async function run(engine,name,width){
       // End-to-end TOC regression: the original report was a jump from
       // "水合一致性" into the later "稳定的标识" section. DOM-only
       // title/ID checks cannot catch a bad physical scroll landing.
-      await page.goto(origin+"/post/a-room-on-the-internet/",{waitUntil:"domcontentloaded"});
+      // Navigate through an actual list link instead of forcing a second
+      // full document load in an already exercised WebKit page.
+      const targetArticle=page.locator('.feed-list .post-card-link[href="/post/a-room-on-the-internet"]').first();
+      if(!(await targetArticle.count())){
+        const more=page.locator(".feed-layout button.load-more");
+        assert.ok(await more.count(),"the canonical test article must be reachable from the feed");
+        await more.click();
+      }
+      await targetArticle.click();
+      await page.waitForURL(url=>url.pathname.replace(/\\/$/,"")==="/post/a-room-on-the-internet",{timeout:12000});
       await page.locator('.reader-prose [data-block-id="h-hydration"]').waitFor();
       await page.evaluate(()=>document.fonts.ready);
       const isReaderHeaderShown=await page.locator(".site-header").isVisible();
