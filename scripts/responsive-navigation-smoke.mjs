@@ -126,6 +126,15 @@ try {
             };
             return {
               logo: box(".site-header-reader .brand-wordmark"),
+              brand: box(".site-header-reader .brand"),
+              inner: box(".site-header-reader .header-inner"),
+              computed: (() => {
+                const inner = document.querySelector(".site-header-reader .header-inner");
+                const element = inner && getComputedStyle(inner);
+                return element ? { gridRows: element.gridTemplateRows, height: element.height,
+                  minHeight: element.minHeight, alignItems: element.alignItems,
+                  paddingTop: element.paddingTop, paddingBottom: element.paddingBottom } : null;
+              })(),
               header: box(".site-header-reader"),
               nav: box(".site-header-reader #site-nav"),
               controls: [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"].map(box),
@@ -144,7 +153,7 @@ try {
           }
           assert.ok(Math.abs(articleMasthead.logo.height - header.logo.height) <= 1 &&
             Math.abs(articleMasthead.logo.top - header.logo.top) <= 1,
-            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header}));
+            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header, inner: articleMasthead.inner, brand: articleMasthead.brand, computed: articleMasthead.computed}));
           for (let i = 0; i < 4; i++) {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
