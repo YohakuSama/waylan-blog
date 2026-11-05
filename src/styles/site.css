@@ -2377,3 +2377,24 @@ h3 {
   }
   .home-list .feed-excerpt { margin-top: 6px; line-height: 1.65; }
 }
+
+/* Feed flow: remove cumulative gaps between metadata, title, tags and cover. */
+@media (max-width: 767px) {
+  .feed-list .feed-item { padding-block: 16px; }
+  .feed-list .feed-item.is-article .feed-body h2,
+  .home-list .feed-item:first-child .feed-body h2 {
+    font-size: clamp(20px, 5vw, 22px);
+    line-height: 1.34;
+    margin-top: 4px;
+  }
+  .feed-list .feed-excerpt { margin-top: 6px; line-height: 1.62; }
+  .feed-list .tag-list { margin-top: 9px; gap: 6px; }
+  .feed-list .feed-media-link { margin-top: 10px; }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .feed-list .feed-item { padding-block: 18px; }
+  .feed-list .tag-list { margin-top: 11px; }
+}
+@media (min-width: 1120px) {
+  .feed-list .tag-list { margin-top: 12px; }
+}
