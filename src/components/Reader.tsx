@@ -1,18 +1,14 @@
 import { motionAllowed, animateDialogResize } from "../lib/motion";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from "react";
-import ReactMarkdown from "react-markdown";
 import { MarkdownTools } from "./MarkdownTools";
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
-  ArrowUp,
   ArrowUpRight,
-  BookOpen,
   Check,
   ChevronDown,
   Copy,
-  ExternalLink,
   Github,
   Highlighter,
   List,
@@ -38,11 +34,10 @@ import type {
 } from "../../shared/types";
 import { anchorQuote } from "../../shared/anchors";
 import { api, ApiError, useApi, invalidateComments } from "../lib/api";
-import { posts, site, topicName, dateLabel, typeLabels, wordCount, wordsLabel } from "../lib/data";
+import { posts, site } from "../lib/data";
 import { Link, useRouter } from "../lib/router";
-import { Avatar as AuthorAvatar } from "./Avatar";
 import { BookmarkButton } from "./Shelf";
-import { useRecordView, useViews, viewsLabel } from "../lib/views";
+import { useRecordView, useViews } from "../lib/views";
 import { offlinePreview, newId, articleHTML, routeHref } from "../lib/runtime";
 import { storage, transient } from "../lib/storage";
 import {
@@ -53,14 +48,14 @@ import {
 } from "../lib/selection";
 import {
   ArtImage,
-  Avatar,
   CopyButton,
   Dialog,
   EchoMark,
   Related,
   Toast,
-  TopicBadge,
 } from "./UI";
+import { CommentItem, CommentMarkdown, safeDiscussionURL, visibleComment } from "../features/discussions";
+import { ArticleHeader, ReaderToc, ImageViewer, type Zoomed } from "../features/reader";
 type Draft = {
   body: string;
   anchor: Anchor | null;
@@ -78,13 +73,6 @@ const emptyPage: CommentPage = {
   discussionUrl: null,
   mapped: false,
 };
-// GitHub can retain an empty parent after deletion to preserve replies.
-// Hide that whole conversation on Waylan; do not erase other authors\x27 GitHub content.
-const visibleComment = (comment: Comment) => comment.body.trim().length > 0;
-const safeURL = (value: string) =>
-  /^https:\/\/(github\.com|avatars\.githubusercontent\.com)\//.test(value)
-    ? value
-    : "#";
 // Shell snippets are copied as runnable commands: prompts dropped, output lines skipped.
 const copyText = (block: ContentBlock) => {
   const text = block.text.replace(/\n$/, "");
@@ -96,243 +84,6 @@ const copyText = (block: ContentBlock) => {
     .join("\n");
 };
 /** The composer preview and published comments must use identical rendering. */
-function CommentMarkdown({ body, preview = false }: { body: string; preview?: boolean }) {
-  return (
-    <div
-      id={preview ? "echo-preview" : undefined}
-      className={preview ? "comment-markdown composer-preview" : "comment-markdown"}
-      aria-label={preview ? "评论效果预览" : undefined}
-      role={preview ? "region" : undefined}
-    >
-      <ReactMarkdown
-        skipHtml
-        components={{
-          a: ({ children, href }) => (
-            <a href={href} rel="nofollow noopener noreferrer" target="_blank">{children}</a>
-          ),
-          img: ({ alt }) => <span>[图片：{alt || "附件"}]</span>,
-        }}
-      >
-        {body || (preview ? "预览会显示在这里。" : "")}
-      </ReactMarkdown>
-    </div>
-  );
-}
-
-function CommentItem({
-  comment,
-  onQuote,
-  onReply,
-  onChanged,
-  currentUser,
-  moderator,
-  csrf,
-  floor,
-}: {
-  comment: Comment;
-  onQuote: (a: Annotation) => void;
-  onReply: (c: Comment) => void;
-  onChanged: (id: string, next: Comment | null) => void;
-  currentUser?: string;
-  moderator?: boolean;
-  csrf?: string;
-  floor?: string;
-}) {
-  const [replies, setReplies] = useState(comment.replies?.nodes || []),
-    [page, setPage] = useState(comment.replies?.pageInfo),
-    [loading, setLoading] = useState(false),
-    [error, setError] = useState(""),
-    [editing, setEditing] = useState(false),
-    [editBody, setEditBody] = useState(comment.body),
-    [busy, setBusy] = useState(false),
-    [deleted, setDeleted] = useState(false);
-  const editArea = useRef<HTMLTextAreaElement>(null);
-  const own = !!currentUser && currentUser.toLowerCase() === comment.author?.login.toLowerCase();
-  useEffect(() => {
-    if (!editing) setEditBody(comment.body);
-  }, [comment.body, editing]);
-  async function manage(method: "PUT" | "DELETE") {
-    if (busy) return;
-    if (method === "DELETE" && !window.confirm("确定删除这条评论吗？此操作不可撤销。")) return;
-    if (method === "PUT" && (!editBody.trim() || editBody.trim().length > 6000)) {
-      setError("评论需要 1 到 6000 字。");
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const result = await api<{ comment: Comment; ok?: boolean }>(
-        `/api/posts/${parentPost}/comments/${encodeURIComponent(comment.id)}`,
-        {
-          method,
-          headers: { "X-CSRF-Token": csrf || "" },
-          ...(method === "PUT" ? { body: JSON.stringify({ body: editBody.trim() }) } : {}),
-        },
-      );
-      if (method === "DELETE") {
-        setDeleted(true);
-        onChanged(comment.id, null);
-      } else {
-        setEditing(false);
-        onChanged(comment.id, result.comment);
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  useEffect(() => {
-    setReplies(comment.replies?.nodes || []);
-    setPage(comment.replies?.pageInfo);
-  }, [comment]);
-  const [parentPost, setParentPost] = useState("");
-  const router = useRouter();
-  useEffect(() => {
-    setParentPost(
-      posts.find((p) => router.path.startsWith(`/post/${p.slug}`))?.id || "",
-    );
-  }, [router.path]);
-  async function more() {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await api<{
-        nodes: Comment[];
-        pageInfo: { hasNextPage: boolean; endCursor: string | null };
-      }>(
-        `/api/posts/${parentPost}/comments/${encodeURIComponent(comment.id)}/replies${page?.endCursor ? "?after=" + encodeURIComponent(page.endCursor) : ""}`,
-      );
-      setReplies((prev) => [
-        ...prev,
-        ...data.nodes.filter((c) => !prev.some((p) => p.id === c.id)),
-      ]);
-      setPage(data.pageInfo);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
-  if (deleted || !visibleComment(comment)) return null;
-  return (
-    <article className="comment-item" id={`comment-${comment.id}`}>
-      <header>
-        <Avatar comment={comment} />
-        <strong>{comment.author?.login || "已注销的读者"}</strong>
-        {floor && <span className="comment-floor">{floor}</span>}
-        {comment.stale && <span className="sample-label">缓存</span>}
-        <time dateTime={comment.createdAt}>
-          {dateLabel(comment.createdAt.slice(0, 10))}
-        </time>
-      </header>
-      {comment.annotation && (
-        <button
-          className="comment-quote"
-          onClick={() => onQuote(comment.annotation!)}
-        >
-          <span>{anchorQuote(comment.annotation.anchor)}</span>
-          <ArrowUpRight size={15} />
-        </button>
-      )}
-      {comment.replyTarget && (
-        <p className="comment-reply-target">
-          回复 @{comment.replyTarget.login}
-        </p>
-      )}
-      {editing ? (
-        <div className="comment-inline-editor">
-          <textarea
-            ref={editArea}
-            aria-label="编辑评论"
-            rows={4}
-            maxLength={6000}
-            value={editBody}
-            disabled={busy}
-            onChange={(e) => setEditBody(e.target.value)}
-          />
-          <MarkdownTools area={editArea} value={editBody} onChange={setEditBody} disabled={busy} maxLength={6000} />
-          <div className="comment-actions">
-            <button className="text-button" onClick={() => manage("PUT")} disabled={busy || !editBody.trim()}>
-              {busy ? "保存中…" : "保存修改"}
-            </button>
-            <button className="text-button" disabled={busy} onClick={() => { setEditing(false); setError(""); }}>
-              取消
-            </button>
-          </div>
-        </div>
-      ) : (
-        <CommentMarkdown body={comment.body} />
-      )}
-      {error && <p role="alert" className="small-error">{error}</p>}
-      {!editing && (
-        <div className="comment-actions">
-          <button className="text-button" onClick={() => onReply(comment)}>回复</button>
-          {own && <button className="text-button" onClick={() => setEditing(true)} disabled={busy}>编辑</button>}
-          {(own || moderator) && (
-            <button className="text-button comment-delete" onClick={() => manage("DELETE")} disabled={busy}>
-              {busy ? "处理中…" : "删除"}
-            </button>
-          )}
-          <a href={safeURL(comment.url)} target="_blank" rel="noreferrer">
-            在 GitHub 查看
-            <ExternalLink size={12} />
-          </a>
-        </div>
-      )}
-      {(replies.length > 0 || page?.hasNextPage) && (
-        <div className="comment-replies">
-          {replies.filter(visibleComment).map((reply, index) => (
-            <CommentItem
-              key={reply.id}
-              comment={{ ...reply, parentId: comment.id }}
-              floor={floor ? `${floor}-${index + 1}` : undefined}
-              currentUser={currentUser}
-              moderator={moderator}
-              csrf={csrf}
-              onChanged={onChanged}
-              onQuote={onQuote}
-              onReply={onReply}
-            />
-          ))}
-          {page?.hasNextPage && (
-            <button className="text-button" onClick={more} disabled={loading}>
-              {loading
-                ? "正在读取…"
-                : `继续阅读回复${comment.replies?.totalCount ? " · " + comment.replies.totalCount : ""}`}
-              <ChevronDown size={13} />
-            </button>
-          )}
-          {error && (
-            <p className="small-error" role="alert">
-              {error}
-              <button onClick={more}>重试</button>
-            </p>
-          )}
-        </div>
-      )}
-    </article>
-  );
-}
-/** Keep the last selected image mounted while the native dialog animates out.
- * Unmounting it immediately shrinks the modal to a thin bar for one frame. */
-type Zoomed = { src: string; alt: string; from?: Element };
-function ImageViewer({ image, onClose }: {
-  image: Zoomed | null;
-  onClose: () => void;
-}) {
-  const lastImage = useRef<Zoomed | null>(null);
-  if (image) lastImage.current = image;
-  const visible = image ?? lastImage.current;
-  return (
-    <Dialog open={!!image} onClose={onClose}
-      label={visible?.alt || "放大图片"} className="image-dialog"
-      origin={visible?.from}>
-      {visible && <ArtImage src={visible.src} alt={visible.alt} />}
-    </Dialog>
-  );
-}
-
 export default function Reader({ post }: { post: Post }) {
   useRecordView(post.id);
   const views = useViews(),
@@ -1288,6 +1039,29 @@ export default function Reader({ post }: { post: Post }) {
             )),
       }
     : {};
+  /** Reader owns scrolling and focus; the TOC only invokes this callback. */
+  function navigateToSection(targetId: string) {
+    setTocOpen(false);
+    window.requestAnimationFrame(() => {
+      const destination = prose.current?.querySelector<HTMLElement>(
+        `[data-block-id="${targetId}"]`,
+      );
+      if (!destination) return;
+      const margin = Number.parseFloat(
+        window.getComputedStyle(destination).scrollMarginTop,
+      ) || 0;
+      window.scrollTo({
+        top: Math.max(
+          0,
+          window.scrollY + destination.getBoundingClientRect().top - margin,
+        ),
+        behavior: "instant",
+      });
+      destination.focus({ preventScroll: true });
+      setActiveSection(targetId);
+      window.requestAnimationFrame(() => setActiveSection(targetId));
+    });
+  }
   return (
     <>
       <div
@@ -1303,74 +1077,7 @@ export default function Reader({ post }: { post: Post }) {
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
-            <header className="article-heading">
-              <button className="reader-back text-button" type="button"
-                aria-label="返回列表" onClick={router.backToList}>
-                <ArrowLeft size={16} /> 返回列表
-              </button>
-              <div className="article-eyebrow">
-                <span className={`type-label type-${post.type}`}>
-                  <span className="type-mark" aria-hidden="true" />
-                  {typeLabels[post.type]}
-                </span>
-                <TopicBadge id={post.topic} />
-              </div>
-              <h1 style={{ viewTransitionName: `title-${post.id}` }}>
-                {post.title}
-              </h1>
-              {!post.autoExcerpt && (
-                <p className="article-deck">{post.excerpt}</p>
-              )}
-              <div className="article-byline">
-                <div className="article-author">
-                  <AuthorAvatar size={24} className="author-seal" />
-                  <strong>{site.author}</strong>
-                </div>
-                <div className="article-meta">
-                  <time dateTime={post.date}>{dateLabel(post.date)}</time>
-                  {post.updated && (
-                    <span>
-                      更新于{" "}
-                      <time dateTime={post.updated}>
-                        {dateLabel(post.updated)}
-                      </time>
-                    </span>
-                  )}
-                  <span>{post.readingMinutes} 分钟阅读</span>
-                  {!!viewCount && (
-                    <span className="article-views">{viewsLabel(viewCount)} 次阅读</span>
-                  )}
-                </div>
-              </div>
-              {post.project && (
-                <div className="project-facts">
-                  <span className="project-status">{post.project.status}</span>
-                  <ul className="stack-list" aria-label="技术栈">
-                    {post.project.stack.map((s) => (
-                      <li key={s}>{s}</li>
-                    ))}
-                  </ul>
-                  {post.project.repo && (
-                    <a
-                      href={post.project.repo}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      仓库
-                    </a>
-                  )}
-                  {post.project.demo && (
-                    <a
-                      href={post.project.demo}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      演示
-                    </a>
-                  )}
-                </div>
-              )}
-            </header>
+            <ArticleHeader post={post} viewCount={viewCount} onBack={router.backToList} />
             <div className="article-actions" role="group" aria-label="本文操作">
               <button className="article-action article-action-toc" type="button" ref={tocButton}
                 aria-expanded={tocOpen} aria-controls="reader-toc"
@@ -1665,6 +1372,7 @@ export default function Reader({ post }: { post: Post }) {
                   )}
                   {visibleTopComments.map((c, index) => (
                     <CommentItem
+                      postId={post.id}
                       key={c.id}
                       comment={c}
                       floor={`${index}F`}
@@ -1714,7 +1422,7 @@ export default function Reader({ post }: { post: Post }) {
               )}
               {state.mapped && state.discussionUrl && (
                 <a
-                  href={safeURL(state.discussionUrl)}
+                  href={safeDiscussionURL(state.discussionUrl)}
                   className="discussion-source"
                   rel="noreferrer"
                   target="_blank"
@@ -1758,127 +1466,25 @@ export default function Reader({ post }: { post: Post }) {
             )}
           </nav>
         </div>
-        <aside id="reader-toc" ref={toc} aria-label={post.toc.length ? "本文目录" : "阅读进度"}
-          className={`reader-toc ${tocOpen ? "toc-visible" : ""}`}>
-          <div className="toc-inner">
-            <div className="eyebrow">
-              {post.toc.length ? "本文目录" : "阅读进度"}
-              <button
-                className="icon-button"
-                onClick={() => { setTocOpen(false); tocButton.current?.focus({ preventScroll: true }); }}
-                aria-label="关闭目录"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            {post.toc.length > 0 && (
-              <nav aria-label="文章目录">
-                {post.toc.map((t) => (
-                  <a
-                    key={t.id}
-                    href={`#${t.id}`}
-                    className={`${activeSection === t.id ? "active" : ""} level-${t.level}`}
-                    aria-current={
-                      activeSection === t.id ? "location" : undefined
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const targetId = t.id;
-                      setTocOpen(false);
-                      // Resolve the exact rendered block *after* closing the
-                      // mobile TOC. Use its physical position, avoiding a
-                      // browser smooth-scroll that can land in the next section.
-                      window.requestAnimationFrame(() => {
-                        const destination = prose.current?.querySelector<HTMLElement>(
-                          `[data-block-id="${targetId}"]`,
-                        );
-                        if (!destination) return;
-                        const margin = Number.parseFloat(
-                          window.getComputedStyle(destination).scrollMarginTop,
-                        ) || 0;
-                        window.scrollTo({
-                          top: Math.max(
-                            0,
-                            window.scrollY + destination.getBoundingClientRect().top - margin,
-                          ),
-                          behavior: "instant",
-                        });
-                        destination.focus({ preventScroll: true });
-                        setActiveSection(targetId);
-                        // WebKit may deliver a stale scroll event while the
-                        // instant jump settles. Restore the clicked section
-                        // on the next frame, after scroll/layout events.
-                        window.requestAnimationFrame(() => setActiveSection(targetId));
-                      });
-                    }}
-                  >
-                    {t.title}
-                  </a>
-                ))}
-              </nav>
-            )}
-            <div className="toc-progress">
-              <span>
-                已读 {progress}%
-                {progress > 2 && progress < 98 && post.readingMinutes > 1 && (
-                  <> · 约剩 {Math.max(1, Math.round((post.readingMinutes * (100 - progress)) / 100))} 分钟</>
-                )}
-              </span>
-              <span className="toc-track">
-                <span style={{ width: `${progress}%` }} />
-              </span>
-            </div>
-            <dl className="toc-facts">
-              <div>
-                <dt>字数</dt>
-                <dd>{wordsLabel(wordCount(post.text))}</dd>
-              </div>
-              {!!viewCount && (
-                <div>
-                  <dt>阅读</dt>
-                  <dd>{viewsLabel(viewCount)}</dd>
-                </div>
-              )}
-              <div>
-                <dt>{post.updated ? "修订" : "发布"}</dt>
-                <dd>{(post.updated || post.date).replaceAll("-", ".")}</dd>
-              </div>
-            </dl>
-            <div className="toc-hint">
-              <Highlighter size={17} />
-              <p>
-                选中文字后可划线、评论、复制或分享。
-              </p>
-            </div>
-            <div className="toc-footer" role="group" aria-label="目录操作">
-              <button type="button" className="toc-excerpt-toggle"
-                aria-pressed={excerptMode}
-                aria-label={excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-                onClick={() => {
-                  toggleReaderExcerpt();
-                  setTocOpen(false);
-                  tocButton.current?.focus({ preventScroll: true });
-                }}>
-                <Highlighter size={15} aria-hidden="true" />
-                {excerptMode ? "退出摘录模式" : "开启摘录段落模式"}
-              </button>
-              <button
-                className="text-button"
-                onClick={() => {
-                  setTocOpen(false);
-                  window.scrollTo({
-                    top: 0,
-                    behavior: motionAllowed() ? "smooth" : "instant",
-                  });
-                  tocButton.current?.focus({ preventScroll: true });
-                }}
-              >
-                回到页首
-                <ArrowUp size={14} />
-              </button>
-            </div>
-          </div>
-        </aside>
+        <ReaderToc
+          post={post}
+          tocRef={toc}
+          open={tocOpen}
+          activeSection={activeSection}
+          progress={progress}
+          viewCount={viewCount}
+          excerptMode={excerptMode}
+          onClose={() => {
+            setTocOpen(false);
+            tocButton.current?.focus({ preventScroll: true });
+          }}
+          onSelectSection={navigateToSection}
+          onToggleExcerpt={() => {
+            toggleReaderExcerpt();
+            setTocOpen(false);
+            tocButton.current?.focus({ preventScroll: true });
+          }}
+        />
       </div>
       {selection && (
         <div
@@ -2035,6 +1641,7 @@ export default function Reader({ post }: { post: Post }) {
           )}
           {pageComments.map((c) => (
             <CommentItem
+                      postId={post.id}
               key={c.id}
               comment={c}
               floor={(() => {

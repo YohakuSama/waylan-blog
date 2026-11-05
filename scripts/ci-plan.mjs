@@ -36,7 +36,10 @@ export function classify(paths, event = "pull_request", forceFull = false) {
   const infrastructure = (p) => p.startsWith(".github/workflows/") ||
     p === "scripts/ci-plan.mjs" || p === "package.json" || p === "package-lock.json";
   const reader = browser && relevant(paths, (p) =>
-    sharedUI(p) || infrastructure(p) || p.startsWith("src/components/Notification") ||
+    sharedUI(p) || infrastructure(p) ||
+    p.startsWith("src/features/reader/") || p.startsWith("src/features/discussions/") ||
+    p.startsWith("src/features/annotations/") ||
+    p.startsWith("src/components/Notification") ||
     p.startsWith("src/components/Shelf") ||
     /^(src\/components\/(Reader|UI|Settings|Feed|Network)|src\/lib\/(selection|reader|appearance|reveal)|scripts\/(reader|responsive-navigation|selection-composer|route-motion)|tests\/(selection|navigation|mobile-regressions))/i.test(p));
   const feed = browser && relevant(paths, (p) =>

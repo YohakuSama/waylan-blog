@@ -228,6 +228,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("keeps quiet article actions without a moving overlay", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const toc = readFileSync("src/features/reader/ReaderToc.tsx", "utf8");
     const app = readFileSync("src/App.tsx", "utf8");
     const shelf = readFileSync("src/components/Shelf.tsx", "utf8");
     const settings = readFileSync("src/components/Settings.tsx", "utf8");
@@ -253,7 +254,7 @@ describe("mobile reader regression contracts", () => {
       "short articles need a meaningful reading-tools label instead of an empty table of contents");
     assert.ok(style.includes(".discussion-section { scroll-margin-top:"),
       "the comment section must still avoid the sticky header");
-    assert.ok(reader.includes('className="toc-excerpt-toggle"'),
+    assert.ok(toc.includes('className="toc-excerpt-toggle"'),
       "whole-paragraph mode remains discoverable inside the contents panel");
     assert.ok(reader.includes('className="excerpt-mode-hint"') &&
       reader.includes('className="selection-toolbar-mode-exit"'),
@@ -262,7 +263,7 @@ describe("mobile reader regression contracts", () => {
       style.includes('.selection-toolbar-context > .selection-toolbar-mode-exit {') &&
       !style.includes('outline: 1px dashed transparent;'),
       "active excerpt mode must not be mistaken for a short-lived dashed animation");
-    assert.ok(reader.includes('className="toc-footer"') &&
+    assert.ok(toc.includes('className="toc-footer"') &&
       reader.includes('tocButton.current?.focus({ preventScroll: true })'),
       "TOC actions must share a separate footer and restore focus when closing");
     assert.ok(style.includes('.toc-visible .toc-footer {') &&
