@@ -117,9 +117,8 @@ try {
           await last.click();
           await page.waitForURL(/\/post\/[^/?]+/);
           await page.locator(".article-actions").waitFor({ state: "visible" });
-          // The shared header changes from two rows to one during SPA navigation.
-          // Check the settled layout, not the first transitional frame.
-          await page.waitForTimeout(450);
+          // Route changes remount the masthead at its final single-row geometry.
+          // Detect first-frame regressions instead of hiding them with sleep.
           const articleMasthead = await page.evaluate(() => {
             const box = (selector) => {
               const el = document.querySelector(selector);
@@ -189,7 +188,7 @@ try {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
               Math.abs(source.height - dest.height) <= 1 &&
-              Math.abs(dest.width - (i === 0 && width >= 480 && width <= 860 ? 44 : source.width)) <= 1 &&
+              Math.abs(dest.width - (i === 0 && ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) ? 44 : source.width)) <= 1 &&
               Math.abs(source.top - dest.top) <= 1,
               label + ": shortcut " + i + " changes size or height in the article");
             if (width < 480) assert.ok(Math.abs(source.left - dest.left) <= 1,
