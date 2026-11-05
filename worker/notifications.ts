@@ -168,7 +168,8 @@ export async function commentNotification(
   discussionId: string,
   payload: any,
 ) {
-  if (!(await notificationsAvailable(env))) return;
+  const token = env.GITHUB_READ_TOKEN;
+  if (!token || !(await notificationsAvailable(env))) return;
   const commentId = payload.comment?.node_id;
   if (typeof commentId !== "string" || commentId.length > 240) return;
   if (payload.action === "deleted") {
@@ -180,7 +181,7 @@ export async function commentNotification(
   // A removed or unpublished article must never create a fresh dead-link alert.
   // Trust the GitHub API for the author, parent and discussion, not webhook free text.
   const result = await github<{ node: GitHubComment | null }>(
-    env.GITHUB_READ_TOKEN,
+    token,
     `query($id:ID!){node(id:$id){... on DiscussionComment {
       id body author{login} replyTo{id author{login}} discussion{id}
     }}}`,
@@ -200,7 +201,7 @@ export async function commentNotification(
     const found = await github<{
       node: { author: { login: string } | null; discussion: { id: string } | null } | null;
     }>(
-      env.GITHUB_READ_TOKEN,
+      token,
       `query($id:ID!){node(id:$id){... on DiscussionComment{author{login} discussion{id}}}}`,
       { id: marker.replyTarget.id },
     );

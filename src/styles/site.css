@@ -1812,6 +1812,11 @@ h3 {
   .header-search kbd {
     display: none;
   }
+  /* Keep the homepage introduction aligned beneath the compact nav; do not
+     modify the archive or the immersive reading header. */
+  .site-header:not(.site-header-reader) + .site-body .home-hero {
+    padding-top: 22px;
+  }
   .home-hero {
     min-height: 0;
     isolation: isolate;

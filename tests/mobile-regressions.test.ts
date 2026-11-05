@@ -219,7 +219,10 @@ describe("mobile reader regression contracts", () => {
     assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav'));
     assert.ok(site.includes('padding-inline: 0;') && site.includes('background: transparent;'));
     assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
-    assert.ok(site.includes('.header-inner::before { content: none; }'));
+    const narrowNav = site.slice(site.indexOf("@media (max-width: 370px)"));
+    assert.match(narrowNav,
+      /\.site-header:not\(\.site-header-reader\) \.header-inner::before\s*\{\s*content:\s*none;/,
+      "narrow phone tools must not be crossed by a decorative divider");
     assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
@@ -405,9 +408,10 @@ describe("mobile reader regression contracts", () => {
         "a first touch must act before Safari suppresses touchend and click");
       assert.ok(reader.includes(action), "missing selection action " + action);
     }
-    assert.ok(reader.includes("lastToolbarTouch.current = { target: event.currentTarget") &&
-      reader.includes("event.detail !== 0"),
-      "touch pointerdown and compatibility click must not execute twice");
+    assert.match(reader, /lastToolbarTouch\.current\s*=\s*\{\s*target:\s*event\.currentTarget/,
+      "touch and pointer handlers must track the same action target");
+    assert.ok(reader.includes("event.detail !== 0") && reader.includes("!last.handled"),
+      "compatibility click must not repeat an already-handled touch action");
     assert.ok(reader.includes('new host.Highlight(native.getRangeAt(0).cloneRange())') &&
       reader.includes('native.removeAllRanges()') &&
       style.includes('::highlight(waylan-selected-quote)'),

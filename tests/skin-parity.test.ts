@@ -36,7 +36,12 @@ describe("both visual themes share home geometry and focus treatments", () => {
   });
 
   it("uses the same compact phone content-type selector for both skins", () => {
-    const phone = site.slice(site.lastIndexOf("@media (max-width: 767px)"));
+    // More phone breakpoints occur later in the file. Select the rule that
+    // actually owns the six-type native picker rather than the last 767px rule.
+    const pickerRule = site.indexOf(".feed-controls .type-tabs { display: none; }");
+    const phoneStart = site.lastIndexOf("@media (max-width: 767px)", pickerRule);
+    assert.ok(phoneStart >= 0, "missing phone category-selector breakpoint");
+    const phone = site.slice(phoneStart, site.indexOf("\n}", phoneStart) + 2);
     assert.ok(phone.includes(".feed-controls .type-tabs { display: none; }"),
       "the six desktop category links must not occupy two phone rows");
     assert.ok(phone.includes(".feed-controls .mobile-type-select { display: inline-flex; }"),
