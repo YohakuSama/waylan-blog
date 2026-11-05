@@ -28,7 +28,7 @@ Cloudflare Workers Builds 用于读取私有源码的 GitHub App，与本站用�
 
 ## 切换与验证
 
-确认上面的 App 凭据、安装与权限均正确后，将 Cloudflare 生产变量 `GITHUB_AUTH_PROVIDER` 显式设置为 `github-app` 并 Deploy。**不要把 Client Secret 放到 Wrangler 的 `vars` 或公开仓库。**
+**当前部署目标已经在 `wrangler.jsonc` 的非敏感 `vars` 中显式设置 `GITHUB_AUTH_PROVIDER=github-app`。** Cloudflare Worker 已有的 `GITHUB_APP_CLIENT_ID` 和 `GITHUB_APP_CLIENT_SECRET` 继续作为加密 Secret 在控制台保存；**绝不能**把 Client Secret 或任何访问令牌写进 Wrangler 的 `vars` 或公开仓库。以后通过 `wrangler deploy` 发布时，以版本化的 `wrangler.jsonc` 为生产认证模式的来源，避免只在控制台增加普通变量而被下一次部署覆盖。
 
 再次访问 `/api/status`，预期 `login: true`、`authProvider: "github-app"`、`authProviderExplicit: true`。如果 `login: false`，先核对变量/绑定，停止进行评论测试。随后使用全新的隐私浏览器会话测试：
 
