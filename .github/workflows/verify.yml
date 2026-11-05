@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# PR updates supersede older PR builds. Never cancel main or manual audits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
