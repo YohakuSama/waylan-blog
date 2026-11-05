@@ -58,4 +58,23 @@ describe("maintainable module boundaries", () => {
     assert.match(pkg.scripts.check, /build/);
     assert.match(pkg.scripts.check, /test/);
   });
+
+  it("keeps comment reads and shared repository validation independent of the write state machine", () => {
+    const entry = file("worker/index.ts");
+    const writes = file("worker/comments.ts");
+    const reads = file("worker/comment-reads.ts");
+    const shared = file("worker/comment-shared.ts");
+    assert.ok(entry.includes('from "./comments"'), "HTTP router keeps the stable module contract");
+    for (const name of ["readComments", "readReplies", "feedPreviews", "readAnnotations", "getSingle", "recentEcho"])
+      assert.ok(writes.includes(name), `route-facing export must retain ${name}`);
+    assert.ok(reads.includes('from "./comment-shared"'));
+    assert.ok(writes.includes('from "./comment-shared"'));
+    assert.equal(reads.includes('from "./comments"'), false);
+    assert.equal(shared.includes('from "./comments"'), false);
+    assert.equal(shared.includes('from "./comment-reads"'), false);
+    assert.ok(reads.includes("checkDiscussion(data.node, env, map)"));
+    assert.ok(writes.includes("checkDiscussion(check.node, env, map)"));
+    assert.ok(writes.includes('intent?.status === "sending"'));
+    assert.ok(writes.includes('"DELIVERY_UNKNOWN"'));
+  });
 });
