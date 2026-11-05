@@ -29,7 +29,7 @@ npm run build        # 生成 dist/ 完整 HTML、JS、CSS、RSS、Sitemap
 npm run preview      # 预览静态构建；API 需完整 Worker 模式
 ```
 
-GitHub Actions 已统一为 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围选择必要测试，完整回归可通过手动选项执行；历史分支与安全清理流程见 [分支档案](docs/ops/BRANCH_ARCHIVE.md)。
+GitHub Actions 已统一为 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围选择必要测试，完整回归可在 Actions 中手动触发；历史分支的清理记录见 [分支档案](docs/ops/BRANCH_ARCHIVE.md)。
 
 **维护前先查看 [架构与问题定位地图](docs/ARCHITECTURE.md) 和 [维护手册](docs/MAINTENANCE.md)**。两处分别记录模块责任与依赖方向、故障定位路径、PR 验证/回滚和私有仓库转换清单；避免每次维护从头扫描整个仓库。
 

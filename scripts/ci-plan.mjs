@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 
 const docOnly = (p) =>
   p.startsWith("docs/") || p === "README.md" || p === "LICENSE" ||
+  p === "public/images/README.txt" ||
   p.startsWith(".github/ISSUE_TEMPLATE/");
 
 const sharedUI = (p) =>
@@ -27,8 +28,11 @@ export function classify(paths, event = "pull_request", forceFull = false) {
   const ui = relevant(paths, (p) =>
     p.startsWith("src/") || p.startsWith("content/") ||
     p.startsWith("worker/") || p.startsWith("shared/") ||
-    p.startsWith("scripts/") || p.startsWith("tests/") || p.startsWith("public/") ||
-    p === "index.html" || p.startsWith(".github/workflows/") ||
+    (p.startsWith("scripts/") && ![
+      "scripts/ci-plan.mjs", "scripts/ci-plan.test.mjs",
+      "scripts/branch-maintenance.mjs", "scripts/maintenance.test.mjs",
+    ].includes(p)) || p.startsWith("tests/") || p.startsWith("public/") && p !== "public/images/README.txt" ||
+    p === "index.html" ||
     ["package.json", "package-lock.json", "vite.config.ts"].includes(p));
   // An accepted PR has run browser gates; do not repeat all browser installs
   // on the ensuing main push. Direct main pushes still run the core check.
