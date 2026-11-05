@@ -508,14 +508,14 @@ textarea::placeholder {
   line-height: 1.5;
   font-weight: 550;
   letter-spacing: -0.045em;
-  text-wrap: pretty;
+  text-wrap: wrap;
 }
 .article-deck {
   font-size: var(--text-md);
   line-height: 1.9;
   color: var(--muted);
   margin: var(--space-5) 0 var(--space-6);
-  text-wrap: pretty;
+  text-wrap: wrap;
 }
 .article-byline {
   display: flex;
@@ -2603,7 +2603,7 @@ body,
   font-size: clamp(32px, 3.5vw, 42px);
   line-height: 1.34;
   letter-spacing: -0.02em;
-  text-wrap: pretty;
+  text-wrap: wrap;
 }
 .reading-article .article-deck {
   margin: var(--space-4) 0 var(--space-6);
