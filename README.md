@@ -1,6 +1,6 @@
 # Waylan / 系统、软件与技术实践
 
-**当前源码版本：2.3.0**（以 `package.json` 为准）。下面的 2.0 和 2.2 章节是历史版本更新说明；当前工程在仓库根目录，不需要额外进入 `source/`。
+**当前源码版本：2.3.0**（以 `package.json` 为准）。当前工程在仓库根目录；历史版本说明已归档，不需要额外进入 `source/`。
 
 一个可以自行部署到 Cloudflare 的个人博客工程。采用 **React + TypeScript + Vite 静态预渲染 + Workers Static Assets + D1 + GitHub Discussions**。
 
@@ -31,6 +31,8 @@ npm run preview      # 预览静态构建；API 需完整 Worker 模式
 
 GitHub Actions 已统一为 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围选择必要测试，完整回归及 Windows 本地检查通过手动选项执行；历史分支与安全清理流程见 [分支档案](docs/ops/BRANCH_ARCHIVE.md)。
 
+**维护前先查看 [架构与问题定位地图](docs/ARCHITECTURE.md) 和 [维护手册](docs/MAINTENANCE.md)**。两处分别记录模块责任与依赖方向、故障定位路径、PR 验证/回滚和私有仓库转换清单；避免每次维护从头扫描整个仓库。
+
 `dist/` 是正式 HTTP 部署产物，必须经由 Web 服务器访问；请勿双击 `dist/index.html` 测试站内链接。只有生成的 `preview/index.html` 可直接本地打开。根目录的 `index.html` 是 Vite 开发入口；运行 `npm run build` 会重新生成 `preview/index.html`。
 
 重新生成独立浏览文件可运行 `npm run build`，或在已有 dist/RSS 后执行 `npm run build:preview`。离线构建使用单一普通脚本和 fragment 路由；正式网站仍使用独立 URL、预渲染和真实 API。
@@ -47,7 +49,7 @@ GitHub Actions 已统一为 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更�
 | `/about`      | 可编辑的个人自述、写作主题与站点数据                                            |
 | 其他路径      | HTTP 404 与 404 页面：猜你要找的文章、最近更新                                  |
 
-首页进入内容流、卡片进入阅读器共享标题和配图的位置。支持 View Transitions 的浏览器使用原生共享元素动画；其余浏览器使用图片位置过渡和淡入反馈。页眉的“阅读设置”可以切换杂志/终端风格、明暗配色和动效；低核心数设备默认使用轻量过渡，不劫持滚动。返回恢复 URL 中的筛选、排序、关键词与历史条目的滚动位置。
+首页进入内容流、卡片进入阅读器共享标题和配图的位置。支持 View Transitions 的浏览器使用原生共享元素动画；其余浏览器使用图片位置过渡和淡入反馈。页眉的“阅读设置”可以切换杂志/终端风格和明暗配色，动效强度遵循系统辅助功能偏好；低核心数设备默认使用轻量过渡，不劫持滚动。返回恢复 URL 中的筛选、排序、关键词与历史条目的滚动位置。
 
 阅读时选择 2–4000 字、最多 8 个内容块，可选择“划线 / 回声 / 复制 / 分享”。私人划线保存在当前浏览器，可在“阅读设置 → 私人划线”查看及清除；**公开评论启用后，正文保存在 GitHub，定位关系在 D1**。公开批注可通过 `#echo-COMMENT_NODE_ID` 分享。登录前的选区和草稿使用 sessionStorage 暂存，登录回来恢复。
 
