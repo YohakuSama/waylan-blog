@@ -20,7 +20,14 @@ const built = await build({
     minify: "esbuild",
     cssCodeSplit: false,
     lib: { entry: "src/offline.tsx", name: "WaylanOffline", formats: ["iife"] },
-    rollupOptions: { output: { inlineDynamicImports: true } },
+    // Cloudflare Workers Builds has a lower open-file limit than local machines.
+    // Rollup defaults to up to 1000 parallel file operations, which can cause
+    // EMFILE while resolving lucide-react icons in this second Vite build.
+    // Keep enough parallelism for CommonJS plugin loads without exhausting FDs.
+    rollupOptions: {
+      maxParallelFileOps: 64,
+      output: { inlineDynamicImports: true },
+    },
   },
 });
 const output = Array.isArray(built)
