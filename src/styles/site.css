@@ -2076,6 +2076,12 @@ h3 {
   .page-heading + .content-grid .site-sidebar { padding-top:30px; }
   .site-sidebar > * { min-width:0; }
 }
+/* Reserve one desktop logo slot for both skins. Their rendered wordmarks
+   are intentionally different widths; without a shared slot the entire
+   navigation shifts 15px when switching from editorial to terminal. */
+@media (min-width: 861px) {
+  .site-header .brand { min-width: 120px; }
+}
 /* Compact desktop header gets distinct space for brand, navigation and tools. */
 @media (min-width:861px) and (max-width:1279px) {
   .header-inner { grid-template-columns:auto minmax(0,1fr) auto; gap:20px; }
