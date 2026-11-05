@@ -133,7 +133,33 @@ try {
                 const element = inner && getComputedStyle(inner);
                 return element ? { gridRows: element.gridTemplateRows, height: element.height,
                   minHeight: element.minHeight, alignItems: element.alignItems,
+                  headerHeightToken: element.getPropertyValue("--header-height").trim(),
+                  barHeightToken: element.getPropertyValue("--header-bar-height").trim(),
                   paddingTop: element.paddingTop, paddingBottom: element.paddingBottom } : null;
+              })(),
+              matchingCSS: (() => {
+                const el = document.querySelector(".site-header-reader .header-inner");
+                const matches = [];
+                const visit = (rules, sheet, media = "") => {
+                  for (const rule of rules) {
+                    if (rule.selectorText && rule.selectorText.includes("header-inner")) {
+                      try {
+                        if (el.matches(rule.selectorText)) matches.push({
+                          sheet, media, selector: rule.selectorText,
+                          minHeight: rule.style.minHeight, height: rule.style.height,
+                          rows: rule.style.gridTemplateRows,
+                        });
+                      } catch {}
+                    }
+                    if (rule.cssRules && (!rule.conditionText ||
+                      (rule instanceof CSSMediaRule && matchMedia(rule.conditionText).matches)))
+                      visit(rule.cssRules, sheet, rule.conditionText || media);
+                  }
+                };
+                for (const stylesheet of document.styleSheets) {
+                  try { visit(stylesheet.cssRules, stylesheet.href || "inline"); } catch {}
+                }
+                return matches.slice(-20);
               })(),
               header: box(".site-header-reader"),
               nav: box(".site-header-reader #site-nav"),
@@ -153,7 +179,7 @@ try {
           }
           assert.ok(Math.abs(articleMasthead.logo.height - header.logo.height) <= 1 &&
             Math.abs(articleMasthead.logo.top - header.logo.top) <= 1,
-            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header, inner: articleMasthead.inner, brand: articleMasthead.brand, computed: articleMasthead.computed}));
+            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header, inner: articleMasthead.inner, brand: articleMasthead.brand, computed: articleMasthead.computed, css: articleMasthead.matchingCSS}));
           for (let i = 0; i < 4; i++) {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
