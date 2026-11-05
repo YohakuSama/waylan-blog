@@ -30,15 +30,17 @@ describe("Admin feature boundaries", () => {
   it("places list refresh, discussion setup and deployment status in the dashboard", () => {
     const dashboard = read("src/admin/Dashboard.tsx");
     assert.match(dashboard, /export function Dashboard\(/);
-    assert.match(dashboard, /function Posts\(/);
-    assert.match(dashboard, /function Discussions\(/);
+    const list = read("src/admin/ContentList.tsx");
+    assert.match(list, /export function Posts\(/);
+    assert.match(list, /export function Discussions\(/);
+    assert.ok(dashboard.includes('from "./ContentList"'));
     assert.match(dashboard, /function DeployStatus\(/);
     assert.match(dashboard, /const latest = useRef\(0\)/);
     assert.match(dashboard, /run !== latest\.current/);
     assert.ok(dashboard.includes('"/api/admin/content"'));
     assert.ok(dashboard.includes('"/api/admin/status"'));
-    assert.ok(dashboard.includes('"/api/admin/discussions"'));
-    assert.ok(dashboard.includes('"/api/admin/post", "DELETE"'));
+    assert.ok(list.includes('"/api/admin/discussions"'));
+    assert.ok(list.includes('"/api/admin/post", "DELETE"'));
   });
 
   it("shares one editor Markdown renderer, file validation and confirmation dialog", () => {
