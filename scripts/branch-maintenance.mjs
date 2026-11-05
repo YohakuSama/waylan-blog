@@ -77,7 +77,7 @@ async function main() {
     else skipped.push({ name: record.name, reason });
   }
   console.log(JSON.stringify({ mode, eligible: eligible.map((b) => ({
-    branch: b.name, sha: b.sha, mergedPR: b.pr,
+    branch: b.name, sha: b.sha, sourcePR: b.pr, kind: b.kind, replacedBy: b.replacedBy || null,
   })), skipped }, null, 2));
   console.log("Eligible:", eligible.length, "Skipped:", skipped.length);
   if (mode === "preview") return;
