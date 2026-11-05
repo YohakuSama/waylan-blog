@@ -57,7 +57,7 @@ function changedPaths() {
       /^0{40}$/.test(base))
     return ["src/App.tsx", ".github/workflows/verify.yml"];
   try {
-    return execFileSync("git", ["diff", "--name-only", "--diff-filter=ACMR", base, head], {
+    return execFileSync("git", ["diff", "--name-only", base, head], {
       encoding: "utf8", maxBuffer: 4_000_000,
     }).split("\n").map((x) => x.trim()).filter(Boolean);
   } catch (error) {
