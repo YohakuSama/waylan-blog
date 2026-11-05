@@ -41,7 +41,9 @@ describe("maintainable module boundaries", () => {
   it("separates privileged admin transport from public API caching", () => {
     const admin = file("src/admin/main.tsx");
     const transport = file("src/admin/api.ts");
-    assert.ok(admin.includes('import { adminApi as api, setAdminCsrf } from "./api";'));
+    const gate = file("src/admin/Gate.tsx");
+    assert.ok(admin.includes('import { Gate } from "./Gate";'));
+    assert.ok(gate.includes('import { adminApi as api, setAdminCsrf } from "./api";'));
     assert.equal(admin.includes("await fetch("), false);
     assert.ok(transport.includes('credentials: "same-origin"'));
     assert.ok(transport.includes('"X-CSRF-Token"'));
