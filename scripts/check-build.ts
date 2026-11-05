@@ -121,7 +121,7 @@ for (const path of [
 }
 // Existence alone cannot detect malformed RSS or Sitemap XML.
 for (const [file, expected] of [
-  ["sitemap.xml", posts.length + 5],
+  ["sitemap.xml", posts.length + 6],
   ["rss.xml", posts.length],
 ] as const) {
   const xml = await readFile("dist/" + file, "utf8");
@@ -129,6 +129,13 @@ for (const [file, expected] of [
   assert.equal(doc.querySelector("parsererror"), null, file + " malformed XML");
   const selector = file === "sitemap.xml" ? "urlset > url" : "rss > channel > item";
   assert.equal(doc.querySelectorAll(selector).length, expected, file + " entries incomplete");
+  if (file === "sitemap.xml") {
+    assert(
+      [...doc.querySelectorAll("urlset > url > loc")].some((node) =>
+        node.textContent === `${site.origin}/privacy`),
+      "privacy page must be discoverable in sitemap",
+    );
+  }
 }
 for (const file of [
   "sitemap.xml",
@@ -141,5 +148,5 @@ for (const file of [
 ])
   await readFile("dist/" + file);
 console.log(
-  `Build integrity: ${posts.length + 6} documents, article bodies, metadata, internal links, media and feeds passed`,
+  `Build integrity: ${posts.length + 7} documents, article bodies, metadata, internal links, media and feeds passed`,
 );
