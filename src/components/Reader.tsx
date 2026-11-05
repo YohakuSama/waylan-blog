@@ -55,7 +55,7 @@ import {
   Toast,
 } from "./UI";
 import { CommentItem, CommentMarkdown, safeDiscussionURL, visibleComment } from "../features/discussions";
-import { ArticleHeader, ReaderToc, ImageViewer, type Zoomed } from "../features/reader";
+import { ArticleHeader, ReaderToc, ImageViewer, useReadingProgress, type Zoomed } from "../features/reader";
 type Draft = {
   body: string;
   anchor: Anchor | null;
@@ -96,9 +96,7 @@ export default function Reader({ post }: { post: Post }) {
     composerArea = useRef<HTMLTextAreaElement>(null),
     composerGeometry = useRef<{ from: DOMRect; radius: string } | null>(null),
     composerResizeAnimation = useRef<Animation | null>(null);
-  const [progress, setProgress] = useState(0),
-    [activeSection, setActiveSection] = useState(post.toc[0]?.id || ""),
-    [fontSize, setFontSize] = useState(DEFAULT_FONT),
+  const [fontSize, setFontSize] = useState(DEFAULT_FONT),
     [tocOpen, setTocOpen] = useState(false);
   useEffect(() => {
     if (!tocOpen) return;
@@ -491,82 +489,7 @@ export default function Reader({ post }: { post: Post }) {
     if (prose.current)
       setOrphans(applyHighlights(prose.current, post, allAnnotations));
   }, [post, annotations, localMarks]);
-  useEffect(() => {
-    let frame = 0;
-    let lastProgress = -1;
-    const update = () => {
-      frame = 0;
-      if (!article.current) return;
-      const el = article.current,
-        top = el.getBoundingClientRect().top + window.scrollY,
-        bottom = top + el.offsetHeight;
-      const value = Math.min(
-        100,
-        Math.max(
-          0,
-          Math.round(
-            ((window.scrollY + window.innerHeight * 0.45 - top) /
-              (bottom - top)) *
-              100,
-          ),
-        ),
-      );
-      if (value !== lastProgress) {
-        lastProgress = value;
-        setProgress(value);
-      }
-      let current = post.toc[0]?.id || "";
-      for (const heading of post.toc) {
-        if (
-          (prose.current?.querySelector<HTMLElement>(
-            `[data-block-id="${heading.id}"]`,
-          )?.getBoundingClientRect().top ?? Infinity) < 170
-        )
-          current = heading.id;
-      }
-      setActiveSection(current);
-      const visible = [
-        ...(prose.current?.querySelectorAll<HTMLElement>("[data-block-id]") ||
-          []),
-      ].find((b) => b.getBoundingClientRect().bottom > 120);
-      if (window.scrollY > 100)
-        storage.set("reading", {
-          slug: post.slug,
-          title: post.title,
-          progress: value,
-          blockId: visible?.dataset.blockId,
-        });
-    };
-    const scroll = () => {
-      // Native drag-selection may be transient; explicit tap-to-excerpt is a
-      // deliberate choice and must survive small scrolls while taking action.
-      // WebKit may dispatch scroll as the native selection handles and
-      // visual viewport settle. Keep the touch action tray until explicit
-      // dismissal instead of making it flash and vanish after a long press.
-      if (!excerptMode && !window.matchMedia("(any-pointer: coarse)").matches)
-        setSelection(null);
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    // Read the saved position before the first update() can overwrite it.
-    const saved =
-      new URLSearchParams(location.search).get("resume") === "1"
-        ? storage.get<{ slug: string; blockId?: string } | null>(
-            "reading",
-            null,
-          )
-        : null;
-    window.addEventListener("scroll", scroll, { passive: true });
-    update();
-    const resumeId = saved?.slug === post.slug ? saved.blockId : undefined;
-    if (resumeId)
-      requestAnimationFrame(() =>
-        document.getElementById(resumeId)?.scrollIntoView({ block: "start" }),
-      );
-    return () => {
-      window.removeEventListener("scroll", scroll);
-      cancelAnimationFrame(frame);
-    };
-  }, [post, excerptMode]);
+  const { progress, activeSection } = useReadingProgress(post, article, prose, excerptMode, setSelection);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let pointerDown = false;

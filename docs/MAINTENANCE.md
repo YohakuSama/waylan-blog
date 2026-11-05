@@ -86,6 +86,13 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
 
+### 阅读器后续增量解耦 A（2026-11-06；待合并）
+
+- **修改前/根因**：阅读进度保存、目录当前章检测与 `resume=1` 恢复混在阅读器的选择/评论效果之间；修改滚动逻辑难以独立审查。
+- **处理**：仅把原监听及保存/恢复效果搬入 `src/features/reader/useReadingProgress.ts`；`Reader.tsx` 保持 `Reader({post})` API，并通过稳定的 setter 保持原有触摸设备不主动清空选区的判断。未改 DOM、样式或页面路由，也未增加存储抽象。
+- **风险及保留**：同一效应依赖原样保留 `[post, excerptMode]`；原生 iOS Safari 选择句柄、评论提交、图片缩放状态机不适合与滚动观察同步改写。真实 iOS 设备/生产尚无验收证据。
+- **验收/回滚**：PR 验收后填入 Actions 与合并提交；要求现有 Waylan CI 全部必需步骤通过，可单独 revert 本 PR 的 squash commit，无 D1 迁移。先记录 CI，不把模拟 WebKit 等同真机。
+
 ### 后台第二阶段维护索引与故障处置
 
 - **保存/发布失败：** 先看 `src/admin/PostEditor.tsx` 或 `SiteEditor.tsx` 的表单和错误状态，再查 `form.ts` / `helpers.ts` 验证和 `api.ts` 的 CSRF/超时；服务端错误再往 `worker/admin.ts`、GitHub OID 冲突、Secrets 追踪。不要在显示组件里重写 HTTP 客户端。
