@@ -150,7 +150,7 @@ try {
               firstMedia: select(".feed-list .feed-media-link"),
               entryHeading: select(".feed-list .feed-body h2"),
               latestHeading: select("#latest-heading"),
-              identity: select(".home-identity"),
+              identity: select(".home-hero .intro-copy"),
               homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
               homeTopicLink: select(".home-topic-link"),
               sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
