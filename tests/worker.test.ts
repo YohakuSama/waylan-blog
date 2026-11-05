@@ -470,7 +470,6 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(result.status, 400);
     assert.equal(((await result.json()) as any).code, "LINK_LIMIT");
   });
-
   it("keeps create/edit body validation codes, messages and rejected-write behavior identical", async () => {
     const invalid = [
       { value: null, code: "COMMENT_LENGTH" },
