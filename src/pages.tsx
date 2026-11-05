@@ -546,14 +546,6 @@ export function About() {
                 ))}
               </ul>
             </div>
-            <div>
-              <h2 className="side-title">隐私与数据</h2>
-              <ul>
-                <li>不投放广告；页面包含 Cloudflare 网站分析脚本。</li>
-                <li>GitHub App 登录按应用授权权限访问；若启用旧版 OAuth 兼容模式，会申请 public_repo 权限。</li>
-                <li>公开评论位于 GitHub Discussions；私人划线只存在本地。数据保留与请求方式见本页上方说明。</li>
-              </ul>
-            </div>
           </div>
           <Link className="primary-button" href="/feed">
             浏览全部内容
