@@ -147,6 +147,10 @@ describe("maintainable module boundaries", () => {
     };
     for (const path of files) visit(path);
 
+    // Include the rarely run GitHub setup CLI: its shared Discussions helpers
+    // must not be treated as dead code just because the website does not import them.
+    // Reader selection is a production import, including on Safari; the old
+    // pages barrel and direct privacy route are still used by App.
     // These components are deliberately used by prerender/offline entrypoints
     // even when the client starts from a lazy Reader chunk.
     const reached = new Set<string>();
@@ -158,12 +162,19 @@ describe("maintainable module boundaries", () => {
     for (const path of [
       "src/client.tsx", "src/offline.tsx", "src/admin/main.tsx",
       "worker/index.ts", "scripts/prerender.tsx", "scripts/offline-preview.tsx",
+      "scripts/setup-github.ts",
     ]) walk(resolve(path));
     for (const path of [
       "src/components/Boot.tsx", "src/components/Reader.tsx",
+      "src/pages.tsx", "src/pages/Privacy.tsx", "src/lib/selection.ts",
       "src/features/discussions/model.ts", "src/features/reader/useReadingProgress.ts",
       "worker/comments.ts", "worker/comment-reads.ts", "worker/comment-shared.ts",
-    ]) assert.ok(reached.has(resolve(path)), path + " is still needed by a live/SSR/offline entrypoint");
+      "shared/discussions.ts",
+    ]) assert.ok(reached.has(resolve(path)), path + " is still needed by a live/SSR/offline/CLI entrypoint");
+    assert.ok(edges.get(resolve("src/components/Reader.tsx"))?.includes(resolve("src/lib/selection.ts")),
+      "reader selection helper remains a production dependency, not merely a test fixture");
+    assert.ok(edges.get(resolve("scripts/setup-github.ts"))?.includes(resolve("shared/discussions.ts")),
+      "GitHub setup CLI keeps its shared discussion contract");
   });
 
 });
