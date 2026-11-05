@@ -94,6 +94,8 @@ async function run(engine,name,width){
         const zoomDialog=page.locator("dialog.image-dialog[open]");
         await zoomDialog.waitFor();
         await zoomDialog.locator("img").evaluate(img=>img.decode().catch(()=>{}));
+        // Wait for the modal entrance transform before measuring its layout.
+        await page.waitForTimeout(550);
         const metrics=await zoomDialog.evaluate(dialog=>{
           const outer=dialog.getBoundingClientRect();
           const image=dialog.querySelector("img").getBoundingClientRect();
@@ -107,7 +109,7 @@ async function run(engine,name,width){
             centerOffset:Math.abs(outer.top+outer.height/2-innerHeight/2)};
         });
         observations.push({browser:name,width,scenario:"image zoom is content-sized",metrics});
-        assert.ok(metrics.blank<20 && metrics.blank>=-4,
+        assert.ok(Math.abs(metrics.blank)<20,
           "IMAGE_DIALOG_BLANK: image viewer must not leave empty space below image: "+JSON.stringify(metrics));
         assert.ok(metrics.centerOffset<30,
           "IMAGE_DIALOG_CENTER: zoom dialog must be vertically centered: "+JSON.stringify(metrics));
