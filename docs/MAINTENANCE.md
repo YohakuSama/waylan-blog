@@ -159,6 +159,13 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **处理**：仅抽私有惰性 `readJSON`，既不提前触碰浏览器存储，又在访问全局对象、读取或 JSON 解析抛错时保持 fallback；原 `set/remove` 实现完全不动。缓存仅复用同语义 `now()`，原 TTL、stale 条件及 SQL 不变。
 - **验证/回滚**：`tests/storage-contract.test.ts` 已覆盖两个后端互不串值、读错/缺失/受限访问、原返回值；[PR #118](https://github.com/YohakuSama/waylan-blog/pull/118) 最终 head `22adfcbe` 在 C 合并后的 main 上经 [Waylan CI #42088441135 成功](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)，涵盖 Worker SQLite/API/缓存契约、构建/离线、三端、Chromium/Firefox/WebKit、WCAG、阅读器/模拟 iOS 触摸与导航，合并 `cfeb5c910dbbc63040798152e7e64d248e7e6e64`。原 #117 在 CI 安装阶段长时间卡住，同 SHA 的 #118 独立 PR 完整复验后合并；#117 关闭未合并。若回归单独 revert D squash 并重新部署；没有 D1 migrations，真实 OAuth/生产数据与已提交评论不会通过 Git revert 自动回滚。
 
+### D 综合收尾：静态依赖审计与保留项（2026-11-06）
+
+- **发现与原因**：原 `tests/architecture.test.ts` 已有评论读写、后台 API 与统一 CSS 的局部边界断言，但不遍历真实 TS/TSX import 图。仅凭几个关键文件的文本检查，不能证明不存在循环或未来新增的跨端反向依赖。本次补充同一文件中的 TypeScript AST 静态检查，不改业务源码、不增加中间层、依赖、构建脚本或 CI workflow。
+- **范围与结果判定**：检查前端、后台、Worker、共享源码和构建脚本的静态运行时相对 import/re-export；运行时图须无环，`shared` 不得反向依赖平台代码，前端与 Worker 不得互相静态导入；从网站、离线、后台、Worker、SSR/预览入口检验 `Boot`、Reader、Discussion 模型和 Worker 评论读写模块可达。只有现有 `npm run check` 中该测试实际成功，才标记“检查通过”；不把一次静态扫描扩大为“所有旧代码均无引用”。
+- **经核对的保留项**：`src/components/Boot.tsx` 在 `scripts/prerender.tsx`、`scripts/offline-preview.tsx` 中被直接使用；`reader-loader.ts` 动态 import Reader 是刻意的延迟加载，不是需消除的静态循环；`worker/comments.ts` 的读操作 re-export 保持原路由 import 与 HTTP 合同。Reader 原生 iOS Safari 手势状态、评论幂等恢复事务继续保留在已有责任模块，没有足够真机/真实写入证据时不强拆。
+- **回归边界**：本次只修改架构测试及现有两份文档；不会更改 API、D1 migration、CSS、站点资源、评论请求 ID/恢复语义和发布配置。C [#116](https://github.com/YohakuSama/waylan-blog/pull/116) 与 D [#118](https://github.com/YohakuSama/waylan-blog/pull/118) 已分别获得完整浏览器 CI，新增测试 PR 仍需按统一 Waylan CI 通过。Cloudflare 构建异常、生产部署版本、真实 iOS Safari、OAuth/D1/GitHub Discussion 的受控写入/恢复仍须单独验收；不能以本次静态审计代替。回滚可单独 revert 审计测试/文档 PR，无线上数据回滚需求。
+
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
 **结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。
