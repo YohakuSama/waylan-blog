@@ -29,15 +29,22 @@ export function cookieValue(request: Request, name: string) {
       ?.slice(name.length + 1) || ""
   );
 }
-export const cookieName = (_request: Request, kind = "session") =>
-  `__Host-echo_${kind}`;
+/** Local-only exception: keep the documented http://localhost Wrangler OAuth flow.
+ * Public hostnames are never eligible for non-Secure authentication cookies. */
+export function loopbackHttp(request: Request): boolean {
+  const url = new URL(request.url);
+  return url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+}
+export const cookieName = (request: Request, kind = "session") =>
+  `${loopbackHttp(request) ? "" : "__Host-"}echo_${kind}`;
 export function cookie(
-  _request: Request,
+  request: Request,
   name: string,
   value: string,
   age: number,
 ) {
-  return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}; Secure`;
+  return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${loopbackHttp(request) ? "" : "; Secure"}`;
 }
 export function safeReturn(path: string | null) {
   if (

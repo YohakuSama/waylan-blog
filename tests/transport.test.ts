@@ -28,6 +28,21 @@ describe("HTTPS transport safeguards", () => {
     }
   });
 
+  it("preserves the documented loopback-only HTTP development flow", async () => {
+    const local = new Request("http://localhost:8787/api/auth/github");
+    const localEnv = { SITE_ORIGIN: "http://localhost:8787" } as Env;
+    const response = await worker.fetch(local, localEnv);
+    assert.equal(response.status, 503, "local dev should reach auth readiness, not HTTPS redirect");
+    const localName = cookieName(local, "oauth");
+    assert.equal(localName, "echo_oauth");
+    assert.equal(cookie(local, localName, "test-value", 60).includes("; Secure"), false);
+
+    const publicEnv = { SITE_ORIGIN: "https://waylan.org" } as Env;
+    const redirected = await worker.fetch(local, publicEnv);
+    assert.equal(redirected.status, 308, "a production config must not accept local HTTP");
+    assert.equal(redirected.headers.get("Set-Cookie"), null);
+  });
+
   it("never generates an unprefixed or non-Secure authentication cookie", () => {
     const insecureRequest = new Request("http://waylan.org/api/auth/github");
     for (const kind of ["oauth", "session"]) {
