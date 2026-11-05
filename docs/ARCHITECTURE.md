@@ -64,12 +64,12 @@ flowchart LR
 - CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
 - 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
 
-### 阅读器增量解耦 A（2026-11-06，待 PR 验收）
+### 阅读器增量解耦 A（2026-11-06，已合并 PR #108）
 
 - **根因**：此前 `Reader.tsx` 的滚动事件、进度持久化、目录高亮、返回定位与选区/评论状态耦合；独立的滚动观察职责不能单独定位或复测。
 - **边界**：`src/features/reader/useReadingProgress.ts` 接收文章与 DOM refs，独占滚动监听、requestAnimationFrame、阅读进度/目录高亮、`echo:reading` 存储和 `?resume=1` 恢复；`Reader` 只消费其状态并传入稳定的选区取消 setter。保持原事件注册条件、滚动计算、保存时机与优先选区规则。
 - **刻意保留**：长按/双击、触摸选区、CSS Highlight、浮动工具手势、目录弹层焦点、评论草稿与发送状态、图片放大仍在原控制路径；它们与 Safari 原生手势/弹窗时序紧密相关，缺少真实设备证据前不进行联合重构。
-- **验收**：在原 Waylan CI 执行 `npm run check`、阅读器/返回滚动/目录、iOS 模拟触摸、三引擎与布局回归。WebKit 模拟不能证明真实 iOS Safari 已通过；不改变 API、数据、URL、CSS、构建与工作流。PR 合并 SHA 和生产验证单独记录。
+- **验收**：[PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) 最终头部 `f110e720` 通过 [Waylan CI #42072965186](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186)，合并提交 `aa52f770ef2bb79aa6bc243e32e3b4fd8fea5288`。覆盖 `npm run check`、阅读器/返回滚动/目录、iOS 模拟触摸、三引擎与布局回归。WebKit 模拟不能证明真实 iOS Safari 已通过；没有修改 API、数据、URL、CSS、构建或工作流。
 
 ### 后台模块化第二批（已合并，PR #102）
 
@@ -140,13 +140,16 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
-### 评论 Worker 读写边界 B（2026-11-06，待 PR 验收）
+### 评论 Worker 读写边界 B（2026-11-06，已合并 PR #109）
 
 - **修改前**：`worker/comments.ts` 同时承担读取聚合、缓存、D1 批注绑定、仓库验证、公开预览、写入幂等/恢复、编辑与删除；单个文件很难在不影响写入事务的前提下审查只读逻辑。
 - **改动后**：`worker/comment-reads.ts` 拥有评论分页、单条、回复、信息流预览、批注分页、最近回声与 `attach`；`worker/comment-shared.ts` 拥有文章存在性、游标、公开 Discussion 仓库验证以及空页合同；`worker/comments.ts` 保留写入、审查权限与 `requestId` 恢复状态机，并作为原路由的稳定导出入口。依赖方向：`worker/index.ts → comments.ts → comment-reads.ts → comment-shared.ts`，写入与读取都调用共享校验模块；共享模块不反向依赖其他评论服务。
 - **安全的冗余**：删除 feed preview 中只原样 `throw error` 的无效 catch；错误仍直接传播，绝不将网络或权限失败伪装为零评论。原有 `github.ts` 的 GraphQL、cacheGet、缓存键和过期/旧缓存逻辑原样复用，未增加另一套包装器。
 - **不变合同**：所有 HTTP 路径/状态码、JSON 结构、OAuth 用户 token、CSRF、公开仓库核验、D1 表与批处理、Reply 元数据、Webhook 清缓存不动；`sending/sent/failed` 意图状态、哈希、保留/恢复窗口、发送后失败分类、重复提交拒绝均保留原始实现，未改排序。
 - **验证界限**：`tests/worker.test.ts` 使用真实 SQLite 结构、模拟 GitHub transport，覆盖 401/403、缓存、断线重试/同 ID/不同 ID、Webhook；新增依赖边界断言。Waylan CI 检查类型、构建、单元/浏览器；不等于生产 GitHub 与 D1 真正写入验收。合并 SHA、CI 结果另记。
+
+
+**B 验收与结构审计（2026-11-06）：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 在 A 已合并的最新 `main` 上复验，最终 PR head `c53ce4e1ce6977dce3485674efe3d27d3223662b` 经 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) 的类型、构建、单元/Worker HTTP 契约、离线、布局、Chromium/Firefox/WebKit 和 WCAG 检查通过；squash 合并提交 `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原 `persistWrite/writeComment/manageComment` 及最近回声逻辑搬移后逐段对比一致；校验函数仅更改导出位置。首轮 CI #42073247868 由于新增的静态测试错误匹配变量名而失败（300/301 测试通过）；修正断言并重新完整验收后合并。前后依赖方向：原 `index.ts → comments.ts(读+写+仓库核验)`，现 `index.ts → comments.ts(写入/兼容导出) → comment-reads.ts(公开读取)`，读写共同依赖 `comment-shared.ts`，`comment-shared.ts` 不反向引用读取或写入模块；`github.ts` 传输和缓存仍单例复用。未增加 migrations、npm 依赖或 CI 工作流。
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 

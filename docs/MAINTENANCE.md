@@ -86,12 +86,12 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
 
-### 阅读器后续增量解耦 A（2026-11-06；待合并）
+### 阅读器后续增量解耦 A（2026-11-06；已合并 PR #108）
 
 - **修改前/根因**：阅读进度保存、目录当前章检测与 `resume=1` 恢复混在阅读器的选择/评论效果之间；修改滚动逻辑难以独立审查。
 - **处理**：仅把原监听及保存/恢复效果搬入 `src/features/reader/useReadingProgress.ts`；`Reader.tsx` 保持 `Reader({post})` API，并通过稳定的 setter 保持原有触摸设备不主动清空选区的判断。未改 DOM、样式或页面路由，也未增加存储抽象。
 - **风险及保留**：同一效应依赖原样保留 `[post, excerptMode]`；原生 iOS Safari 选择句柄、评论提交、图片缩放状态机不适合与滚动观察同步改写。真实 iOS 设备/生产尚无验收证据。
-- **验收/回滚**：PR 验收后填入 Actions 与合并提交；要求现有 Waylan CI 全部必需步骤通过，可单独 revert 本 PR 的 squash commit，无 D1 迁移。先记录 CI，不把模拟 WebKit 等同真机。
+- **验收/回滚**：[PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) · [Waylan CI #42072965186 成功](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186) · squash `aa52f770ef2bb79aa6bc243e32e3b4fd8fea5288`。首次 #42072800534 因目录 setter 漏传导致 TypeScript 失败，修正后重测完整通过。可审核后单独 revert 此 squash、重新部署，无 D1 迁移；不把模拟 WebKit 等同真机。
 
 ### 后台第二阶段维护索引与故障处置
 
@@ -125,12 +125,15 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **风险 R3 与回滚**：本批已合并 `0708fa5b`（PR #106），对应最终 CI 见 [#42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)。尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
 - **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
 
-### 评论 Worker 职责整理 B（2026-11-06；待合并）
+### 评论 Worker 职责整理 B（2026-11-06；已合并 PR #109）
 
 - **根因和边界**：原 `worker/comments.ts` 同时包含 6 类只读端点与高风险写入幂等事务，修改预览时容易影响鉴权写入；将只读端点/批注绑定移至 `worker/comment-reads.ts`，仓库/文章/游标校验移至 `worker/comment-shared.ts`，原 `comments.ts` 保持路由兼容导出和写入状态机。
 - **删除与保留**：删除 feed preview 原样抛出的冗余 catch（上游异常照旧传播）；保留 `worker/github.ts` 单一 transport/cacheGet；所有缓存键、TTL、D1 SQL、`requestId` payload hash、`sending/sent/failed`、网络不确定恢复、限流、授权均保留，不采用泛化 repository 层。
 - **验收证据**：原 `tests/worker.test.ts` 真实 SQLite schema + GitHub Mock 与新架构边界断言；依赖现有 Waylan CI 的 `npm run check` / 三引擎基线。CI、PR 与 squash SHA 在确认后追加记录；模拟不代表 Cloudflare/OAuth/Discussion/D1 真实环境。
 - **回滚**：仅代码和文档，按 PR 的单独 squash SHA revert 并重新部署；不运行、修改或回退 migrations，不清除 write_intents（已落地的 GitHub 写入不能靠代码 revert 自动取消）。
+
+
+**B 实际验收与合并：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109)，最终分支版本 `c53ce4e1ce6977dce3485674efe3d27d3223662b`，在已合并 A 的 `main` 基础上通过 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817)：类型/构建、全部单元与 Worker 合同、SSR/离线检查、三端视觉、Chromium/Firefox/WebKit 及 WCAG。squash 合并 SHA `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原始 CI #42073247868 新增模块测试因为断言使用了不存在的局部变量名而失败（300/301 项通过），仅修正测试，业务代码未改。回滚为审查后单独 revert 此合并提交并重新部署；不回滚 D1 数据，也不能通过回滚自动撤销已经发布到 GitHub 的评论。
 
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
@@ -160,6 +163,15 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 **回滚路径**：先定位具体阶段的 squash SHA 和关联测试证据，确认后对故障阶段单独 revert / 修复并重新部署；不要无差别回滚四阶段，也不要修改已应用的 D1 migrations。源代码可以回滚不等于已提交到 GitHub 的内容或 D1 数据自动回滚，写入路径须单独核验。
 
 **结项判断**：P1～P4 **约定的首批代码改造与相应 CI：已完成并通过**；**真实部署、OAuth/内容写入/数据和私有化转换：未取得足够验收证据**。需要分别记录状态，不将 PR 合并等同生产完成。
+
+
+### A/B 后续发布验收与剩余技术债（2026-11-06）
+
+本次仅在源代码与现有自动化验收层面结项，**不代表 Cloudflare 生产部署已核实**：GitHub 中的 Cloudflare Workers Builds 在 A/B 修改前的 `main` 基线 `815102af` 就有失败检查，在 PR 分支也出现失败；GitHub 检查摘要不包含可确认的 Cloudflare 失败根因，不将其归因于本轮拆分，也不声称部署成功。发布负责人需要到 Cloudflare dashboard 读取对应构建日志，确认部署版本 SHA、可回滚生产版本及静态资产。
+
+真实 iOS Safari 触摸句柄、原生分享、返回滚动/图片放大需要 iPhone/iPad 真机回归；评论需受控账号分别验证 OAuth 登录与 CSRF、Discussion 仓库归属、D1 写入、同 requestId 的网络中断恢复、Webhook 缓存失效。只读验证优先，写入测试不得自动产生重复评论。生产已提交的第三方评论和 D1 数据不会因代码 revert 自动回退。
+
+**保留不强拆：** `Reader.tsx` 中原生 WebKit 手势、目录焦点与评论草稿事务存在同步时序，`worker/comments.ts` 中 `sending/sent/failed` 与恢复窗口依赖原子顺序；缺乏真实端到端证据时继续维持现状。CSS 冗余/综合清理 C/D 未纳入 A/B，仍需独立任务和 PR；不删除测试、工作流或迁移文件。
 
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
