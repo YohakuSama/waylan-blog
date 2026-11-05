@@ -964,7 +964,7 @@ export default function Reader({ post }: { post: Post }) {
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
-            <ArticleHeader post={post} viewCount={viewCount} onBack={router.backToList} />
+            <ArticleHeader post={post} viewCount={viewCount} onBack={router.back} />
             <div className="article-actions" role="group" aria-label="本文操作">
               <button className="article-action article-action-toc" type="button" ref={tocButton}
                 aria-expanded={tocOpen} aria-controls="reader-toc"
@@ -1348,7 +1348,7 @@ export default function Reader({ post }: { post: Post }) {
                   继续探索
                   <ArrowRight size={13} />
                 </small>
-                <strong>回到所有文字</strong>
+                <strong>浏览全部内容</strong>
               </Link>
             )}
           </nav>

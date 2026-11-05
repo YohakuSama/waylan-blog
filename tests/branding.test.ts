@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { metadata, site } from "../src/lib/data";
 
-it("定位不声称作者是前端工程师，标题由站点资料生成", () => {
+it("首页名称清晰，定位不声称作者是前端工程师", () => {
   assert.doesNotMatch(site.description + site.tagline, /前端工程师|前端开发/);
-  assert.equal(metadata("/").title, `${site.tagline} · ${site.name}`);
+  assert.equal(metadata("/").title, `首页 · ${site.name}`);
 });
 
 it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、触控图标", () => {

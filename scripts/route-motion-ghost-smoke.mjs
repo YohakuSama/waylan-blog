@@ -91,7 +91,7 @@ async function run(engine, label, width, mobile) {
         assert.equal(reader.reader, true, label + ": reader missing");
         assert.equal(reader.floatingCovers, 0, label + ": thumbnail flying over article");
         await page.screenshot({ path: output + "/" + label + "-reader-" + i + ".png" });
-        await page.getByRole("button", { name: "返回列表" }).click();
+        await page.getByRole("button", { name: "返回上一页" }).click();
         await page.waitForURL(url => url.pathname.replace(/\/$/, "") === "/feed");
         await page.waitForTimeout(65);
         const returned = await page.evaluate(() => ({

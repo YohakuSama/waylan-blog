@@ -80,11 +80,47 @@ async function run(engine,name,width){
       await page.locator(".reader-prose").waitFor();
       const historyBefore=await page.evaluate(()=>history.length);
       await page.locator(".reader-back").first().click();
-      await page.waitForTimeout(400);
+      await page.waitForURL(url=>url.pathname===first,{timeout:12000});
       const returned=new URL(page.url()).pathname;
       const canonical=returned.replace(/\/$/,"");
-      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → button 返回列表",first,second:secondHref,returned,canonical,historyBefore,expected:"/feed",defect:canonical!=="/feed"});
+      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → 返回上一页（回到 A）",first,second:secondHref,returned,canonical,historyBefore,expected:first,defect:canonical!==first});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-return.png",animations:"disabled"});
+
+      // A compact modal must fit its image and heading, without a tall blank
+      // block below the image on iOS Safari.
+      const zoomCover=page.locator('.article-cover-image img[role="button"]').first();
+      if(await zoomCover.count()){
+        await zoomCover.click();
+        const zoomDialog=page.locator("dialog.image-dialog[open]");
+        await zoomDialog.waitFor();
+        await zoomDialog.locator("img").evaluate(img=>img.decode().catch(()=>{}));
+        // Wait for the modal entrance transform before measuring its layout.
+        await page.waitForTimeout(550);
+        const metrics=await zoomDialog.evaluate(dialog=>{
+          const outer=dialog.getBoundingClientRect();
+          const image=dialog.querySelector("img").getBoundingClientRect();
+          const header=dialog.querySelector(".dialog-header").getBoundingClientRect();
+          const caption=getComputedStyle(dialog,"::after");
+          const footerHeight=caption.display==="none"?0:(parseFloat(caption.height)||0)+
+            (parseFloat(caption.paddingTop)||0)+(parseFloat(caption.paddingBottom)||0)+
+            (parseFloat(caption.borderTopWidth)||0);
+          return {outerHeight:outer.height,headerHeight:header.height,imageHeight:image.height,
+            footerHeight,blank:outer.bottom-image.bottom-footerHeight,
+            centerOffset:Math.abs(outer.top+outer.height/2-innerHeight/2)};
+        });
+        observations.push({browser:name,width,scenario:"image zoom is content-sized",metrics});
+        assert.ok(Math.abs(metrics.blank)<20,
+          "IMAGE_DIALOG_BLANK: image viewer must not leave empty space below image: "+JSON.stringify(metrics));
+        assert.ok(metrics.centerOffset<30,
+          "IMAGE_DIALOG_CENTER: zoom dialog must be vertically centered: "+JSON.stringify(metrics));
+        await page.keyboard.press("Escape");
+        await zoomDialog.waitFor({state:"hidden"});
+      }
+      // One more Back must restore the feed, proving every hop retains its origin.
+      await page.locator(".reader-back").first().click();
+      await page.waitForURL(url=>(url.pathname.replace(/\/$/,"")||"/")==="/feed",{timeout:12000});
+      observations.push({browser:name,width,scenario:"article A → 返回上一页（回到内容列表）",expected:"/feed",returned:new URL(page.url()).pathname,
+        defect:(new URL(page.url()).pathname.replace(/\/$/,"")||"/")!=="/feed"});
 
       // Use a genuine client-side article navigation; WebKit can stall a
       // second document-level navigation during a just-finished View Transition.
@@ -107,10 +143,23 @@ async function run(engine,name,width){
       observations.push({browser:name,width,scenario:"article reading → reading settings → light-to-dark theme segment",sampled,intermediate,settled});
       assert.equal(settled.thumbContent,"none", "the selected background must stay attached to its label, not lag behind on a separate animated thumb");
       assert.notEqual(settled.activeBackground,"rgba(0, 0, 0, 0)", "selected label must show a real background");
+      // Close the native settings dialog before the next navigation.
+      // Navigating while a WebKit top-layer dialog is open can crash its renderer.
+      await dialog.getByRole("button",{name:"关闭",exact:true}).click();
+      await dialog.waitFor({state:"hidden"});
       // End-to-end TOC regression: the original report was a jump from
       // "水合一致性" into the later "稳定的标识" section. DOM-only
       // title/ID checks cannot catch a bad physical scroll landing.
-      await page.goto(origin+"/post/a-room-on-the-internet/",{waitUntil:"domcontentloaded"});
+      // Navigate through an actual list link instead of forcing a second
+      // full document load in an already exercised WebKit page.
+      const targetArticle=page.locator('.feed-list .post-card-link[href="/post/a-room-on-the-internet"]').first();
+      if(!(await targetArticle.count())){
+        const more=page.locator(".feed-layout button.load-more");
+        assert.ok(await more.count(),"the canonical test article must be reachable from the feed");
+        await more.click();
+      }
+      await targetArticle.click();
+      await page.waitForURL(url=>url.pathname.replace(/\/$/,"")==="/post/a-room-on-the-internet",{timeout:12000});
       await page.locator('.reader-prose [data-block-id="h-hydration"]').waitFor();
       await page.evaluate(()=>document.fonts.ready);
       const isReaderHeaderShown=await page.locator(".site-header").isVisible();
@@ -338,8 +387,8 @@ try{
   await run(webkit,"webkit",1024);
   await run(webkit,"webkit",1194);
   console.log("Reader audit observations:",JSON.stringify(observations));
-  assert.ok(observations.filter(x=>x.scenario.includes("返回列表")).every(x=>!x.defect),
-    "RETURN_LIST_MISMATCH: 返回列表 must return to content list, not previous article");
+  assert.ok(observations.filter(x=>x.scenario.includes("返回上一页")).every(x=>!x.defect),
+    "RETURN_ORIGIN_MISMATCH: reader Back must follow each previous app page");
 }finally{
   await writeFile(dir+"/observations.json",JSON.stringify(observations,null,2));
   server.kill("SIGTERM");server.stdout.destroy();server.stderr.destroy();

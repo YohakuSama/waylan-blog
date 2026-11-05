@@ -195,7 +195,7 @@ try {
               label + ": phone shortcut " + i + " moves horizontally between pages");
           }
           const back = page.locator(".reader-back");
-          assert.match((await back.innerText()).trim(), /返回列表/, label + ": internal wording exposed");
+          assert.match((await back.innerText()).trim(), /返回上一页/, label + ": return action should describe its actual behavior");
           await back.click();
           await page.waitForURL(url => url.pathname.replace(/\/$/, "") === "/feed");
           await page.waitForFunction(expected =>

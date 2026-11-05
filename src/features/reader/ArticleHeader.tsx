@@ -18,8 +18,8 @@ export function ArticleHeader({
   return (
             <header className="article-heading">
               <button className="reader-back text-button" type="button"
-                aria-label="返回列表" onClick={onBack}>
-                <ArrowLeft size={16} /> 返回列表
+                aria-label="返回上一页" onClick={onBack}>
+                <ArrowLeft size={16} /> 返回上一页
               </button>
               <div className="article-eyebrow">
                 <span className={`type-label type-${post.type}`}>
