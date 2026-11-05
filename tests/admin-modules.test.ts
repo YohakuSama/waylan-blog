@@ -1,4 +1,5 @@
 import { usedUploads } from "../src/admin/helpers";
+import { createDiscussionBatches } from "../src/admin/Discussions";
 import { toSiteForm } from "../src/admin/SiteEditor";
 import type { Overview, Upload } from "../src/admin/types";
 import { describe, it } from "node:test";
@@ -37,14 +38,17 @@ describe("Admin feature boundaries", () => {
     assert.match(dashboard, /export function Dashboard\(/);
     const list = read("src/admin/ContentList.tsx");
     assert.match(list, /export function Posts\(/);
-    assert.match(list, /export function Discussions\(/);
+    const discussion = read("src/admin/Discussions.tsx");
+    assert.match(discussion, /export function Discussions\(/);
+    assert.doesNotMatch(list, /export function Discussions\(/);
     assert.ok(dashboard.includes('from "./ContentList"'));
+    assert.ok(dashboard.includes('from "./Discussions"'));
     assert.match(dashboard, /function DeployStatus\(/);
     assert.match(dashboard, /const latest = useRef\(0\)/);
     assert.match(dashboard, /run !== latest\.current/);
     assert.ok(dashboard.includes('"/api/admin/content"'));
     assert.ok(dashboard.includes('"/api/admin/status"'));
-    assert.ok(list.includes('"/api/admin/discussions"'));
+    assert.ok(discussion.includes('"/api/admin/discussions"'));
     assert.ok(list.includes('"/api/admin/post", "DELETE"'));
   });
 
@@ -114,5 +118,58 @@ describe("admin data contracts after extraction", () => {
     assert.equal(form.profileTags, "React, Cloudflare");
     assert.deepEqual(form.socials, [{ label: "", url: "https://github.com/example" }]);
     assert.equal(form.about, "About the site.");
+  });
+});
+
+describe("admin discussion provisioning", () => {
+  it("returns success only after all pending Discussions have been created", async () => {
+    let rounds = 0;
+    const count = await createDiscussionBatches(async () => {
+      rounds++;
+      return rounds === 1
+        ? { created: 2, remaining: 1 }
+        : { created: 1, remaining: 0 };
+    });
+    assert.equal(count, 3);
+    assert.equal(rounds, 2);
+  });
+
+  it("accepts an already complete batch without retrying", async () => {
+    let calls = 0;
+    const count = await createDiscussionBatches(async () => {
+      calls++;
+      return { created: 0, remaining: 0 };
+    });
+    assert.equal(count, 0);
+    assert.equal(calls, 1);
+  });
+
+  it("stops immediately on no progress, instead of issuing 50 wasted requests", async () => {
+    let calls = 0;
+    await assert.rejects(createDiscussionBatches(async () => {
+      calls++;
+      return { created: 0, remaining: 8 };
+    }), /没有取得进展/);
+    assert.equal(calls, 1);
+  });
+
+  it("reports incomplete work after the bounded maximum", async () => {
+    let calls = 0;
+    await assert.rejects(createDiscussionBatches(async () => {
+      calls++;
+      return { created: 1, remaining: 10 };
+    }), /未完成项/);
+    assert.equal(calls, 50);
+  });
+
+  it("rejects invalid API responses and preserves upstream failures", async () => {
+    await assert.rejects(
+      createDiscussionBatches(async () => ({ created: -1, remaining: 2 })),
+      /异常数据/,
+    );
+    await assert.rejects(
+      createDiscussionBatches(async () => { throw new Error("GitHub rate limit"); }),
+      /GitHub rate limit/,
+    );
   });
 });
