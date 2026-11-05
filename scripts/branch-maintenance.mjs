@@ -9,14 +9,21 @@ import { pathToFileURL } from "node:url";
 export function pruneEligibility(record, liveBranch, pullRequests) {
   if (!record || !liveBranch) return "missing";
   if (record.name === "main" || liveBranch.protected) return "protected";
-  if (record.kind !== "merged" || !record.pr || !record.mergedAt) return "not-approved";
+  if (!record.pr || !["merged", "superseded"].includes(record.kind)) return "not-approved";
   if (record.sha !== liveBranch.commit.sha) return "sha-changed";
   if (pullRequests.some((p) => p.state === "open" && p.head.ref === record.name))
     return "open-pr";
-  if (!pullRequests.some((p) => p.number === record.pr &&
-      p.state === "closed" && p.merged_at &&
-      p.head.ref === record.name && p.head.sha === record.sha))
-    return "merge-unverified";
+  const primary = pullRequests.find((p) => p.number === record.pr &&
+      p.state === "closed" && p.head.ref === record.name && p.head.sha === record.sha);
+  if (record.kind === "merged") {
+    if (!record.mergedAt || !primary?.merged_at || primary.merged_at !== record.mergedAt)
+      return "merge-unverified";
+  } else {
+    if (!primary || primary.merged_at || !record.replacedBy ||
+        !pullRequests.some((p) => p.number === record.replacedBy &&
+          p.state === "closed" && p.merged_at))
+      return "supersession-unverified";
+  }
   return "eligible";
 }
 
@@ -53,13 +60,13 @@ async function main() {
   if (!["preview", "prune"].includes(mode)) throw new Error("Use preview or prune");
   if (process.env.GITHUB_REF !== "refs/heads/main")
     throw new Error("Branch maintenance must run on trusted main");
-  if (process.env.GITHUB_ACTOR !== base.split("/")[0] && !(process.env.GITHUB_EVENT_NAME === "push" && process.env.GC_ONCE === "branch-gc-20261106"))
+  if (process.env.GITHUB_ACTOR !== base.split("/")[0] && !(process.env.GITHUB_EVENT_NAME === "push" && process.env.GC_ONCE === "branch-gc-20261106-round2"))
     throw new Error("Only the repository owner may run branch maintenance");
   if (!token || !base.includes("/")) throw new Error("Missing GitHub environment");
   if (mode === "prune" && process.env.PRUNE_CONFIRM !== "DELETE_VERIFIED_MERGED_BRANCHES")
     throw new Error("Explicit typed confirmation is required");
 
-  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-06.json", "utf8"));
+  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-06-round2.json", "utf8"));
   if (!Array.isArray(archive.branches)) throw new Error("Branch archive not readable");
   const [live, prs] = await Promise.all([paged("/branches"), paged("/pulls?state=all")]);
   const liveByName = new Map(live.map((b) => [b.name, b]));
@@ -70,7 +77,7 @@ async function main() {
     else skipped.push({ name: record.name, reason });
   }
   console.log(JSON.stringify({ mode, eligible: eligible.map((b) => ({
-    branch: b.name, sha: b.sha, mergedPR: b.pr,
+    branch: b.name, sha: b.sha, sourcePR: b.pr, kind: b.kind, replacedBy: b.replacedBy || null,
   })), skipped }, null, 2));
   console.log("Eligible:", eligible.length, "Skipped:", skipped.length);
   if (mode === "preview") return;
