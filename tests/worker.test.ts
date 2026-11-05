@@ -88,9 +88,10 @@ const requestBody = (extras: Record<string, unknown> = {}) => ({
   ...extras,
 });
 const node = (id: string) =>
-  id === "D_test"
+  id === "D_test" || id === "D_other"
     ? {
         ...discussion,
+        id,
         repository: { ...discussion.repository, isPrivate: privateRepo },
         comments: {
           nodes: [...actual.values()],
@@ -418,15 +419,26 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     privateRepo = true;
     assert.equal((await call(`/api/posts/${postId}/comments`)).status, 403);
   });
-  it("filters deleted GitHub comments out of persisted highlights", async () => {
-    await send(requestBody());
-    actual.clear();
+  it("hides unavailable GitHub comments without erasing durable D1 anchors", async () => {
+    const created = (await (await send(requestBody())).json()) as { comment: Comment };
+    const savedComment = actual.get(created.comment.id);
+    assert.ok(savedComment);
+    const stored = () => Number((db.sqlite.prepare(
+      "SELECT COUNT(*) AS total FROM annotations WHERE post_id=?"
+    ).get(postId) as { total: number }).total);
+    assert.equal(stored(), 1);
+    actual.delete(created.comment.id); // GraphQL null: deleted or temporarily inaccessible.
     await env.DB!.prepare("DELETE FROM api_cache").run();
-    assert.deepEqual(
-      ((await (await call(`/api/posts/${postId}/annotations`)).json()) as any)
-        .nodes,
-      [],
-    );
+    const hidden = await call(`/api/posts/${postId}/annotations`);
+    assert.equal(hidden.status, 200);
+    assert.deepEqual(((await hidden.json()) as any).nodes, []);
+    assert.equal(stored(), 1, "a null GitHub node must not erase durable D1 metadata");
+    actual.set(created.comment.id, savedComment);
+    await env.DB!.prepare("DELETE FROM api_cache").run();
+    const visible = await call(`/api/posts/${postId}/annotations`);
+    assert.equal(visible.status, 200);
+    assert.equal(((await visible.json()) as any).nodes[0]?.commentId, created.comment.id);
+    assert.equal(stored(), 1);
   });
   it("returns real feed previews and real recent echoes", async () => {
     await send(requestBody());
@@ -447,6 +459,32 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(((await denied.json()) as any).code, "DUPLICATE_COMMENT");
     assert.equal(writeTokens.length, 1);
   });
+  it("allows identical text on another post without changing old requestId hashes", async () => {
+    const second = manifest.find((post) => post.id !== postId);
+    assert.ok(second);
+    db.sqlite.prepare("INSERT INTO discussions VALUES(?,?,?,?)")
+      .run(second.id, "D_other", 2, "https://github.com/test-owner/test-blog/discussions/2");
+    const message = "同一句话可以分别评论两篇不同文章。";
+    const first = requestBody({ body: message, anchor: undefined });
+    assert.equal((await send(first)).status, 201);
+    const row = db.sqlite.prepare("SELECT payload_hash FROM write_intents WHERE request_id=?")
+      .get(first.requestId) as { payload_hash: string };
+    assert.equal(row.payload_hash, await hash(JSON.stringify({
+      body: message, anchor: undefined, replyToId: undefined, replyTarget: undefined,
+    })), "keep legacy persisted payload hashes valid for retries");
+    const other = await call(`/api/posts/${second.id}/comments`, {
+      method: "POST",
+      headers: { Cookie: `__Host-echo_session=${rawSession}`, "X-CSRF-Token": csrf },
+      body: JSON.stringify(requestBody({ body: message, anchor: undefined })),
+    });
+    assert.equal(other.status, 201, "distinct articles must not share duplicate-content suppression");
+    assert.equal((await send(first)).status, 200, "acknowledged retries remain idempotent");
+    const duplicate = await send(requestBody({ body: message, anchor: undefined }));
+    assert.equal(duplicate.status, 429, "repeat content on the original article is still rate limited");
+    assert.equal(((await duplicate.json()) as any).code, "DUPLICATE_COMMENT");
+    assert.equal(writeTokens.length, 2);
+  });
+
   it("rejects link-heavy ads before posting", async () => {
     const result = await send(requestBody({
       body: "广告 https://a.example https://b.example https://c.example",
