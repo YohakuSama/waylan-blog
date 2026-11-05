@@ -86,6 +86,12 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
 
+### A 后续：评论树纯模型归属（2026-11-06，PR 待验收）
+
+- **原问题**：Reader 直接执行评论可见性过滤、跨主列表/深链/面板评论去重、以及编辑/删除后的局部树形数据修正，导致纯数据和页面生命周期混在一起。
+- **处理**：复用 `features/discussions/model.ts` 的原有评论职责，迁入 `discussionView` 和 `updateCommentNodes/updateCommentPage`，Reader 仍统一负责副作用；保留原排序、空父过滤与引用、回复数量及主评论总数更新规则。未修改 API、数据库、CSS、事件监听和 Safari 原生选区状态机。
+- **验收与回滚**：在现有 `tests/reader-modules.test.ts` 检查可见评论、重复 ID 优先级、编辑/删除后计数与不变性，沿 Waylan CI 执行 `npm run check`、三端/双皮肤、三浏览器、阅读器/选区专项。未验证前不合并；如回归单独 revert 本次 PR，无迁移和外部数据变更。生产 iOS Safari 仍需真机确认。
+
 ### 阅读器后续增量解耦 A（2026-11-06；已合并 PR #108）
 
 - **修改前/根因**：阅读进度保存、目录当前章检测与 `resume=1` 恢复混在阅读器的选择/评论效果之间；修改滚动逻辑难以独立审查。

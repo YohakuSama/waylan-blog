@@ -64,6 +64,12 @@ flowchart LR
 - CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
 - 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
 
+### 阅读器评论树纯模型后续清理（2026-11-06，PR 待验收）
+
+- **根因**：Reader 仍直接处理评论/回复的可见性、跨来源去重及编辑/删除后的树状数据更新；这些纯数据职责与触摸选区、页面状态没有耦合必要。
+- **修改**：复用现有 `src/features/discussions/model.ts`，将纯函数 `discussionView/updateCommentNodes/updateCommentPage` 集中于评论功能；`Reader.tsx` 保留评论 API 请求、草稿、重试、缓存刷新、React state 生命周期与 DOM。现有 `features/discussions/index.ts` 是统一导出入口，不新增模块库或依赖。
+- **安全边界**：保持同一 Map 去重顺序（打开的面板结果覆盖同 ID 旧条目）、空父评论过滤、回复 parentId 补充、编辑/删除后计数与原对象不变；新增纯函数测试并以唯一 Waylan CI 验收。原 Safari/iOS 手势、图片预览、URL、CSS 与 HTTP 合同没有修改。部署/真实设备另行验证。
+
 ### 阅读器增量解耦 A（2026-11-06，已合并 PR #108）
 
 - **根因**：此前 `Reader.tsx` 的滚动事件、进度持久化、目录高亮、返回定位与选区/评论状态耦合；独立的滚动观察职责不能单独定位或复测。

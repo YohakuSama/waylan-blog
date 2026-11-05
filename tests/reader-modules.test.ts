@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import type { Comment } from "../shared/types";
+import type { Comment, CommentPage } from "../shared/types";
 import { CommentMarkdown } from "../src/features/discussions/CommentMarkdown";
-import { safeDiscussionURL, visibleComment } from "../src/features/discussions/model";
+import { safeDiscussionURL, visibleComment, discussionView, updateCommentNodes, updateCommentPage } from "../src/features/discussions/model";
 
 describe("Reader feature module contracts", () => {
   it("renders published Markdown and preview through one safe renderer", () => {
@@ -77,5 +77,54 @@ describe("Reader feature module contracts", () => {
     assert.ok(progress.includes('storage.set("reading"'));
     assert.ok(progress.includes("cancelAnimationFrame(frame)"));
     assert.ok(progress.includes('!window.matchMedia("(any-pointer: coarse)").matches'));
+  });
+
+  it("builds visible comment trees without changing dedupe precedence or source objects", () => {
+    const root = { id: "root", body: "Root", author: null, createdAt: "", updatedAt: "", url: "" } as Comment;
+    const emptyParent = { ...root, id: "empty", body: "   " };
+    const reply = { ...root, id: "reply", body: "Reply" };
+    const hiddenReply = { ...root, id: "hidden", body: "  " };
+    const original: CommentPage = {
+      nodes: [{ ...root, replies: { nodes: [reply, hiddenReply], totalCount: 2,
+        pageInfo: { hasNextPage: false, endCursor: null } } }, emptyParent],
+      totalCount: 2, mapped: true, discussionUrl: null,
+      pageInfo: { hasNextPage: false, endCursor: null },
+    };
+    const focused = { ...root, id: "focus", body: "Focused" };
+    const fetched = [{ ...root, id: "reply", body: "Updated reply" }, { ...root, id: "focus", body: "Latest focus" },
+      { ...root, id: "child", parentId: "empty", body: "Orphaned reply" }];
+    const { visibleTopComments, visibleCount, allComments } = discussionView(original, focused, fetched);
+    assert.deepEqual(visibleTopComments.map((c) => c.id), ["root"]);
+    assert.equal(visibleCount, 1);
+    assert.deepEqual(allComments.map((c) => c.id), ["root", "reply", "focus"]);
+    assert.equal(allComments.find((c) => c.id === "reply")?.body, "Updated reply");
+    assert.equal(allComments.find((c) => c.id === "focus")?.body, "Latest focus");
+    assert.equal(original.nodes[0].replies?.nodes[0].parentId, undefined, "flattening must not mutate reply source");
+    assert.equal(fetched[0].parentId, undefined);
+  });
+
+  it("reconciles comment edits and deletion with the original count and metadata semantics", () => {
+    const root = { id: "root", body: "Root", author: null, createdAt: "", updatedAt: "", url: "" } as Comment;
+    const reply = { ...root, id: "reply", body: "Old" };
+    const page: CommentPage = {
+      nodes: [{ ...root, replies: { nodes: [reply], totalCount: 1,
+        pageInfo: { hasNextPage: false, endCursor: null } } }],
+      totalCount: 5, mapped: true, discussionUrl: null,
+      pageInfo: { hasNextPage: false, endCursor: null },
+    };
+    const edited = updateCommentPage(page, "reply", { ...reply, body: "New" });
+    assert.equal(edited.nodes[0].replies?.nodes[0].body, "New");
+    assert.equal(edited.nodes[0].replies?.totalCount, 1);
+    assert.equal(edited.totalCount, 5);
+    assert.equal(page.nodes[0].replies?.nodes[0].body, "Old");
+    const noReply = updateCommentPage(page, "reply", null);
+    assert.equal(noReply.nodes[0].replies?.nodes.length, 0);
+    assert.equal(noReply.nodes[0].replies?.totalCount, 0);
+    assert.equal(noReply.totalCount, 5, "deleting a reply must not decrement top-level total");
+    assert.deepEqual(updateCommentNodes([reply], "reply", null), []);
+    const noRoot = updateCommentPage(page, "root", null);
+    assert.deepEqual(noRoot.nodes, []);
+    assert.equal(noRoot.totalCount, 4);
+    assert.equal(page.nodes.length, 1);
   });
 });
