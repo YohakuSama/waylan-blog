@@ -21,6 +21,7 @@ import {
 import { MAX_IMAGE, toBase64, uploadPath } from "../../shared/uploads";
 import { list, str, toData, toForm, type Form } from "./form";
 import { applyAppearance } from "../lib/appearance";
+import { adminApi as api, setAdminCsrf } from "./api";
 import "./admin.css";
 
 // The admin keeps its own CSS, but shares the public site's theme preference.
@@ -80,42 +81,7 @@ type Overview = Status & {
 /** An image picked in this session; `sent` once committed, kept for previews until the site rebuilds. */
 type Upload = { path: string; data: string; url: string; sent?: boolean };
 
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-  ) {
-    super(message);
-  }
-}
-let csrf = "";
-async function api<T>(path: string, method = "GET", body?: unknown) {
-  let response: Response;
-  try {
-    response = await fetch(path, {
-      method,
-      credentials: "same-origin",
-      signal: AbortSignal.timeout(90_000),
-      headers: {
-        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-        ...(csrf ? { "X-CSRF-Token": csrf } : {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch {
-    throw new ApiError("网络没有回应，请检查网络后重试。", 0);
-  }
-  const data = (await response.json().catch(() => null)) as {
-    message?: string;
-  } | null;
-  if (!response.ok)
-    throw new ApiError(
-      data?.message || `请求失败（${response.status}），请稍后重试。`,
-      response.status,
-    );
-  return data as T;
-}
-
+// Admin transport is isolated from the public, cacheable GET client.
 // ---------------------------------------------------------------- helpers
 
 const today = () => {
@@ -1240,7 +1206,7 @@ function Gate() {
     setError("");
     try {
       const next = await api<Session>("/api/admin/session");
-      csrf = next.csrf || "";
+      setAdminCsrf(next.csrf || "");
       setSession(next);
     } catch (e) {
       setError((e as Error).message);
