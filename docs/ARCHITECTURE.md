@@ -64,11 +64,13 @@ flowchart LR
 - CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
 - 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
 
-### 阅读器评论树纯模型后续清理（2026-11-06，PR 待验收）
+### 阅读器评论树纯模型后续清理（2026-11-06，已合并 PR #112）
 
 - **根因**：Reader 仍直接处理评论/回复的可见性、跨来源去重及编辑/删除后的树状数据更新；这些纯数据职责与触摸选区、页面状态没有耦合必要。
 - **修改**：复用现有 `src/features/discussions/model.ts`，将纯函数 `discussionView/updateCommentNodes/updateCommentPage` 集中于评论功能；`Reader.tsx` 保留评论 API 请求、草稿、重试、缓存刷新、React state 生命周期与 DOM。现有 `features/discussions/index.ts` 是统一导出入口，不新增模块库或依赖。
 - **安全边界**：保持同一 Map 去重顺序（打开的面板结果覆盖同 ID 旧条目）、空父评论过滤、回复 parentId 补充、编辑/删除后计数与原对象不变；新增纯函数测试并以唯一 Waylan CI 验收。原 Safari/iOS 手势、图片预览、URL、CSS 与 HTTP 合同没有修改。部署/真实设备另行验证。
+
+**A 增量验收记录：** [PR #112](https://github.com/YohakuSama/waylan-blog/pull/112) 在最终头部 `95dd4a60f4c57d85f7c7b2ae39ce3906480296eb` 经 [Waylan CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) **完整通过**类型/构建/单测、SSR/离线、手机/平板/桌面、Chromium/Firefox/WebKit、WCAG、阅读器目录及模拟 iOS 触摸；已 squash 合并 `cc6e3512ee476de30355cdefa3d7d3d595008d5e`。最初运行 #42077573541 因后续格式整理提交被取消，不代表测试失败。旧依赖 `Reader → 自身内联评论树逻辑` 变为 `Reader → features/discussions/model.ts`，评论副作用仍由 Reader 负责；无新第三方依赖和 CI 工作流。
 
 ### 阅读器增量解耦 A（2026-11-06，已合并 PR #108）
 
@@ -146,11 +148,13 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
-### 评论 Worker 重复输入校验清理（2026-11-06，PR #113 待验收）
+### 评论 Worker 重复输入校验清理（2026-11-06，已合并 PR #113）
 
 - **修改前**：`worker/comments.ts` 中发表评论和编辑评论分别实现正文长度/保留元数据标记/公开链接数量验证；重复逻辑容易在修改一个接口时产生限制差异，但 HTTP 错误文案不同，不能直接删除分支条件。
 - **处理**：在原写入模块内部复用 `validatedCommentBody`，集中 1–6000 字、可点击链接上限及 `echo:` 保留标记校验；创建与编辑仍分别返回原 `COMMENT_LENGTH` 文案，并在相同请求阶段验证。共享文章/仓库核验仍由 `comment-shared.ts` 负责，不增加跨层抽象或新文件。
 - **验收**：原 Worker SQLite + GitHub mock 的 HTTP 合同测试新增 create/edit 空值、边界超长、保留标记、广告链接和拒绝写入断言。请求标识、payload 哈希、D1 `write_intents`、用户 token、权限/CSRF、重试/恢复 SQL 顺序和缓存处理完全未修改。使用现有 Waylan CI。
+
+**B 增量验收记录：** [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113) 在 A 已合并的 `main` 上复测最终头部 `387fd5cbcbf27a477a3cda6af4b11e10011e0642`，[Waylan CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) **完整通过**类型/构建/Worker HTTP 契约/SSR 离线、多端视觉、Chromium/Firefox/WebKit 和 WCAG；squash 合并 `0fe9adb68c50fa3fca8903d107c64ecf92fc5b07`。更新中的两个旧 CI #42080538682、#42080659259 因提交覆盖被自动取消；改动前基线上的 CI #42077847081 亦曾成功。不修改幂等状态机、D1 schema、Github transport、Webhooks、CSS 或任何部署配置。
 
 ### 评论 Worker 读写边界 B（2026-11-06，已合并 PR #109）
 
