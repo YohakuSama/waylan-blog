@@ -1763,7 +1763,10 @@ h3 {
 @media (max-width: 860px) {
   :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
   .page-heading { padding: 32px 0 20px; }
-  .header-inner {
+  /* Only index pages have a two-row masthead; reader uses one compact row.
+     The generic min-height otherwise keeps an invisible 43px nav row inside
+     the 60px reader header and pushes its logo downward. */
+  .site-header:not(.site-header-reader) .header-inner {
     position: relative;
     height: auto; min-height: calc(var(--header-height) - 1px);
     grid-template-columns: minmax(0, 1fr) auto;
