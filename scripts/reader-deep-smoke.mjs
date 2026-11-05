@@ -80,11 +80,45 @@ async function run(engine,name,width){
       await page.locator(".reader-prose").waitFor();
       const historyBefore=await page.evaluate(()=>history.length);
       await page.locator(".reader-back").first().click();
-      await page.waitForTimeout(400);
+      await page.waitForURL(url=>url.pathname===first,{timeout:12000});
       const returned=new URL(page.url()).pathname;
       const canonical=returned.replace(/\/$/,"");
-      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → button 返回列表",first,second:secondHref,returned,canonical,historyBefore,expected:"/feed",defect:canonical!=="/feed"});
+      observations.push({browser:name,width,scenario:"feed → article A → neighbor article B → 返回上一页（回到 A）",first,second:secondHref,returned,canonical,historyBefore,expected:first,defect:canonical!==first});
       await page.screenshot({path:dir+"/"+name+"-"+width+"-return.png",animations:"disabled"});
+
+      // A compact modal must fit its image and heading, without a tall blank
+      // block below the image on iOS Safari.
+      const zoomCover=page.locator('.article-cover-image img[role="button"]').first();
+      if(await zoomCover.count()){
+        await zoomCover.click();
+        const zoomDialog=page.locator("dialog.image-dialog[open]");
+        await zoomDialog.waitFor();
+        await zoomDialog.locator("img").evaluate(img=>img.decode().catch(()=>{}));
+        const metrics=await zoomDialog.evaluate(dialog=>{
+          const outer=dialog.getBoundingClientRect();
+          const image=dialog.querySelector("img").getBoundingClientRect();
+          const header=dialog.querySelector(".dialog-header").getBoundingClientRect();
+          const caption=getComputedStyle(dialog,"::after");
+          const footerHeight=caption.display==="none"?0:(parseFloat(caption.height)||0)+
+            (parseFloat(caption.paddingTop)||0)+(parseFloat(caption.paddingBottom)||0)+
+            (parseFloat(caption.borderTopWidth)||0);
+          return {outerHeight:outer.height,headerHeight:header.height,imageHeight:image.height,
+            footerHeight,blank:outer.bottom-image.bottom-footerHeight,
+            centerOffset:Math.abs(outer.top+outer.height/2-innerHeight/2)};
+        });
+        observations.push({browser:name,width,scenario:"image zoom is content-sized",metrics});
+        assert.ok(metrics.blank<20 && metrics.blank>=-4,
+          "IMAGE_DIALOG_BLANK: image viewer must not leave empty space below image: "+JSON.stringify(metrics));
+        assert.ok(metrics.centerOffset<30,
+          "IMAGE_DIALOG_CENTER: zoom dialog must be vertically centered: "+JSON.stringify(metrics));
+        await page.keyboard.press("Escape");
+        await zoomDialog.waitFor({state:"hidden"});
+      }
+      // One more Back must restore the feed, proving every hop retains its origin.
+      await page.locator(".reader-back").first().click();
+      await page.waitForURL(url=>(url.pathname.replace(/\/$/,"")||"/")==="/feed",{timeout:12000});
+      observations.push({browser:name,width,scenario:"article A → 返回上一页（回到内容列表）",expected:"/feed",returned:new URL(page.url()).pathname,
+        defect:(new URL(page.url()).pathname.replace(/\/$/,"")||"/")!=="/feed"});
 
       // Use a genuine client-side article navigation; WebKit can stall a
       // second document-level navigation during a just-finished View Transition.
@@ -338,8 +372,8 @@ try{
   await run(webkit,"webkit",1024);
   await run(webkit,"webkit",1194);
   console.log("Reader audit observations:",JSON.stringify(observations));
-  assert.ok(observations.filter(x=>x.scenario.includes("返回列表")).every(x=>!x.defect),
-    "RETURN_LIST_MISMATCH: 返回列表 must return to content list, not previous article");
+  assert.ok(observations.filter(x=>x.scenario.includes("返回上一页")).every(x=>!x.defect),
+    "RETURN_ORIGIN_MISMATCH: reader Back must follow each previous app page");
 }finally{
   await writeFile(dir+"/observations.json",JSON.stringify(observations,null,2));
   server.kill("SIGTERM");server.stdout.destroy();server.stderr.destroy();
