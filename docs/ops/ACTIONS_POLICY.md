@@ -24,7 +24,7 @@
 - `visual-smoke.mjs`，`quality-smoke.mjs`，`a11y-smoke.mjs`；
 - `reader-deep-smoke.mjs`，`selection-composer-smoke.mjs`，`responsive-navigation-smoke.mjs`，`route-motion-ghost-smoke.mjs`；
 - `excerpt-audit.mjs`，`interaction-state-smoke.mjs`，`live-sort-motion-audit.mjs`。
-- Windows 自托管 Runner 的本地 build 与连通性检查，仍然只能由仓库所有者在 `main` 手动调用。
+- 已取消不再使用的 ThinkPad Windows 自托管 Runner 两项 CI 任务；质量门禁由 Linux 检查承担。
 
 ## 安全与维护原则
 
