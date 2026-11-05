@@ -242,7 +242,7 @@ try {
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
-          assert.equal(geometry.footerTargets.length, 3, `${label}: footer links missing`);
+          assert.equal(geometry.footerTargets.length, 4, `${label}: footer links missing`);
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
             `${label}: footer link has a small or clipped touch target`);
