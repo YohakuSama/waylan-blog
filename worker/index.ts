@@ -1,5 +1,5 @@
 import type { Env } from "./types";
-import { authReady, HttpError, json, now, readReady } from "./types";
+import { authProvider, authReady, HttpError, json, now, readReady } from "./types";
 import { callback, getSession, logout, startAuth } from "./auth";
 import { clientIP, limit, loopbackHttp, requireOrigin, verifyWebhook } from "./security";
 import {
@@ -150,7 +150,16 @@ const worker = {
       }
       let response: Response;
       if (url.pathname === "/api/status" && request.method === "GET")
-        response = json({ comments: readReady(env), login: authReady(env), notifications: await notificationsAvailable(env) });
+        response = json({
+          comments: readReady(env),
+          login: authReady(env),
+          notifications: await notificationsAvailable(env),
+          // Public mode only, never secrets or GitHub tokens. Distinguish a
+          // deliberate choice from the legacy OAuth default.
+          authProvider: authReady(env) ? authProvider(env) : null,
+          authProviderExplicit: env.GITHUB_AUTH_PROVIDER === "oauth-app" ||
+            env.GITHUB_AUTH_PROVIDER === "github-app",
+        });
       else if (url.pathname === "/api/session" && request.method === "GET") {
         const session = await getSession(request, env);
         response = json({

@@ -597,6 +597,27 @@ describe("OAuth, cryptography and rendering", () => {
       400,
     );
   });
+  it("reports the effective GitHub auth mode without exposing secrets", async () => {
+    const original = await (await call("/api/status")).json() as any;
+    assert.equal(original.login, true);
+    assert.equal(original.authProvider, "oauth-app");
+    assert.equal(original.authProviderExplicit, false);
+    assert.ok(!JSON.stringify(original).includes(env.GITHUB_CLIENT_SECRET!));
+
+    env.GITHUB_AUTH_PROVIDER = "github-app";
+    const missing = await (await call("/api/status")).json() as any;
+    assert.equal(missing.login, false);
+    assert.equal(missing.authProvider, null);
+    assert.equal(missing.authProviderExplicit, true);
+
+    env.GITHUB_APP_CLIENT_ID = "app-client-id";
+    env.GITHUB_APP_CLIENT_SECRET = "app-secret";
+    const configured = await (await call("/api/status")).json() as any;
+    assert.equal(configured.login, true);
+    assert.equal(configured.authProvider, "github-app");
+    assert.equal(configured.authProviderExplicit, true);
+    assert.ok(!JSON.stringify(configured).includes(env.GITHUB_APP_CLIENT_SECRET!));
+  });
   it("keeps OAuth login available until separate GitHub App credentials are configured", async () => {
     env.GITHUB_AUTH_PROVIDER = "github-app";
     assert.equal((await call("/api/auth/github")).status, 503);
