@@ -25,9 +25,15 @@ test("shared design changes run all affected groups", () => {
   const p = classify(["src/styles/site.css"]);
   assert.ok(p.code && p.browser && p.reader && p.feed && p.motion);
 });
-test("workflow changes verify all contracts once", () => {
-  const p = classify([".github/workflows/verify.yml"]);
-  assert.ok(p.code && p.browser && p.reader && p.feed && p.motion);
+test("CI-only maintenance changes do not launch unrelated browser downloads", () => {
+  const expected = { code: true, browser: false, reader: false, feed: false, motion: false };
+  for (const path of [
+    ".github/workflows/verify.yml",
+    "scripts/ci-plan.mjs",
+    "scripts/branch-maintenance.mjs",
+    "scripts/maintenance.test.mjs",
+    "scripts/mobile-layout-audit.mjs",
+  ]) assert.deepEqual(classify([path]), expected, path);
 });
 test("main pushes retain the core gate without duplicate browser installation", () => {
   const p = classify(["src/App.tsx"], "push");

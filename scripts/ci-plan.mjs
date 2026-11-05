@@ -27,8 +27,11 @@ export function classify(paths, event = "pull_request", forceFull = false) {
   const ui = relevant(paths, (p) =>
     p.startsWith("src/") || p.startsWith("content/") ||
     p.startsWith("worker/") || p.startsWith("shared/") ||
-    p.startsWith("scripts/") || p.startsWith("tests/") || p.startsWith("public/") ||
-    p === "index.html" || p.startsWith(".github/workflows/") ||
+    (p.startsWith("scripts/") && ![
+      "scripts/ci-plan.mjs", "scripts/branch-maintenance.mjs",
+      "scripts/maintenance.test.mjs", "scripts/mobile-layout-audit.mjs",
+    ].includes(p)) || p.startsWith("tests/") || p.startsWith("public/") ||
+    p === "index.html" ||
     ["package.json", "package-lock.json", "vite.config.ts"].includes(p));
   // An accepted PR has run browser gates; do not repeat all browser installs
   // on the ensuing main push. Direct main pushes still run the core check.

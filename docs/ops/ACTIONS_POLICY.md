@@ -14,7 +14,8 @@
 | PR 改后端/普通代码 | TypeScript、build、unit、静态完整性、离线预览 | 受影响源码触发 UI/后台回归 | 视模块判定 |
 | PR 改 Reader / 选区 | 上述核心门禁 + UI 浏览器 | Chromium/Firefox/WebKit + WCAG | 阅读器、触摸和导航 |
 | PR 改 Feed / 数据源 | 核心门禁 + UI 浏览器 | 同上 | 摘录与状态机 |
-| PR 改共享 CSS/路由/动效/CI | 核心门禁 + UI 浏览器 | 同上 | 阅读器、Feed、动效全部 |
+| PR 改共享 CSS/路由/动效 | 核心门禁 + UI 浏览器 | 同上 | 阅读器、Feed、动效全部 |
+| PR 仅改 Actions、分支维护或 CI 分类脚本 | 核心检查和 CI 规则单测 | 不安装 | 无，避免无关浏览器下载 |
 | 合并后 push 到 main | 必要类型、构建、单元与静态检查 | 不重新安装 | 默认无，避免 PR 已通过的浏览器检查重复消耗 |
 | Actions → Run workflow → full | 全部 | 三引擎 | 全部专项 + 只读生产对比 |
 
