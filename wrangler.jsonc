@@ -20,6 +20,7 @@
   ],
   "vars": {
     "SITE_ORIGIN": "https://waylan.org",
+    "GITHUB_AUTH_PROVIDER": "github-app",
     "GITHUB_REPO_OWNER": "YohakuSama",
     "GITHUB_REPO_NAME": "waylan-comments",
     "GITHUB_CATEGORY_NAME": "Blog",
