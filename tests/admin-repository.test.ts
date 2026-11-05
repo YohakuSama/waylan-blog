@@ -1,10 +1,20 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { repo, POSTS, files, blobOid } from "../worker/admin-repo";
 import type { Env } from "../worker/types";
 
 describe("Admin source repository boundary", () => {
+  it("keeps credentialed Git transport out of HTTP endpoint orchestration", () => {
+    const handler = readFileSync("worker/admin.ts", "utf8");
+    const adapter = readFileSync("worker/admin-repo.ts", "utf8");
+    assert.match(handler, /requireAdmin\(request, env\)/);
+    assert.doesNotMatch(handler, /api\.github\.com\/repos/);
+    assert.doesNotMatch(adapter, /from "\.\/auth"/);
+    assert.doesNotMatch(adapter, /from "\.\/security"/);
+    assert.match(adapter, /api\.github\.com\/repos/);
+  });
   it("selects the configured source repository and preserves its branch", () => {
     const env = {
       CONTENT_REPO: "example/private-contents",
