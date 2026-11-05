@@ -191,6 +191,8 @@ async function run(engine, label, width, height, touch) {
         label + ": a toolbar action was swallowed or repeated");
       await act("关闭摘录工具栏");
       await page.locator(".selection-toolbar").waitFor({ state: "hidden" });
+      assert.equal(await page.locator("dialog.image-dialog[open]").count(), 0,
+        label + ": toolbar dismissal must not open an image underneath");
 
       await selectLongText();
       const oldCount = await page.locator("mark.private-mark").count();
