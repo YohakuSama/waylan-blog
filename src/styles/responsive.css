@@ -595,10 +595,7 @@
     flex-shrink: 0;
   }
   .site-header-reader .header-tools {
-    grid-row: 1;
-    grid-column: 2;
     display: flex;
-    gap: 0;
   }
   /* Preserve all four global actions, including saved items and notifications.
      The reader's local controls remain independent beneath the masthead. */
