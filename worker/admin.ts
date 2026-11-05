@@ -24,6 +24,7 @@ import {
   posts,
   commit,
   blobOid,
+  conflict,
   type Blob,
   type Source,
   type Change,
