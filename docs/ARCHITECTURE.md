@@ -186,7 +186,7 @@ HTTP request → worker/index.ts → worker/admin.ts
 - **旧代码与兼容职责**：`src/components/Boot.tsx` 由两份预渲染脚本使用，不能因客户端静态 import 没出现而删掉；`worker/comments.ts` 的读取 re-export 是保持 `worker/index.ts` 入口兼容的公开门面；`comment-reads.ts` 和 `comment-shared.ts` 不反向依赖写入状态机。测试同时检查这些关键模块从实际入口可达。
 - **局限**：静态图不证明动态 import、运行时依赖注入、部署权限或生产接口正确；构建/单测、三浏览器/WebKit 模拟和 Cloudflare 真实版本仍分别按 `docs/MAINTENANCE.md` 记录。仅清理可确认冗余；没有证据的源码不删。
 
-**D 最终静态审计验收证据：** [PR #121](https://github.com/YohakuSama/waylan-blog/pull/121) 的 head `a16a7d8a75ba3192562b917432ca81b04f5574d4` 在 [Waylan CI #42091154426](https://github.com/YohakuSama/waylan-blog/actions/runs/42091154426) 第 2 次尝试中完成全部类型/构建/单测、SSR/离线、三端、Chromium/Firefox/WebKit、WCAG、阅读器/触摸及动效检查且成功；squash 合并 `e6878ffea22d60f5656df8c5c46c6ea2d1fab00b`。同一 SHA 的第一次运行只有视觉脚本通知面板重试时等待登录按钮超时（`scripts/visual-smoke.mjs:815`），重新运行未复现；该首次失败仍属待观察测试稳定性问题，不因一次重跑通过而宣称根因已解决。未发现扫描范围内的静态运行时循环或跨平台反向依赖，不表示运行时生产功能已全部验收。
+**D 最终静态审计验收证据：** [PR #121](https://github.com/YohakuSama/waylan-blog/pull/121) 的 head `a16a7d8a75ba3192562b917432ca81b04f5574d4` 在 [Waylan CI #42091154426](https://github.com/YohakuSama/waylan-blog/actions/runs/42091154426) 第 2 次尝试中通过类型/构建/单测、SSR/离线、三端视觉、Chromium/Firefox/WebKit 通用质量及 WCAG 检查；该次 CI 的按需分类实际为 `reader=false, feed=false, motion=false`，**并未单独运行阅读器、iOS 选区、信息流或动效专项**（前序专项通过记录见 [PR #118 CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)）；squash 合并 `e6878ffea22d60f5656df8c5c46c6ea2d1fab00b`。同一 SHA 的第一次运行只有视觉脚本通知面板重试时等待登录按钮超时（`scripts/visual-smoke.mjs:815`），重新运行未复现；该首次失败仍属待观察测试稳定性问题，不因一次重跑通过而宣称根因已解决。未发现扫描范围内的静态运行时循环或跨平台反向依赖，不表示运行时生产功能已全部验收。
 
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
