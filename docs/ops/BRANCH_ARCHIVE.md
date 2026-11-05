@@ -9,6 +9,13 @@
 - 开放 PR 和无合并记录的分支全部保留待人工判断。旧分支可能有尚未合入的独立工作，不能用日期或前缀判定“垃圾”。
 - 快照仅反映记录时的 HEAD；未来产生的分支不在此次自动清理范围内。本次运维分支不包含在初始快照中；本次合并后如仍存在，应纳入下一期人工核验。
 
+## 清理完成记录 · 2026-11-05
+
+- [Waylan CI 主分支运行 #42034859036](https://github.com/YohakuSama/waylan-blog/actions/runs/42034859036) 的 `branches` job 成功：`Eligible: 85 Skipped: 13`，`failures: []`。实际 GitHub 分支列表再次核验，快照中 **85 个 merged 分支已全部删除**，13 个快照内非 merged / 主分支均保留。
+- 当前 GitHub 有 **14 个分支**：快照内保留 13 个，另有本次已合并的 PR [#99](https://github.com/YohakuSama/waylan-blog/pull/99) 运维分支 `ops/actions-budget-and-branch-archive-20261105`（SHA `30385ae62ba2`）。它创建于快照之后，不属于本次 85 个自动删除目标；可以在下一次分支例行检查时单独处理。
+- 保留的快照内分支包括：`main` 1 个、开放 PR 2 个、关闭未合并 PR 8 个、无 PR 记录 2 个。**不要**因为分支名看起来陈旧就删除这些分支。
+- 原始 JSON 保持清理前的事实快照，不回写成新列表；这份执行记录补充清理后的审计信息。通常不需要再手动运行 `branches-prune`。
+
 ## 例外分支（不允许自动删除）
 
 | 类型 | 分支 | PR | SHA |
@@ -20,7 +27,6 @@
 | closed-unmerged | `fix/mobile-thread-visible-center-20261104` | [#37](https://github.com/YohakuSama/waylan-blog/pull/37) | `a8d2b681ab3c` |
 | closed-unmerged | `fix/notification-reliability-motion-logo-20261105` | [#68](https://github.com/YohakuSama/waylan-blog/pull/68) | `174d7054e974` |
 | open-pr | `fix/share-mobile-header-geometry-20261105` | [#57](https://github.com/YohakuSama/waylan-blog/pull/57) | `a7013499f799` |
-| unlinked | `ops/actions-budget-and-branch-archive-20261105` | — | `e82999b23dd9` |
 | open-pr | `ops/manual-cloudflare-deploy-fallback-20261104` | [#23](https://github.com/YohakuSama/waylan-blog/pull/23) | `d9781977a879` |
 | closed-unmerged | `refactor/architecture-cleanup-phase1` | [#96](https://github.com/YohakuSama/waylan-blog/pull/96) | `7a60afc20cd6` |
 | closed-unmerged | `test/accessibility-wcag-20261103` | [#11](https://github.com/YohakuSama/waylan-blog/pull/11) | `175dee098b02` |
@@ -34,4 +40,4 @@
 3. 维护脚本在主分支运行，逐条重新查询实际 SHA，仅删除快照中合并完成且完全匹配的分支。分支变化、受到保护、仍有开放 PR 均跳过并报告。
 4. 清理后复查分支列表与两条开放 PR。**不要**手工删除未合并的 `ops/manual-cloudflare-deploy-fallback-20261104`，除非专门决定该备用部署方案的去留。
 
-连接器没有直接删除 Git refs 的操作，因此脚本使用 GitHub Actions 作为受限执行通道。**首次合并这份分支档案时**，若主分支合并提交标题含唯一标记 `[branch-gc-20261105]` 且触发者为仓库所有者，将仅对快照中 85 个已合并且 SHA 未变化的分支执行一次清理；普通 PR / main push 不会触发。若这一轮未执行或部分失败，仍可按上述手动预览和确认流程补做。执行结果和失败记录保存在相应的 Actions 运行日志中。
+连接器没有直接删除 Git refs 的操作，因此脚本使用 GitHub Actions 作为受限执行通道。**首次合并这份分支档案时**，若主分支合并提交标题含唯一标记 `[branch-gc-20261105]` 且触发者为仓库所有者，将仅对快照中 85 个已合并且 SHA 未变化的分支执行一次清理；普通 PR / main push 不会触发。本次已全部成功，不需要重复执行；若后续发生其他分支清理需求，应先重新建档并审查所有 SHA，而不是无限复用旧快照。执行结果和失败记录保存在相应的 Actions 运行日志中。
