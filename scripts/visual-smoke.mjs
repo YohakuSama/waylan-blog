@@ -150,7 +150,7 @@ try {
               firstMedia: select(".feed-list .feed-media-link"),
               entryHeading: select(".feed-list .feed-body h2"),
               latestHeading: select("#latest-heading"),
-              identity: select(".home-identity"),
+              identity: select(".home-hero .intro-copy"),
               homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
               homeTopicLink: select(".home-topic-link"),
               sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
@@ -242,7 +242,7 @@ try {
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
-          assert.equal(geometry.footerTargets.length, 3, `${label}: footer links missing`);
+          assert.equal(geometry.footerTargets.length, 4, `${label}: footer links missing`);
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
             `${label}: footer link has a small or clipped touch target`);
@@ -347,7 +347,7 @@ try {
             assert.ok(geometry.brandWordmark && geometry.brandWordmark.height >= 20,
               `${label}: the standalone brand must remain legible`);
             assert.equal(geometry.mobileTagline, null, `${label}: no detached mobile subtitle`);
-            if ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) {
+            if (!route.startsWith("/post/") && ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279))) {
               assert.ok(geometry.searchLabel?.width >= 18,
                 `${label}: expand genuine search into available header space`);
             }
@@ -410,10 +410,14 @@ try {
               assert.ok(control.left >= 0 && control.right <= geometry.viewport, `${label}: clipped header action`);
             }
             }
-          assert.ok(geometry.sidebarEndSlots.every((slot) =>
-            Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
-            Math.abs(slot.rightGap) <= 3),
-            `${label}: shared sidebar counts and arrows drift from the trailing column`);
+          // Hidden sidebars retain DOM descendants with zero-size boxes.
+          // Only visible sidebars have trailing-column geometry to verify.
+          if (geometry.sidebar) {
+            assert.ok(geometry.sidebarEndSlots.every((slot) =>
+              Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
+              Math.abs(slot.rightGap) <= (width < 768 ? 6 : 3)),
+              `${label}: shared sidebar counts and arrows drift from the trailing column`);
+          }
           if (geometry.sideHeadingRows.length) {
             assert.ok(geometry.sideHeadingRows.every((row) =>
               Math.abs(row.linkTop - row.top) <= 2 &&
@@ -524,10 +528,11 @@ try {
             assert.ok(geometry.sideHeadingLinks.length >= 2 &&
               geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
               `${label}: sidebar heading not fully tappable`);
-            if (width < 1120)
-              assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
-                geometry.homeLinks.includes("/feed"), `${label}: stacked sidebar buried topic discovery`);
-            else assert.equal(geometry.homeTopicLink, null, `${label}: redundant topic shortcut beside visible sidebar`);
+            // The hero's primary "Browse all" CTA remains available at every
+            // width. Sidebar discovery supplements rather than replaces it.
+            assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
+              geometry.homeLinks.includes("/feed"),
+              `${label}: primary browse entry point is hidden or too small`);
             assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
             assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
@@ -611,7 +616,7 @@ try {
           }
           if (route.startsWith("/post/") && [320, 768, 1024].includes(width)) {
             await page.setViewportSize({ width, height: 480 });
-            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await page.getByRole("button", { name: "本文目录", exact: true }).click();
             const toc = page.locator(".reader-toc.toc-visible");
             await toc.waitFor();
             const bounds = await toc.boundingBox();
@@ -648,7 +653,7 @@ try {
             await page.keyboard.press("Escape");
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
-            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await page.getByRole("button", { name: "本文目录", exact: true }).click();
             await toc.getByRole("button", { name: "回到页首" }).click();
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true,

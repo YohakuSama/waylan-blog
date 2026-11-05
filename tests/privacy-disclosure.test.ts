@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const about = readFileSync("content/about.md", "utf8");
-const aboutPage = readFileSync("src/pages.tsx", "utf8");
+const aboutPage = readFileSync("src/pages/About.tsx", "utf8");
 const privacy = readFileSync("src/pages/Privacy.tsx", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
 const layout = readFileSync("src/styles/site.css", "utf8");

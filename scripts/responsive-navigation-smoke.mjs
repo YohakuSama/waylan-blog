@@ -117,6 +117,8 @@ try {
           await last.click();
           await page.waitForURL(/\/post\/[^/?]+/);
           await page.locator(".article-actions").waitFor({ state: "visible" });
+          // Route changes remount the masthead at its final single-row geometry.
+          // Detect first-frame regressions instead of hiding them with sleep.
           const articleMasthead = await page.evaluate(() => {
             const box = (selector) => {
               const el = document.querySelector(selector);
@@ -126,6 +128,43 @@ try {
             };
             return {
               logo: box(".site-header-reader .brand-wordmark"),
+              brand: box(".site-header-reader .brand"),
+              inner: box(".site-header-reader .header-inner"),
+              computed: (() => {
+                const inner = document.querySelector(".site-header-reader .header-inner");
+                const element = inner && getComputedStyle(inner);
+                return element ? { gridRows: element.gridTemplateRows, height: element.height,
+                  minHeight: element.minHeight, alignItems: element.alignItems,
+                  headerHeightToken: element.getPropertyValue("--header-height").trim(),
+                  barHeightToken: element.getPropertyValue("--header-bar-height").trim(),
+                  transition: element.transition, inline: inner.getAttribute("style"),
+                  animations: inner.getAnimations().map(a => ({ playState: a.playState, state: a.effect?.getTiming?.() })),
+                  paddingTop: element.paddingTop, paddingBottom: element.paddingBottom } : null;
+              })(),
+              matchingCSS: (() => {
+                const el = document.querySelector(".site-header-reader .header-inner");
+                const matches = [];
+                const visit = (rules, sheet, media = "") => {
+                  for (const rule of rules) {
+                    if (rule.selectorText && rule.selectorText.includes("header-inner")) {
+                      try {
+                        if (el.matches(rule.selectorText)) matches.push({
+                          sheet, media, selector: rule.selectorText,
+                          minHeight: rule.style.minHeight, height: rule.style.height,
+                          rows: rule.style.gridTemplateRows,
+                        });
+                      } catch {}
+                    }
+                    if (rule.cssRules && (!rule.conditionText ||
+                      (rule instanceof CSSMediaRule && matchMedia(rule.conditionText).matches)))
+                      visit(rule.cssRules, sheet, rule.conditionText || media);
+                  }
+                };
+                for (const stylesheet of document.styleSheets) {
+                  try { visit(stylesheet.cssRules, stylesheet.href || "inline"); } catch {}
+                }
+                return matches.slice(-20);
+              })(),
               header: box(".site-header-reader"),
               nav: box(".site-header-reader #site-nav"),
               controls: [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"].map(box),
@@ -144,12 +183,12 @@ try {
           }
           assert.ok(Math.abs(articleMasthead.logo.height - header.logo.height) <= 1 &&
             Math.abs(articleMasthead.logo.top - header.logo.top) <= 1,
-            label + ": reader logo size/vertical position differs from home");
+            label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header, inner: articleMasthead.inner, brand: articleMasthead.brand, computed: articleMasthead.computed, css: articleMasthead.matchingCSS}));
           for (let i = 0; i < 4; i++) {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
               Math.abs(source.height - dest.height) <= 1 &&
-              Math.abs(dest.width - (i === 0 && width >= 480 && width <= 860 ? 44 : source.width)) <= 1 &&
+              Math.abs(dest.width - (i === 0 && ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) ? 44 : source.width)) <= 1 &&
               Math.abs(source.top - dest.top) <= 1,
               label + ": shortcut " + i + " changes size or height in the article");
             if (width < 480) assert.ok(Math.abs(source.left - dest.left) <= 1,

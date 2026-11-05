@@ -64,7 +64,7 @@ async function run(engine, label, width, height, touch) {
       await page.evaluate(() => { window.__shareCount = 0; window.__copyCount = 0; });
       // The directory, not an obsolete quick-actions menu, remains interactive.
       const tocButton = page.getByRole("group", { name: "本文操作" })
-        .getByRole("button", { name: /展开文章目录|展开阅读工具/ });
+        .getByRole("button", { name: /本文目录|阅读工具/ });
       if (await tocButton.isVisible()) {
         await tocButton.click();
         await page.locator(".reader-toc.toc-visible").waitFor({ state: "visible" });
@@ -191,6 +191,8 @@ async function run(engine, label, width, height, touch) {
         label + ": a toolbar action was swallowed or repeated");
       await act("关闭摘录工具栏");
       await page.locator(".selection-toolbar").waitFor({ state: "hidden" });
+      assert.equal(await page.locator("dialog.image-dialog[open]").count(), 0,
+        label + ": toolbar dismissal must not open an image underneath");
 
       await selectLongText();
       const oldCount = await page.locator("mark.private-mark").count();

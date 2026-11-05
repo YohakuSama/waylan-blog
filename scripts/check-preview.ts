@@ -362,11 +362,11 @@ try {
     "Two-core offline preview must still dispatch visible motion",
   );
   await click(dom, doc.querySelector(".settings-button"));
-  await click(
-    dom,
-    doc.querySelector('input[name="motion-preference"][value="full"]'),
-  );
-  assert.equal(doc.documentElement.dataset.motion, "full");
+  assert.equal(doc.querySelector('input[name="motion-preference"]'), null,
+    "obsolete manual motion settings must remain removed from the offline preview");
+  assert.equal(doc.documentElement.dataset.motionPreference, "system");
+  assert.equal(doc.documentElement.dataset.motion, "full",
+    "the simulated no-reduction OS preference must enable motion");
   await click(dom, doc.querySelector(".settings-dialog .dialog-header button"));
   await click(dom, doc.querySelector(".post-card-link"));
   await until(

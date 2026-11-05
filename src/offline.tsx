@@ -4,13 +4,7 @@ import Reader from "./components/Reader";
 import { currentRoute } from "./lib/runtime";
 // Keep the stand-alone preview's typography identical to the deployed site.
 // The preview packager converts emitted WOFF2 files to embedded data URIs.
-import "@fontsource-variable/noto-sans-sc/wght.css";
-import "@fontsource-variable/noto-serif-sc/wght.css";
-import "@fontsource-variable/jetbrains-mono/wght.css";
-import "./styles.css";
-import "./styles/site.css";
-import "./styles/skins.css";
-import "./styles/motion.css";
+import "./styles/index";
 // This is bundled as one classic IIFE. It needs no imports, server, fetch, or CDN.
 createRoot(document.getElementById("root")!).render(
   <App initialPath={currentRoute()} reader={Reader} />,

@@ -167,7 +167,7 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(changes, 1);
     assert.equal(calls.length, 0);
   });
-  it("lets an explicit full-motion choice work when persistent storage is blocked", async () => {
+  it("allows runtime motion preferences but keeps coarse-pointer route changes opaque", async () => {
     reduced = true;
     Object.defineProperty(dom.window.Storage.prototype, "setItem", {
       value() {
@@ -179,8 +179,12 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(document.documentElement.dataset.motion, "full");
     assert.equal(motionAllowed(), true);
     assert.equal(motionLevel(), "shared");
-    await navigateWithMotion(() => {}).finished;
-    assert.ok(calls.length > 0);
+    // The test's mock matchMedia reports a coarse pointer too. iOS route
+    // changes deliberately skip page fades to avoid Safari toolbar flashes.
+    let changes = 0;
+    await navigateWithMotion(() => changes++).finished;
+    assert.equal(changes, 1);
+    assert.equal(calls.length, 0);
   });
   it("ignores unreliable native route View Transitions and applies navigation once", async () => {
     let nativeCalls = 0, changes = 0;

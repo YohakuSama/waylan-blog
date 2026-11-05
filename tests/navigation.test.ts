@@ -478,7 +478,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await click(toggle);
     assert.equal(document.querySelector(".toc-excerpt-toggle")?.getAttribute("aria-pressed"), "true",
       "the excerpt toggle must retain an accessible pressed state in the contents panel");
-    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
+    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /段落摘录已开启/);
     assert.equal(window.getSelection()?.toString(), "");
     const paragraph = document.querySelector<HTMLElement>(
       '.reader-prose .article-block[data-type="paragraph"]',
@@ -495,7 +495,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
       '.selection-toolbar button[aria-label="关闭摘录工具栏"]',
     ));
     assert.equal(document.querySelector(".selection-toolbar"), null);
-    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /摘录模式已开启/);
+    assert.match(document.querySelector(".reading-article [role=\"status\"]")?.textContent || "", /段落摘录已开启/);
     await click(paragraph);
     const mark = [...document.querySelectorAll(".selection-toolbar-actions button")]
       .find((b) => b.textContent === "划线")!;
@@ -1310,7 +1310,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".home-feed-heading").length, 0);
     assert.equal(document.querySelector("#latest-heading")?.textContent, "最新内容");
     assert.equal(document.querySelector("#latest-heading")?.classList.contains("sr-only"), false);
-    assert.match(document.querySelector(".home-identity")?.textContent || "", /Waylan 的个人博客/);
+    assert.match(document.querySelector(".intro-description")?.textContent || "", /Waylan 的个人技术博客/);
     assert.ok(document.querySelector('.home-links a[href="/about"]'));
     assert.ok(document.querySelector('.home-links a[href="/rss.xml"]'));
     await click(document.querySelector(".hero-browse"));
@@ -1620,13 +1620,16 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".about-prose"));
     assert.equal(y, 960, "browser back should restore about reading position");
   });
-  it("allows full motion to be selected when the system preference reduces it", async () => {
+  it("removes legacy manual motion settings while honoring the system preference", async () => {
+    localStorage.setItem("echo:motion", JSON.stringify("full"));
     await mount();
     await click(document.querySelector(".settings-button"));
     assert.ok(document.querySelector(".settings-dialog[open]"));
-    await click(document.querySelector('.motion-choice input[value="full"]'));
-    assert.equal(document.documentElement.dataset.motion, "full");
-    assert.equal(localStorage.getItem("echo:motion"), JSON.stringify("full"));
+    assert.equal(document.querySelector(".motion-choice"), null,
+      "obsolete full/reduced animation options must stay removed");
+    assert.equal(localStorage.getItem("echo:motion"), null,
+      "legacy local motion settings must not override operating-system accessibility");
+    assert.equal(document.documentElement.dataset.motionPreference, "system");
     await click(document.querySelector(".settings-dialog .dialog-header button"));
     await settle(30);
     assert.equal(document.querySelector(".settings-dialog[open]"), null);

@@ -1116,6 +1116,9 @@ export default function Reader({ post }: { post: Post }) {
     needsActivation = false,
   ) {
     if (event.touches.length !== 1) return;
+    // Prevent a Safari compatibility click from hitting content under a
+    // selection toolbar that has already been dismissed on touchstart.
+    event.preventDefault();
     event.stopPropagation();
     const last = lastToolbarTouch.current;
     if (last?.target === event.currentTarget && performance.now() - last.at < 300) return;
@@ -1370,9 +1373,6 @@ export default function Reader({ post }: { post: Post }) {
             </header>
             <div className="article-actions" role="group" aria-label="本文操作">
               <button className="article-action article-action-toc" type="button" ref={tocButton}
-                aria-label={post.toc.length
-                  ? (tocOpen ? "收起文章目录" : "展开文章目录")
-                  : (tocOpen ? "收起阅读工具" : "展开阅读工具")}
                 aria-expanded={tocOpen} aria-controls="reader-toc"
                 onClick={() => setTocOpen((value) => !value)}>
                 <List size={17} aria-hidden="true" />
@@ -1419,13 +1419,20 @@ export default function Reader({ post }: { post: Post }) {
                         });
                       }
                     }}
-                    onClick={(e) =>
+                    onClick={(e) => {
+                      // WebKit can retarget the late click after a toolbar
+                      // action removes its button from the document.
+                      const last = lastToolbarTouch.current;
+                      if (last && performance.now() - last.at < 1500) {
+                        e.preventDefault();
+                        return;
+                      }
                       setImage({
                         src: post.cover!,
                         alt: post.coverAlt || "",
                         from: e.currentTarget,
-                      })
-                    }
+                      });
+                    }}
                   />
                 </div>
                 <figcaption>

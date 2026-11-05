@@ -1763,7 +1763,10 @@ h3 {
 @media (max-width: 860px) {
   :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
   .page-heading { padding: 32px 0 20px; }
-  .header-inner {
+  /* Only index pages have a two-row masthead; reader uses one compact row.
+     The generic min-height otherwise keeps an invisible 43px nav row inside
+     the 60px reader header and pushes its logo downward. */
+  .site-header:not(.site-header-reader) .header-inner {
     position: relative;
     height: auto; min-height: calc(var(--header-height) - 1px);
     grid-template-columns: minmax(0, 1fr) auto;
@@ -2072,6 +2075,19 @@ h3 {
   }
   .page-heading + .content-grid .site-sidebar { padding-top:30px; }
   .site-sidebar > * { min-width:0; }
+}
+/* Reserve one desktop logo slot for both skins. Their rendered wordmarks
+   are intentionally different widths; without a shared slot the entire
+   navigation shifts 15px when switching from editorial to terminal. */
+@media (min-width: 861px) {
+  .site-header .brand { min-width: 120px; }
+}
+/* Reserve one shared first-column slot for both editorial SVG and terminal
+   wordmark. Without it, the terminal font moves the desktop navigation 15px. */
+@media (min-width: 1280px) {
+  .site-header:not(.site-header-reader) .header-inner {
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+  }
 }
 /* Compact desktop header gets distinct space for brand, navigation and tools. */
 @media (min-width:861px) and (max-width:1279px) {
