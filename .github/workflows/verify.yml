@@ -50,6 +50,9 @@ jobs:
           CI_HEAD_SHA: ${{ github.sha }}
           CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'full' }}
         run: node scripts/ci-plan.mjs
+      - name: Validate CI policy and safe branch handling
+        if: ${{ steps.plan.outputs.code == 'true' }}
+        run: node --test scripts/maintenance.test.mjs
       - name: Node 24 with shared npm cache
         if: ${{ steps.plan.outputs.code == 'true' }}
         uses: actions/setup-node@v4
@@ -66,7 +69,7 @@ jobs:
       # One browser install and build for all applicable frontend regressions.
       - name: Install browser QA once
         id: browsers
-        if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' }}
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
           npx playwright install --with-deps chromium firefox webkit
