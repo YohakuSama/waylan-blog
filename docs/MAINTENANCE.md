@@ -179,6 +179,8 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **性能证据边界：** 对比 C [#116 CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)、D [#118 CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135) 和静态审计 [#121 CI #42091154426](https://github.com/YohakuSama/waylan-blog/actions/runs/42091154426) 的 Vite 构建日志，Reader chunk gzip 均显示 **16.97 kB**，main chunk gzip 均显示 **22.23 kB**（仅日志取整精度），未见这两个入口的明显构建体积增长；**这不是对真实网络加载、Core Web Vitals、实际设备视觉和生产性能的验证**。Cloudflare Workers Builds 失败根因和真实部署 SHA 仍未取得完整证据，不修改部署配置或自动写入数据来掩盖风险。
 
+**独立 CI 与合并范围复核：** 文档更正 [#123](https://github.com/YohakuSama/waylan-blog/pull/123) 最终 head `0a482bfa5c5374e5a5b988f0969805ee96949e61` 的 [Waylan CI #42094702122](https://github.com/YohakuSama/waylan-blog/actions/runs/42094702122) 为 docs-only success，squash `b10cc49836c031207e002d0723a839dc6ac638db`；#124 合并后 `main@3d12bf66b149c57fce3843b00c60b6fc4f7fe69d` 的 [Waylan CI #42097228713](https://github.com/YohakuSama/waylan-blog/actions/runs/42097228713) 为 main 核心 success，**没有再次运行三浏览器或独立 Reader/动效专项**。不要把 docs-only、main 核心和 PR 完整按需 QA 混为一项。
+
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
 **结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。
