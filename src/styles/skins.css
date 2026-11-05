@@ -1279,8 +1279,8 @@ html {
 /* Motion tokens, hover and press feedback live in motion.css. */
 /* Loading bar: shown only after 140ms of real fetching, one quiet sweep. */
 :root[data-navigation="loading"] .site-header::after {
-  content:""; position:absolute; left:0; bottom:-1px; height:2px; width:32%;
-  z-index:2; pointer-events:none; border-radius:var(--radius-full);
+  /* Geometry and hit-testing are already supplied by the later motion.css owner. */
+  width:32%; z-index:2; border-radius:var(--radius-full);
   background:linear-gradient(90deg, transparent, var(--brand) 70%, var(--amber));
   animation:nav-progress 1100ms var(--ease-out) infinite alternate;
 }
