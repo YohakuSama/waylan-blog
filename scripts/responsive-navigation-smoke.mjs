@@ -117,6 +117,9 @@ try {
           await last.click();
           await page.waitForURL(/\/post\/[^/?]+/);
           await page.locator(".article-actions").waitFor({ state: "visible" });
+          // The shared header changes from two rows to one during SPA navigation.
+          // Check the settled layout, not the first transitional frame.
+          await page.waitForTimeout(450);
           const articleMasthead = await page.evaluate(() => {
             const box = (selector) => {
               const el = document.querySelector(selector);
@@ -135,6 +138,8 @@ try {
                   minHeight: element.minHeight, alignItems: element.alignItems,
                   headerHeightToken: element.getPropertyValue("--header-height").trim(),
                   barHeightToken: element.getPropertyValue("--header-bar-height").trim(),
+                  transition: element.transition, inline: inner.getAttribute("style"),
+                  animations: inner.getAnimations().map(a => ({ playState: a.playState, state: a.effect?.getTiming?.() })),
                   paddingTop: element.paddingTop, paddingBottom: element.paddingBottom } : null;
               })(),
               matchingCSS: (() => {
