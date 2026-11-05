@@ -5,6 +5,7 @@
 ## 核心门禁
 
 - `scripts/ci-plan.mjs` 根据文件变更选择测试；无法识别变更时回退到完整检查。
+- 仅变更 Actions 工作流、CI 分类、已退休维护脚本时，只执行核心检查与 CI 规则单测，不无故下载 Chromium / Firefox / WebKit。
 - 有代码变更时执行 Node 24 依赖安装、TypeScript、构建、单元测试及静态完整性检查。
 - PR 的受影响 UI 模块复用同一次浏览器安装运行 Chromium、Firefox、WebKit、三端布局、WCAG、Reader、Feed、交互与动效专项；仅文档变更不安装浏览器。
 - 已验证 PR 合并后推送 `main` 只重新执行核心检查，不重复安装浏览器；手动运行执行完整审计。

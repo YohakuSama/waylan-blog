@@ -32,7 +32,7 @@ jobs:
           CI_HEAD_SHA: ${{ github.sha }}
           CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' }}
         run: node scripts/ci-plan.mjs
-      - name: Validate CI policy and safe branch handling
+      - name: Validate CI scope policy
         if: ${{ steps.plan.outputs.code == 'true' }}
         run: node --test scripts/maintenance.test.mjs
       - name: Node 24 with shared npm cache
