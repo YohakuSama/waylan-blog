@@ -49,12 +49,12 @@ describe("HTTPS transport safeguards", () => {
     assert.equal(response.status, 404);
     assert.equal(
       response.headers.get("Strict-Transport-Security"),
-      "max-age=31536000",
+      "max-age=86400",
     );
     const staticHeaders = readFileSync(
       new URL("../public/_headers", import.meta.url),
       "utf8",
     );
-    assert.match(staticHeaders, /^\s+Strict-Transport-Security: max-age=31536000\s*$/m);
+    assert.match(staticHeaders, /^\s+Strict-Transport-Security: max-age=86400\s*$/m);
   });
 });
