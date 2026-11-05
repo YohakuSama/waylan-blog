@@ -30,6 +30,7 @@ const pageTitles: Record<string, string> = {
   "/projects": "项目",
   "/archive": "归档",
   "/about": "关于",
+  "/privacy": "隐私说明",
 };
 export function metadata(path: string) {
   const pathname = path.split(/[?#]/)[0];
@@ -37,7 +38,10 @@ export function metadata(path: string) {
   const title = post?.title || pageTitles[pathname] || "这一页，暂时走散了";
   return {
     title: `${title} · ${site.name}`,
-    description: post?.excerpt || site.description,
+    description: post?.excerpt ||
+      (pathname === "/privacy"
+        ? "了解本站在访问统计、GitHub 登录、公开评论和浏览器本地记录中如何处理信息。"
+        : site.description),
     canonical: `${site.origin}${pathname === "/" ? "" : pathname}`,
     image: `${site.origin}${post?.cover || "/art/room.svg"}`,
     post,
