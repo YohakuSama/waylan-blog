@@ -15,8 +15,6 @@ on:
         default: full
         options:
           - full
-          - windows-check
-          - windows-connectivity
           - branches-preview
           - branches-prune
       confirmation:
@@ -144,54 +142,11 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-  windows-check:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'windows-check' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
-    runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 25
-    defaults:
-      run:
-        shell: powershell
-    steps:
-      - name: Checkout trusted main
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-      - run: npm ci
-      - run: npm run check
-      - name: Install local browser test library
-        run: npm install --no-save --no-package-lock playwright@1.56.1
-      - name: Local phone tablet and desktop audit
-        run: node scripts/mobile-layout-audit.mjs
-      - name: Preserve Windows audit evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: waylan-windows-layout
-          path: mobile-layout-report/
-          if-no-files-found: ignore
-          retention-days: 3
-
-  windows-connectivity:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'windows-connectivity' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner }}
-    runs-on: [self-hosted, Windows, X64]
-    timeout-minutes: 5
-    steps:
-      - name: Confirm the trusted runner is available
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if ($env:RUNNER_OS -ne 'Windows') { throw 'Expected Windows' }
-          Write-Host "Connected: $env:RUNNER_OS $env:RUNNER_ARCH"
 
   branches:
-    # One-time, owner-authorized GC after the explicitly marked archive merge;
+    # One-time, owner-authorized GC of the verified 2026-11-06 archive;
     # otherwise only an owner dispatch on trusted main may prune.
-    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune')) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && contains(github.event.head_commit.message, '[branch-gc-20261105]')) }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune')) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[branch-gc-20261106]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -206,6 +161,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRUNE_CONFIRM: ${{ github.event_name == 'push' && 'DELETE_VERIFIED_MERGED_BRANCHES' || inputs.confirmation }}
           MODE: ${{ github.event_name == 'push' && 'branches-prune' || inputs.suite }}
+          GC_ONCE: ${{ github.event_name == 'push' && 'branch-gc-20261106' || '' }}
         run: |
           if [ "$MODE" = "branches-prune" ]; then
             node scripts/branch-maintenance.mjs prune

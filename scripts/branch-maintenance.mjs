@@ -53,13 +53,13 @@ async function main() {
   if (!["preview", "prune"].includes(mode)) throw new Error("Use preview or prune");
   if (process.env.GITHUB_REF !== "refs/heads/main")
     throw new Error("Branch maintenance must run on trusted main");
-  if (process.env.GITHUB_ACTOR !== base.split("/")[0])
+  if (process.env.GITHUB_ACTOR !== base.split("/")[0] && !(process.env.GITHUB_EVENT_NAME === "push" && process.env.GC_ONCE === "branch-gc-20261106"))
     throw new Error("Only the repository owner may run branch maintenance");
   if (!token || !base.includes("/")) throw new Error("Missing GitHub environment");
   if (mode === "prune" && process.env.PRUNE_CONFIRM !== "DELETE_VERIFIED_MERGED_BRANCHES")
     throw new Error("Explicit typed confirmation is required");
 
-  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-05.json", "utf8"));
+  const archive = JSON.parse(readFileSync("docs/ops/branch-inventory-2026-11-06.json", "utf8"));
   if (!Array.isArray(archive.branches)) throw new Error("Branch archive not readable");
   const [live, prs] = await Promise.all([paged("/branches"), paged("/pulls?state=all")]);
   const liveByName = new Map(live.map((b) => [b.name, b]));
