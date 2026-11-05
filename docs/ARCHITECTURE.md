@@ -179,6 +179,13 @@ HTTP request → worker/index.ts → worker/admin.ts
 - **最小处置**：保留公开 `storage/transient` 接口和失败返回值差异、现有 `echo:` 前缀及 local/session 相互隔离，只用私有 `readJSON(read, fallback)` 复用读取语义；Worker 缓存直接引用已有 `now()`，不改变 D1 查询、过期/stale 窗口、GitHub transport、API 或共享平台依赖。
 - **审核边界及证据**：不对 `Reader` 原生 Safari 触摸状态、Worker 评论幂等流程或 CSS 级联做无证据重写。[PR #118](https://github.com/YohakuSama/waylan-blog/pull/118) 基于 C 已合并的 main 验证最终 head `22adfcbe2920e25d9b0211ebe029b5b4155f3d6d`，通过 [Waylan CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)（核心、Worker HTTP/SQLite mock、三端、三浏览器、WCAG、Reader/模拟 iOS 触摸及导航）；squash 合并 `cfeb5c910dbbc63040798152e7e64d248e7e6e64`。原 [#117](https://github.com/YohakuSama/waylan-blog/pull/117) 因老 Runner 的 Playwright 安装阻塞及同 PR 并发门禁改用相同代码 head 的 #118，已关闭且未合并。此次有证据的局部清理不等于“所有可能冗余已消除”。
 
+### D：静态依赖图与入口覆盖核查（2026-11-06）
+
+- **检查范围**：现有 `tests/architecture.test.ts` 新增基于已安装 TypeScript AST 的静态依赖测试，遍历 `src/*`、`worker/*`、`shared/*` 和 `scripts/*` 的 TS/TSX；按实际文件路径解析相对 `import` / `export from`，检测静态运行时循环和 `shared → 平台模块`、`src → worker`、`worker → src` 的越界导入。类型专用导入、JSON/CSS/外部包不计入运行时 TS 模块图，不引入 npm 依赖或 Actions 工作流。
+- **按需装载边界**：`src/lib/reader-loader.ts` 的 `import("../components/Reader")` 是动态加载，不能机械地当作静态循环；`Router → reader-loader` 只在进入文章时按需请求 Reader。在线 `src/client.tsx`、离线 `src/offline.tsx`、后台 `src/admin/main.tsx`、Worker `worker/index.ts` 及 `scripts/prerender.tsx` / `scripts/offline-preview.tsx` 是不同的合法入口。
+- **旧代码与兼容职责**：`src/components/Boot.tsx` 由两份预渲染脚本使用，不能因客户端静态 import 没出现而删掉；`worker/comments.ts` 的读取 re-export 是保持 `worker/index.ts` 入口兼容的公开门面；`comment-reads.ts` 和 `comment-shared.ts` 不反向依赖写入状态机。测试同时检查这些关键模块从实际入口可达。
+- **局限**：静态图不证明动态 import、运行时依赖注入、部署权限或生产接口正确；构建/单测、三浏览器/WebKit 模拟和 Cloudflare 真实版本仍分别按 `docs/MAINTENANCE.md` 记录。仅清理可确认冗余；没有证据的源码不删。
+
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
 先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：
