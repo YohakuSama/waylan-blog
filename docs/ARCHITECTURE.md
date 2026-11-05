@@ -133,6 +133,14 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
 
+### 评论 Worker 读写边界 B（2026-11-06，待 PR 验收）
+
+- **修改前**：`worker/comments.ts` 同时承担读取聚合、缓存、D1 批注绑定、仓库验证、公开预览、写入幂等/恢复、编辑与删除；单个文件很难在不影响写入事务的前提下审查只读逻辑。
+- **改动后**：`worker/comment-reads.ts` 拥有评论分页、单条、回复、信息流预览、批注分页、最近回声与 `attach`；`worker/comment-shared.ts` 拥有文章存在性、游标、公开 Discussion 仓库验证以及空页合同；`worker/comments.ts` 保留写入、审查权限与 `requestId` 恢复状态机，并作为原路由的稳定导出入口。依赖方向：`worker/index.ts → comments.ts → comment-reads.ts → comment-shared.ts`，写入与读取都调用共享校验模块；共享模块不反向依赖其他评论服务。
+- **安全的冗余**：删除 feed preview 中只原样 `throw error` 的无效 catch；错误仍直接传播，绝不将网络或权限失败伪装为零评论。原有 `github.ts` 的 GraphQL、cacheGet、缓存键和过期/旧缓存逻辑原样复用，未增加另一套包装器。
+- **不变合同**：所有 HTTP 路径/状态码、JSON 结构、OAuth 用户 token、CSRF、公开仓库核验、D1 表与批处理、Reply 元数据、Webhook 清缓存不动；`sending/sent/failed` 意图状态、哈希、保留/恢复窗口、发送后失败分类、重复提交拒绝均保留原始实现，未改排序。
+- **验证界限**：`tests/worker.test.ts` 使用真实 SQLite 结构、模拟 GitHub transport，覆盖 401/403、缓存、断线重试/同 ID/不同 ID、Webhook；新增依赖边界断言。Waylan CI 检查类型、构建、单元/浏览器；不等于生产 GitHub 与 D1 真正写入验收。合并 SHA、CI 结果另记。
+
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
 先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：

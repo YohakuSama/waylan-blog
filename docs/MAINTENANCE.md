@@ -118,6 +118,13 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **风险 R3 与回滚**：本批已合并 `0708fa5b`（PR #106），对应最终 CI 见 [#42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326)。尽管业务逻辑无计划变化，内容仓库写入仍属高风险。PR 的自动化测试仅使用模拟 GitHub，不等于真实 GitHub 写入、Cloudflare Worker 部署和生产 OAuth 已验收；发布需单独验证 token 权限、无副作用的内容读取，并通过受控测试稿确认提交与冲突回退。若线上出现不符，审核后 revert 该 squash commit 并重新部署，**不涉及 D1 反向迁移**。
 - **下一步**：`worker/comments.ts` 的读取/缓存/重复提交恢复应先单独画出状态转换和失败路径，再按不改变幂等性、评论 ID 与 Webhook 语义的原则分批拆分；不能将此步骤混进本次仓库访问适配器 PR。
 
+### 评论 Worker 职责整理 B（2026-11-06；待合并）
+
+- **根因和边界**：原 `worker/comments.ts` 同时包含 6 类只读端点与高风险写入幂等事务，修改预览时容易影响鉴权写入；将只读端点/批注绑定移至 `worker/comment-reads.ts`，仓库/文章/游标校验移至 `worker/comment-shared.ts`，原 `comments.ts` 保持路由兼容导出和写入状态机。
+- **删除与保留**：删除 feed preview 原样抛出的冗余 catch（上游异常照旧传播）；保留 `worker/github.ts` 单一 transport/cacheGet；所有缓存键、TTL、D1 SQL、`requestId` payload hash、`sending/sent/failed`、网络不确定恢复、限流、授权均保留，不采用泛化 repository 层。
+- **验收证据**：原 `tests/worker.test.ts` 真实 SQLite schema + GitHub Mock 与新架构边界断言；依赖现有 Waylan CI 的 `npm run check` / 三引擎基线。CI、PR 与 squash SHA 在确认后追加记录；模拟不代表 Cloudflare/OAuth/Discussion/D1 真实环境。
+- **回滚**：仅代码和文档，按 PR 的单独 squash SHA revert 并重新部署；不运行、修改或回退 migrations，不清除 write_intents（已落地的 GitHub 写入不能靠代码 revert 自动取消）。
+
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
 **结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。
