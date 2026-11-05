@@ -65,4 +65,17 @@ describe("Reader feature module contracts", () => {
     assert.ok(toc.includes('id="reader-toc"'));
     assert.ok(toc.includes("onSelectSection(t.id)"));
   });
+
+  it("scroll tracking, saved reading position and TOC state have one owner", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const progress = readFileSync("src/features/reader/useReadingProgress.ts", "utf8");
+    assert.ok(reader.includes("useReadingProgress(post, article, prose, excerptMode, setSelection)"));
+    assert.equal(reader.includes('window.addEventListener("scroll", scroll)'), false);
+    assert.ok(progress.includes('window.addEventListener("scroll", scroll, { passive: true })'));
+    assert.ok(progress.includes('new URLSearchParams(location.search).get("resume") === "1"'));
+    assert.ok(progress.includes("saved?.slug === post.slug ? saved.blockId : undefined"));
+    assert.ok(progress.includes('storage.set("reading"'));
+    assert.ok(progress.includes("cancelAnimationFrame(frame)"));
+    assert.ok(progress.includes('!window.matchMedia("(any-pointer: coarse)").matches'));
+  });
 });
