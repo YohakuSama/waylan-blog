@@ -85,3 +85,20 @@ test("archived branch category counts and prose stay in sync", () => {
   assert.match(prose, /总计 98 分支/);
   assert.match(prose, /无关联 PR 2/);
 });
+
+test("reader feature submodules select reader QA without unrelated feed/motion groups", () => {
+  for (const path of [
+    "src/features/reader/ReaderToc.tsx",
+    "src/features/reader/ArticleHeader.tsx",
+    "src/features/discussions/CommentItem.tsx",
+    "src/features/discussions/model.ts",
+    "src/features/annotations/FutureFeature.tsx",
+  ]) {
+    const p = classify([path]);
+    assert.equal(p.code, true, path);
+    assert.equal(p.browser, true, path);
+    assert.equal(p.reader, true, path);
+    assert.equal(p.feed, false, path);
+    assert.equal(p.motion, false, path);
+  }
+});
