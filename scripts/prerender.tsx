@@ -77,6 +77,7 @@ const paths = [
   "/feed",
   "/projects",
   "/about",
+  "/privacy",
   "/archive",
   ...posts.map((p) => `/post/${p.slug}`),
   "/404",
