@@ -53,3 +53,16 @@ test("only the archived merged SHA can be removed", () => {
     { state: "open", head: { ref: record.name } }]), "open-pr");
   assert.equal(pruneEligibility(record, live, []), "merge-unverified");
 });
+
+test("published Markdown never counts as documentation-only", () => {
+  assert.deepEqual(classify(["content/notes/example.md"]), {
+    code: true, browser: true, reader: true, feed: true, motion: false,
+  });
+});
+test("public assets and routes still trigger visual QA", () => {
+  for (const path of ["public/logo.svg", "index.html"]) {
+    const p = classify([path]);
+    assert.equal(p.code, true);
+    assert.equal(p.browser, true);
+  }
+});
