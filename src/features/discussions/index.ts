@@ -1,3 +1,3 @@
 export { CommentItem } from "./CommentItem";
 export { CommentMarkdown } from "./CommentMarkdown";
-export { safeDiscussionURL, visibleComment } from "./model";
+export { safeDiscussionURL, visibleComment, discussionView, updateCommentNodes, updateCommentPage } from "./model";

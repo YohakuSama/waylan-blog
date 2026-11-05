@@ -54,7 +54,7 @@ import {
   Related,
   Toast,
 } from "./UI";
-import { CommentItem, CommentMarkdown, safeDiscussionURL, visibleComment } from "../features/discussions";
+import { CommentItem, CommentMarkdown, discussionView, updateCommentNodes, updateCommentPage, safeDiscussionURL, visibleComment } from "../features/discussions";
 import { ArticleHeader, ReaderToc, ImageViewer, useReadingProgress, type Zoomed } from "../features/reader";
 type Draft = {
   body: string;
@@ -356,51 +356,15 @@ export default function Reader({ post }: { post: Post }) {
   // Unknown comment data must not be mistaken for an empty discussion.
   const commentsUnresolved = !comments && !commentState.data;
   const state = comments || commentState.data || emptyPage;
-  const visibleTopComments = state.nodes.filter(visibleComment);
-  const visibleCount = Math.max(0, state.totalCount - (state.nodes.length - visibleTopComments.length));
+  const { visibleTopComments, visibleCount, allComments } = discussionView(state, focused, panelFetched);
   const allAnnotations = [...annotations, ...localMarks];
-  const inVisibleThread = (comment: Comment) =>
-    visibleComment(comment) && (!comment.parentId ||
-      !state.nodes.some((parent) => parent.id === comment.parentId && !visibleComment(parent)));
-  const allComments = [
-    ...new Map(
-      [
-        ...visibleTopComments.flatMap((c) => [
-          c,
-          ...(c.replies?.nodes || []).filter(visibleComment).map((reply) => ({
-            ...reply,
-            parentId: c.id,
-          })),
-        ]),
-        ...(focused && inVisibleThread(focused) ? [focused] : []),
-        ...panelFetched.filter(inVisibleThread),
-      ].map((c) => [c.id, c]),
-    ).values(),
-  ];
   function notify(text: string) {
     setToast(text);
   }
   function commentChanged(id: string, next: Comment | null) {
-    const change = (nodes: Comment[]): Comment[] =>
-      nodes.flatMap((c) => {
-        if (c.id === id) return next ? [{ ...c, ...next }] : [];
-        if (!c.replies) return [c];
-        const replies = c.replies.nodes.flatMap((r) =>
-          r.id === id ? (next ? [{ ...r, ...next }] : []) : [r],
-        );
-        return [{ ...c, replies: {
-          ...c.replies,
-          nodes: replies,
-          totalCount: Math.max(0, c.replies.totalCount + (next ? 0 : replies.length - c.replies.nodes.length)),
-        } }];
-      });
-    setComments((prev) => prev ? {
-      ...prev,
-      nodes: change(prev.nodes),
-      totalCount: Math.max(0, prev.totalCount + (!next && prev.nodes.some((c) => c.id === id) ? -1 : 0)),
-    } : prev);
+    setComments((prev) => prev ? updateCommentPage(prev, id, next) : prev);
     setFocused((prev) => prev?.id === id ? next : prev);
-    setPanelFetched((prev) => change(prev));
+    setPanelFetched((prev) => updateCommentNodes(prev, id, next));
     invalidateComments();
     commentState.reload();
     anchorState.reload();
