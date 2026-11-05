@@ -31,10 +31,14 @@ jobs:
       - name: Typecheck, build and test
         run: npm run check
       - name: Install browser test runner
+        # Run visual checks independently; a separate legacy unit-test failure
+        # must not conceal responsive layout regressions.
+        if: ${{ !cancelled() }}
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Check real desktop, tablet and phone viewports
+        if: ${{ !cancelled() }}
         run: node scripts/visual-smoke.mjs
       - name: Upload viewport screenshots and geometry
         if: always()
