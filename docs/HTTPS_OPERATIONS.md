@@ -4,7 +4,7 @@
 
 - `worker/index.ts` 在处理任何 `/api/*` 业务逻辑前，将直接抵达 Worker 的 HTTP 请求以 308 重定向至 HTTPS，不建立 OAuth 状态，也不签发 Cookie。
 - `worker/security.ts` 的 OAuth 和会话 Cookie 始终使用 `__Host-` 前缀、`Secure`、`HttpOnly`、`SameSite=Lax` 和 `Path=/`。即使错误地从 HTTP 调用生成函数，也不再返回不带 Secure 的降级 Cookie。
-- HTTPS API 响应（包括错误）由 Worker 添加 `Strict-Transport-Security: max-age=31536000`。公开页面和静态资源由 `public/_headers` 设置相同的 HSTS。暂不启用 `includeSubDomains` 或 `preload`，避免将尚未验证的子域加入长期约束。
+- HTTPS API 响应（包括错误）由 Worker 添加 `Strict-Transport-Security: max-age=86400`。公开页面和静态资源由 `public/_headers` 设置相同的 HSTS。暂不启用 `includeSubDomains` 或 `preload`，避免将尚未验证的子域加入长期约束。
 
 ## 仍需在 Cloudflare 域名控制台执行
 
