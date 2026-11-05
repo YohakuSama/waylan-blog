@@ -1370,9 +1370,6 @@ export default function Reader({ post }: { post: Post }) {
             </header>
             <div className="article-actions" role="group" aria-label="本文操作">
               <button className="article-action article-action-toc" type="button" ref={tocButton}
-                aria-label={post.toc.length
-                  ? (tocOpen ? "收起文章目录" : "展开文章目录")
-                  : (tocOpen ? "收起阅读工具" : "展开阅读工具")}
                 aria-expanded={tocOpen} aria-controls="reader-toc"
                 onClick={() => setTocOpen((value) => !value)}>
                 <List size={17} aria-hidden="true" />
