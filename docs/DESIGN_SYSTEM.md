@@ -26,6 +26,23 @@
 | 动效     | 140ms 反馈、220ms 面板、340ms 页面；cubic-bezier(.2,.8,.2,1)                |
 | 断点     | ≥1120 内容与侧栏并列；≤1040 阅读目录折叠；≤860 主导航折叠；≤767 图文纵排；≤480 窄屏。完整约定见 `docs/RESPONSIVE_LAYOUT.md` |
 
+## 样式归属与加载顺序（P3 首批）
+
+实际样式只通过 `src/styles/index.ts` 加载，线上和离线预览共用。字体优先，其后按**固定顺序**读取：
+
+```text
+src/styles.css                 基础 tokens、阅读器、弹层
+src/styles/shell.css           页眉、首页、外壳控件
+src/styles/feed.css            信息流基础卡片
+src/styles/sidebar.css         侧栏基础结构
+src/styles/site.css            索引页、页脚、阅读外壳对齐
+src/styles/responsive.css      跨页面屏宽布局与手机卡片
+src/styles/skins.css           editorial / terminal 外观差异
+src/styles/motion.css          动效与减少动效
+```
+
+一个问题的定位顺序：先找到拥有该 DOM 的组件及其主样式；**只有断点相关才继续读 responsive**，**只有主题差异才继续读 skins**。不能为了快速覆盖而在皮肤文件里新增公共网格/字体几何补丁；有意改变布局时，必须检查此后所有同优先级选择器与媒体查询。原先的 `site.css` 分拆只按顶层完整规则边界切开、保持原声明的级联先后，并删除两组已经被最后手机卡片规则完全覆盖的旧标题声明；其余样式暂不迁移。详细故障定位表见 [ARCHITECTURE.md](ARCHITECTURE.md)，断点契约见 [RESPONSIVE_LAYOUT.md](RESPONSIVE_LAYOUT.md)。
+
 ## 组件契约
 
 | 组件       | 结构与限制                                                                           |
