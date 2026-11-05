@@ -189,7 +189,9 @@ jobs:
           Write-Host "Connected: $env:RUNNER_OS $env:RUNNER_ARCH"
 
   branches:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune') }}
+    # One-time, owner-authorized GC after the explicitly marked archive merge;
+    # otherwise only an owner dispatch on trusted main may prune.
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && (inputs.suite == 'branches-preview' || inputs.suite == 'branches-prune')) || (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && contains(github.event.head_commit.message, '[branch-gc-20261105]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -202,8 +204,8 @@ jobs:
       - name: Review or prune only merged, SHA-matched branches
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRUNE_CONFIRM: ${{ inputs.confirmation }}
-          MODE: ${{ inputs.suite }}
+          PRUNE_CONFIRM: ${{ github.event_name == 'push' && 'DELETE_VERIFIED_MERGED_BRANCHES' || inputs.confirmation }}
+          MODE: ${{ github.event_name == 'push' && 'branches-prune' || inputs.suite }}
         run: |
           if [ "$MODE" = "branches-prune" ]; then
             node scripts/branch-maintenance.mjs prune
