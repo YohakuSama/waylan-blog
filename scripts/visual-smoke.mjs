@@ -611,7 +611,7 @@ try {
           }
           if (route.startsWith("/post/") && [320, 768, 1024].includes(width)) {
             await page.setViewportSize({ width, height: 480 });
-            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await page.getByRole("button", { name: "本文目录", exact: true }).click();
             const toc = page.locator(".reader-toc.toc-visible");
             await toc.waitFor();
             const bounds = await toc.boundingBox();
@@ -648,7 +648,7 @@ try {
             await page.keyboard.press("Escape");
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true, `${label}: directory Escape lost focus`);
-            await page.getByRole("button", { name: "展开文章目录", exact: true }).click();
+            await page.getByRole("button", { name: "本文目录", exact: true }).click();
             await toc.getByRole("button", { name: "回到页首" }).click();
             await toc.waitFor({ state: "hidden" });
             assert.equal(await page.locator(".article-action-toc").evaluate((el) => el === document.activeElement), true,
