@@ -19,7 +19,7 @@ const tokenError = () =>
     "CONTENT_TOKEN",
     "无法访问源码仓库：请检查 CONTENT_REPO，以及 GITHUB_CONTENT_TOKEN 是否有效、是否对该仓库有 Contents 读写权限。",
   );
-const conflict = () =>
+export const conflict = () =>
   new HttpError(
     409,
     "CONFLICT",
