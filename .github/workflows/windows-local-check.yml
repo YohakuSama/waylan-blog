@@ -29,3 +29,16 @@ jobs:
         run: npm ci
       - name: Run typecheck, build, unit and static integrity tests
         run: npm run check
+      - name: Install browser test library (use installed Edge or Chrome)
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Audit phone, tablet and desktop feed / article layout
+        run: node scripts/mobile-layout-audit.mjs
+      - name: Save layout screenshots and measured geometry
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-mobile-layout-audit
+          path: mobile-layout-report/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -2378,7 +2378,9 @@ h3 {
   .home-list .feed-excerpt { margin-top: 6px; line-height: 1.65; }
 }
 
-/* Feed flow: remove cumulative gaps between metadata, title, tags and cover. */
+/* Phone feed: media is a small, adjacent thumbnail, not an extra full-width row.
+   display: contents lets the existing semantic card contents occupy explicit tracks.
+   Apply only to article cards with a cover in detailed library mode. */
 @media (max-width: 767px) {
   .feed-list .feed-item { padding-block: 16px; }
   .feed-list .feed-item.is-article .feed-body h2,
@@ -2390,6 +2392,53 @@ h3 {
   .feed-list .feed-excerpt { margin-top: 6px; line-height: 1.62; }
   .feed-list .tag-list { margin-top: 9px; gap: 6px; }
   .feed-list .feed-media-link { margin-top: 10px; }
+}
+@media (max-width: 600px) {
+  .feed-layout .feed-list.density-full > .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 1fr) clamp(108px, 30vw, 124px);
+    grid-template-areas:
+      "meta meta"
+      "title title"
+      "excerpt media"
+      "tags tags";
+    column-gap: 12px;
+    row-gap: 0;
+    padding-block: 14px;
+  }
+  .feed-layout .feed-list.density-full > .feed-item.is-article.has-media > .feed-body {
+    display: contents;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .entry-meta {
+    grid-area: meta;
+    min-height: 32px;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-body h2 {
+    grid-area: title;
+    margin: 4px 0 8px;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-excerpt {
+    grid-area: excerpt;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-line-clamp: 3;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media-link {
+    grid-area: media;
+    align-self: start;
+    margin: 0;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media {
+    aspect-ratio: 8 / 5;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .tag-list {
+    grid-area: tags;
+    margin-top: 9px;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media::before {
+    width: 12px;
+    height: 15px;
+  }
 }
 @media (min-width: 768px) and (max-width: 1119px) {
   .feed-list .feed-item { padding-block: 18px; }
