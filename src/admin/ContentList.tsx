@@ -4,7 +4,7 @@ import { adminApi as api } from "./api";
 import { Confirm } from "./ui";
 import type { Overview, Summary } from "./types";
 
-/** Content listing and Discussion bootstrap are one focused dashboard section. */
+/** Content search, editing entrypoints, and deletion; Discussions are isolated. */
 export function Posts({
   overview,
   onEdit,
@@ -109,58 +109,5 @@ export function Posts({
         {error && <p className="error">{error}</p>}
       </Confirm>
     </section>
-  );
-}
-
-export function Discussions({
-  overview,
-  onDone,
-  notify,
-}: {
-  overview: Overview;
-  onDone: () => void;
-  notify: (message: string) => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const { enabled, pending } = overview.discussions;
-  if (!enabled || !pending.length) return null;
-  const run = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      let created = 0;
-      for (let round = 0; round < 50; round++) {
-        const result = await api<{ created: number; remaining: number }>(
-          "/api/admin/discussions",
-          "POST",
-          {},
-        );
-        created += result.created;
-        if (!result.remaining) break;
-      }
-      notify(created ? `已为 ${created} 篇内容开启评论区。` : "评论区已全部就绪。");
-      onDone();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="banner">
-      <span>
-        {pending.length} 篇已上线的内容还没有评论区：
-        {pending
-          .slice(0, 3)
-          .map((p) => `「${p.title}」`)
-          .join("")}
-        {pending.length > 3 ? " 等" : ""}
-      </span>
-      <button onClick={run} disabled={busy}>
-        {busy ? "正在开启…" : "开启评论区"}
-      </button>
-      {error && <p className="error">{error}</p>}
-    </div>
   );
 }

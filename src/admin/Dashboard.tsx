@@ -5,7 +5,8 @@ import { ago } from "./helpers";
 import { PostEditor } from "./PostEditor";
 import { SiteEditor } from "./SiteEditor";
 import type { Overview, Session, Status } from "./types";
-import { Posts, Discussions } from "./ContentList";
+import { Posts } from "./ContentList";
+import { Discussions } from "./Discussions";
 
 /** Dashboard coordinates navigation and refresh; editors own their own unsaved state. */
 function DeployStatus({ status }: { status: Status }) {
