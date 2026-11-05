@@ -90,11 +90,13 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 - **保存/发布失败：** 先看 `src/admin/PostEditor.tsx` 或 `SiteEditor.tsx` 的表单和错误状态，再查 `form.ts` / `helpers.ts` 验证和 `api.ts` 的 CSRF/超时；服务端错误再往 `worker/admin.ts`、GitHub OID 冲突、Secrets 追踪。不要在显示组件里重写 HTTP 客户端。
 - **后台空白/无法登录：** 先查 `main.tsx` 的启动和主题初始化、`Gate.tsx` 的登录/权限状态，再查 `admin/api.ts` 会话调用，再查 `worker/auth.ts` / 配置。不要通过删除鉴权来修复。
-- **列表旧数据/构建状态不更新：** 先查 `Dashboard.tsx` 的 `latest` 请求序号、`refresh` 和 30 秒部署轮询；列表/删除/Discussion UI 则查 `ContentList.tsx`，再查 Worker 的状态接口。刷新和页面跳转由 Dashboard 负责，编辑器只通过 `onSaved` 回调发信号。
+- **列表旧数据/构建状态不更新：** 先查 `Dashboard.tsx` 的 `latest` 请求序号、`refresh` 和 30 秒部署轮询；列表搜索与删除查 `ContentList.tsx`；评论区初始化查 `Discussions.tsx` 的批处理完成/无进展/上限条件，再根据异常响应追查 `admin/api.ts` 与 `worker/admin.ts`，不要在看板里新增重试循环。刷新和页面跳转由 Dashboard 负责，编辑器只通过 `onSaved` 回调发信号。
 - **图片或 Markdown 预览异常：** 先查 `ui.tsx` 的 `Markdown` / `Preview` 和 `helpers.ts`，再查 `shared/uploads.ts`；验证 5MB 类型限制、8 张/15MB 本次保存限制及未保存警告。已有数据校验协议不做猜测性放宽。
 - **新增后台功能：** 新页面有独立状态且确有需求时才新增对应模块；UI 复用原有 `ui.tsx`，跨模块数据通过明确 props/回调和 `types.ts`，对 Worker 的调用统一走 `admin/api.ts`。新增风险测试挂在现有 `Waylan CI`，不再建新的 workflow。
 
 **第二阶段完成状态：** 已在 `main` 合并并通过自动化门禁（PR #102，合并 SHA `49de396e`）；随后 `main` push 核心检查成功。后续如果新增 `/admin` 功能，只改对应 `src/admin` 所属模块，契约测试从 `tests/admin-modules.test.ts`、`tests/admin-form.test.ts` 和 `tests/admin.test.ts` 起步。只有遇到跨端依赖或新增 HTTP 合同时，才沿 `api.ts → worker/admin.ts` 延伸排查。涉及权限、站点发布或数据删除时必须重新执行 R3 验证，不可把这次结构重构的 CI 当成永久保证。
+
+**增量补强（PR [#104](https://github.com/YohakuSama/waylan-blog/pull/104)）：** 已将内容列表和评论区初始化的前端职责隔离；只有服务端 `remaining === 0` 才允许显示完成通知。无法进展、超过 50 轮、返回非法结果均转为可见错误；添加 `tests/admin-modules.test.ts` 对这些路径进行覆盖。PR 的检查/合并与生产验证状态需以对应 GitHub 记录核实，不能仅凭本段视为完成。
 
 以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
 
