@@ -16,6 +16,28 @@
 - 保留的快照内分支包括：`main` 1 个、开放 PR 2 个、关闭未合并 PR 8 个、无 PR 记录 2 个。**不要**因为分支名看起来陈旧就删除这些分支。
 - 原始 JSON 保持清理前的事实快照，不回写成新列表；这份执行记录补充清理后的审计信息。通常不需要再手动运行 `branches-prune`。
 
+## 四阶段交付后的分支复核（2026-11-06）
+
+这是一份**新增的核验记录**，不覆盖 2026-11-05 的原始 JSON 快照。检查时（创建本次结项文档分支前）远端共 **21 条分支**：`main` 1、已合并 PR 且分支 SHA 与 PR head 完全相同 8、开放 PR 2、已关闭未合并 PR 8、未关联 PR 2。本次结项工作另创建 `docs/stage1-4-closeout-20261106` 分支，故后续实时数量会多 1；旧数字不是实时仪表盘。
+
+**仅供下一次经人工复核的候选清理（8 条，非已删除）：**
+
+| 已合并 PR | 可核对的分支 | PR head SHA |
+| --- | --- | --- |
+| [#99](https://github.com/YohakuSama/waylan-blog/pull/99) | `ops/actions-budget-and-branch-archive-20261105` | `30385ae62ba254667267ee118918af7a9d26e9fa` |
+| [#100](https://github.com/YohakuSama/waylan-blog/pull/100) | `docs/architecture-traceability-20261105` | `151256b28655e1b9788a54a669bf899369370c18` |
+| [#101](https://github.com/YohakuSama/waylan-blog/pull/101) | `refactor/reader-feature-boundaries-20261105` | `573c513db70457d494f16c2610fa6539077491ac` |
+| [#102](https://github.com/YohakuSama/waylan-blog/pull/102) | `refactor/admin-feature-boundaries-20261105` | `7edeb4f09b843ca1964844c5fb4d4555f36d768c` |
+| [#103](https://github.com/YohakuSama/waylan-blog/pull/103) | `docs/admin-stage2-verified-record-20261105` | `8b07b478d3f2a93a9268814c074e13e82faa003b` |
+| [#104](https://github.com/YohakuSama/waylan-blog/pull/104) | `refactor/admin-discussions-boundary-20261105` | `11db99857139eb2ee5c1475c64aeafedebcb3fc3` |
+| [#105](https://github.com/YohakuSama/waylan-blog/pull/105) | `refactor/css-ownership-cascade-20261105` | `e92e05255428f427a39df8182e843e3f595352a1` |
+| [#106](https://github.com/YohakuSama/waylan-blog/pull/106) | `refactor/worker-content-repository-20261105` | `f5263384c5e3f5f72dadf762fd50c45e2e359518` |
+
+- **禁止**把此表当成删除授权。删除前必须再次查询真实 ref SHA、分支保护、PR 合并状态及是否新建开放 PR；若 SHA 变化，停止并人工审查。
+- 当前 `scripts/branch-maintenance.mjs` 仍指向 **2026-11-05 的不可变历史快照**，再次选择旧 `branches-prune` **不会删除上面这 8 条新候选**。如需要新一轮批量清理，先建立新的有审计记录的快照并验证运行脚本；本次不为清理 8 条分支增设工作流或修改脚本。
+- [PR #57](https://github.com/YohakuSama/waylan-blog/pull/57) 和 [PR #23](https://github.com/YohakuSama/waylan-blog/pull/23) 仍开放；其他 8 条已关闭但未合并与 2 条未关联分支均在保护范围内，禁止仅凭“日期旧”或“名字像测试”删除。
+- 已合并的 Git commit 与 PR 可以通过 GitHub 历史追溯，**分支清理不等于删除项目维护历史**。本次仅新增档案，未运行删除操作。
+
 ## 例外分支（不允许自动删除）
 
 | 类型 | 分支 | PR | SHA |
