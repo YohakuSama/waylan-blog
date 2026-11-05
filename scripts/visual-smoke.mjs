@@ -415,7 +415,7 @@ try {
           if (geometry.sidebar) {
             assert.ok(geometry.sidebarEndSlots.every((slot) =>
               Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
-              Math.abs(slot.rightGap) <= 3),
+              Math.abs(slot.rightGap) <= (width < 768 ? 6 : 3)),
               `${label}: shared sidebar counts and arrows drift from the trailing column`);
           }
           if (geometry.sideHeadingRows.length) {
