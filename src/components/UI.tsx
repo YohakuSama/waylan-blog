@@ -7,10 +7,10 @@ import {
   type ImgHTMLAttributes,
 } from "react";
 import { ArrowUpRight, Check, Copy, MessageSquare, X } from "lucide-react";
-import { animateDialog, animateElement } from "../lib/motion";
+import { animateDialog, animateElement, motionAllowed } from "../lib/motion";
 import { assetURL } from "../lib/runtime";
 import { useReveal } from "../lib/reveal";
-import { Link, motionOK } from "../lib/router";
+import { Link } from "../lib/router";
 import { posts, site, topicName, dateLabel } from "../lib/data";
 import type { Comment, Post } from "../../shared/types";
 export function EchoMark({ className = "" }: { className?: string }) {
@@ -158,7 +158,7 @@ export function Dialog({
         if (focusContainer) dialog.focus({ preventScroll: true });
         else initialFocus?.current?.focus({ preventScroll: true });
       }
-      if (motionOK()) {
+      if (motionAllowed()) {
         fadeBackdrop(0, 1, 240);
         animation.current = animateDialog(
           dialog,
@@ -181,7 +181,7 @@ export function Dialog({
           priorFocus.current.focus({ preventScroll: true });
         onClosedRef.current?.();
       };
-      if (motionOK()) {
+      if (motionAllowed()) {
         fadeBackdrop(1, 0, 200);
         animation.current = animateDialog(
           dialog,
