@@ -85,12 +85,24 @@ R0 文档 PR 可按需缩减模板；R3 高风险 PR 不得省略数据/权限�
 
 GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/actions/concepts/billing-and-usage) 为准；安全生命周期可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final)。这些是风险导向的参考，不构成项目已取得政府或企业认证的声明。
 
+
+### 后台第二阶段维护索引与故障处置
+
+- **保存/发布失败：** 先看 `src/admin/PostEditor.tsx` 或 `SiteEditor.tsx` 的表单和错误状态，再查 `form.ts` / `helpers.ts` 验证和 `api.ts` 的 CSRF/超时；服务端错误再往 `worker/admin.ts`、GitHub OID 冲突、Secrets 追踪。不要在显示组件里重写 HTTP 客户端。
+- **后台空白/无法登录：** 先查 `main.tsx` 的 Gate 和主题初始化、`admin/api.ts` 会话调用，再查 `worker/auth.ts` / 配置。不要通过删除鉴权来修复。
+- **列表旧数据/构建状态不更新：** 先查 `Dashboard.tsx` 的 `latest` 请求序号、`refresh` 和 30 秒部署轮询，再查 Worker 的状态接口。刷新和页面跳转由 Dashboard 负责，编辑器只通过 `onSaved` 回调发信号。
+- **图片或 Markdown 预览异常：** 先查 `ui.tsx` 的 `Markdown` / `Preview` 和 `helpers.ts`，再查 `shared/uploads.ts`；验证 5MB 类型限制、8 张/15MB 本次保存限制及未保存警告。已有数据校验协议不做猜测性放宽。
+- **新增后台功能：** 新页面有独立状态且确有需求时才新增对应模块；UI 复用原有 `ui.tsx`，跨模块数据通过明确 props/回调和 `types.ts`，对 Worker 的调用统一走 `admin/api.ts`。新增风险测试挂在现有 `Waylan CI`，不再建新的 workflow。
+
+以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
+
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
 
 | 日期 | PR / 证据 | 责任范围和结果 | 验证与未确认项 |
 | --- | --- | --- | --- |
 | 2026-11-05 | [#98](https://github.com/YohakuSama/waylan-blog/pull/98) | 六页面拆分，独立后台 API，统一动效调用与 CSS 入口；修复阅读器相关交互 | 对应 PR CI 已通过；生产站点是否部署以实际 Cloudflare 记录为准 |
 | 2026-11-05 | [#99](https://github.com/YohakuSama/waylan-blog/pull/99)、[分支维护运行](https://github.com/YohakuSama/waylan-blog/actions/runs/42034859036) | 7 个 Actions YAML 合为 1 个，85 个已合并遗留分支安全删除；保留未合并/开放 PR | 主分支与文档-only CI 成功；实际月度分钟节省应日后对比 Usage |
+| 2026-11-05 | 后台第二阶段拆分（`refactor/admin-feature-boundaries-20261105`，以对应 PR 为准） | `main.tsx` 仅保留登录/主题闸门；`Dashboard.tsx` 管理页面/部署状态/列表；`PostEditor.tsx`、`SiteEditor.tsx` 拥有独立表单与保存事务；公共组件/上传校验分别归 `ui.tsx` / `helpers.ts`，DTO 在 `types.ts`。没有修改服务器 API 或数据。 | 应核对 `tests/admin-modules.test.ts`、`admin-form.test.ts`、`admin.test.ts`、`quality-smoke.mjs` 和完整 `Waylan CI`；**合并、线上部署及生产登录验证分别以实际证据为准**；回滚仅需恢复本 PR 的前端代码，无数据库逆迁移 |
 | 2026-11-05 | 阅读器功能解耦（本轮独立 PR，关联提交见 Git 历史） | `Reader` 保留入口与全局交互；独立 `features/reader` 与 `features/discussions`；评论树显式 `postId` 传递，公共 Markdown 渲染不再重复 | 本轮提交必须由 `Waylan CI` 验证，再核对三端双皮肤、编辑/分页/选区；未确认线上部署前不得标记已发布 |
 | 2026-11-05 | 本维护手册及 [ARCHITECTURE.md](ARCHITECTURE.md) | 建立模块责任、故障定位、渐进拆分、PR 和私有转换规则；**只有文档规划，未修改业务代码** | 此条由对应文档 PR 与 Git 历史追踪；后续拆分按阶段单独验收 |
 
