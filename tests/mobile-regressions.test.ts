@@ -80,8 +80,8 @@ describe("mobile reader regression contracts", () => {
       "opening notifications and resuming the phone must refresh without stale requests racing");
   });
   it("does not clip the script wordmark in the narrow header", () => {
-    assert.match(shell, /\.brand \{ overflow: visible; \}/);
-    assert.match(shell, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
+    assert.match(responsive, /\.brand \{ overflow: visible; \}/);
+    assert.match(responsive, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
   });
   it("gives phone feed rows their full width without a spare arrow column", () => {
     const narrow = responsive.slice(responsive.indexOf("@media (max-width: 767px)"));
