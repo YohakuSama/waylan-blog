@@ -5,7 +5,13 @@ import { runInNewContext } from "node:vm";
 import { posts } from "../src/lib/data";
 
 const style = readFileSync("src/styles.css", "utf8");
-const site = readFileSync("src/styles/site.css", "utf8");
+const shell = readFileSync("src/styles/shell.css", "utf8");
+const feed = readFileSync("src/styles/feed.css", "utf8");
+const sideRules = readFileSync("src/styles/sidebar.css", "utf8");
+const pagesCss = readFileSync("src/styles/site.css", "utf8");
+const responsive = readFileSync("src/styles/responsive.css", "utf8");
+// Negative assertions guard the full old site surface, not just one owner.
+const allSite = [shell, feed, sideRules, pagesCss, responsive].join("\n");
 const motion = readFileSync("src/styles/motion.css", "utf8");
 const skins = readFileSync("src/styles/skins.css", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
@@ -58,8 +64,8 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!css.includes('font: 600 15px var(--font-mono);') &&
       !css.includes('font-size: 13px;\n    min-width: 0;'),
       "small legacy terminal font-size overrides must be removed");
-    assert.ok(site.includes('--masthead-wordmark-height: 38px;') &&
-      site.includes('--masthead-wordmark-height: 32px;'));
+    assert.ok(shell.includes('--masthead-wordmark-height: 38px;') &&
+      responsive.includes('--masthead-wordmark-height: 32px;'));
   });
   it("keeps notification readiness and inbox refresh responsive to real configuration", () => {
     const bell = readFileSync("src/components/NotificationBell.tsx", "utf8");
@@ -74,11 +80,11 @@ describe("mobile reader regression contracts", () => {
       "opening notifications and resuming the phone must refresh without stale requests racing");
   });
   it("does not clip the script wordmark in the narrow header", () => {
-    assert.match(site, /\.brand \{ overflow: visible; \}/);
-    assert.match(site, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
+    assert.match(shell, /\.brand \{ overflow: visible; \}/);
+    assert.match(shell, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
   });
   it("gives phone feed rows their full width without a spare arrow column", () => {
-    const narrow = site.slice(site.indexOf("@media (max-width: 767px)"));
+    const narrow = responsive.slice(responsive.indexOf("@media (max-width: 767px)"));
     assert.ok(narrow.includes(".feed-item .feed-arrow { display: none; }"));
     assert.ok(narrow.includes('grid-template-areas: "body" "media";'));
     assert.ok(narrow.includes("grid-template-columns: minmax(0, 1fr);"));
@@ -187,43 +193,43 @@ describe("mobile reader regression contracts", () => {
       "the action cannot remain inside the scrollable body");
   });
   it("gives both mobile skins a separated navigation layer without rails touching content", () => {
-    assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
+    assert.doesNotMatch(allSite, /#site-nav::(?:before|after)/);
     assert.doesNotMatch(skins, /#site-nav::(?:before|after)/);
-    assert.doesNotMatch(site, /--nav-divider-inset/);
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'),
+    assert.doesNotMatch(allSite, /--nav-divider-inset/);
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) .header-inner::before'),
       "rounded skin gets a brand/navigation separator");
     assert.ok(skins.includes('.site-header:not(.site-header-reader) .header-inner::before'),
       "terminal skin also gets its own brand/navigation separator");
     assert.ok(skins.includes('border-top: 1px dashed color-mix(in srgb, var(--line-strong) 40%, transparent);'),
       "terminal divider is muted and does not touch content");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav {') &&
-      site.includes('background: transparent;') && site.includes('padding-inline: 0;'),
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) #site-nav {') &&
+      responsive.includes('background: transparent;') && responsive.includes('padding-inline: 0;'),
       "both navigation rows must stay visually integrated with their toolbars");
     assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
     assert.ok(skins.includes('border-bottom-color: transparent;'),
       "terminal masthead must not draw a dash across first paragraph");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
-      site.includes('padding-top: 22px;'),
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
+      responsive.includes('padding-top: 22px;'),
       "both skins must share identical 22px intro spacing without modifying article layout");
-    assert.ok(site.includes('height: 40px; margin-block: 1px;') &&
+    assert.ok(responsive.includes('height: 40px; margin-block: 1px;') &&
       skins.includes('border-radius: 0;'),
       "both skins must share the same 40px nav height with terminal square corners");
     assert.match(skins, /\.header-inner::before\s*\{\s*content:\s*none;/,
       "narrow phone tools cannot be crossed by the divider");
   });
   it("keeps mobile navigation visually unified while leaving the reader masthead untouched", () => {
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-inner::before'));
-    assert.ok(site.includes('top: calc(var(--header-bar-height) - 5px);'));
-    assert.ok(site.includes('background: linear-gradient(90deg,'));
-    assert.ok(site.includes('color-mix(in srgb, var(--line-strong) 35%, transparent)'));
-    assert.ok(site.includes('.site-header:not(.site-header-reader) #site-nav'));
-    assert.ok(site.includes('padding-inline: 0;') && site.includes('background: transparent;'));
-    assert.doesNotMatch(site, /#site-nav::(?:before|after)/);
-    const narrowNav = site.slice(site.indexOf("@media (max-width: 370px)"));
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) .header-inner::before'));
+    assert.ok(responsive.includes('top: calc(var(--header-bar-height) - 5px);'));
+    assert.ok(responsive.includes('background: linear-gradient(90deg,'));
+    assert.ok(responsive.includes('color-mix(in srgb, var(--line-strong) 35%, transparent)'));
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) #site-nav'));
+    assert.ok(responsive.includes('padding-inline: 0;') && responsive.includes('background: transparent;'));
+    assert.doesNotMatch(allSite, /#site-nav::(?:before|after)/);
+    const narrowNav = responsive.slice(responsive.indexOf("@media (max-width: 370px)"));
     assert.match(narrowNav,
       /\.site-header:not\(\.site-header-reader\) \.header-inner::before\s*\{\s*content:\s*none;/,
       "narrow phone tools must not be crossed by a decorative divider");
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
+    assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
   });
   it("keeps quiet article actions without a moving overlay", () => {
@@ -286,49 +292,49 @@ describe("mobile reader regression contracts", () => {
     assert.ok(!reader.includes('aria-label={`正文字号'),
       "font control must not clutter the byline");
     assert.doesNotMatch(app, /reader-global-menu-trigger|reader-global-menu/);
-    assert.doesNotMatch(site, /\.reader-global-menu/);
-    assert.ok(site.includes('.site-header-reader .header-tools .icon-button'));
-    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'));
+    assert.doesNotMatch(allSite, /\.reader-global-menu/);
+    assert.ok(responsive.includes('.site-header-reader .header-tools .icon-button'));
+    assert.ok(responsive.includes('.site-header-reader .header-tools .notification-root'));
     assert.ok(!app.includes('className="brand-tagline"'),
       "readers keep their single Waylan logo, without a crowded slogan");
-    assert.ok(site.includes('.site-header-reader .header-tools .notification-root'),
+    assert.ok(responsive.includes('.site-header-reader .header-tools .notification-root'),
       "all four direct reader shortcuts remain available on phones");
-    assert.ok(site.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
-    assert.ok(site.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'));
-    assert.ok(site.includes('.site-header-reader .brand-wordmark'));
+    assert.ok(responsive.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
+    assert.ok(responsive.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
+    assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'));
+    assert.ok(responsive.includes('.site-header-reader .brand-wordmark'));
   });
   it("uses the header width for navigation and search instead of an extra motto", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     assert.ok(!app.includes('className="brand-rule"') &&
       !app.includes('className="brand-tagline"'), "no small inline slogan beside the logo");
-    assert.ok(site.includes("grid-template-columns: auto minmax(0, 1fr) auto;"),
+    assert.ok(shell.includes("grid-template-columns: auto minmax(0, 1fr) auto;"),
       "desktop masthead should flex the navigation between logo and actions");
-    assert.ok(site.includes('.site-header:not(.site-header-reader) .header-search-text { display: inline; }'),
+    assert.ok(responsive.includes('.site-header:not(.site-header-reader) .header-search-text { display: inline; }'),
       "tablet and wider phone header should use available width for a labeled search");
-    assert.ok(site.includes('grid-template-rows: var(--header-bar-height) 43px;'),
+    assert.ok(responsive.includes('grid-template-rows: var(--header-bar-height) 43px;'),
       "320px phones share the same logo/controls row and a separate navigation row");
-    assert.ok(site.includes('.site-header-reader #site-nav { display: none; }'),
+    assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'),
       "article masthead must not duplicate the global destinations");
   });
   it("shares masthead sizing across the home and immersive article views", () => {
     assert.ok(app.includes('post ? "site-header site-header-reader" : "site-header"'),
       "the same App Shell should render both headers");
-    assert.ok(site.includes('--header-control-size: 44px;') &&
-      site.includes('--masthead-wordmark-height: 38px;') &&
-      site.includes('--header-bar-height: 68px;'),
+    assert.ok(shell.includes('--header-control-size: 44px;') &&
+      shell.includes('--masthead-wordmark-height: 38px;') &&
+      shell.includes('--header-bar-height: 68px;'),
       "logo, row and tap sizes must be shared tokens");
-    assert.ok(site.includes('--header-height: 104px; --header-bar-height: 60px;'),
+    assert.ok(responsive.includes('--header-height: 104px; --header-bar-height: 60px;'),
       "phone header must use a 60px masthead plus the home navigation");
-    assert.ok(site.includes('--masthead-wordmark-height: 32px;'),
+    assert.ok(responsive.includes('--masthead-wordmark-height: 32px;'),
       "the same 32px wordmark must apply to both phone views");
-    assert.ok(site.includes('height: var(--header-bar-height);') &&
-      site.includes('height: var(--masthead-wordmark-height);'),
+    assert.ok(responsive.includes('height: var(--header-bar-height);') &&
+      responsive.includes('height: var(--masthead-wordmark-height);'),
       "article header and logo must inherit the same dimensions as home");
-    assert.ok(site.includes('flex: 0 0 var(--header-control-size);'),
+    assert.ok(responsive.includes('flex: 0 0 var(--header-control-size);'),
       "notification icon must not be narrower in reader mode");
-    assert.ok(!site.includes('height: 56px;\n    position: sticky;') &&
-      !site.includes('.site-header-reader .brand-wordmark { height: 26px; }'),
+    assert.ok(!allSite.includes('height: 56px;\n    position: sticky;') &&
+      !allSite.includes('.site-header-reader .brand-wordmark { height: 26px; }'),
       "remove old 56px reader header and squeezed 26px logo overrides");
     assert.ok(style.includes('--reader-brand-height: var(--header-bar-height);'),
       "toc, reading-progress and scroll offsets should track the same masthead height");
@@ -344,11 +350,11 @@ describe("mobile reader regression contracts", () => {
       footer.includes('className="footer-stats mono"') &&
       footer.includes('className="footer-links"'),
       "the footer must remain a practical site colophon");
-    assert.ok(site.includes('grid-template-areas: "copy links";') &&
-      site.includes('grid-template-areas: "copy" "links";'),
+    assert.ok(pagesCss.includes('grid-template-areas: "copy links";') &&
+      responsive.includes('grid-template-areas: "copy" "links";'),
       "desktop/tablet and phone footers must follow one coherent two-row system");
-    assert.ok(!site.includes('Waylan Great Vibes') &&
-      !site.includes('"copy brand"') && !site.includes('"links brand"') &&
+    assert.ok(!allSite.includes('Waylan Great Vibes') &&
+      !allSite.includes('"copy brand"') && !allSite.includes('"links brand"') &&
       !skins.includes('.footer-terminal-wordmark'),
       "obsolete second-brand typography and layouts should be removed");
     assert.ok(pages.includes('className="about-motto"') &&
@@ -369,14 +375,14 @@ describe("mobile reader regression contracts", () => {
     assert.ok(sidebar.includes('className="sidebar-row-end"') &&
       !sidebar.includes('ArrowUpRight'),
       "internal sidebar navigation must use one right-arrow convention");
-    assert.ok(site.includes('--sidebar-end-slot: 28px;') &&
-      site.includes('.site-sidebar .explore-count {') &&
-      site.includes('.site-sidebar .sidebar-note summary::after {') &&
-      site.includes('.site-sidebar .sidebar-row-end {'),
+    assert.ok(sideRules.includes('--sidebar-end-slot: 28px;') &&
+      sideRules.includes('.site-sidebar .explore-count {') &&
+      sideRules.includes('.site-sidebar .sidebar-note summary::after {') &&
+      sideRules.includes('.site-sidebar .sidebar-row-end {'),
       "theme-independent side-rail controls must align");
-    assert.ok(site.includes('.home-sidebar .home-reading-note summary { min-height: 44px; }'));
-    assert.ok(site.includes('@media (min-width: 768px) and (max-width: 1119px)') &&
-      site.includes('grid-column: 1 / -1;'),
+    assert.ok(shell.includes('.home-sidebar .home-reading-note summary { min-height: 44px; }'));
+    assert.ok(responsive.includes('@media (min-width: 768px) and (max-width: 1119px)') &&
+      responsive.includes('grid-column: 1 / -1;'),
       "tablet discovery disclosure spans both columns");
     assert.ok(shelf.includes('footerTop > visibleBottom - 56') &&
       shelf.includes('window.visualViewport?.addEventListener("resize", check)'),
@@ -473,10 +479,10 @@ describe("mobile reader regression contracts", () => {
     assert.ok(page.includes('className="resume-preview-title"') &&
       page.includes('className="resume-progress resume-preview-progress"'),
       "the placeholder must render the remembered card without changing server markup");
-    assert.ok(site.includes(':root[data-resume-pending="true"] .home-resume-placeholder {') &&
-      site.includes("min-height: 56px;") &&
-      site.includes("--resume-preload-title") &&
-      site.includes("--resume-preload-progress"),
+    assert.ok(shell.includes(':root[data-resume-pending="true"] .home-resume-placeholder {') &&
+      shell.includes("min-height: 56px;") &&
+      shell.includes("--resume-preload-title") &&
+      shell.includes("--resume-preload-progress"),
       "first-paint placeholder must hold the real card geometry and text");
     const sample = { slug: "test-post", title: "静态优先 · 阅读进度", progress: 12 };
     for (const saved of [sample, null, { ...sample, progress: 100 }]) {
