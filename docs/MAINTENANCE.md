@@ -94,6 +94,8 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 - **图片或 Markdown 预览异常：** 先查 `ui.tsx` 的 `Markdown` / `Preview` 和 `helpers.ts`，再查 `shared/uploads.ts`；验证 5MB 类型限制、8 张/15MB 本次保存限制及未保存警告。已有数据校验协议不做猜测性放宽。
 - **新增后台功能：** 新页面有独立状态且确有需求时才新增对应模块；UI 复用原有 `ui.tsx`，跨模块数据通过明确 props/回调和 `types.ts`，对 Worker 的调用统一走 `admin/api.ts`。新增风险测试挂在现有 `Waylan CI`，不再建新的 workflow。
 
+**第二阶段完成状态：** 已在 `main` 合并并通过自动化门禁（PR #102，合并 SHA `49de396e`）；随后 `main` push 核心检查成功。后续如果新增 `/admin` 功能，只改对应 `src/admin` 所属模块，契约测试从 `tests/admin-modules.test.ts`、`tests/admin-form.test.ts` 和 `tests/admin.test.ts` 起步。只有遇到跨端依赖或新增 HTTP 合同时，才沿 `api.ts → worker/admin.ts` 延伸排查。涉及权限、站点发布或数据删除时必须重新执行 R3 验证，不可把这次结构重构的 CI 当成永久保证。
+
 以上是**代码定位与后续维护规则**，不是“所有后台场景已在生产环境实测”的声明。涉及发布、删除、OAuth 或上传等写操作，仍须遵守原有 R3 风险验证标准。
 
 ## 重要维护记录（只记录影响边界的重大维护，避免文档噪音）
@@ -102,7 +104,7 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 | --- | --- | --- | --- |
 | 2026-11-05 | [#98](https://github.com/YohakuSama/waylan-blog/pull/98) | 六页面拆分，独立后台 API，统一动效调用与 CSS 入口；修复阅读器相关交互 | 对应 PR CI 已通过；生产站点是否部署以实际 Cloudflare 记录为准 |
 | 2026-11-05 | [#99](https://github.com/YohakuSama/waylan-blog/pull/99)、[分支维护运行](https://github.com/YohakuSama/waylan-blog/actions/runs/42034859036) | 7 个 Actions YAML 合为 1 个，85 个已合并遗留分支安全删除；保留未合并/开放 PR | 主分支与文档-only CI 成功；实际月度分钟节省应日后对比 Usage |
-| 2026-11-05 | [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 后台第二阶段解耦 | `main.tsx` 仅保留挂载与主题同步；`Gate.tsx` 保留身份验证和权限提示；`Dashboard.tsx` 管理页面/部署状态；`ContentList.tsx` 管理内容列表、删除与 Discussion；`PostEditor.tsx`、`SiteEditor.tsx` 拥有独立表单与保存事务；公共组件/上传校验分别归 `ui.tsx` / `helpers.ts`，DTO 在 `types.ts`。没有修改服务器 API 或数据。 | CI 结果、合并提交请查 PR #102 的检查与 Git 历史：必须覆盖 `tests/admin-modules.test.ts`、`admin-form.test.ts`、`admin.test.ts`、`quality-smoke.mjs` 和完整 `Waylan CI`；**合并、线上部署及生产登录验证分别以实际证据为准**；回滚仅需恢复本 PR 的前端代码，无数据库逆迁移 |
+| 2026-11-05 | [PR #102](https://github.com/YohakuSama/waylan-blog/pull/102) · [PR CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381) · [main CI #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) | 管理后台按职责拆分：`main` 启动、`Gate` 会话/CSRF、`Dashboard` 看板刷新、`ContentList` 列表/删除/Discussion、`PostEditor` / `SiteEditor` 独立表单；`ui` / `helpers` / `types` 公共能力集中。**已合并 SHA `49de396e`**，未改后台 API、OID 乐观锁、Worker、D1 与上传协议。 | PR head `7edeb4f0` 的核心构建/单测、管理权限与保存合同测试、多端视觉、Chromium/Firefox/WebKit 后台交互和 WCAG **成功**；main 核心检查成功。阅读器/摘录/动效专项因按需分类跳过。**生产部署、真实 OAuth 登录、GitHub 写入与 Cloudflare 上传尚未单独验证**。如回归，审核后可 revert 该 squash commit 并重新部署；无 D1 反向迁移。 |
 | 2026-11-05 | [#101](https://github.com/YohakuSama/waylan-blog/pull/101) · [CI #42040153620](https://github.com/YohakuSama/waylan-blog/actions/runs/42040153620) | 阅读器入口保持，独立 `features/reader` 与 `features/discussions`；评论树显式 `postId` 传递、评论 Markdown 统一渲染；合并提交 `31797ff3` | PR 检查及合并后 main 核心检查通过，涵盖三端、四种外观、阅读器、选区、跨浏览器；**生产站点部署及真实登录/评论写入未单独确认** |
 | 2026-11-05 | 本维护手册及 [ARCHITECTURE.md](ARCHITECTURE.md) | 建立模块责任、故障定位、渐进拆分、PR 和私有转换规则；**只有文档规划，未修改业务代码** | 此条由对应文档 PR 与 Git 历史追踪；后续拆分按阶段单独验收 |
 
