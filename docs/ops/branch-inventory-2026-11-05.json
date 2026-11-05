@@ -684,14 +684,6 @@
       "mergedAt": null
     },
     {
-      "name": "ops/actions-budget-and-branch-archive-20261105",
-      "sha": "e82999b23dd9dcc9dc116accd5d188a758548bca",
-      "kind": "unlinked",
-      "protected": false,
-      "pr": null,
-      "mergedAt": null
-    },
-    {
       "name": "ops/manual-cloudflare-deploy-fallback-20261104",
       "sha": "d9781977a8792f0b3473b44d21f470964cd819c8",
       "kind": "open-pr",
