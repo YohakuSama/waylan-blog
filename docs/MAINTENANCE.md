@@ -153,6 +153,12 @@ GitHub Actions 计费以 [GitHub 官方说明](https://docs.github.com/en/action
 
 **B 实际验收与合并：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109)，最终分支版本 `c53ce4e1ce6977dce3485674efe3d27d3223662b`，在已合并 A 的 `main` 基础上通过 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817)：类型/构建、全部单元与 Worker 合同、SSR/离线检查、三端视觉、Chromium/Firefox/WebKit 及 WCAG。squash 合并 SHA `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原始 CI #42073247868 新增模块测试因为断言使用了不存在的局部变量名而失败（300/301 项通过），仅修正测试，业务代码未改。回滚为审查后单独 revert 此合并提交并重新部署；不回滚 D1 数据，也不能通过回滚自动撤销已经发布到 GitHub 的评论。
 
+### D：经核对的存储读取与缓存时钟去重（2026-11-06，PR 待验收）
+
+- **依据**：`storage.get` 与 `transient.get` 重复相同 JSON.parse / 回退逻辑，但 API 写入语义不同（前者返回 true/false，后者原样返回 void），不能把整套存储接口合并；`worker/github.ts::cacheGet` 额外计算 `Math.floor(Date.now()/1000)`，项目已有 `worker/types.ts::now`。
+- **处理**：仅抽私有惰性 `readJSON`，既不提前触碰浏览器存储，又在访问全局对象、读取或 JSON 解析抛错时保持 fallback；原 `set/remove` 实现完全不动。缓存仅复用同语义 `now()`，原 TTL、stale 条件及 SQL 不变。
+- **验证/回滚**：新增 `tests/storage-contract.test.ts` 检查两个后端互不串值、读错/缺失/受限访问、原 return 值；原 Worker SQLite/API/缓存契约、`npm run check`、离线构建、三端和三浏览器/阅读器回归必须通过。若有回归单独 revert 本 PR，不能声称覆盖了真实 Safari、Cloudflare 部署、OAuth 或生产 D1。无新依赖、工作流、迁移或协议。
+
 ### 四阶段结项核验（2026-11-06，代码与自动化层面）
 
 **结项范围**：P1～P4 在各自 PR 中约定的**首批职责拆分**已经合并。不是宣告所有大文件均已拆完，也不是 Cloudflare 生产部署/真实数据写入验收成功。所有依据以 GitHub PR、提交 SHA 和对应 Actions 运行结果为准。

@@ -1,6 +1,6 @@
 import type { Anchor, Annotation, Comment } from "../shared/types";
 import { validAnchor } from "../shared/anchors";
-import { HttpError, type Env, type DiscussionMap } from "./types";
+import { HttpError, now, type Env, type DiscussionMap } from "./types";
 export const COMMENT_FIELDS = `id body url createdAt updatedAt author { login avatarUrl url }`;
 export const REPLY_FIELDS = `replies(first:3) { totalCount pageInfo { hasNextPage endCursor } nodes { ${COMMENT_FIELDS} } }`;
 export async function github<T>(
@@ -126,7 +126,7 @@ export async function cacheGet<T>(
   postId: string,
   ttl = 60,
 ): Promise<T & { stale?: boolean }> {
-  const time = Math.floor(Date.now() / 1000);
+  const time = now();
   const cached = await env
     .DB!.prepare(
       "SELECT payload,expires_at,stale_until FROM api_cache WHERE cache_key=?",

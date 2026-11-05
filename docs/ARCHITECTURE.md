@@ -173,6 +173,12 @@ HTTP request → worker/index.ts → worker/admin.ts
 
 **B 验收与结构审计（2026-11-06）：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 在 A 已合并的最新 `main` 上复验，最终 PR head `c53ce4e1ce6977dce3485674efe3d27d3223662b` 经 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) 的类型、构建、单元/Worker HTTP 契约、离线、布局、Chromium/Firefox/WebKit 和 WCAG 检查通过；squash 合并提交 `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原 `persistWrite/writeComment/manageComment` 及最近回声逻辑搬移后逐段对比一致；校验函数仅更改导出位置。首轮 CI #42073247868 由于新增的静态测试错误匹配变量名而失败（300/301 测试通过）；修正断言并重新完整验收后合并。前后依赖方向：原 `index.ts → comments.ts(读+写+仓库核验)`，现 `index.ts → comments.ts(写入/兼容导出) → comment-reads.ts(公开读取)`，读写共同依赖 `comment-shared.ts`，`comment-shared.ts` 不反向引用读取或写入模块；`github.ts` 传输和缓存仍单例复用。未增加 migrations、npm 依赖或 CI 工作流。
 
+### D：跨模块冗余核查与重复读取约束（2026-11-06，PR 待验收）
+
+- **确认的重复**：`src/lib/storage.ts` 中 persistent storage 与 session storage 具有逐字一致的 JSON 解码、缺失键 fallback、非法 JSON 及拒绝访问处理；`worker/github.ts` 的缓存 TTL 时间戳与已有的 `worker/types.ts::now()` 使用完全相同的秒时间计算。
+- **最小处置**：保留公开 `storage/transient` 接口和失败返回值差异、现有 `echo:` 前缀及 local/session 相互隔离，只用私有 `readJSON(read, fallback)` 复用读取语义；Worker 缓存直接引用已有 `now()`，不改变 D1 查询、过期/stale 窗口、GitHub transport、API 或共享平台依赖。
+- **审核边界**：此次不对 `Reader` 原生 Safari 触摸状态、Worker 评论幂等流程或 CSS 级联做无证据重写；针对可确认重复改动，并通过真实函数测试与原 Worker/阅读器 CI 门禁证明行为保留。全仓审查不等于“所有可能冗余已消除”。
+
 ### 目标模块组织（渐进方案，**仅部分实施**）
 
 先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：
