@@ -258,21 +258,28 @@ describe("React navigation and reading interactions (DOM integration, not browse
       "the already loaded records must not require a second click");
     assert.match(document.querySelector(".reader-back")?.textContent || "", /^$/, "reader must be unmounted");
   });
-  it("returns to the homepage that opened a post instead of the last feed", async () => {
+  it("returns through each visited article to the homepage that opened the first post", async () => {
     await mount("/");
     const entry = document.querySelector<HTMLAnchorElement>(".home-list .post-card-link");
     assert.ok(entry, "homepage should include a working article link");
     await click(entry);
     assert.ok(location.pathname.startsWith("/post/"));
+    const firstPath = location.pathname;
     const neighbor = document.querySelector<HTMLAnchorElement>(
       '.article-neighbors a[href^="/post/"]',
     );
-    if (neighbor) await click(neighbor);
+    if (neighbor) {
+      await click(neighbor);
+      assert.notEqual(location.pathname, firstPath);
+      await click(document.querySelector(".reader-back"));
+      await settle(100);
+      assert.equal(location.pathname, firstPath, "Back should return to the previously visited article");
+    }
     await click(document.querySelector(".reader-back"));
     await settle(100);
-    assert.equal(location.pathname, "/", "return must honor the actual starting page");
+    assert.equal(location.pathname, "/", "Back should eventually restore the actual starting page");
   });
-  it("returns to the original filtered list after visiting neighboring articles", async () => {
+  it("restores the original filtered list after returning through neighboring articles", async () => {
     await mount("/feed?topic=notes");
     const first = document.querySelector<HTMLAnchorElement>(".post-card-link")!;
     assert.ok(first, "filtered list should contain a post");
@@ -288,8 +295,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.notEqual(location.pathname, firstPath);
     await click(document.querySelector(".reader-back"));
     await settle(100);
+    assert.equal(location.pathname, firstPath,
+      "Back should revisit the immediately previous article");
+    await click(document.querySelector(".reader-back"));
+    await settle(100);
     assert.equal(location.pathname, "/feed",
-      "the Return to list control must skip already-read neighboring articles");
+      "another Back should restore the originating list");
     assert.equal(location.search, "?topic=notes",
       "return-to-list should preserve the originating filter");
   });
