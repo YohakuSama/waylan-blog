@@ -107,7 +107,8 @@ try {
       localStorage.setItem("echo:density", JSON.stringify("full"));
     });
     const page = await context.newPage();
-    page.on("pageerror", (error) => { throw error; });
+    const pageErrors = [];
+    page.on("pageerror", (error) => { pageErrors.push(error.message); });
     await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
     await page.route("**/api/status", (route) => route.fulfill({ json: { notifications: false } }));
     try {
@@ -157,6 +158,7 @@ try {
           path: `${output}/${route}-${width}.png`,
           animations: "disabled",
         });
+        assert.deepEqual(pageErrors, [], route + " " + width + ": browser runtime errors");
         console.log(`${route} ${width}px: geometry verified`);
       }
     } finally {
