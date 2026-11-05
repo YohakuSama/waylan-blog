@@ -655,14 +655,6 @@
   }
 }
 @media (max-width: 767px) {
-  .home-list .feed-item:first-child .feed-body h2 {
-    font-size: clamp(21px, 5.65vw, 24px);
-    line-height: 1.45;
-  }
-  .feed-list .feed-item.is-article .feed-body h2 {
-    font-size: clamp(21px, 5.55vw, 23px);
-    line-height: 1.43;
-  }
   /* Phone: one quiet closing column with no duplicate logo. */
   .site-footer .footer-inner {
     grid-template-columns: minmax(0, 1fr);
@@ -718,12 +710,6 @@
   .home-list .feed-excerpt { margin-top: 6px; line-height: 1.7; }
 }
 @media (max-width: 767px) {
-  .home-list .feed-item:first-child .feed-body h2,
-  .feed-list .feed-item.is-article .feed-body h2 {
-    font-size: clamp(20px, 5.15vw, 22px);
-    line-height: 1.38;
-    margin-top: 5px;
-  }
   .home-list .feed-excerpt { margin-top: 6px; line-height: 1.65; }
 }
 
