@@ -101,7 +101,8 @@ try {
 const site = JSON.parse(await readFile("content/site.json", "utf8"));
 site.socials = (site.socials || []).map(social);
 site.avatar = checkAvatar(site.avatar);
-// Draft announcements remain in the protected source repository only.
+// Drafts are excluded from public site assets. The source GitHub repository is public,
+// so do not treat unpublished entries in site.json as confidential.
 site.announcements = parseAnnouncements(site.announcements).filter((item) => item.published);
 if (site.avatar)
   await readFile(`public${site.avatar}`).catch(() => {
