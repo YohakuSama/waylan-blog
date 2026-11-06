@@ -73,9 +73,8 @@ export function Home() {
   // Detailed type/topic/sort controls belong exclusively on the content page.
   const items = newestFirstList();
   return (
-    <div className="content-grid home-grid">
-      <div className="feed-column">
-        <section className="home-hero page-heading" aria-label="站点介绍">
+    <div className="home-page">
+      <section className="home-hero page-heading" aria-label="站点介绍">
           <div className="intro-copy">
             <p className="eyebrow mono">WAYLAN / HOME</p>
             <HeroTitle />
@@ -117,6 +116,8 @@ export function Home() {
             </div>
           </div>
         )}
+      <div className="content-grid home-grid">
+        <div className="feed-column">
         {usedTopics.length > 0 && (
           <nav className="home-topic-shortcuts" aria-label="按主题浏览文章">
             <h2>主题</h2>
@@ -168,11 +169,8 @@ export function Home() {
           </ul>
         </section>
         <PopularBlock />
-        <details className="sidebar-note home-reading-note">
-          <summary>阅读与收藏小技巧</summary>
-          <p>点书签可保存待读内容，选中文字可以划线。阅读进度保存在当前浏览器，方便下次继续。</p>
-        </details>
       </aside>
+      </div>
     </div>
   );
 }
