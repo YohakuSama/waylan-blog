@@ -38,6 +38,7 @@ function sameBox(actual, expected, label) {
 }
 const results = [], notificationResults = [], baselines = new Map();
 const mastheadBaselines = new Map();
+const pageHeadingBaselines = new Map();
 const editorialLogoBaselines = new Map();
 let browser;
 try {
@@ -141,6 +142,8 @@ try {
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
               heroAction: select(".hero-browse"),
+              pageHeadingEyebrow: select(".page-heading .eyebrow"),
+              pageHeadingTitle: select(".page-heading h1"),
               types: [...document.querySelectorAll(".type-tab")].filter((el) => el.getClientRects().length).map(rect),
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
@@ -248,6 +251,30 @@ try {
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
+          // Five index-page headers share the same left edge and top position.
+          // The old mobile-only home-hero padding placed HOME 10px above the rest.
+          if (["/", "/feed", "/archive", "/projects", "/about"].includes(route)) {
+            assert.ok(geometry.pageHeadingEyebrow && geometry.pageHeadingTitle,
+              `${label}: index page heading is missing`);
+            const key = `${width}:${variant.skin}:${variant.theme}`;
+            if (route === "/") {
+              pageHeadingBaselines.set(key, {
+                eyebrow: geometry.pageHeadingEyebrow,
+                title: geometry.pageHeadingTitle,
+              });
+            } else {
+              const home = pageHeadingBaselines.get(key);
+              assert.ok(home, `${label}: homepage baseline is missing`);
+              for (const part of ["eyebrow", "title"]) {
+                const actual = part === "eyebrow" ? geometry.pageHeadingEyebrow : geometry.pageHeadingTitle;
+                const expected = home[part];
+                for (const axis of ["left", "top"]) {
+                  assert.ok(Math.abs(actual[axis] - expected[axis]) <= 1,
+                    `${label}: ${part} ${axis} differs from Home (${actual[axis]} vs ${expected[axis]})`);
+                }
+              }
+            }
+          }
           assert.equal(geometry.footerTargets.length, 4, `${label}: footer links missing`);
           assert.ok(geometry.footerTargets.every((box) => box && box.height >= 44 &&
             box.left >= 0 && box.right <= geometry.viewport + 1),
