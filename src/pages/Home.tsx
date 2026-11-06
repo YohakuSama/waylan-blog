@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen, Layers, Rss } from "lucide-react";
-import { newestFirst, posts, site } from "../lib/data";
+import { newestFirst, posts, site, usedTopics } from "../lib/data";
 import { Link } from "../lib/router";
 import { storage } from "../lib/storage";
 import { assetURL, offlinePreview } from "../lib/runtime";
 import { NetworkWave } from "../components/Network";
 import { FeedList } from "../components/Feed";
-import { SideTitle, TopicsBlock } from "../components/Sidebar";
+import { PopularBlock, SideTitle, TopicsBlock } from "../components/Sidebar";
 
 function HeroTitle() {
   return <h1 className="hero-title">首页</h1>;
@@ -117,6 +117,21 @@ export function Home() {
             </div>
           </div>
         )}
+        {usedTopics.length > 0 && (
+          <nav className="home-topic-shortcuts" aria-label="按主题浏览文章">
+            <div className="home-topic-shortcuts-head">
+              <h2>浏览主题</h2>
+              <Link href="/feed">全部内容<ArrowRight size={14} aria-hidden="true" /></Link>
+            </div>
+            <div className="home-topic-shortcuts-links">
+              {usedTopics.map((topic) => (
+                <Link href={`/feed?topic=${topic.id}`} key={topic.id}>
+                  {topic.name}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
         <section className="home-feed" aria-labelledby="latest-heading">
           <div className="home-section-head">
             <h2 id="latest-heading">最新内容</h2>
@@ -138,7 +153,7 @@ export function Home() {
         </section>
       </div>
       <aside className="site-sidebar home-sidebar" aria-label="博客导览">
-        <TopicsBlock />
+        <TopicsBlock className="home-side-topics" />
         <section className="side-block">
           <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
           <ul className="home-projects">
@@ -157,6 +172,7 @@ export function Home() {
             ))}
           </ul>
         </section>
+        <PopularBlock />
         <details className="sidebar-note home-reading-note">
           <summary>阅读与收藏小技巧</summary>
           <p>点书签可保存待读内容，选中文字可以划线。阅读进度保存在当前浏览器，方便下次继续。</p>
