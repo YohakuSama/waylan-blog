@@ -157,13 +157,15 @@ async function run(engine,browser,width){
       const controls=await page.evaluate(()=>{
         const toggle=document.querySelector(".toc-excerpt-toggle");
         const articleActions=document.querySelector(".article-actions");
+        const headerSave=document.querySelector(".article-heading-save .article-action-save");
         const site=document.querySelector(".site-header");
         return {
           inToc:!!toggle?.closest(".reader-toc"),
           noFloating:!document.querySelector(".reader-floating-tools, .reader-floating-trigger, .reader-topbar"),
           active:toggle?.getAttribute("aria-pressed"),
-          // A compact table-of-contents/reading-tools entry and save action.
+          // Keep the TOC entry in its compact row; the bookmark shares the byline.
           actionButtons:articleActions?.querySelectorAll(":scope > button").length,
+          saveVisible:!!headerSave && getComputedStyle(headerSave).display!=="none",
           position:articleActions?getComputedStyle(articleActions).position:null,
           siteVisible:!!site && getComputedStyle(site).display!=="none",
           navHidden:getComputedStyle(document.querySelector("#site-nav")).display==="none",
@@ -172,7 +174,7 @@ async function run(engine,browser,width){
       });
       record(browser,width,"quiet inline controls and optional excerpt inside directory",controls,
         !controls.inToc||!controls.noFloating||controls.active!=="false"||
-        controls.position==="sticky"||controls.actionButtons!==2||
+        controls.position==="sticky"||controls.actionButtons!==1||!controls.saveVisible||
         !controls.siteVisible||!controls.navHidden||!controls.logoVisible);
       await page.screenshot({path:dir+"/"+browser+"-"+width+"-reader-tools.png",animations:"disabled"});
     }finally{await context.close()}
