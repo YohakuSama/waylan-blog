@@ -322,6 +322,43 @@ try {
           // Capture before assertions so a failing state is available to review.
           if ([1440, 768, 390, 320].includes(width))
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
+          if (route.startsWith("/post/") && [390, 768, 1440].includes(width)) {
+            const cover = page.locator('.article-cover-image img[role="button"]').first();
+            assert.ok(await cover.count(), `${label}: image zoom entry missing`);
+            await cover.click();
+            const overlay = page.locator("dialog.image-dialog[open]");
+            await overlay.waitFor();
+            await overlay.locator("img").evaluate(image => image.decode().catch(() => {}));
+            await page.waitForTimeout(550);
+            const zoom = await overlay.evaluate(dialog => {
+              const box = dialog.getBoundingClientRect();
+              const image = dialog.querySelector("img").getBoundingClientRect();
+              const pseudo = getComputedStyle(dialog, "::after");
+              const footer = pseudo.display === "none" ? 0 :
+                (parseFloat(pseudo.height) || 0) +
+                (parseFloat(pseudo.paddingTop) || 0) +
+                (parseFloat(pseudo.paddingBottom) || 0) +
+                (parseFloat(pseudo.borderTopWidth) || 0);
+              return {
+                blank: box.bottom - image.bottom - footer,
+                centerOffset: Math.abs(box.top + box.height / 2 - innerHeight / 2),
+                radius: getComputedStyle(dialog).borderTopLeftRadius,
+                imageRight: image.right,
+                dialogRight: box.right,
+              };
+            });
+            assert.ok(Math.abs(zoom.blank) < 20,
+              `${label}: image viewer left blank space below image (${zoom.blank}px)`);
+            assert.ok(zoom.centerOffset < 30,
+              `${label}: image viewer is not vertically centered (${zoom.centerOffset}px)`);
+            assert.ok(zoom.imageRight <= zoom.dialogRight + 1,
+              `${label}: zoomed image extends outside the dialog`);
+            if (variant.skin === "terminal") {
+              assert.equal(zoom.radius, "0px", `${label}: Terminal image viewer must keep square corners`);
+            }
+            await page.keyboard.press("Escape");
+            await overlay.waitFor({ state: "hidden" });
+          }
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
           // Five index-page headers share the same left edge and top position.

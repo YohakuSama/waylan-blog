@@ -1,5 +1,6 @@
 /* Single geometry owner for src/features/reader/ImageViewer.tsx.
-   Terminal-only corners remain in skins.css; Dialog focus/animation stay shared. */
+   Terminal corners remain in skins.css; native Dialog focus/veil and
+   motion are shared (the generic backdrop wins over the old duplicate). */
 .image-dialog {
   width: min(1080px, calc(100vw - 64px));
   height: fit-content;
@@ -10,11 +11,6 @@
   box-shadow: 0 32px 110px rgba(15, 12, 20, .42);
   overflow: hidden;
   isolation: isolate;
-}
-.image-dialog::backdrop {
-  background: rgba(15, 13, 19, .73);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
 }
 .image-dialog .dialog-header {
   flex: 0 0 auto;
