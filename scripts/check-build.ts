@@ -63,7 +63,13 @@ for (const path of [
     assert(doc.body.textContent?.includes("GitHub Discussions"), "privacy discussions disclosure");
   }
   if (path === "about/index.html") {
-    assert.equal(doc.querySelectorAll(".about-details > div").length, 2, "about remains editorial");
+    assert.deepEqual(
+      [...doc.querySelectorAll(".about-details > section > h2")].map((h) => h.textContent?.trim()),
+      ["技术实现", "站点数据"],
+      "about sections should be distinct, not repeated topic lists",
+    );
+    assert(doc.querySelector(".about-stats .site-stats"), "about metrics accessible on all viewports");
+    assert.equal(doc.querySelector(".about-layout .site-sidebar"), null, "about has no duplicate discovery sidebar");
     assert.equal(doc.querySelector(".privacy-page"), null, "privacy content must stay off About");
   }
   if (path === "archive/index.html") {
