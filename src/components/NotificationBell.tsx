@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, Check, X } from "lucide-react";
 import { Link } from "../lib/router";
 import { api } from "../lib/api";
+import { AnnouncementList } from "./SiteAnnouncements";
+import type { Announcement } from "../../shared/announcements";
 
 type Item = {
   id: string;
@@ -21,13 +23,22 @@ type Inbox = {
 };
 const empty: Inbox = { enabled: false, unread: 0, items: [] };
 
-export function NotificationBell() {
+export function NotificationBell({
+  announcements = [],
+  readAnnouncements = new Set<string>(),
+  onOpenAnnouncement = () => {},
+}: {
+  announcements?: Announcement[];
+  readAnnouncements?: Set<string>;
+  onOpenAnnouncement?: (item: Announcement) => void;
+} = {}) {
   const [box, setBox] = useState<Inbox>(empty);
   const [csrf, setCsrf] = useState("");
   const [moderator, setModerator] = useState(false);
   const [success, setSuccess] = useState("");
   const [availability, setAvailability] = useState<"checking" | "enabled" | "disabled" | "error">("checking");
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"messages" | "announcements">("messages");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
@@ -201,13 +212,15 @@ export function NotificationBell() {
       setBusy(false);
     }
   };
+  const announcementUnread = announcements.filter((a) =>
+    !readAnnouncements.has(`${a.id}:${a.revision}`)).length;
   return (
     <div className="notification-root" ref={root}>
       <button
         type="button"
         className="icon-button notification-trigger"
         ref={trigger}
-        aria-label={availability === "enabled" ? `消息通知，${box.unread} 条未读` : "消息通知"}
+        aria-label={`${availability === "enabled" ? `消息通知，${box.unread} 条未读` : "消息通知"}${announcementUnread ? "，有新公告" : ""}`}
         data-tip="站内通知"
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -216,6 +229,8 @@ export function NotificationBell() {
       >
         <Bell size={18} />
         {availability === "enabled" && box.unread > 0 && <span className="notification-badge">{box.unread > 99 ? "99+" : box.unread}</span>}
+        {announcementUnread > 0 && !(availability === "enabled" && box.unread > 0) &&
+          <span className="announcement-indicator" aria-hidden="true" />}
       </button>
       {open && (
         <div id="notification-panel" className="notification-popover"
@@ -227,7 +242,21 @@ export function NotificationBell() {
               <X size={16} />
             </button>
           </header>
-          {availability !== "enabled" ? (
+          <div className="notification-tabs" role="group" aria-label="消息类型">
+            <button type="button" aria-pressed={tab === "messages"}
+              className={tab === "messages" ? "selected" : ""}
+              onClick={() => setTab("messages")}>我的消息</button>
+            <button type="button" aria-pressed={tab === "announcements"}
+              className={tab === "announcements" ? "selected" : ""}
+              onClick={() => setTab("announcements")}>公告{announcementUnread ? ` · ${announcementUnread}` : ""}</button>
+          </div>
+          {tab === "announcements" ? (
+            <AnnouncementList items={announcements} read={readAnnouncements}
+              onOpen={(item) => {
+                setOpen(false);
+                onOpenAnnouncement(item);
+              }} />
+          ) : availability !== "enabled" ? (
             <div className="notification-empty">
               <p role="status">{availability === "checking" ? "正在读取通知…" : availability === "disabled" ? "本站暂未开启消息通知。" : "暂时无法读取通知，请重试。"}</p>
               {availability !== "checking" && <button type="button" className="quiet-button" onClick={retry}>
