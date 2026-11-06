@@ -498,6 +498,8 @@
 /* The short standalone wordmark and four 44px controls fit on one
    320px row. Use the same two-row header as other phone widths. */
 @media (max-width: 370px) {
+  /* Keep all post tags visible in two rows beside the shared 44px actions on 320px terminals. */
+  .home-list .tag-list a { padding-inline: 8px; }
   .site-header:not(.site-header-reader) .header-inner {
     grid-template-rows: var(--header-bar-height) 43px;
   }
