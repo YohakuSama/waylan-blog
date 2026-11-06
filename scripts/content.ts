@@ -101,7 +101,8 @@ try {
 const site = JSON.parse(await readFile("content/site.json", "utf8"));
 site.socials = (site.socials || []).map(social);
 site.avatar = checkAvatar(site.avatar);
-site.announcements = parseAnnouncements(site.announcements);
+// Draft announcements remain in the protected source repository only.
+site.announcements = parseAnnouncements(site.announcements).filter((item) => item.published);
 if (site.avatar)
   await readFile(`public${site.avatar}`).catch(() => {
     throw new Error(`content/site.json avatar: 找不到 public${site.avatar}`);
