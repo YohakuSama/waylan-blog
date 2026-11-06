@@ -895,7 +895,7 @@ html {
      already occupies 1px in the shared height; no added layout or tab frame. */
   :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) {
     border-bottom-color: color-mix(in srgb, var(--line-strong) 32%, transparent);
-    box-shadow: 0 5px 12px -10px color-mix(in srgb, var(--ink) 17%, transparent);
+    box-shadow: 0 5px 12px -10px color-mix(in srgb, var(--veil) 45%, transparent);
   }
 
   /* Terminal uses the existing dashed visual language without a floating
