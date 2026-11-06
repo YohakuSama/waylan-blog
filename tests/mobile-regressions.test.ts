@@ -319,7 +319,7 @@ describe("mobile reader regression contracts", () => {
       "article detail must never hide part of the original summary");
     assert.doesNotMatch(mobileHeader, /\.reading-article \.article-byline\s*\{[^}]*flex-direction:\s*row/s,
       "mobile publication facts must stay below the author");
-    assert.ok(base.includes(".feed-item .feed-excerpt"),
+    assert.ok(responsive.includes(".feed-list .feed-excerpt"),
       "list previews retain their independent layout and truncation rules");
   });
 

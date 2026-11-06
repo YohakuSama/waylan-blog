@@ -113,7 +113,8 @@ test("PR visual smoke checks all skins and representative device widths, full ke
   const focused = parse("smokeWidths");
   const full = parse("fullWidths");
   assert.deepEqual(focused, [1440, 1024, 860, 768, 767, 390, 320]);
-  assert.equal(full.length, 16);
+  assert.equal(full.length, 17);
+  assert.ok(full.includes(600) && full.includes(601), "retain both sides of the former phone-cover boundary");
   for (const width of focused) assert.ok(full.includes(width));
   assert.match(workflow, /WAYLAN_VISUAL_MATRIX:/);
   assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && 'full' || 'smoke'"));

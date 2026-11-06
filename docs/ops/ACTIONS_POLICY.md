@@ -8,7 +8,7 @@
 - **开发态 Draft PR 不占用 Runner**：PR 创建为 Draft 后可集中提交、修改和代码审阅；`opened/synchronize/reopened/converted_to_draft` 的草稿检查标记跳过，不执行 npm/构建/浏览器。**提交代码并准备合并时必须点 Ready for review**，`ready_for_review` 将触发相同的正式检查；Ready 状态后再 push 提交仍执行正式门禁并取消同 PR 的旧运行。草稿无法合并。仅在仍需修改时使用 Draft，不将它当作绕过最终测试的入口。
 - 仅变更 Actions 工作流、CI 分类、已退休维护脚本时，只执行核心检查与 CI 规则单测，不无故下载 Chromium / Firefox / WebKit。
 - 有代码变更时执行 Node 24 依赖安装、TypeScript、构建、单元测试及静态完整性检查。
-- PR 的受影响 UI 模块复用同一次浏览器安装运行 Chromium、Firefox、WebKit、三端布局、WCAG、Reader、Feed、交互与动效专项；仅文档变更不安装浏览器。常规 PR 的视觉矩阵覆盖 320/390/767/768/860/1024/1440px、Editorial/Terminal × light/dark（共 196 个页面/外观组合）；`workflow_dispatch` 手动完整审计仍覆盖原有 16 个屏宽（448 个组合）。
+- PR 的受影响 UI 模块复用同一次浏览器安装运行 Chromium、Firefox、WebKit、三端布局、WCAG、Reader、Feed、交互与动效专项；仅文档变更不安装浏览器。常规 PR 的视觉矩阵覆盖 320/390/767/768/860/1024/1440px、Editorial/Terminal × light/dark（共 224 个页面/外观组合）；`workflow_dispatch` 手动完整审计覆盖 17 个屏宽（含新增 601px 边界）（544 个组合）。
 - 已验证 PR 合并后推送 `main` 只重新执行核心检查，不重复安装浏览器；手动运行执行完整审计。
 - 截图与报告仅在失败或手动完整审计时上传，产物保留 3 天。历史 CI 日志由 GitHub 管理。
 
