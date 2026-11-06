@@ -636,3 +636,36 @@ main {
 .markdown-tools .emoji-grid button { width: 100%; min-width: 0; height: 37px; font-size: 24px; }
 .markdown-tools .emoji-glyph { font-family: "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif; }
 .markdown-tools .emoji-empty { grid-column: 1/-1; text-align: center; font-size: 12px; color: var(--muted); }
+/* Site settings owns announcement authoring; no separate management surface. */
+.admin-announcements { margin: 26px 0 30px; }
+.admin-announcements > .field-hint { display: block; margin: 4px 0 16px; max-width: 70ch; }
+.announcement-editor {
+  margin: 0 0 16px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 0;
+}
+.announcement-editor legend { padding: 0 6px; font-weight: 600; }
+.announcement-editor > label,
+.announcement-editor-row label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.announcement-editor-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.announcement-editor-actions {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.announcement-editor-actions .announcement-published {
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
+}
+.announcement-editor-actions button { min-height: 40px; }
+@media (max-width: 640px) {
+  .announcement-editor-row { grid-template-columns: 1fr; gap: 0; }
+  .announcement-editor { padding-inline: 12px; }
+}
