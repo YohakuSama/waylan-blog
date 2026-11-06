@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Megaphone, X } from "lucide-react";
 import { Dialog } from "./UI";
-import { Link, useRouter } from "../lib/router";
+import { isAppRoute, Link, useRouter } from "../lib/router";
 import { storage } from "../lib/storage";
 import { site } from "../lib/data";
 import {
@@ -160,7 +160,8 @@ export function AnnouncementDetail({
             ) : (
               <Link href={item.link} onClick={(event) => {
                 if (event.button !== 0 || event.ctrlKey || event.metaKey ||
-                    event.shiftKey || event.altKey) return;
+                    event.shiftKey || event.altKey ||
+                    !isAppRoute(new URL(item.link, location.href).pathname)) return;
                 // Close the native top layer before routing, so its dimmed
                 // snapshot cannot bleed into the next page's transition.
                 event.preventDefault();
