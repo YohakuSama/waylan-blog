@@ -819,9 +819,14 @@ try {
             assert.ok(geometry.identity && geometry.identity.height > 10, `${label}: blog identity missing`);
             assert.ok(geometry.latestHeading && geometry.latestHeading.height > 20, `${label}: latest section heading hidden`);
             assert.ok(geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
-            assert.ok(geometry.sideHeadingLinks.length >= (width >= 1120 ? 2 : 1) &&
-              geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
-              `${label}: sidebar heading not fully tappable`);
+            if (width <= 767) {
+              assert.equal(geometry.sideHeadingLinks.length, 0,
+                `${label}: hidden phone rail exposes a redundant sidebar heading`);
+            } else {
+              assert.ok(geometry.sideHeadingLinks.length >= (width >= 1120 ? 2 : 1) &&
+                geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
+                `${label}: tablet/desktop sidebar heading not fully tappable`);
+            }
             if (width < 1120) {
               assert.ok(geometry.homeShortcuts &&
                 geometry.homeShortcuts.bottom <= geometry.latestHeading.top &&
