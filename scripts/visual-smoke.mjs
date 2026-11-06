@@ -160,6 +160,11 @@ try {
               archiveOverview: !!document.querySelector(".timeline-overview"),
               archiveTitle: document.querySelector(".archive-heading h1")?.textContent,
               hero: select(".home-hero"),
+              heroVisual: select(".home-hero .hero-visual"),
+              resume: select(".home-resume .resume-link"),
+              entryFacts: select(".feed-list .entry-meta-facts"),
+              homeFeaturedMedia: select(".home-feed .feed-item.has-media .feed-media-link"),
+              homeFeaturedBody: select(".home-feed .feed-item.has-media .feed-body"),
               firstHeading: select(".home-feed .feed-body h2"),
               firstMedia: select(".feed-list .feed-media-link"),
               entryHeading: select(".feed-list .feed-body h2"),
@@ -274,6 +279,29 @@ try {
               })(),
             };
           }, headerControls);
+          // Keep decorative graphics inside the heading's own grid column.
+          if (route === "/" && width > 860 && geometry.heroVisual) {
+            assert.ok(geometry.pageHeadingEyebrow &&
+              geometry.heroVisual.top >= geometry.pageHeadingEyebrow.top - 1,
+              `${label}: hero illustration climbs above WAYLAN / HOME`);
+            assert.ok(geometry.heroVisual.bottom <= geometry.hero.bottom + 1,
+              `${label}: hero illustration escapes its section`);
+            if (geometry.resume) assert.ok(geometry.heroVisual.bottom <= geometry.resume.top + 1,
+              `${label}: hero illustration overlaps continue-reading`);
+          }
+          // The save shortcut is part of the publication row, not a detached corner.
+          if ((route === "/" || route === "/feed") && geometry.entryFacts && geometry.bookmark) {
+            const gap = geometry.bookmark.left - geometry.entryFacts.right;
+            assert.ok(gap >= -1 && gap <= 24,
+              `${label}: bookmark is detached from reading metadata (${gap}px)`);
+          }
+          if (route === "/" && width > 767 &&
+              geometry.homeFeaturedMedia && geometry.homeFeaturedBody) {
+            const img = geometry.homeFeaturedMedia, text = geometry.homeFeaturedBody;
+            const dy = (img.top + img.bottom - text.top - text.bottom) / 2;
+            assert.ok(Math.abs(dy) <= 14,
+              `${label}: featured cover is vertically misaligned with text (${dy}px)`);
+          }
           // Regression for premature, balanced Chinese title wrapping.
           // Applied to all 16 viewport widths and editorial/terminal x light/dark.
           if (route === "/" || route === "/feed" || route.startsWith("/post/")) {
