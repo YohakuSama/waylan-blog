@@ -12,6 +12,7 @@ const ownerFiles = [
   "./responsive.css",
   "./skins.css",
   "./motion.css",
+  "./reader-progress.css",
 ];
 
 describe("Shared CSS ownership and cascade safety", () => {
@@ -31,6 +32,31 @@ describe("Shared CSS ownership and cascade safety", () => {
       assert.ok(read(file).includes('styles/index'),
         `${file} must share the single CSS entrypoint`);
     }
+  });
+
+  it("keeps image viewer layout in the reader owner, with only skin differences in skins.css", () => {
+    const base = read("src/styles.css");
+    const skins = read("src/styles/skins.css");
+    assert.match(base, /\.image-dialog\s*\{\s*width:\s*min\(1080px/);
+    assert.match(base, /\.echo-dialog\.image-dialog\s*\{\s*display:\s*block;/);
+    assert.match(base, /\.image-dialog:has\(>img\)::after/);
+    assert.doesNotMatch(skins, /^\.image-dialog\s*\{/m,
+      "generic modal sizes must not return to skin overrides");
+    assert.doesNotMatch(skins, /^\.echo-dialog\.image-dialog\s*\{/m,
+      "iOS fit-content workaround must keep one owner");
+    assert.match(skins, /:root\[data-skin="terminal"\] \.image-dialog \{ border-radius: 0; \}/);
+    assert.equal(skins.includes(".image-dialog::backdrop"), false,
+      "the dialog-wide backdrop supersedes image-only backdrop styling");
+  });
+
+  it("registers the progress indicator as the final visual owner", () => {
+    const progress = read("src/styles/reader-progress.css");
+    const motion = read("src/styles/motion.css");
+    const responsive = read("src/styles/responsive.css");
+    assert.match(progress, /:root\[data-skin="terminal"\] \.reading-progress/);
+    assert.match(progress, /prefers-reduced-motion: reduce/);
+    assert.doesNotMatch(motion, /\.reading-progress/);
+    assert.match(responsive, /\.site-header-reader \+ \.site-body \.reading-progress \{/);
   });
 
   it("keeps component ownership explicit at the original top-level section cuts", () => {
