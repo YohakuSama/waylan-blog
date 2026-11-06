@@ -147,7 +147,7 @@ export function Home() {
               }
             />
           </section>
-      </div>
+        </div>
         <aside className="site-sidebar home-sidebar" aria-label="博客导览">
           <TopicsBlock className="home-side-topics" />
           <section className="side-block">
