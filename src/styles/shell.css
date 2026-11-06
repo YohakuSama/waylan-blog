@@ -173,7 +173,7 @@ h3 {
 }
 .home-grid { width: 100%; }
 @media (min-width: 1120px) {
-  .home-grid {
+  .content-grid.home-grid {
     grid-template-columns: minmax(0, 1fr) 276px;
     column-gap: 44px;
   }
