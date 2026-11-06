@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import { JSDOM } from "jsdom";
+import { parseAnnouncements } from "../shared/announcements";
 import { contentTypes } from "../shared/types";
 import type { Post, ContentBlock } from "../shared/types";
 import {
@@ -100,6 +101,7 @@ try {
 const site = JSON.parse(await readFile("content/site.json", "utf8"));
 site.socials = (site.socials || []).map(social);
 site.avatar = checkAvatar(site.avatar);
+site.announcements = parseAnnouncements(site.announcements);
 if (site.avatar)
   await readFile(`public${site.avatar}`).catch(() => {
     throw new Error(`content/site.json avatar: 找不到 public${site.avatar}`);
