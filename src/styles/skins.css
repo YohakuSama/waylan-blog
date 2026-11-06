@@ -891,16 +891,17 @@ html {
   border-bottom: 1px dashed var(--line-strong);
 }
 @media (max-width: 860px) {
-  /* Editorial uses its softly separated brand and rounded nav surface. */
-  :root:not([data-skin="terminal"]) .site-header {
-    border-bottom-color: transparent;
+  /* Complete the mobile masthead with a quiet lower edge. The border
+     already occupies 1px in the shared height; no added layout or tab frame. */
+  :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) {
+    border-bottom-color: color-mix(in srgb, var(--line-strong) 32%, transparent);
+    box-shadow: 0 5px 12px -10px color-mix(in srgb, var(--ink) 17%, transparent);
   }
 
-  /* Terminal needs the SAME brand/navigation hierarchy, translated to its
-     square/dashed visual language. Never place a dashed rail against the
-     first line of content: it looks like text has been struck through. */
+  /* Terminal uses the existing dashed visual language without a floating
+     shadow. Keep the one-row reader masthead and its progress rail intact. */
   :root[data-skin="terminal"] .site-header:not(.site-header-reader) {
-    border-bottom-color: transparent;
+    border-bottom-color: color-mix(in srgb, var(--line-strong) 40%, transparent);
   }
   :root[data-skin="terminal"] .site-header:not(.site-header-reader) .header-inner::before {
     content: "";
