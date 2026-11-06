@@ -23,7 +23,7 @@ describe("both visual themes share home geometry and focus treatments", () => {
     assert.ok(layout.includes("grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);"));
     assert.ok(layout.includes("align-items: start;"));
     assert.ok(editorial.includes("position: relative;"));
-    assert.ok(editorial.includes("height: clamp(168px, 20vw, 220px);"));
+    assert.ok(editorial.includes("height: clamp(168px, 18vw, 196px);"));
     assert.ok(editorial.includes("pointer-events: none;"));
     assert.ok(terminal.includes("position: relative;"));
     assert.ok(terminal.includes("width: 100%;"));
