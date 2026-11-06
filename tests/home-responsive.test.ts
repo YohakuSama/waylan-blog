@@ -57,6 +57,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes(".home-page {"));
     assert.ok(shell.includes("max-width: 1140px;"));
     assert.ok(shell.includes(".home-grid {"));
+    assert.ok(shell.includes(".content-grid.home-grid {"));
+    assert.ok(shell.includes("column-gap: 44px;"));
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
   });
