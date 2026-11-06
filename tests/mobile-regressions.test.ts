@@ -308,6 +308,19 @@ describe("mobile reader regression contracts", () => {
     assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'));
     assert.ok(responsive.includes('.site-header-reader .brand-wordmark'));
   });
+  it("keeps full article introductions instead of reusing feed-card line clamps", () => {
+    const reader = readFileSync("src/features/reader/ArticleHeader.tsx", "utf8");
+    const base = readFileSync("src/styles.css", "utf8");
+    const mobileHeader = base.slice(base.indexOf("/* Mobile article header:"));
+    assert.ok(reader.includes('<p className="article-deck">{post.excerpt}</p>'));
+    assert.doesNotMatch(mobileHeader, /\.reading-article \.article-deck\s*\{[^}]*-webkit-line-clamp/s,
+      "article detail must never hide part of the original summary");
+    assert.doesNotMatch(mobileHeader, /\.reading-article \.article-byline\s*\{[^}]*flex-direction:\s*row/s,
+      "mobile publication facts must stay below the author");
+    assert.ok(base.includes(".feed-item .feed-excerpt"),
+      "list previews retain their independent layout and truncation rules");
+  });
+
   it("uses the header width for navigation and search instead of an extra motto", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     assert.ok(!app.includes('className="brand-rule"') &&
