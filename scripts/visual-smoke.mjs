@@ -168,6 +168,10 @@ try {
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
+              pageFrame: select(".site-main"),
+              homePage: select(".home-page"),
+              homeHero: select(".home-page > .home-hero"),
+              homeGrid: select(".home-page .home-grid"),
               indexPage: select(".feed-page, .projects-page, .archive-page, .about-page"),
               indexHeading: select(".feed-page > .page-heading, .projects-page > .page-heading, .archive-page > .page-heading, .about-page > .page-heading"),
               indexContent: select(".feed-layout, .projects-layout, .archive-main, .about-layout"),
@@ -484,8 +488,8 @@ try {
           }
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
-          // Five index-page headers share the same left edge and top position.
-          // The old mobile-only home-hero padding placed HOME 10px above the rest.
+          // Five index pages share one vertical heading rhythm; desktop widths
+          // vary by content type, while phone headings still share a left edge.
           if (["/", "/feed", "/archive", "/projects", "/about"].includes(route)) {
             assert.ok(geometry.pageHeadingEyebrow && geometry.pageHeadingTitle,
               `${label}: index page heading is missing`);
@@ -501,11 +505,23 @@ try {
               for (const part of ["eyebrow", "title"]) {
                 const actual = part === "eyebrow" ? geometry.pageHeadingEyebrow : geometry.pageHeadingTitle;
                 const expected = home[part];
-                for (const axis of ["left", "top"]) {
+                for (const axis of (width <= 767 ? ["left", "top"] : ["top"])) {
                   assert.ok(Math.abs(actual[axis] - expected[axis]) <= 1,
                     `${label}: ${part} ${axis} differs from Home (${actual[axis]} vs ${expected[axis]})`);
                 }
               }
+            }
+          }
+          if (["/", "/feed", "/projects", "/archive", "/about"].includes(route)) {
+            const measure = route === "/" ? geometry.homePage : geometry.indexPage;
+            assert.ok(measure && geometry.pageFrame, `${label}: centered page frame missing`);
+            assert.ok(Math.abs((measure.left + measure.right - geometry.pageFrame.left - geometry.pageFrame.right) / 2) <= 1,
+              `${label}: page content is not centered within the site frame`);
+            if (route === "/") {
+              assert.ok(geometry.homeHero && geometry.homeGrid,
+                `${label}: homepage hero or editorial list grid missing`);
+              assert.ok(geometry.homeHero.bottom <= geometry.homeGrid.top + 1,
+                `${label}: homepage rail overlaps the introduction`);
             }
           }
           assert.equal(geometry.footerTargets.length, 4, `${label}: footer links missing`);
@@ -707,7 +723,7 @@ try {
             assert.ok(geometry.indexPage && geometry.indexHeading && geometry.indexContent,
               `${label}: index heading or content measure missing`);
             assert.ok(geometry.indexPage.width <= 961,
-              `${label}: index content exceeds the shared 960px measure`);
+              `${label}: index content exceeds the page reading measure`);
             assert.ok(Math.abs(geometry.indexHeading.left - geometry.indexPage.left) <= 1 &&
               Math.abs(geometry.indexContent.left - geometry.indexPage.left) <= 1,
               `${label}: heading, content and index measure have different left edges`);
@@ -835,15 +851,17 @@ try {
                 card.bookmark.bottom <= card.tail.bottom + 1),
               `${label}: home cards have invisible tags, orphaned bookmarks or clipped tag links`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
-            assert.ok(geometry.homeProjectRows.length >= 2,
-              `${label}: project directory should contain the real projects`);
-            assert.ok(geometry.homeProjectRows.every((row) => row &&
-              row.height >= 44 && row.height <= 104 && row.right <= geometry.viewport + 1),
-              `${label}: project rows are too tall or are clipped`);
-            if (width <= 767 && geometry.homeReadingNote) {
-              const lastProject = geometry.homeProjectRows.at(-1);
-              assert.ok(lastProject && geometry.homeReadingNote.top - lastProject.bottom <= 60,
-                `${label}: excessive gap between projects and reading tips`);
+            assert.equal(geometry.homeReadingNote, null,
+              `${label}: redundant reading-tip sidebar panel remains`);
+            if (width <= 767) {
+              assert.equal(geometry.sidebar, null,
+                `${label}: desktop discovery rail was stacked onto the phone homepage`);
+            } else {
+              assert.ok(geometry.homeProjectRows.length >= 2,
+                `${label}: project directory should contain the real projects`);
+              assert.ok(geometry.homeProjectRows.every((row) => row &&
+                row.height >= 44 && row.height <= 104 && row.right <= geometry.viewport + 1),
+                `${label}: project rows are too tall or are clipped`);
             }
             if (width === 390) {
               await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
