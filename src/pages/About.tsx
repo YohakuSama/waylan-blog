@@ -1,8 +1,7 @@
-import { ArrowRight, Compass, Gauge, Layers } from "lucide-react";
-import { posts, shortDate, site, stats, usedTopics, wordsLabel } from "../lib/data";
+import { ArrowRight } from "lucide-react";
+import { shortDate, site, stats, wordsLabel } from "../lib/data";
 import { Link } from "../lib/router";
 import { SocialList } from "../components/Socials";
-import { RecentBlock, SideTitle, SiteLinksBlock } from "../components/Sidebar";
 import { useViews, viewsLabel } from "../lib/views";
 
 const stack = [
@@ -13,14 +12,14 @@ const stack = [
 ];
 export function About() {
   return (
-    <>
+    <div className="about-page">
       <header className="page-heading">
         <p className="eyebrow mono">WAYLAN / ABOUT</p>
         <h1>关于</h1>
         <p>{site.description}</p>
       </header>
-      <div className="content-grid about-layout">
-        <section className="feed-column about-text" aria-label="关于本站">
+      <div className="about-layout">
+        <section className="about-text" aria-label="关于本站">
           <figure className="about-motto" aria-label="站点理念，Dieter Rams 的名言">
             <blockquote lang="en">Less, but better.</blockquote>
             <figcaption>— Dieter Rams</figcaption>
@@ -32,18 +31,7 @@ export function About() {
           />
           <SocialList />
           <div className="about-details">
-            <div>
-              <h2 className="side-title">写作主题</h2>
-              <ul>
-                {site.topics.map((t) => (
-                  <li key={t.id}>
-                    <strong>{t.name}</strong>
-                    <span>{t.description}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
+            <section>
               <h2 className="side-title">技术实现</h2>
               <ul>
                 {stack.map(([k, v]) => (
@@ -53,53 +41,22 @@ export function About() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
+            <section className="about-stats">
+              <h2 className="side-title">站点数据</h2>
+              <SiteStats views />
+            </section>
           </div>
           <Link className="primary-button" href="/feed">
             浏览全部内容
             <ArrowRight size={17} />
           </Link>
         </section>
-        <aside className="site-sidebar" aria-label="阅读导览">
-          <section className="side-block">
-            <SideTitle
-              icon={<Compass size={17} />}
-              href="/feed"
-              label="浏览全部内容"
-            >
-              内容分类
-            </SideTitle>
-            <p className="side-text">
-              可按主题筛选文章，也可查看最近更新。
-            </p>
-            <ul className="explore-list">
-              {usedTopics.map((t) => (
-                <li key={t.id}>
-                  <Link href={`/feed?topic=${t.id}`}>
-                    <Layers size={15} className="explore-icon" aria-hidden="true" />
-                    <span className="explore-name">{t.name}</span>
-                    <span className="mono explore-count">
-                      {posts.filter((p) => p.topic === t.id).length}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <RecentBlock heatmap={false} />
-          <section className="side-block">
-            <SideTitle icon={<Gauge size={17} />}>
-              站点数据
-            </SideTitle>
-            <SiteStats views />
-          </section>
-          <SiteLinksBlock current="/about" />
-        </aside>
       </div>
-    </>
+    </div>
   );
 }
-/** One stats grid for the archive and about rails; reads appear once the Worker reports them. */
+/** Publication metrics remain available on every viewport; readings require real Worker data. */
 function SiteStats({ views: withViews = false }: { views?: boolean }) {
   const { enabled, views } = useViews();
   const total =
