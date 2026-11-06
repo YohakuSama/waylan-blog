@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Megaphone, X } from "lucide-react";
 import { Dialog } from "./UI";
-import { Link } from "../lib/router";
+import { Link, useRouter } from "../lib/router";
 import { storage } from "../lib/storage";
 import { site } from "../lib/data";
 import {
@@ -133,9 +133,17 @@ export function AnnouncementDetail({
   item: Announcement | null;
   onClose: () => void;
 }) {
+  const router = useRouter();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   return (
     <Dialog open={!!item} onClose={onClose} label="站点公告"
-      className="site-announcement-dialog" focusContainer>
+      className="site-announcement-dialog" focusContainer
+      onClosed={() => {
+        if (!pendingHref) return;
+        const href = pendingHref;
+        setPendingHref(null);
+        void router?.navigate(href);
+      }}>
       {item && (
         <div className="site-announcement-detail">
           <p className="announcement-detail-meta">
@@ -150,7 +158,15 @@ export function AnnouncementDetail({
                 相关链接 <ArrowUpRight size={14} />
               </a>
             ) : (
-              <Link href={item.link} onClick={onClose}>
+              <Link href={item.link} onClick={(event) => {
+                if (event.button !== 0 || event.ctrlKey || event.metaKey ||
+                    event.shiftKey || event.altKey) return;
+                // Close the native top layer before routing, so its dimmed
+                // snapshot cannot bleed into the next page's transition.
+                event.preventDefault();
+                setPendingHref(item.link);
+                onClose();
+              }}>
                 相关链接 <ArrowUpRight size={14} />
               </Link>
             ))}
