@@ -15,7 +15,7 @@ import {
 const notices = publishedAnnouncements((site as { announcements?: unknown }).announcements);
 const key = (name: string, item: Announcement) => `announcement:${name}:${item.id}`;
 
-export function useSiteAnnouncements() {
+export function useSiteAnnouncements(items: Announcement[] = notices) {
   const [ready, setReady] = useState(false);
   const [read, setRead] = useState<Set<string>>(() => new Set());
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
@@ -23,17 +23,17 @@ export function useSiteAnnouncements() {
   const autoOpened = useRef(false);
   useEffect(() => {
     // Never read browser storage during SSR or the first hydration render.
-    setRead(new Set(notices.filter((item) =>
+    setRead(new Set(items.filter((item) =>
       storage.get(key("read", item), 0) === item.revision,
     ).map(announcementToken)));
-    setHidden(new Set(notices.filter((item) =>
+    setHidden(new Set(items.filter((item) =>
       storage.get(key("dismissed", item), 0) === item.revision,
     ).map(announcementToken)));
     setReady(true);
   }, []);
   useEffect(() => {
     if (!ready || active || autoOpened.current) return;
-    const urgent = notices.find((item) =>
+    const urgent = items.find((item) =>
       item.priority === "urgent" && !read.has(announcementToken(item)));
     if (urgent) {
       autoOpened.current = true;
@@ -52,12 +52,12 @@ export function useSiteAnnouncements() {
     if (active) markRead(active);
     setActive(null);
   };
-  const banner = notices.find((item) =>
+  const banner = items.find((item) =>
     item.priority !== "normal" && !hidden.has(announcementToken(item))) || null;
   return {
-    items: notices,
+    items,
     ready,
-    unread: ready ? notices.filter((item) => !read.has(announcementToken(item))).length : 0,
+    unread: ready ? items.filter((item) => !read.has(announcementToken(item))).length : 0,
     read,
     banner,
     active,
