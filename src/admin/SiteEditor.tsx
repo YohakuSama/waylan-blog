@@ -244,7 +244,7 @@ export function SiteEditor({
       </div>
       <section className="admin-announcements" aria-labelledby="site-announcements-title">
         <h2 className="section-title" id="site-announcements-title">站点公告</h2>
-        <p className="field-hint">公告随网站部署发布，不需要读者登录。普通公告只进铃铛，重要公告显示横幅，紧急公告在首次访问时弹出。修改已发布内容会自动更新版本，重新提示读者。</p>
+        <p className="field-hint">公告随网站部署发布，不需要读者登录。普通公告只进铃铛，重要公告显示横幅，紧急公告首次访问弹出。修改内容后版本会自动更新。未发布公告不显示在网站，但源码仓库公开，草稿中不要填写私密信息。</p>
         {form.announcements.map((item, i) => (
           <fieldset className="announcement-editor" key={item.id}>
             <legend>公告 {i + 1}</legend>
