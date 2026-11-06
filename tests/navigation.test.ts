@@ -454,10 +454,10 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("separates the reading list from saving the current article", async () => {
     await mount("/post/a-room-on-the-internet");
-    const save=document.querySelector<HTMLButtonElement>(".article-actions .article-action-save")!;
+    const save=document.querySelector<HTMLButtonElement>(".article-heading-save .article-action-save")!;
     assert.ok(save);
     assert.match(save.textContent || "", /收藏本文|已收藏/);
-    assert.equal(document.querySelectorAll(".article-actions .bookmark-button").length,1);
+    assert.equal(document.querySelectorAll(".article-heading-save .bookmark-button").length,1);
     assert.ok(document.querySelector(".site-header-reader .header-tools > .shelf-trigger"),
       "reading list remains a direct site shortcut separate from the post bookmark");
     assert.ok(document.querySelector(".site-header-reader .header-tools .notification-trigger"));
@@ -468,8 +468,10 @@ describe("React navigation and reading interactions (DOM integration, not browse
   it("keeps the entry to reading light and the save/share actions at the end", async () => {
     await mount("/post/a-room-on-the-internet");
     const actions = document.querySelector<HTMLElement>(".article-actions")!;
-    assert.equal(actions.querySelectorAll("button").length, 2,
-      "article header should expose only the contents/reading-tools link and a save control");
+    assert.equal(actions.querySelectorAll("button").length, 1,
+      "the optional tools row contains only the contents/reading-tools control");
+    assert.equal(document.querySelectorAll(".article-heading-save .bookmark-button").length, 1,
+      "bookmark belongs to the byline, without an extra introduction row");
     assert.ok(!/分享|更多/.test(actions.textContent || ""),
       "sharing and extra font controls must not occupy the article introduction");
     const closing = document.querySelector<HTMLElement>(".reading-end-actions")!;
