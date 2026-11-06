@@ -14,3 +14,4 @@ import "./skins.css";
 import "./motion.css";
 import "./reader-progress.css";
 import "./image-viewer.css";
+import "./announcements.css";

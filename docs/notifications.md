@@ -37,3 +37,16 @@ When NOTIFICATIONS_ENABLED=true, sign in as a login listed in ADMIN_GITHUB_LOGIN
 - **清空测试消息** deletes only your own synthetic test items. Real reply and comment notifications remain untouched.
 Test messages link to an existing Waylan article, not to a non-existent GitHub comment.
 Regular readers never see the controls, and the Worker independently rejects their requests.
+
+## Public site announcements (separate from private inbox)
+
+- Announcements are public content in `content/site.json`. The GitHub source repository is public: unpublished drafts are excluded from the public *website build* but remain readable in the repository. Never write confidential information into drafts. The site's existing privileged `/admin` → **站点资料** editor writes them in the same optimistic Git commit; Cloudflare rebuilds the public static pages. No additional D1 table, webhook, login scope or push transport is involved.
+- `shared/announcements.ts` validates every entry at build time and on the admin save path. Up to 12 entries, each with a stable ID, title, plain-text body, priority, publish flag and optional HTTPS/site-relative link. The server assigns a revision and update date when visible content changes; a revision reopens the corresponding read/dismissed state.
+- Normal: bell's **公告** tab only. Important: bell + dismissible inline site banner. Urgent: bell + banner + a detail modal on the first visit after publication/revision. The detail can always be reopened from the bell. There are no alerts when the list is empty.
+- The public bell tab is available to signed-out visitors even when private notifications are disabled or offline. **我的消息** retains all existing GitHub-session, CSRF, opt-out and webhook requirements; only its original personal unread count uses the numeric badge. New public announcements use a small dot when no private numeric badge is present.
+- Read and banner dismissal flags are stored only in each browser by announcement ID + revision. Storage denial falls back to the current tab's React state. Clearing local data may show the alert again. Normal updates require a rebuild/deploy, so this is not a real-time emergency-alert system.
+- The banner is in normal document flow (not fixed), inside the existing site body, and detail uses the existing native Dialog focus/escape/backdrop behavior. No announcement content is interpreted as HTML. Only the `announcements.css` feature owner supplies its new layout.
+
+To publish: open `/admin` → **站点资料** → **站点公告**, create or edit an entry, choose the level and publish checkbox, then Save. Uncheck Publish to withdraw. The site will reflect it after the normal deployment. Invalid data fail before the Git commit.
+
+Rollback: set `announcements: []` or withdraw all entries in the editor and deploy, or revert this feature PR. No D1 migration or rollback of private notifications is required.

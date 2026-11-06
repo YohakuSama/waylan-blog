@@ -613,6 +613,56 @@ describe("Admin: site profile", () => {
     assert.equal(repo.text("content/about.md"), readFileSync("content/about.md", "utf8"), "about untouched");
     assert.deepEqual(repo.files().get(`public${path}`), png);
   });
+  it("publishes, edits, unpublishes and removes notices atomically with site.json", async () => {
+    let p = await profile();
+    const draftNotice = {
+      id: "notice-maintenance", title: "维护公告", body: "部分服务暂停",
+      priority: "important", published: true, link: "/about",
+    };
+    const put = (site: Record<string, unknown>) =>
+      call("/api/admin/site", { method: "PUT", json: { ...p, site } });
+    let result = await put({ ...p.site, announcements: [draftNotice] });
+    assert.equal(result.status, 200, JSON.stringify(result.body));
+    let notices = JSON.parse(repo.text("content/site.json")!).announcements;
+    assert.equal(notices[0].revision, 1);
+    assert.match(notices[0].updated, /^\d{4}-\d{2}-\d{2}$/);
+    p = await profile();
+    const unchanged = await put(p.site);
+    assert.equal(unchanged.status, 200);
+    assert.equal(unchanged.body.commit, null, "same announcement content should be a no-op");
+    p = await profile();
+    result = await put({ ...p.site, announcements: [{ ...draftNotice, body: "维护时间调整" }] });
+    assert.equal(result.status, 200);
+    notices = JSON.parse(repo.text("content/site.json")!).announcements;
+    assert.equal(notices[0].revision, 2);
+    p = await profile();
+    result = await put({ ...p.site, announcements: [{ ...draftNotice, body: "维护时间调整", published: false }] });
+    assert.equal(result.status, 200);
+    notices = JSON.parse(repo.text("content/site.json")!).announcements;
+    assert.equal(notices[0].published, false);
+    assert.equal(notices[0].revision, 3);
+    p = await profile();
+    result = await put({ ...p.site, announcements: [] });
+    assert.equal(result.status, 200);
+    assert.deepEqual(JSON.parse(repo.text("content/site.json")!).announcements, []);
+  });
+  it("rejects malicious public notices before writing a Git commit", async () => {
+    const p = await profile();
+    const src = { id: "safe-notice", title: "公告", body: "内容",
+      priority: "normal", published: true, link: "/about" };
+    for (const notice of [
+      { ...src, link: "javascript:alert(1)" },
+      { ...src, link: "//evil.example" },
+      { ...src, link: "http://insecure.example" },
+      { ...src, body: "" },
+      { ...src, id: "../../admin" },
+    ]) {
+      const result = await call("/api/admin/site", { method: "PUT",
+        json: { ...p, site: { ...p.site, announcements: [notice] } } });
+      assert.equal(result.status, 422, JSON.stringify(notice));
+    }
+    assert.equal(repo.head, "c0", "invalid public notices must not be committed");
+  });
   it("edits the About page, and reports no commit when nothing changed", async () => {
     let p = await profile();
     const r = await call("/api/admin/site", { method: "PUT", json: { ...p, about: "# 关于我\n\n新的介绍。" } });

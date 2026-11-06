@@ -2,6 +2,7 @@
 // source repository, and Cloudflare Workers Builds rebuilds and deploys it.
 // Identity comes from the existing GitHub login; only ADMIN_GITHUB_LOGINS get
 // in. Writes use GITHUB_CONTENT_TOKEN, scoped to the source repository.
+import { saveAnnouncements } from "../shared/announcements";
 import manifest from "./generated/manifest.json";
 import build from "./generated/build.json";
 import site from "../src/generated/site.json";
@@ -379,6 +380,15 @@ async function saveSite(request: Request, env: Env, login: string) {
   next.tagline = text(s.tagline, "一句话介绍", 80, true);
   next.description = text(s.description, "站点描述", 300, true);
   next.intro = text(s.intro, "首页介绍", 800);
+  // Public announcements are part of the same optimistic site.json commit.
+  // The server, not the browser, owns revision increments and publication safety.
+  if (s.announcements !== undefined) {
+    try {
+      next.announcements = saveAnnouncements(s.announcements, next.announcements, new Date().toISOString().slice(0, 10));
+    } catch (error) {
+      throw invalid((error as Error).message);
+    }
+  }
   if (!Array.isArray(s.profileTags) || s.profileTags.length > 12)
     throw invalid("个人标签最多 12 个。");
   next.profileTags = s.profileTags

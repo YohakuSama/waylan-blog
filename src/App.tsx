@@ -14,6 +14,7 @@ import { BackToTop, ShelfTrigger } from "./components/Shelf";
 import { assetURL, offlinePreview } from "./lib/runtime";
 import { Settings } from "./components/Settings";
 import { NotificationBell } from "./components/NotificationBell";
+import { AnnouncementBanner, AnnouncementDetail, useSiteAnnouncements } from "./components/SiteAnnouncements";
 import { Dialog, markHydrated } from "./components/UI";
 import { Wordmark } from "./components/Wordmark";
 import { PageScrollbar } from "./components/Scrollbar";
@@ -59,6 +60,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     [query, setQuery] = useState(""),
     [active, setActive] = useState(-1),
     [shortcut, setShortcut] = useState("⌘K");
+  const announcements = useSiteAnnouncements();
   const searchInput = useRef<HTMLInputElement>(null);
   const pendingSearchRoute = useRef<string | null>(null);
   useEffect(() => {
@@ -222,12 +224,16 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
               <kbd>{shortcut}</kbd>
             </button>
             <ShelfTrigger />
-            <NotificationBell />
+            <NotificationBell announcements={announcements.items}
+              readAnnouncements={announcements.read} onOpenAnnouncement={announcements.openDetail} />
             <Settings />
           </div>
         </div>
       </header>
       <div className="site-body">
+        <AnnouncementBanner item={announcements.banner}
+          onOpen={announcements.openDetail} onDismiss={announcements.dismiss} />
+        <AnnouncementDetail item={announcements.active} onClose={announcements.closeDetail} />
           <noscript>
           <p className="no-script">
             正文可以直接阅读。搜索、划线和评论需要启用 JavaScript。
