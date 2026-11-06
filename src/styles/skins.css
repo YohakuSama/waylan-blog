@@ -1619,7 +1619,7 @@ html {
 .popular-list a {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: baseline;
+  align-items: start;
   gap: 10px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
@@ -1637,9 +1637,9 @@ html {
   font-weight: 600;
 }
 .popular-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .popular-list a:hover .popular-title {
   color: var(--brand);
