@@ -1,5 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -31,6 +32,13 @@ describe("Public site announcements", () => {
     assert.equal(renderToStaticMarkup(createElement(AnnouncementBanner, {
       item: null, onOpen: () => {}, onDismiss: () => {},
     })), "");
+  });
+
+  it("ships only published notices in the generated public bundle", () => {
+    const source = JSON.parse(readFileSync("content/site.json", "utf8"));
+    const generated = JSON.parse(readFileSync("src/generated/site.json", "utf8"));
+    assert.deepEqual(generated.announcements, publishedAnnouncements(source.announcements));
+    assert.equal(generated.announcements.every((item: Announcement) => item.published), true);
   });
 
   it("rejects malformed, duplicate, unsafe and oversized source content", () => {
