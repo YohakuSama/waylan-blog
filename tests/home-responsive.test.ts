@@ -55,7 +55,12 @@ describe("home hero mobile and tablet layout", () => {
       assert.ok(pagesCss.includes(name), name);
     }
     assert.ok(shell.includes(".home-page {"));
-    assert.ok(shell.includes("max-width: 1140px;"));
+    assert.ok(shell.includes("--index-frame-width: 1140px;"));
+    assert.ok(shell.includes("max-width: var(--index-frame-width);"));
+    assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
+    for (const measure of [".feed-layout { max-width: 920px; }", ".projects-layout { max-width: 960px; }", ".archive-main { max-width: 880px; }", ".about-layout { max-width: 720px; }"]) {
+      assert.ok(pagesCss.includes(measure), `missing inner reading measure: ${measure}`);
+    }
     assert.ok(shell.includes(".home-grid {"));
     assert.ok(shell.includes(".content-grid.home-grid {"));
     assert.ok(shell.includes("column-gap: 44px;"));
@@ -141,6 +146,11 @@ describe("home hero mobile and tablet layout", () => {
     assert.doesNotMatch(shell, /\.home-list \.tag-list li:nth-child\(n\+3\)/);
     assert.ok(feed.includes('className="feed-tail-tags"'));
     assert.ok(feed.includes('<BookmarkButton post={post} className="card-bookmark" />'));
+    assert.equal((feed.match(/<FeedActions post=\{post\} href=\{href\} \/>/g) || []).length, 2,
+      "thoughts and other entries must reuse one bookmark/open action group");
+    assert.ok(feed.includes('className="feed-actions"'));
+    assert.ok(feed.includes('className="feed-arrow"'));
+    assert.doesNotMatch(shell, /\.home-list \.feed-arrow\s*\{\s*display:\s*none/);
   });
   it("keeps hero art bounded and save actions separate from publication facts", () => {
     const page = readFileSync("src/pages/Home.tsx", "utf8");
