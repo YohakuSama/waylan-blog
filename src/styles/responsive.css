@@ -619,6 +619,11 @@
   }
 }
 
+/* Compact tablet readers keep the same tool spacing as the index masthead. */
+@media (min-width: 861px) and (max-width: 1024px) {
+  .site-header-reader .header-tools { gap: 4px; }
+}
+
 /* Match the same expandable search slot on index and reader mastheads.
    The reader keeps its compact single row, not different control positions. */
 @media (min-width: 480px) and (max-width: 860px) {
