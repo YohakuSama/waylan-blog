@@ -6,7 +6,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <svg
       className={`wordmark ${className}`}
-      viewBox="0 0 176 46"
+      viewBox="0 0 170 46"
       aria-hidden="true"
       focusable="false"
     >
