@@ -133,6 +133,7 @@ try {
                   afterContent: getComputedStyle(nav, "::after").content,
                   headerBottomStyle: getComputedStyle(header).borderBottomStyle,
                   headerBottomColor: getComputedStyle(header).borderBottomColor,
+                  headerShadow: getComputedStyle(header).boxShadow,
                   selectedRadius: selected ? parseFloat(getComputedStyle(selected).borderTopLeftRadius) : null,
                 } : null;
               })(),
@@ -249,6 +250,10 @@ try {
                 const element = document.querySelector(".reading-article .article-deck");
                 return element ? getComputedStyle(element).textWrap : null;
               })(),
+              deckLineClamp: (() => {
+                const element = document.querySelector(".reading-article .article-deck");
+                return element ? getComputedStyle(element).webkitLineClamp : null;
+              })(),
             };
           }, headerControls);
           // Regression for premature, balanced Chinese title wrapping.
@@ -260,6 +265,8 @@ try {
           if (route.startsWith("/post/")) {
             assert.equal(geometry.deckTextWrap, "wrap",
               `${label}: article excerpt must use normal line wrapping`);
+            assert.ok(["none", "auto"].includes(geometry.deckLineClamp),
+              `${label}: full article excerpt must never be clamped like a feed card`);
             const bar = geometry.readerProgress;
             assert.ok(bar && bar.role === "progressbar" &&
               bar.value >= 0 && bar.value <= 100,
@@ -446,8 +453,9 @@ try {
                   `${label}: theme-specific nav target height differs from the unified 40px controls`);
               }
               if (variant.skin === "editorial") {
-                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
-                  `${label}: rounded nav still has a visible full-width bottom border`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor) &&
+                  chrome.headerBottomStyle === "solid" && chrome.headerShadow !== "none",
+                  `${label}: editorial mobile masthead needs a soft lower edge and shadow`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerImage?.includes("linear-gradient"),
@@ -459,8 +467,9 @@ try {
                 if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
                   `${label}: rounded nav tab lost its rounded corners`);
               } else {
-                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
-                  `${label}: terminal header bottom line intrudes on page content`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor) &&
+                  chrome.headerBottomStyle === "dashed" && chrome.headerShadow === "none",
+                  `${label}: terminal mobile masthead needs only a quiet dashed lower edge`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerTopStyle === "dashed",
