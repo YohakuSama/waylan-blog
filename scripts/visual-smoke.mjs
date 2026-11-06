@@ -254,7 +254,11 @@ try {
               projectCount: document.querySelectorAll(".projects-layout .feed-item.is-project").length,
               projectStatusCount: document.querySelectorAll(".projects-layout .project-status").length,
               projectCodeLabels: [...document.querySelectorAll(".projects-layout .project-code")].map((el) => el.textContent.trim()),
-              projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect),
+              // A desktop preview and a compact responsive row share tag data.
+              // Only visible links have usable hit targets at a given width.
+              projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect).filter(Boolean),
+              projectMedia: select(".projects-layout .project-media"),
+              projectInlineTags: select(".projects-layout .project-compact-tags"),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
               projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
               footerLinks: select(".site-footer .footer-links"),
@@ -712,6 +716,13 @@ try {
             assert.equal(geometry.projectStatusCount, 2, `${label}: missing project status`);
             assert.ok(geometry.projectCodeLabels.every((text) => text.startsWith("项目 · ")),
               `${label}: unpublished slug looks like a public repository`);
+            if (width <= 1040) {
+              assert.equal(geometry.projectMedia, null, `${label}: oversized project preview remains visible`);
+              assert.ok(geometry.projectInlineTags, `${label}: compact project tags disappeared`);
+            } else {
+              assert.ok(geometry.projectMedia, `${label}: desktop project preview disappeared`);
+              assert.equal(geometry.projectInlineTags, null, `${label}: desktop duplicates compact project tags`);
+            }
             if (width < 1120)
               assert.equal(geometry.sidebar, null, `${label}: projects sidebar should not bury the footer`);
             else {
