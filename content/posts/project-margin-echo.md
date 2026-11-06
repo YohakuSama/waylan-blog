@@ -5,7 +5,7 @@ type: project
 title: 页边回声：可重新定位的文本批注
 excerpt: 把一段讨论锚定在原文的某几个字上。文章修改之后，按块标识、原文与前后文依次找回位置；找不到时明确标记，而不是悄悄贴错。
 date: 2026-10-08
-topic: notes
+topic: dev
 tags: [批注, Web Annotation]
 status: 实验中
 stack: [TypeScript, W3C Web Annotation, Cloudflare D1, GitHub Discussions]
