@@ -50,6 +50,11 @@ async function run(engine, label, width, mobile) {
           return original(update);
         };
       });
+      // Deliberately mark the live bell: a new component instance would discard
+      // this marker even if the server eventually restores an unread badge.
+      await page.evaluate(() => {
+        document.querySelector(".notification-trigger").dataset.instanceMarker = "original";
+      });
       // Clip A: quick About > Projects > Archive > Feed > Home.
       const route = async (href, expected) => {
         await page.locator('#site-nav a[href="' + href + '"]').click();
@@ -60,8 +65,10 @@ async function run(engine, label, width, mobile) {
           oldNewScreenshots: window.__nativeRouteSnapshotCount,
           ghost: document.querySelectorAll(".shared-cover-ghost").length,
           article: !!document.querySelector(".reader-main .reading-article"),
+          bellMarker: document.querySelector(".notification-trigger")?.dataset.instanceMarker,
         }));
         assert.equal(state.oldNewScreenshots, 0, label + ": route created a native screenshot");
+        assert.equal(state.bellMarker, "original", label + ": header remounted and reset the bell");
         assert.equal(state.ghost, 0, label + ": cover ghost left on screen");
         assert.equal(state.article, false, label + ": old article remained in collection");
         return state;
@@ -72,6 +79,14 @@ async function run(engine, label, width, mobile) {
       await page.screenshot({ path: output + "/" + label + "-sections.png", animations: "disabled" });
       // Clip B: lower feed entry > reader > feed > another entry > feed.
       await route("/feed", "/feed");
+      // A density change is a real reflow, not a cross-fading duplicate of
+      // every title and image. It must not create native View Transition layers.
+      await page.getByRole("button", { name: "紧凑列表" }).click();
+      await page.locator(".feed-list.density-compact").waitFor();
+      await page.getByRole("button", { name: "图文 · 详细列表" }).click();
+      await page.locator(".feed-list.density-full").waitFor();
+      assert.equal(await page.evaluate(() => window.__nativeRouteSnapshotCount), 0,
+        label + ": switching list density created overlapping text snapshots");
       const posts = page.locator(".feed-list .post-card-link");
       for (const i of [0, 1]) {
         const card = posts.nth(i);
@@ -106,6 +121,19 @@ async function run(engine, label, width, mobile) {
         assert.equal(returned.flying, 0, label + ": thumbnail flying over feed");
         observations.push({ label, i, reader, returned });
       }
+      // The first entry from home exercises the exact path that previously
+      // remounted NotificationBell and briefly lost its unread indicator.
+      await route("/", "/");
+      await page.locator(".home-list .post-card-link").first().click();
+      await page.waitForURL(/\/post\/[^/?]+/);
+      assert.equal(await page.locator(".notification-trigger").getAttribute("data-instance-marker"),
+        "original", label + ": home -> reader replaced the notification trigger");
+      assert.equal(await page.locator(".article-heading-bottom .article-action-save").count(), 1,
+        label + ": bookmark is missing from the header metadata row");
+      await page.getByRole("button", { name: "返回上一页" }).click();
+      await page.waitForURL(url => url.pathname === "/");
+      assert.equal(await page.locator(".notification-trigger").getAttribute("data-instance-marker"),
+        "original", label + ": reader -> home replaced the notification trigger");
       assert.deepEqual(errors, [], label + ": runtime errors");
       observations.push({ label, collection });
     } finally { await ctx.close(); }
