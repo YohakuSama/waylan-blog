@@ -650,17 +650,9 @@
     gap: 0 18px;
   }
   :root[data-skin="terminal"] .site-footer .footer-links { border-top-style: dashed; }
-  .home-sidebar {
-    margin-top: 24px;
-    padding: 16px 0 10px;
-    border-top: 1px solid var(--line);
-  }
-  .home-sidebar > .side-block { padding: 14px 0; }
-  .home-sidebar > .side-block:first-child { padding-top: 0; }
-  .home-sidebar .side-head { margin-bottom: 7px; }
-  .home-sidebar .explore-list a { min-height: 44px; padding: 7px 6px; }
-  .home-sidebar .home-reading-note { margin-top: 0; }
-  .home-sidebar .popular-block { display: none; }
+  /* Mobile uses the inline topic doorway and latest articles. Desktop rail
+     content would repeat those destinations after six long posts. */
+  .home-sidebar { display: none; }
   .reader-main {
     padding-bottom: 24px;
   }
