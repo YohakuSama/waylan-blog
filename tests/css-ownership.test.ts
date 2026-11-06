@@ -14,6 +14,7 @@ const ownerFiles = [
   "./motion.css",
   "./reader-progress.css",
   "./image-viewer.css",
+  "./announcements.css",
 ];
 
 describe("Shared CSS ownership and cascade safety", () => {
