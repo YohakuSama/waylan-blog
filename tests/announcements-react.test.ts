@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import { act, createElement } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import {
   AnnouncementBanner, AnnouncementDetail, AnnouncementList, useSiteAnnouncements,
 } from "../src/components/SiteAnnouncements";
@@ -54,6 +54,7 @@ async function setup() {
   Object.defineProperty(dom.window.HTMLDialogElement.prototype, "close", {
     configurable: true, value(this: HTMLDialogElement) { this.removeAttribute("open"); },
   });
+  const { createRoot } = await import("react-dom/client");
   const element = dom.window.document.getElementById("test")!;
   let root: Root | null = null;
   const render = async (item: Announcement) => {
