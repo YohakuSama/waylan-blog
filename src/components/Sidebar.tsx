@@ -58,7 +58,7 @@ export function Heatmap() {
       <div
         className="heatmap-grid"
         role="img"
-        aria-label={`最近 ${WEEKS} 周共更新 ${total} 条内容，最新一条在 ${latest}`}
+        aria-label={`截至 ${latest} 的 ${WEEKS} 周共更新 ${total} 条内容`}
       >
         {weeks.map((week, w) => (
           <div className="heatmap-week" key={w}>
