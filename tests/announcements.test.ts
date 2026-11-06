@@ -90,6 +90,8 @@ describe("Public site announcements", () => {
     assert.match(html, /站点公告/);
     assert.match(html, /例行维护/);
     assert.match(html, /查看详情/);
+    assert.match(html, /site-announcement-noscript/);
+    assert.match(html, /部分页面正在维护/);
     assert.match(html, /不再显示公告/);
     assert.equal((html.match(/<button/g) || []).length, 2);
   });
