@@ -177,6 +177,8 @@ h3 {
     grid-template-columns: minmax(0, 1fr) 276px;
     column-gap: 44px;
   }
+  /* Reading progress belongs to the article stream, not the full masthead. */
+  .home-page > .home-resume { width: calc(100% - 320px); }
 }
 .feed-column {
   min-width: 0;
