@@ -239,6 +239,11 @@ try {
               homeDensity: document.querySelector(".home-list")?.className,
               homeEntryCount: document.querySelectorAll(".home-list .feed-item").length,
               homeSecondEntry: rect(document.querySelectorAll(".home-list .feed-item")[1]),
+              homeCardTags: [...document.querySelectorAll(".home-list .feed-item")].map((card) => ({
+                links: [...card.querySelectorAll(".tag-list a")].map(rect).filter(Boolean),
+                bookmark: rect(card.querySelector(".feed-tail .card-bookmark")),
+                tail: rect(card.querySelector(".feed-tail")),
+              })),
               homeProjectRows: [...document.querySelectorAll(".home-sidebar .home-projects a")].map(rect),
               homeReadingNote: select(".home-sidebar .home-reading-note"),
               resume: select(".home-resume"),
@@ -798,6 +803,14 @@ try {
               `${label}: primary browse entry point is hidden or too small`);
             assert.ok(geometry.homeDensity?.includes("density-full"), `${label}: library density leaked into home`);
             assert.equal(geometry.homeEntryCount, 6, `${label}: homepage became a full library`);
+            assert.ok(geometry.homeCardTags.length === geometry.homeEntryCount &&
+              geometry.homeCardTags.every((card) =>
+                card.links.length > 0 && card.links.every((tag) =>
+                  tag.left >= 0 && tag.right <= geometry.viewport + 1) &&
+                card.bookmark && card.tail &&
+                card.bookmark.top >= card.tail.top - 1 &&
+                card.bookmark.bottom <= card.tail.bottom + 1),
+              `${label}: home cards have invisible tags, orphaned bookmarks or clipped tag links`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
             assert.ok(geometry.homeProjectRows.length >= 2,
               `${label}: project directory should contain the real projects`);
