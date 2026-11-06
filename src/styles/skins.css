@@ -949,13 +949,29 @@ html {
 :root[data-skin="terminal"] .brand-term {
   display: inline-flex;
   align-items: center;
-  /* Match the visual weight/slot of Editorial's wordmark with shared tokens. */
-  font: 700 calc(var(--masthead-wordmark-height) * .9)/1.05 var(--font-mono);
-  letter-spacing: -.045em;
+  gap: .12em;
+  /* The terminal prompt, name and caret together occupy one responsive slot. */
+  font: 700 calc(var(--masthead-wordmark-height) * .72)/1.05 var(--font-mono);
+  letter-spacing: -.055em;
   white-space: nowrap;
 }
-.brand-term b {
+.brand-term-prompt {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15em;
+  height: 1.12em;
+  border: 1px solid var(--brand);
   color: var(--brand);
+  font-size: .82em;
+  line-height: 1;
+}
+.brand-term b { color: var(--brand); }
+.brand-term-caret {
+  display: inline-block;
+  width: .2em;
+  height: .72em;
+  margin-left: .04em;
+  background: var(--brand);
 }
 :root[data-skin="terminal"] .nav-link .nav-label::before { content: none; }
 :root[data-skin="terminal"] .nav-link:hover .nav-label::before {
