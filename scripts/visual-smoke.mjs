@@ -996,10 +996,16 @@ try {
           const recoveredStatus = page.waitForResponse(response =>
             new URL(response.url()).pathname === "/api/status" && response.status() === 200,
             { timeout: 14000 });
-          await inbox.getByRole("button", { name: "重试", exact: true }).click();
+          // This checks recovery state, not pointer hit-testing (covered above).
+          // A physical Playwright click can land on the login button replacing
+          // Retry in the same position during a concurrent status refresh.
+          // Dispatch to the exact mounted Retry element synchronously.
+          await inbox.getByRole("button", { name: "重试", exact: true })
+            .evaluate(button => button.click());
           await recoveredStatus;
           try {
             await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor({ timeout: 12000 });
+            assert.equal(new URL(page.url()).pathname, "/", `${label}: recovery must not initiate GitHub OAuth`);
           } catch (error) {
             // The accessible dialog may have been unmounted. Inspect the page,
             // not the locator that already failed, to preserve the real cause.

@@ -41,3 +41,19 @@ it("所有预渲染页面使用统一站点名称与描述", () => {
     assert.equal(doc.querySelector('meta[name="description"]')?.getAttribute("content"), site.description);
   }
 });
+
+it("保留 Editorial 原有手写体路径，终端标识不会显示为 waylanl", () => {
+  const wordmark = readFileSync("src/components/Wordmark.tsx", "utf8");
+  const app = readFileSync("src/App.tsx", "utf8");
+  const skins = readFileSync("src/styles/skins.css", "utf8");
+  assert.match(wordmark, /const WORD\s*=/, "restore the original outlined script wordmark");
+  assert.ok(wordmark.includes('viewBox="-3.7 -83.3 313.4 117.2"'));
+  assert.ok(wordmark.includes('<path d={WORD} fill="currentColor" />'));
+  assert.doesNotMatch(wordmark, /<text[\s>]|viewBox="0 0 170 46"/,
+    "do not replace the handwritten identity with an SVG text label");
+  assert.ok(app.includes('className="brand-term-prompt"'));
+  assert.ok(app.includes('{site.name.toLowerCase()}'));
+  assert.doesNotMatch(app, /brand-term-caret/, "trailing cursor looks like an extra l on iOS");
+  assert.doesNotMatch(skins, /\.brand-term-caret\s*\{/);
+  assert.match(skins, /\.brand-term\s*\{[^}]*gap:\s*\.3em;/);
+});
