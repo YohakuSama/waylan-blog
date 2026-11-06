@@ -851,6 +851,8 @@ try {
                 card.bookmark.bottom <= card.tail.bottom + 1),
               `${label}: home cards have invisible tags, orphaned bookmarks or clipped tag links`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
+            assert.ok(geometry.column && Math.abs(geometry.resume.right - geometry.column.right) <= 1,
+              `${label}: resume entry and the latest-content column do not align`);
             assert.equal(geometry.homeReadingNote, null,
               `${label}: redundant reading-tip sidebar panel remains`);
             if (width <= 767) {
