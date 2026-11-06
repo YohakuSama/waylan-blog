@@ -104,15 +104,20 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(readerStyles.includes(".reading-article .article-heading-bottom"));
     assert.match(readerStyles, /\.reading-article \.article-actions \{\s*display: none;/);
   });
-  it("uses the same project tag links inside the cover without duplicating them on the right", () => {
+  it("keeps desktop project previews while replacing bulky phone/tablet cards with usable tags", () => {
     assert.ok(feed.includes('className="project-thumb-tags"'));
+    assert.ok(feed.includes('className="project-compact-tags"'));
     assert.ok(feed.includes('<TagList tags={post.tags} hrefForTag={tagHref} />'));
     assert.ok(feed.includes('(post.type !== "project" || !media)'));
     assert.ok(feedCss.includes(".project-thumb-tags .tag-list a {"));
+    assert.ok(responsive.includes("@media (max-width: 1040px)"));
+    assert.ok(responsive.includes(".feed-item.is-project.has-media .project-media"));
+    assert.ok(responsive.includes(".feed-item.is-project .project-compact-tags"));
+    assert.ok(responsive.includes("@media (min-width: 768px) and (max-width: 1040px)"));
     assert.ok(feed.includes('onClick={() => onChange("compact")}'));
     assert.ok(feed.includes('onClick={() => onChange("full")}'));
   });
-  it("keeps hero art bounded and publication facts aligned with their bookmark", () => {
+  it("keeps hero art bounded and save actions separate from publication facts", () => {
     const page = readFileSync("src/pages/Home.tsx", "utf8");
     const mark = readFileSync("src/components/Wordmark.tsx", "utf8");
     assert.ok(shell.includes("grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);"));
@@ -120,7 +125,9 @@ describe("home hero mobile and tablet layout", () => {
     assert.doesNotMatch(page, /className="home-motto"/);
     assert.ok(feed.includes('className="entry-meta-facts"'));
     assert.ok(feedCss.includes(".entry-meta-facts > * {"));
-    assert.match(skins, /\.entry-meta \.card-bookmark \{\s*position: static;/);
+    assert.ok(feed.includes('className="feed-tail"'));
+    assert.ok(!feed.includes('<BookmarkButton post={post} className="card-bookmark" />\n    </div>'));
+    assert.match(skins, /\.feed-tail \.card-bookmark \{\s*position: static;/);
     assert.ok(mark.includes('viewBox="-3.7 -83.3 313.4 117.2"'));
     assert.ok(skins.includes(".brand-term-prompt"));
   });
