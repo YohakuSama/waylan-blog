@@ -1323,65 +1323,7 @@ html {
 @media(hover:none){
   .feed-item:hover .feed-media img,.profile-block:hover .profile-mark{transform:none}
 }
-/* v1.6.6: image viewer and consistent author identity */
-.image-dialog {
-  width: min(1080px, calc(100vw - 64px));
-  height: fit-content;
-  max-height: calc(100dvh - 48px);
-  border: 1px solid color-mix(in srgb, var(--line-strong) 65%, transparent);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: 0 32px 110px rgba(15, 12, 20, .42);
-  overflow: hidden;
-  isolation: isolate;
-}
-.image-dialog::backdrop {
-  background: rgba(15, 13, 19, .73);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-}
-.image-dialog .dialog-header {
-  flex: 0 0 auto;
-  min-width: 0;
-  background: var(--surface);
-  padding: 9px 16px;
-  z-index: 2;
-}
-.image-dialog .dialog-header > span {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 56px);
-}
-.image-dialog .dialog-header .icon-button { border-radius: var(--radius-md); }
-.image-dialog > img {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  max-height: calc(100dvh - 150px);
-  object-fit: contain;
-  margin-inline: auto;
-}
-.image-dialog:has(>img)::after {
-  content: "Esc 关闭 · 点击背景返回文章";
-  display: block;
-  padding: 10px 14px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--muted);
-  text-align: center;
-  font: 11px/1.5 var(--font-sans);
-  letter-spacing: .025em;
-  flex: 0 0 auto;
-}
-@media (max-width: 700px) {
-  .image-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 26px); border-radius: var(--radius-md); }
-  .image-dialog > img { max-height: calc(100dvh - 128px); }
-  .image-dialog .dialog-header { padding: 8px 12px; }
-  .image-dialog:has(> img)::after { display: none; }
-}
+/* Image viewer geometry/size-to-content rules live in styles.css. */
 :root[data-skin="terminal"] .image-dialog { border-radius: 0; }
 :root[data-skin="terminal"] .image-dialog .dialog-header .icon-button { border-radius: 0; }
 /* Site sidebar tips: optional disclosure, no analytics or distracting timers. */
@@ -1409,21 +1351,9 @@ html {
 .sidebar-note summary:hover { color: var(--brand); }
 .sidebar-note summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 .sidebar-note p { color: var(--ink-soft); line-height: 1.85; margin: 6px 0 0; }
-@media (hover:hover) and (pointer:fine) {
-  .image-dialog .dialog-header button:hover { background: var(--surface-muted); transform: rotate(90deg); }
-}
-
-/* Keep closed native dialogs out of layout; keep the image dialog compact on touch. */
+/* Keep closed native dialogs out of layout. */
 .echo-dialog:not([open]) { display:none !important; }
-/* iOS Safari should size the image dialog to its contents, not stretch it. */
-.echo-dialog.image-dialog {
-  display: block;
-  height: fit-content !important;
-  min-height: 0;
-  margin: auto;
-}
 @media (max-width:700px) {
-  .echo-dialog.image-dialog { width:calc(100vw - 20px); max-height:calc(100dvh - 24px) !important; border:1px solid var(--line-strong) !important; border-radius:var(--radius-md) !important; }
   :root[data-skin="terminal"] .echo-dialog.image-dialog { border-radius:0 !important; }
 }
 
