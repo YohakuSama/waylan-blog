@@ -2,8 +2,12 @@ name: Waylan CI
 
 # One entry point; no duplicate npm ci, builds or browser installations.
 on:
+  # Drafts are development workspaces: create a skipped check without
+  # provisioning a runner. The ready_for_review transition runs the full gate
+  # against the exact current PR head; later commits to a ready PR re-run it.
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches: [main]
   workflow_dispatch: {}
@@ -17,6 +21,10 @@ concurrency:
 
 jobs:
   check:
+    # Avoid allocating CI minutes while a PR is still being actively drafted.
+    # GitHub prevents merging drafts; ready_for_review always triggers this
+    # same required job, including full scoped browser tests for UI changes.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

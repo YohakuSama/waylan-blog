@@ -106,3 +106,24 @@ test("PR visual smoke checks all skins and representative device widths, full ke
   assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && 'full' || 'smoke'"));
   assert.match(visual, /matrix === "smoke" \? smokeWidths : fullWidths/);
 });
+
+test("draft PRs avoid runner compute, but ready-for-review and subsequent changes are gated", () => {
+  const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
+  assert.match(workflow, /types: \[opened, synchronize, reopened, ready_for_review, converted_to_draft\]/);
+  assert.ok(workflow.includes("if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}"));
+  assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'pull_request' }}"),
+    "new ready-PR revisions must supersede stale checks");
+  assert.ok(workflow.includes("steps.plan.outputs.browser == 'true'"),
+    "ready PRs must retain impacted browser checks");
+  assert.ok(workflow.includes("timeout-minutes: 30"), "keep bounded runners");
+  assert.doesNotMatch(workflow, /runs-on:.*self-hosted/);
+  assert.match(workflow, /runs-on: ubuntu-latest/);
+});
+
+test("clean installs and isolated browser states are not replaced by persisted site data", () => {
+  const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
+  const visual = readFileSync("scripts/visual-smoke.mjs", "utf8");
+  assert.match(workflow, /run: npm ci/);
+  assert.match(visual, /browser\.newContext\(\{/);
+  assert.doesNotMatch(workflow, /node_modules\/|\.localStorage|cache:.*localStorage|\.cache\/vite/);
+});
