@@ -121,7 +121,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes('className="entry-meta-facts"'));
     assert.ok(feedCss.includes(".entry-meta-facts > * {"));
     assert.match(skins, /\.entry-meta \.card-bookmark \{\s*position: static;/);
-    assert.ok(mark.includes('viewBox="0 0 170 46"'));
+    assert.ok(mark.includes('viewBox="-3.7 -83.3 313.4 117.2"'));
     assert.ok(skins.includes(".brand-term-prompt"));
   });
   it("prevents tablet hero art from creating side-scrolling", () => {
