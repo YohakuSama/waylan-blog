@@ -660,6 +660,7 @@
   .home-sidebar .side-head { margin-bottom: 7px; }
   .home-sidebar .explore-list a { min-height: 44px; padding: 7px 6px; }
   .home-sidebar .home-reading-note { margin-top: 0; }
+  .home-sidebar .popular-block { display: none; }
   .reader-main {
     padding-bottom: 24px;
   }
