@@ -119,17 +119,12 @@ export function Home() {
         )}
         {usedTopics.length > 0 && (
           <nav className="home-topic-shortcuts" aria-label="按主题浏览文章">
-            <div className="home-topic-shortcuts-head">
-              <h2>浏览主题</h2>
-              <Link href="/feed">全部内容<ArrowRight size={14} aria-hidden="true" /></Link>
-            </div>
-            <div className="home-topic-shortcuts-links">
-              {usedTopics.map((topic) => (
-                <Link href={`/feed?topic=${topic.id}`} key={topic.id}>
-                  {topic.name}
-                </Link>
-              ))}
-            </div>
+            <h2>主题</h2>
+            {usedTopics.map((topic) => (
+              <Link href={`/feed?topic=${topic.id}`} key={topic.id}>
+                {topic.name}
+              </Link>
+            ))}
           </nav>
         )}
         <section className="home-feed" aria-labelledby="latest-heading">
