@@ -901,8 +901,11 @@ export default function Reader({ post }: { post: Post }) {
     : draft.anchor;
   const panelQuoteText = panelQuote ? anchorQuote(panelQuote) : "";
   const canExpandPanelQuote = panelIds.length > 0 && panelQuoteText.length > 90;
-  const prev = posts[posts.findIndex((p) => p.id === post.id) + 1],
-    next = posts[posts.findIndex((p) => p.id === post.id) - 1];
+  // The feed is newest-first. Reading "next" moves forward through that list
+  // (to an older post); "previous" must always be its inverse.
+  const postIndex = posts.findIndex((p) => p.id === post.id);
+  const prev = postIndex > 0 ? posts[postIndex - 1] : undefined;
+  const next = postIndex >= 0 ? posts[postIndex + 1] : undefined;
   // Native browser menus usually appear ABOVE the highlighted line.
   // Prefer the space below; on narrow screens CSS docks actions safely at
   // the bottom instead of competing with iOS/Android selection handles.
@@ -1343,13 +1346,7 @@ export default function Reader({ post }: { post: Post }) {
                 <strong>{next.title}</strong>
               </Link>
             ) : (
-              <Link href="/feed">
-                <small>
-                  继续探索
-                  <ArrowRight size={13} />
-                </small>
-                <strong>浏览全部内容</strong>
-              </Link>
+              <div />
             )}
           </nav>
         </div>

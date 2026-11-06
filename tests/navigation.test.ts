@@ -279,6 +279,39 @@ describe("React navigation and reading interactions (DOM integration, not browse
     await settle(100);
     assert.equal(location.pathname, "/", "Back should eventually restore the actual starting page");
   });
+  it("navigates to older content with 下一篇 and returns to the same post with 上一篇", async () => {
+    assert.ok(posts.length >= 3);
+    await mount(`/post/${posts[0].slug}`);
+    const forward = document.querySelector<HTMLAnchorElement>(
+      `.article-neighbors a[href="/post/${posts[1].slug}"]`,
+    );
+    assert.ok(forward);
+    assert.match(forward.querySelector("small")?.textContent || "", /下一篇/);
+    assert.equal(document.querySelector('.article-neighbors a[href="/feed"]'), null,
+      "newest post should not send 下一篇 to the complete feed");
+    await click(forward);
+    assert.equal(location.pathname, `/post/${posts[1].slug}`);
+    const backward = document.querySelector<HTMLAnchorElement>(
+      `.article-neighbors a[href="/post/${posts[0].slug}"]`,
+    );
+    assert.ok(backward);
+    assert.match(backward.querySelector("small")?.textContent || "", /上一篇/);
+    await click(backward);
+    assert.equal(location.pathname, `/post/${posts[0].slug}`);
+  });
+  it("ends the reading sequence without disguising the content index as 下一篇", async () => {
+    const last = posts.length - 1;
+    await mount(`/post/${posts[last].slug}`);
+    const previous = document.querySelector<HTMLAnchorElement>(
+      `.article-neighbors a[href="/post/${posts[last - 1].slug}"]`,
+    );
+    assert.ok(previous);
+    assert.match(previous.querySelector("small")?.textContent || "", /上一篇/);
+    assert.equal(document.querySelectorAll(".article-neighbors a").length, 1);
+    assert.equal(document.querySelector('.article-neighbors a[href="/feed"]'), null);
+    assert.doesNotMatch(document.querySelector(".article-neighbors")?.textContent || "",
+      /继续探索|浏览全部内容/);
+  });
   it("restores the original filtered list after returning through neighboring articles", async () => {
     await mount("/feed?topic=notes");
     const first = document.querySelector<HTMLAnchorElement>(".post-card-link")!;
