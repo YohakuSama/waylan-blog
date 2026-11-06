@@ -371,7 +371,7 @@ h3 {
   right: auto;
   top: auto;
   width: 100%;
-  height: clamp(168px, 20vw, 220px);
+  height: clamp(168px, 18vw, 196px);
   overflow: hidden;
   pointer-events: none;
   /* The illustration owns a bounded column below the heading's top edge. */
