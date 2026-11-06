@@ -8,10 +8,10 @@ import { chromium } from "playwright";
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
 // Keep full breakpoint-boundary coverage for manually requested audits.
-// Normal PRs still cover wide desktop, tablet, the 767/768 split and phones
-// in all four skin/theme combinations, but avoid 16 widths on every edit.
-const fullWidths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 601, 600, 390, 320];
-const smokeWidths = [1440, 1024, 860, 768, 767, 390, 320];
+// Normal PRs cover desktop/tablet, 1024/1025 and 767/768 layout switches,
+// the former 600/601 image boundary and phone sizes in all four appearances.
+const fullWidths = [1440, 1280, 1279, 1200, 1120, 1119, 1025, 1024, 861, 860, 768, 767, 701, 700, 601, 600, 390, 320];
+const smokeWidths = [1440, 1025, 1024, 860, 768, 767, 601, 390, 320];
 const matrix = process.env.WAYLAN_VISUAL_MATRIX || "full";
 assert.ok(matrix === "smoke" || matrix === "full", `Unknown visual matrix: ${matrix}`);
 const widths = matrix === "smoke" ? smokeWidths : fullWidths;
@@ -373,7 +373,7 @@ try {
               `${label}: featured cover is vertically misaligned with text (${dy}px)`);
           }
           // Regression for premature, balanced Chinese title wrapping.
-          // Applied to all 16 viewport widths and editorial/terminal x light/dark.
+          // Applied to all sampled viewport widths and editorial/terminal x light/dark.
           if (route === "/" || route === "/feed" || route.startsWith("/post/")) {
             assert.equal(geometry.headingTextWrap, "wrap",
               `${label}: article heading must fill each line naturally, not text-wrap: balance/pretty`);
