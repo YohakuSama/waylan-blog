@@ -220,6 +220,11 @@
   .feed-item:not(.is-article) .feed-media {
     aspect-ratio: 5 / 2;
   }
+  /* Project tags are interactive; allow their rows to grow instead of clipping. */
+  .feed-item.is-project.has-media .project-thumb {
+    aspect-ratio: auto;
+    min-height: 152px;
+  }
   .code-thumb {
     aspect-ratio: auto;
     min-height: 0;
