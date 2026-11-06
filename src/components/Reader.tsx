@@ -973,7 +973,6 @@ export default function Reader({ post }: { post: Post }) {
                 <List size={17} aria-hidden="true" />
                 <span>{post.toc.length ? "本文目录" : "阅读工具"}</span>
               </button>
-              <BookmarkButton post={post} className="article-action-save" showLabel />
             </div>
             {excerptMode && (
               <div className="excerpt-mode-hint" role="status">
