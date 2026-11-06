@@ -439,6 +439,15 @@
   .archive-month-label { padding:6px 0; font-size:12px; }
 }
 
+/* A missing page should remain a useful entry point on a short phone screen. */
+@media (max-width: 767px) {
+  .not-found { padding-block: var(--space-10) var(--space-12); }
+  .not-found > .mono { max-width: 100%; overflow-wrap: anywhere; }
+  .not-found .lost-latest { margin-top: var(--space-6); }
+  .not-found .lost-guess { grid-template-columns: minmax(0, 1fr) auto; }
+  .not-found .lost-guess strong { overflow-wrap: anywhere; }
+}
+
 /* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
 .header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 .header-search:hover { background:var(--surface-muted); }

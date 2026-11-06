@@ -262,6 +262,10 @@ try {
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
               footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
               notFoundHeading: document.querySelector(".not-found h1")?.textContent?.trim(),
+              notFoundCodeGap: (() => {
+                const code = select(".not-found > .mono"), masthead = select(".site-header");
+                return code && masthead ? code.top - masthead.bottom : null;
+              })(),
               notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
               notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
               aboutHeadingLevels: [...document.querySelectorAll(".about-details > div > h2")].map((el) => el.textContent.trim()),
@@ -349,6 +353,11 @@ try {
           if (route === "/feed" && width <= 767) {
             assert.ok(geometry.phoneCovers.length && geometry.phoneCovers.every((box) => box && box.width <= 144.5 && box.height <= 91),
               `${label}: a full-width cover displaced phone content`);
+          }
+          if (route === "/404" && width <= 767) {
+            assert.ok(geometry.notFoundCodeGap !== null &&
+              geometry.notFoundCodeGap >= -1 && geometry.notFoundCodeGap <= 64,
+              `${label}: 404 entry is too far below mobile header (${geometry.notFoundCodeGap}px)`);
           }
           // The save shortcut is part of the publication row, not a detached corner.
           if ((route === "/" || route === "/feed") && geometry.entryFacts && geometry.bookmark) {
