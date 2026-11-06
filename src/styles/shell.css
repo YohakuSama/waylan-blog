@@ -164,6 +164,22 @@ h3 {
   gap: 0 var(--space-12);
   align-items: start;
 }
+/* The home edition shares a centered page frame with the four index pages.
+   The masthead owns the full width; the rail begins alongside latest content. */
+.home-page {
+  width: 100%;
+  max-width: 1140px;
+  margin-inline: auto;
+}
+.home-grid { width: 100%; }
+@media (min-width: 1120px) {
+  .content-grid.home-grid {
+    grid-template-columns: minmax(0, 1fr) 276px;
+    column-gap: 44px;
+  }
+  /* Reading progress belongs to the article stream, not the full masthead. */
+  .home-page > .home-resume { width: calc(100% - 320px); }
+}
 .feed-column {
   min-width: 0;
 }
@@ -348,10 +364,25 @@ h3 {
 .home-list .entry-meta { font-size: 12px; }
 .home-list .entry-views { display: none; }
 .home-list .thought-text { font-size: 18px; line-height: 1.75; }
-/* Home discovery is a compact index, not a stack of oversized cards. */
+/* Homepage discovery is a compact, typographic rail, not a second feed. */
 .home-sidebar { padding-top: 20px; padding-bottom: 12px; }
-.home-sidebar > .side-block { padding: 18px 0; }
-.home-sidebar > .side-block:first-child { padding-top: 0; }
+.site-sidebar.home-sidebar > .side-block { padding: 16px 0; }
+.site-sidebar.home-sidebar > .side-block:first-child { padding-top: 0; }
+.site-sidebar.home-sidebar .side-head { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
+.home-sidebar .side-title { font-size: 15px; line-height: 1.45; }
+.site-sidebar.home-sidebar .side-heading-link { gap: 10px; }
+.home-sidebar .explore-list a { font-size: 14px; }
+.home-sidebar .popular-list a {
+  min-height: 44px;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.home-sidebar .popular-title { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+@media (min-width: 1120px) {
+  /* Start the first widget with the reading list, not the page introduction. */
+  .site-sidebar.home-sidebar { padding: 16px 0 12px 22px; min-height: 0; }
+}
 .home-projects { list-style: none; margin: 0; padding: 0; }
 .home-projects li + li { border-top: 1px solid var(--line); }
 .home-projects a {

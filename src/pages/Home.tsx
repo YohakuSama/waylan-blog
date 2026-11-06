@@ -73,106 +73,104 @@ export function Home() {
   // Detailed type/topic/sort controls belong exclusively on the content page.
   const items = newestFirstList();
   return (
-    <div className="content-grid home-grid">
-      <div className="feed-column">
-        <section className="home-hero page-heading" aria-label="站点介绍">
-          <div className="intro-copy">
-            <p className="eyebrow mono">WAYLAN / HOME</p>
-            <HeroTitle />
-            <p className="intro-description">{site.description}</p>
-            <nav className="home-links page-heading-actions" aria-label="博客导览">
-              <Link href="/feed" className="home-topic-link">
-                浏览全部内容<ArrowRight size={15} aria-hidden="true" />
-              </Link>
-              <Link href="/about">关于本站</Link>
-              <a href={assetURL("/rss.xml")}
-                download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
-                <Rss size={15} aria-hidden="true" />订阅 RSS
-              </a>
-            </nav>
-          </div>
-          <div className="hero-visual" aria-hidden="true">
-            <NetworkWave />
-            <HeroTerminal />
-          </div>
-        </section>
-        {resume ? (
-          <aside className="home-resume" aria-label="继续阅读">
-            <Link className="resume-link" href={`/post/${resume.slug}?resume=1`}>
-              <BookOpen size={17} aria-hidden="true" />
-              <span><small>继续阅读</small><strong>{resume.title}</strong></span>
-              <small className="resume-progress">{resume.progress}%</small>
-              <ArrowRight size={16} aria-hidden="true" />
+    <div className="home-page">
+      <section className="home-hero page-heading" aria-label="站点介绍">
+        <div className="intro-copy">
+          <p className="eyebrow mono">WAYLAN / HOME</p>
+          <HeroTitle />
+          <p className="intro-description">{site.description}</p>
+          <nav className="home-links page-heading-actions" aria-label="博客导览">
+            <Link href="/feed" className="home-topic-link">
+              浏览全部内容<ArrowRight size={15} aria-hidden="true" />
             </Link>
-          </aside>
-        ) : (
-          // SSR cannot read this visitor's progress. A head-script marker
-          // reserves the exact card height until hydration fills the slot.
-          <div className="home-resume home-resume-placeholder" aria-hidden="true">
-            <div className="resume-link">
-              <BookOpen size={17} aria-hidden="true" />
-              <span><small>继续阅读</small><strong className="resume-preview-title" /></span>
-              <small className="resume-progress resume-preview-progress" />
-              <ArrowRight size={16} aria-hidden="true" />
-            </div>
-          </div>
-        )}
-        {usedTopics.length > 0 && (
-          <nav className="home-topic-shortcuts" aria-label="按主题浏览文章">
-            <h2>主题</h2>
-            {usedTopics.map((topic) => (
-              <Link href={`/feed?topic=${topic.id}`} key={topic.id}>
-                {topic.name}
-              </Link>
-            ))}
+            <Link href="/about">关于本站</Link>
+            <a href={assetURL("/rss.xml")}
+              download={offlinePreview() ? `${site.name}-rss.xml` : undefined}>
+              <Rss size={15} aria-hidden="true" />订阅 RSS
+            </a>
           </nav>
-        )}
-        <section className="home-feed" aria-labelledby="latest-heading">
-          <div className="home-section-head">
-            <h2 id="latest-heading">最新内容</h2>
-            <Link className="hero-browse" href="/feed">全部内容<ArrowRight size={15} aria-hidden="true" /></Link>
+        </div>
+        <div className="hero-visual" aria-hidden="true">
+          <NetworkWave />
+          <HeroTerminal />
+        </div>
+      </section>
+      {resume ? (
+        <aside className="home-resume" aria-label="继续阅读">
+          <Link className="resume-link" href={`/post/${resume.slug}?resume=1`}>
+            <BookOpen size={17} aria-hidden="true" />
+            <span><small>继续阅读</small><strong>{resume.title}</strong></span>
+            <small className="resume-progress">{resume.progress}%</small>
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </aside>
+      ) : (
+        // SSR cannot read this visitor's progress. A head-script marker
+        // reserves the exact card height until hydration fills the slot.
+        <div className="home-resume home-resume-placeholder" aria-hidden="true">
+          <div className="resume-link">
+            <BookOpen size={17} aria-hidden="true" />
+            <span><small>继续阅读</small><strong className="resume-preview-title" /></span>
+            <small className="resume-progress resume-preview-progress" />
+            <ArrowRight size={16} aria-hidden="true" />
           </div>
-          <FeedList
-            items={items}
-            resetKey="latest"
-            variant="home"
-            batch={6}
-            density="full"
-            empty={
-              <div className="empty-state">
-                <h3>暂无内容</h3>
-                <p>这里会按发布时间显示最近的记录。</p>
-              </div>
-            }
-          />
-        </section>
-      </div>
-      <aside className="site-sidebar home-sidebar" aria-label="博客导览">
-        <TopicsBlock className="home-side-topics" />
-        <section className="side-block">
-          <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
-          <ul className="home-projects">
-            {items.filter((p) => p.type === "project").slice(0, 3).map((p) => (
-              <li key={p.id}>
-                <Link href={`/post/${p.slug}`}>
-                  <span className="home-project-copy">
-                    <strong>{p.title}</strong>
-                    <span className="home-project-state">{p.project?.status}</span>
-                  </span>
-                  <span className="home-project-end" aria-hidden="true">
-                    <ArrowRight className="home-project-arrow" size={16} />
-                  </span>
+        </div>
+      )}
+      <div className="content-grid home-grid">
+        <div className="feed-column">
+          {usedTopics.length > 0 && (
+            <nav className="home-topic-shortcuts" aria-label="按主题浏览文章">
+              <h2>主题</h2>
+              {usedTopics.map((topic) => (
+                <Link href={`/feed?topic=${topic.id}`} key={topic.id}>
+                  {topic.name}
                 </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <PopularBlock />
-        <details className="sidebar-note home-reading-note">
-          <summary>阅读与收藏小技巧</summary>
-          <p>点书签可保存待读内容，选中文字可以划线。阅读进度保存在当前浏览器，方便下次继续。</p>
-        </details>
-      </aside>
+              ))}
+            </nav>
+          )}
+          <section className="home-feed" aria-labelledby="latest-heading">
+            <div className="home-section-head">
+              <h2 id="latest-heading">最新内容</h2>
+              <Link className="hero-browse" href="/feed">全部内容<ArrowRight size={15} aria-hidden="true" /></Link>
+            </div>
+            <FeedList
+              items={items}
+              resetKey="latest"
+              variant="home"
+              batch={6}
+              density="full"
+              empty={
+                <div className="empty-state">
+                  <h3>暂无内容</h3>
+                  <p>这里会按发布时间显示最近的记录。</p>
+                </div>
+              }
+            />
+          </section>
+        </div>
+        <aside className="site-sidebar home-sidebar" aria-label="博客导览">
+          <TopicsBlock className="home-side-topics" />
+          <section className="side-block">
+            <SideTitle icon={<Layers size={17} />} href="/projects" label="浏览项目">实践项目</SideTitle>
+            <ul className="home-projects">
+              {items.filter((p) => p.type === "project").slice(0, 3).map((p) => (
+                <li key={p.id}>
+                  <Link href={`/post/${p.slug}`}>
+                    <span className="home-project-copy">
+                      <strong>{p.title}</strong>
+                      <span className="home-project-state">{p.project?.status}</span>
+                    </span>
+                    <span className="home-project-end" aria-hidden="true">
+                      <ArrowRight className="home-project-arrow" size={16} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <PopularBlock />
+        </aside>
+      </div>
     </div>
   );
 }

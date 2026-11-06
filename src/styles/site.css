@@ -1,12 +1,16 @@
 /* ---------- Index pages ---------- */
-/* All editorial index pages share the same leading edge and reading measure. */
+/* Shared rhythm with a page-specific reading measure; centered at every width. */
 .feed-page,
 .projects-page,
 .archive-page,
 .about-page {
   width: 100%;
-  max-width: 960px;
+  margin-inline: auto;
 }
+.feed-page { max-width: 920px; }
+.projects-page { max-width: 960px; }
+.archive-page { max-width: 880px; }
+.about-page { max-width: 720px; }
 .about-layout,
 .feed-layout,
 .projects-layout {

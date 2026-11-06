@@ -1400,15 +1400,12 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(items.every((i) => i.classList.contains("is-note")));
     assert.ok(document.querySelector(".is-note .code-thumb"));
   });
-  it("keeps reading tips available without an always-expanded home sidebar panel", async () => {
+  it("keeps the home doorway useful without a duplicate reading-tip panel", async () => {
     await mount("/");
-    const tip = document.querySelector<HTMLDetailsElement>(".home-reading-note")!;
-    assert.ok(tip && !tip.open, "help should be collapsed until requested");
-    assert.match(tip.textContent || "", /书签/);
-    assert.ok(document.querySelector('.home-links a[href="/about"]'),
-      "about remains visible in the primary introduction");
-    await click(tip.querySelector("summary"));
-    assert.ok(tip.open, "the explanation remains accessible on demand");
+    assert.equal(document.querySelector(".home-reading-note"), null);
+    assert.ok(document.querySelector('.home-topic-shortcuts a[href^="/feed?topic="]'));
+    assert.ok(document.querySelector(".home-sidebar .home-projects"));
+    assert.ok(document.querySelector('.home-links a[href="/about"]'));
   });
   it("keeps an active search as a single removable result chip, not a third filter-row control", async () => {
     await mount("/feed?q=D1");
