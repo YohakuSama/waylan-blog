@@ -166,6 +166,45 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(section.querySelector(".discussion-source"), "real discussion link appears after resolution");
     assert.ok(section.querySelector(".discussion-title button"), "comment composer only appears when mapped");
   });
+  it("keeps one notification bell across home-reader-back and avoids an empty bookmark row", async () => {
+    await mount("/");
+    const header = document.querySelector(".site-header");
+    const bell = document.querySelector(".notification-trigger");
+    assert.ok(header && bell, "header and notification trigger are mounted");
+    await click(document.querySelector(".home-list .post-card-link"));
+    assert.ok(location.pathname.startsWith("/post/"));
+    assert.equal(document.querySelector(".site-header"), header,
+      "navigating to the reader must not remount the header");
+    assert.equal(document.querySelector(".notification-trigger"), bell,
+      "notification state and indicator must keep their component instance");
+    assert.ok(document.querySelector(".article-heading-bottom .article-heading-save .article-action-save"),
+      "bookmark shares the article byline rather than taking a separate row");
+    assert.equal(document.querySelector(".reading-article > .article-actions .article-action-save"), null);
+    await click(document.querySelector(".reader-back"));
+    await settle(70);
+    assert.equal(location.pathname, "/");
+    assert.equal(document.querySelector(".notification-trigger"), bell,
+      "returning from the reader must not reset notification state");
+  });
+
+  it("renders project tags as usable links inside the thumbnail and switches density directly", async () => {
+    await mount("/feed?type=project");
+    const card = document.querySelector(".feed-item.is-project.has-media");
+    assert.ok(card, "a project with a thumbnail is present");
+    const thumbnailTags = card.querySelectorAll(".project-thumb-tags .tag-list a");
+    assert.ok(thumbnailTags.length > 0, "the left thumbnail uses real tag links");
+    assert.equal(card.querySelector(".feed-body > .tag-list"), null,
+      "project tags should not be duplicated on the right");
+    assert.ok(card.querySelector(".project-head[href^='/post/']"),
+      "the thumbnail heading still opens the post");
+    await click(document.querySelector('.view-toggle button[aria-label="紧凑列表"]'));
+    assert.ok(document.querySelector(".feed-list.density-compact"));
+    await click(document.querySelector('.view-toggle button[aria-label="图文 · 详细列表"]'));
+    assert.ok(document.querySelector(".feed-list.density-full"));
+    assert.ok(document.querySelector(".project-thumb-tags .tag-list a"),
+      "interactive project tags survive density switches");
+  });
+
   it("reverses top-navigation motion when going from projects to content or home", () => {
     assert.equal(routeMotionDirection("/", "/projects"), "forward");
     assert.equal(routeMotionDirection("/feed", "/projects"), "forward");
