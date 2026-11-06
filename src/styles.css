@@ -1620,16 +1620,6 @@ textarea::placeholder {
   justify-content: flex-end;
   margin-top: var(--space-3);
 }
-.image-dialog {
-  width: min(1200px, calc(100vw - 40px));
-  max-height: calc(100dvh - 40px);
-  background: var(--paper);
-}
-.image-dialog > img {
-  width: 100%;
-  object-fit: contain;
-  max-height: calc(100dvh - 110px);
-}
 .toast {
   position: fixed;
   bottom: var(--space-8);
@@ -1939,9 +1929,6 @@ textarea::placeholder {
   }
   .panel-original blockquote {
     font-size: var(--text-base);
-  }
-  .image-dialog {
-    width: calc(100% - 16px);
   }
   .toast {
     left: 50%;

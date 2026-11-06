@@ -12,6 +12,8 @@ const ownerFiles = [
   "./responsive.css",
   "./skins.css",
   "./motion.css",
+  "./reader-progress.css",
+  "./image-viewer.css",
 ];
 
 describe("Shared CSS ownership and cascade safety", () => {
@@ -31,6 +33,22 @@ describe("Shared CSS ownership and cascade safety", () => {
       assert.ok(read(file).includes('styles/index'),
         `${file} must share the single CSS entrypoint`);
     }
+  });
+
+  it("owns image geometry once and preserves Terminal skin differences", () => {
+    const base = read("src/styles.css");
+    const skin = read("src/styles/skins.css");
+    const viewer = read("src/styles/image-viewer.css");
+    const progress = read("src/styles/reader-progress.css");
+    assert.doesNotMatch(base, /\.image-dialog\s*\{/);
+    assert.doesNotMatch(skin, /(?:^|\n)\.image-dialog\s*\{/);
+    assert.doesNotMatch(skin, /(?:^|\n)\.echo-dialog\.image-dialog\s*\{/);
+    assert.match(skin, /:root\[data-skin="terminal"\] \.image-dialog \{/);
+    assert.match(viewer, /\.echo-dialog\.image-dialog\s*\{/);
+    assert.match(viewer, /\.image-dialog > img\s*\{/);
+    assert.match(viewer, /\.image-dialog:has\(> img\)::after \{ display: none; \}/);
+    assert.match(progress, /:root\[data-skin="terminal"\] \.reading-progress/);
+    assert.doesNotMatch(skin, /\.reading-progress/);
   });
 
   it("keeps component ownership explicit at the original top-level section cuts", () => {
