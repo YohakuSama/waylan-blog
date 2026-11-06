@@ -208,9 +208,9 @@ describe("mobile reader regression contracts", () => {
     assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
     assert.ok(skins.includes('border-bottom-color: transparent;'),
       "terminal masthead must not draw a dash across first paragraph");
-    assert.ok(responsive.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {') &&
-      responsive.includes('padding-top: 22px;'),
-      "both skins must share identical 22px intro spacing without modifying article layout");
+    assert.ok(responsive.includes('.page-heading { padding: 32px 0 20px; }') &&
+      !responsive.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {'),
+      "mobile Home must share the 32px index heading inset with Feed, Archive, Projects and About");
     assert.ok(responsive.includes('height: 40px; margin-block: 1px;') &&
       skins.includes('border-radius: 0;'),
       "both skins must share the same 40px nav height with terminal square corners");

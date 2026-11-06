@@ -178,11 +178,8 @@
   .header-search kbd {
     display: none;
   }
-  /* Keep the homepage introduction aligned beneath the compact nav; do not
-     modify the archive or the immersive reading header. */
-  .site-header:not(.site-header-reader) + .site-body .home-hero {
-    padding-top: 22px;
-  }
+  /* Home uses the same .page-heading inset as Feed, Archive, Projects and About.
+     No separate top offset: all five page titles share one baseline. */
   .home-hero {
     min-height: 0;
     isolation: isolate;
