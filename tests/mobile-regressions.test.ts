@@ -60,7 +60,7 @@ describe("mobile reader regression contracts", () => {
   });
   it("matches terminal wordmark scale to the shared editorial logo slot", () => {
     const css = skins;
-    assert.ok(css.includes('font: 700 calc(var(--masthead-wordmark-height) * .9)/1.05 var(--font-mono);'),
+    assert.ok(css.includes('font: 700 calc(var(--masthead-wordmark-height) * .72)/1.05 var(--font-mono);'),
       "the terminal logo must use the same responsive masthead size token");
     assert.ok(!css.includes('font: 600 15px var(--font-mono);') &&
       !css.includes('font-size: 13px;\n    min-width: 0;'),
