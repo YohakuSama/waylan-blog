@@ -49,6 +49,17 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
     assert.ok(sidebar.includes("grid-template-columns:auto minmax(0,1fr) auto"));
   });
+  it("centers the adaptive index pages and gives the homepage one editorial frame", () => {
+    assert.ok(pagesCss.includes("margin-inline: auto;"));
+    for (const name of [".feed-page", ".projects-page", ".archive-page", ".about-page"]) {
+      assert.ok(pagesCss.includes(name), name);
+    }
+    assert.ok(shell.includes(".home-page {"));
+    assert.ok(shell.includes("max-width: 1140px;"));
+    assert.ok(shell.includes(".home-grid {"));
+    assert.ok(pages.includes('className="home-page"'));
+    assert.ok(responsive.includes(".home-sidebar { display: none; }"));
+  });
   it("keeps the homepage a single editorial feed with a compact topic doorway", () => {
     assert.ok(shell.includes(".home-feed { border-top:"));
     assert.equal(allSite.includes(".home-feed-heading"), false);
