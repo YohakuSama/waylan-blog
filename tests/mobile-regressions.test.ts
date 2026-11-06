@@ -207,8 +207,10 @@ describe("mobile reader regression contracts", () => {
       responsive.includes('background: transparent;') && responsive.includes('padding-inline: 0;'),
       "both navigation rows must stay visually integrated with their toolbars");
     assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
-    assert.ok(skins.includes('border-bottom-color: transparent;'),
-      "terminal masthead must not draw a dash across first paragraph");
+    assert.ok(skins.includes('border-bottom-color: color-mix(in srgb, var(--line-strong) 40%, transparent);'),
+      "Terminal needs a quiet lower edge, not a prominent divider over content");
+    assert.ok(skins.includes('box-shadow: 0 5px 12px -10px color-mix(in srgb, var(--veil) 45%, transparent);'),
+      "Editorial should use the existing theme-aware veil, not light-colored shadows in dark mode");
     assert.ok(responsive.includes('.page-heading { padding: 32px 0 20px; }') &&
       !responsive.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {'),
       "mobile Home must share the 32px index heading inset with Feed, Archive, Projects and About");
