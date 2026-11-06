@@ -20,7 +20,13 @@ export function useReveal<T extends HTMLElement>(
       return;
     // Route remounts and density changes must never animate existing text
     // after scroll restoration. Reveal only entries explicitly loaded in place.
-    if (!all) return;
+    if (!all) {
+      // Treat existing rows as revealed so a later load-more cannot animate
+      // them again while the new batch enters.
+      for (const row of root.querySelectorAll<HTMLElement>(selector))
+        row.dataset.revealed = "";
+      return;
+    }
     const fresh = [...root.querySelectorAll<HTMLElement>(selector)].filter(
       (el) => !("revealed" in el.dataset),
     );
