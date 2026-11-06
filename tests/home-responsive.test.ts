@@ -102,8 +102,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(articleHeader.includes('className="article-heading-bottom"'));
     assert.ok(articleHeader.includes('className="article-heading-save"'));
     assert.ok(readerStyles.includes(".reading-article .article-heading-bottom"));
-    assert.ok(readerStyles.includes(".reading-article .article-actions {\\n  display: none;") ||
-      readerStyles.includes(".reading-article .article-actions {\\r\\n  display: none;"));
+    assert.match(readerStyles, /\.reading-article \.article-actions \{\s*display: none;/);
   });
   it("uses the same project tag links inside the cover without duplicating them on the right", () => {
     assert.ok(feed.includes('className="project-thumb-tags"'));
