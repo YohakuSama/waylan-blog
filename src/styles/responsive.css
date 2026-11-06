@@ -25,6 +25,8 @@
 /* Tablet: sidebar moves below the main column. */
 /* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
 @media (max-width: 1119px) {
+  .home-topic-shortcuts { display: block; }
+  .home-side-topics { display: none; }
   /* Feed already has type/topic filters and global navigation. Unlike the
      home page, repeating the entire desktop rail after the list adds no route. */
   .feed-layout .site-sidebar { display: none; }
