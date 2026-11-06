@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { classify } from "./ci-plan.mjs";
 
@@ -72,4 +73,36 @@ test("reader feature submodules select reader QA without unrelated feed/motion g
     assert.equal(p.feed, false, path);
     assert.equal(p.motion, false, path);
   }
+});
+
+test("browser QA installs are bounded, cached immediately and never skipped by a cache hit", () => {
+  const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
+  assert.match(workflow, /uses: actions\/cache\/restore@v4/);
+  assert.match(workflow, /uses: actions\/cache\/save@v4/);
+  assert.match(workflow, /id: browsers\s+if:.*\n\s+timeout-minutes: 5/);
+  assert.match(workflow, /npx playwright install-deps chromium firefox webkit/);
+  assert.match(workflow, /npx playwright install chromium firefox webkit/);
+  assert.ok(workflow.indexOf("Save browser binaries immediately on cache miss") <
+    workflow.indexOf("Phone, tablet and desktop layout"),
+    "an unsuccessful visual test must not discard the installed browser cache");
+  assert.ok(workflow.includes("steps.browsers.outcome == 'success'"),
+    "a missing browser binary must fail closed, never silently skip QA");
+});
+
+test("PR visual smoke checks all skins and representative device widths, full keeps breakpoint boundaries", () => {
+  const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
+  const visual = readFileSync("scripts/visual-smoke.mjs", "utf8");
+  const parse = (name) => {
+    const match = visual.match(new RegExp(`const ${name} = \\[([^\\]]+)\\];`));
+    assert.ok(match, `missing ${name}`);
+    return match[1].split(",").map(x => Number(x.trim()));
+  };
+  const focused = parse("smokeWidths");
+  const full = parse("fullWidths");
+  assert.deepEqual(focused, [1440, 1024, 860, 768, 767, 390, 320]);
+  assert.equal(full.length, 16);
+  for (const width of focused) assert.ok(full.includes(width));
+  assert.match(workflow, /WAYLAN_VISUAL_MATRIX:/);
+  assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && 'full' || 'smoke'"));
+  assert.match(visual, /matrix === "smoke" \? smokeWidths : fullWidths/);
 });
