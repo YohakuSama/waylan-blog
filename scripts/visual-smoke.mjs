@@ -288,6 +288,13 @@ try {
               `${label}: hero illustration escapes its section`);
             if (geometry.resume) assert.ok(geometry.heroVisual.bottom <= geometry.resume.top + 1,
               `${label}: hero illustration overlaps continue-reading`);
+            // A tall illustration must not create a vacant band beneath
+            // the introduction's final 44px link row.
+            if (geometry.resume && geometry.identity) {
+              const gap = geometry.resume.top - geometry.identity.bottom;
+              assert.ok(gap >= 0 && gap <= 38,
+                `${label}: hero artwork pushes continue-reading too far down (${gap}px)`);
+            }
           }
           // The save shortcut is part of the publication row, not a detached corner.
           if ((route === "/" || route === "/feed") && geometry.entryFacts && geometry.bookmark) {
