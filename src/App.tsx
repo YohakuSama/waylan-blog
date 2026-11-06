@@ -181,7 +181,9 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
           <Link href="/" className="brand">
             <Wordmark className="brand-wordmark" />
             <span className="brand-term">
+              <span className="brand-term-prompt" aria-hidden="true">&gt;</span>
               <b>{site.name.toLowerCase()}</b>
+              <span className="brand-term-caret" aria-hidden="true" />
             </span>
             <span className="brand-name">{site.name}</span>
             <span className="sr-only">首页</span>
