@@ -11,6 +11,14 @@
 - **可追溯**：每次维护说明目标、责任模块、受影响合同、PR、验证的 commit、合并 commit（如有）、部署确认和回滚方式。技术上的责任归属不等于主观追责：以 Git/PR 事实定位变更者和受影响决策。
 - **循序渐进**：目录、算法、框架或库的新增应有复用或风险价值；不以文件越多/越少作为质量标准。已有能稳定工作的能力不因风格偏好重写。
 
+## 2026-11-06 · 移动端反馈与样式责任补记
+
+- [PR #131](https://github.com/YohakuSama/waylan-blog/pull/131)：此前移动端同一轮反馈同时涉及返回、图片查看器、通知角标与卡片摘要。已合并，但多个独立问题难以单独回滚。后续区分功能修复与整理 PR，不以反馈批次代替单一目的。
+- [PR #133](https://github.com/YohakuSama/waylan-blog/pull/133)：五个索引页面标题对齐归属现有共用响应式布局规则，未新增无必要的模块。
+- [PR #134](https://github.com/YohakuSama/waylan-blog/pull/134)：阅读进度条外观的正式样式入口为 `src/styles/reader-progress.css`；进度数值仍由 `useReadingProgress.ts` 负责。样式导入顺序在 `tests/css-ownership.test.ts` 登记；控件内动效归其自身，全站动效归 `motion.css`。
+- 图片查看器通用布局、iOS 高度、背景适配与说明文字归 `src/styles.css`；皮肤差异归 `src/styles/skins.css`。保留有效的原始尺寸与退出时序，不为消除 `!important` 而改写已验证手势行为。
+- [PR #136](https://github.com/YohakuSama/waylan-blog/pull/136)：独立处理手机文章页完整摘要与非阅读页顶栏下边缘。这里记录问题归属，不提前宣称 CI、生产部署或真实 Safari 已通过；验收结果以对应 Actions 与实机证据为准。
+
 ## 六步维护流程（按故障走）
 
 1. **分类与事实**：标出页面/接口、设备、主题、状态、错误时间、环境（线上/预览/本地）、所用 commit，以及能否重现。对隐私信息脱敏。
