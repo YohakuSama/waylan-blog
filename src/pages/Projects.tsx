@@ -12,7 +12,7 @@ export function Projects() {
         <p className="eyebrow mono">WAYLAN / PROJECTS</p>
         <h1>项目</h1>
         <p>
-          自己做的项目与实验。每个项目注明状态和技术栈，仓库与演示地址仅在真实存在时列出。
+          项目与实验记录，包括当前状态、技术栈和相关链接。
         </p>
       </header>
       <div className="content-grid projects-layout">
@@ -29,7 +29,7 @@ export function Projects() {
             resetKey="projects"
             empty={
               <div className="empty-state">
-                <h2>项目页还空着。</h2>
+                <h2>暂无项目</h2>
                 <p>第一个项目整理好之后，会出现在这里。</p>
               </div>
             }
