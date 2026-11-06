@@ -137,6 +137,7 @@ try {
                   afterContent: getComputedStyle(nav, "::after").content,
                   headerBottomStyle: getComputedStyle(header).borderBottomStyle,
                   headerBottomColor: getComputedStyle(header).borderBottomColor,
+                  headerShadow: getComputedStyle(header).boxShadow,
                   selectedRadius: selected ? parseFloat(getComputedStyle(selected).borderTopLeftRadius) : null,
                 } : null;
               })(),
@@ -521,8 +522,9 @@ try {
                   `${label}: theme-specific nav target height differs from the unified 40px controls`);
               }
               if (variant.skin === "editorial") {
-                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
-                  `${label}: rounded nav still has a visible full-width bottom border`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor) &&
+                  chrome.headerBottomStyle === "solid" && chrome.headerShadow !== "none",
+                  `${label}: Editorial needs a quiet masthead lower edge, not a frame around the tab`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerImage?.includes("linear-gradient"),
@@ -534,8 +536,9 @@ try {
                 if (chrome.selectedRadius !== null) assert.ok(chrome.selectedRadius >= 8,
                   `${label}: rounded nav tab lost its rounded corners`);
               } else {
-                assert.ok(["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor),
-                  `${label}: terminal header bottom line intrudes on page content`);
+                assert.ok(!["transparent", "rgba(0, 0, 0, 0)"].includes(chrome.headerBottomColor) &&
+                  chrome.headerBottomStyle === "dashed" && chrome.headerShadow === "none",
+                  `${label}: Terminal needs one dashed lower edge without a floating shadow`);
                 if (width > 370) {
                   assert.ok(!["none", "normal"].includes(chrome.brandDividerContent) &&
                     chrome.brandDividerTopStyle === "dashed",
