@@ -196,6 +196,26 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".not-found h1")?.textContent, "页面不存在");
     assert.ok(document.querySelector('.not-found a[href="/"]'), "return-home link should remain available");
   });
+  it("keeps all six homepage cards' real tags and save controls together", async () => {
+    await mount("/");
+    const cards = [...document.querySelectorAll<HTMLElement>(".home-list .feed-item")];
+    assert.equal(cards.length, Math.min(6, posts.length));
+    for (const card of cards) {
+      const post = posts.find((p) => card.id === `card-${p.id}`);
+      assert.ok(post, "home card must map to an article");
+      const tagLabels = [...new Set(
+        [...card.querySelectorAll(".tag-list a")].map((tag) => tag.textContent?.slice(1))
+      )];
+      assert.deepEqual(tagLabels, post.tags, "home tags must match the actual article, not just the first card");
+      assert.equal(card.querySelectorAll(".card-bookmark").length, 1);
+      assert.ok(card.querySelector(".feed-tail .card-bookmark"), "save stays after the content");
+    }
+    const tag = cards[1].querySelector<HTMLAnchorElement>(".feed-tail-tags .tag-list a");
+    assert.ok(tag);
+    await click(tag);
+    assert.equal(location.pathname, "/feed");
+    assert.ok(new URLSearchParams(location.search).has("tag"), "home tags keep navigation working");
+  });
   it("opens the content world and filters real content by topic", async () => {
     await mount();
     await click(

@@ -117,6 +117,13 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes('onClick={() => onChange("compact")}'));
     assert.ok(feed.includes('onClick={() => onChange("full")}'));
   });
+  it("shows homepage tags for every post instead of leaving bookmark-only rows", () => {
+    assert.ok(shell.includes(".home-list .thought-mark, .home-list .project-facts { display: none; }"));
+    assert.doesNotMatch(shell, /\.home-list \.feed-item:not\(:first-child\) \.tag-list\s*\{\s*display:\s*none/);
+    assert.doesNotMatch(shell, /\.home-list \.tag-list li:nth-child\(n\+3\)/);
+    assert.ok(feed.includes('className="feed-tail-tags"'));
+    assert.ok(feed.includes('<BookmarkButton post={post} className="card-bookmark" />'));
+  });
   it("keeps hero art bounded and save actions separate from publication facts", () => {
     const page = readFileSync("src/pages/Home.tsx", "utf8");
     const mark = readFileSync("src/components/Wordmark.tsx", "utf8");

@@ -311,11 +311,11 @@ h3 {
 .home-list .feed-item:first-child .feed-body h2 { font-size: 27px; line-height: 1.4; margin-top: 5px; }
 .home-list .feed-item:not(:first-child) .feed-body h2 { font-size: 21px; margin-top: 4px; }
 .home-list .feed-item .feed-body { border: 0; padding-left: 0; }
-.home-list .thought-mark, .home-list .project-facts, .home-list .feed-item:not(:first-child) .tag-list { display: none; }
-.home-list .tag-list li:nth-child(n+3) { display: none; }
+/* Keep real tags visible in the compact home index, including later posts.
+   The shared trailing row already pairs them with the save action. */
+.home-list .thought-mark, .home-list .project-facts { display: none; }
 .home-list .feed-excerpt { margin-top: var(--space-2); }
 .home-list .entry-meta { font-size: 12px; }
-.home-list .entry-meta .card-bookmark { width: 40px; height: 40px; }
 .home-list .entry-views { display: none; }
 .home-list .thought-text { font-size: 18px; line-height: 1.75; }
 /* Home discovery is a compact index, not a stack of oversized cards. */
