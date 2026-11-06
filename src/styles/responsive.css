@@ -562,23 +562,6 @@
     right: 0;
     height: 2px;
   }
-  /* Restore Waylan's signature dashed reading path and amber endpoint.
-     Only its position and pulsing motion differ on compact readers. */
-  .site-header-reader + .site-body .reading-progress > span {
-    background: repeating-linear-gradient(90deg, var(--brand) 0 14px, transparent 14px 18px);
-  }
-  :root[data-skin="terminal"] .site-header-reader + .site-body .reading-progress > span {
-    background: repeating-linear-gradient(90deg, var(--brand) 0 11px, transparent 11px 15px);
-  }
-  .site-header-reader + .site-body .reading-progress > span::after {
-    width: 7px;
-    height: 7px;
-    top: -2px;
-    right: -3px;
-    background: var(--amber);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent);
-    animation: none;
-  }
   .site-header-reader .brand {
     grid-row: 1;
     grid-column: 1;

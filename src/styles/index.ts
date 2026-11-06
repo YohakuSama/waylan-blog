@@ -12,3 +12,4 @@ import "./site.css";
 import "./responsive.css";
 import "./skins.css";
 import "./motion.css";
+import "./reader-progress.css";

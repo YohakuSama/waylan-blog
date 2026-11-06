@@ -1301,21 +1301,6 @@ html {
   animation:nav-progress 1100ms var(--ease-out) infinite alternate;
 }
 @keyframes nav-progress { from { transform:translateX(-95%); opacity:.55; } to { transform:translateX(310%); opacity:1; } }
-/* Reading progress becomes a quiet segmented path with a moving signal head. */
-.reading-progress { height:3px; overflow:visible; }
-.reading-progress > span {
-  display:block;position:relative;width:0;height:100%;
-  transition:width 160ms linear;
-  background:repeating-linear-gradient(90deg,var(--brand) 0 14px,transparent 14px 18px);
-  will-change:transform;
-}
-.reading-progress > span::after {
-  content:"";position:absolute;right:-3px;top:-2px;width:7px;height:7px;border-radius:50%;
-  background:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--amber) 18%,transparent);
-  animation:reading-pulse 2.8s ease-in-out infinite;
-}
-@keyframes reading-pulse { 50% { box-shadow:0 0 0 5px color-mix(in srgb,var(--amber) 8%,transparent); } }
-:root[data-skin="terminal"] .reading-progress > span { background:repeating-linear-gradient(90deg,var(--brand) 0 11px,transparent 11px 15px); }
 :root[data-motion="reduced"] .site-header::after { animation:none; width:100%; transform:none; }
 @media(prefers-reduced-motion: reduce){:root:not([data-motion="full"]) .site-header::after { animation:none; width:100%; transform:none; opacity:.6; }}
 
