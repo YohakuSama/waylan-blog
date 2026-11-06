@@ -182,17 +182,17 @@ try {
               label + ": scroll and toc offsets must use the row's true height");
           }
           assert.ok(Math.abs(articleMasthead.logo.height - header.logo.height) <= 1 &&
-            Math.abs(articleMasthead.logo.top - header.logo.top) <= 1,
+            Math.abs(articleMasthead.logo.top - header.logo.top) <= 1 &&
+            Math.abs(articleMasthead.logo.left - header.logo.left) <= 1,
             label + ": reader logo size/vertical position differs from home; " + JSON.stringify({home: header.logo, reader: articleMasthead.logo, homeHeader: header.header, readerHeader: articleMasthead.header, inner: articleMasthead.inner, brand: articleMasthead.brand, computed: articleMasthead.computed, css: articleMasthead.matchingCSS}));
           for (let i = 0; i < 4; i++) {
             const source = header.controls[i], dest = articleMasthead.controls[i];
             assert.ok(source && dest &&
               Math.abs(source.height - dest.height) <= 1 &&
-              Math.abs(dest.width - (i === 0 && ((width >= 480 && width <= 860) || (width >= 1100 && width <= 1279)) ? 44 : source.width)) <= 1 &&
+              Math.abs(source.width - dest.width) <= 1 &&
+              Math.abs(source.left - dest.left) <= 1 &&
               Math.abs(source.top - dest.top) <= 1,
               label + ": shortcut " + i + " changes size or height in the article");
-            if (width < 480) assert.ok(Math.abs(source.left - dest.left) <= 1,
-              label + ": phone shortcut " + i + " moves horizontally between pages");
           }
           const back = page.locator(".reader-back");
           assert.match((await back.innerText()).trim(), /返回上一页/, label + ": return action should describe its actual behavior");
