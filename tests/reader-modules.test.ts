@@ -79,6 +79,28 @@ describe("Reader feature module contracts", () => {
     assert.ok(progress.includes('!window.matchMedia("(any-pointer: coarse)").matches'));
   });
 
+  it("keeps reader progress semantics and both visual skins independently owned", () => {
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const styles = readFileSync("src/styles/reader-progress.css", "utf8");
+    const skins = readFileSync("src/styles/skins.css", "utf8");
+    const responsive = readFileSync("src/styles/responsive.css", "utf8");
+    const imports = readFileSync("src/styles/index.ts", "utf8");
+    assert.match(reader, /role="progressbar"/);
+    assert.match(reader, /aria-valuenow=\{progress\}/);
+    assert.ok(imports.includes('import "./reader-progress.css";'));
+    assert.doesNotMatch(skins, /\.reading-progress/,
+      "theme decoration must have one visual owner instead of accumulating in skins.css");
+    assert.doesNotMatch(responsive, /\.reading-progress > span/,
+      "responsive.css must own only the reader bar's position");
+    assert.ok(styles.includes('.reading-progress > span::after {'),
+      "Editorial retains its amber endpoint");
+    assert.ok(styles.includes(':root[data-skin="terminal"] .reading-progress > span::after {'),
+      "Terminal uses a separate square cursor");
+    assert.ok(styles.includes('border-radius: 0;') && styles.includes('animation: none;'));
+    assert.ok(styles.includes(':root[data-skin="terminal"] .reading-progress[aria-valuenow="0"]'),
+      "terminal cursor must not falsely show progress at 0%");
+  });
+
   it("builds visible comment trees without changing dedupe precedence or source objects", () => {
     const root = { id: "root", body: "Root", author: null, createdAt: "", updatedAt: "", url: "" } as Comment;
     const emptyParent = { ...root, id: "empty", body: "   " };

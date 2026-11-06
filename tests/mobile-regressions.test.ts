@@ -14,6 +14,7 @@ const responsive = readFileSync("src/styles/responsive.css", "utf8");
 const allSite = [shell, feed, sideRules, pagesCss, responsive].join("\n");
 const motion = readFileSync("src/styles/motion.css", "utf8");
 const skins = readFileSync("src/styles/skins.css", "utf8");
+const readingProgress = readFileSync("src/styles/reader-progress.css", "utf8");
 const app = readFileSync("src/App.tsx", "utf8");
 const boot = readFileSync("src/components/Boot.tsx", "utf8");
 
@@ -299,8 +300,11 @@ describe("mobile reader regression contracts", () => {
       "readers keep their single Waylan logo, without a crowded slogan");
     assert.ok(responsive.includes('.site-header-reader .header-tools .notification-root'),
       "all four direct reader shortcuts remain available on phones");
-    assert.ok(responsive.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
-    assert.ok(responsive.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
+    assert.ok(readingProgress.includes('repeating-linear-gradient(90deg, var(--brand) 0 14px'));
+    assert.ok(readingProgress.includes('.site-header-reader + .site-body .reading-progress > span::after {'));
+    assert.ok(responsive.includes('.site-header-reader + .site-body .reading-progress {'));
+    assert.doesNotMatch(responsive, /\.reading-progress > span/,
+      "compact geometry must not override skin-owned reader-progress visuals");
     assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'));
     assert.ok(responsive.includes('.site-header-reader .brand-wordmark'));
   });

@@ -1,0 +1,80 @@
+/* Visual owner of the article reading-progress indicator.
+   useReadingProgress.ts owns its value; base positioning stays in styles.css
+   and compact reader placement stays in responsive.css. */
+
+/* Editorial: retain the original dashed ink path and amber pulse. */
+.reading-progress {
+  height: 3px;
+  overflow: visible;
+}
+.reading-progress > span {
+  display: block;
+  position: relative;
+  height: 100%;
+  transition: width 160ms linear;
+  background: repeating-linear-gradient(90deg, var(--brand) 0 14px, transparent 14px 18px);
+}
+.reading-progress > span::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent);
+  animation: reader-progress-pulse 2.8s ease-in-out infinite;
+}
+@keyframes reader-progress-pulse {
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--amber) 8%, transparent); }
+}
+
+/* Terminal: muted idle cells, solid filled blocks and a square cursor.
+   Brand/paper tokens make the same rule work in both light and dark modes. */
+:root[data-skin="terminal"] .reading-progress {
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand) 16%, transparent) 0 9px,
+    transparent 9px 12px
+  );
+}
+:root[data-skin="terminal"] .reading-progress > span {
+  background: repeating-linear-gradient(90deg, var(--brand) 0 9px, transparent 9px 12px);
+}
+:root[data-skin="terminal"] .reading-progress > span::after {
+  right: 0;
+  top: -3px;
+  width: 3px;
+  height: 8px;
+  border-radius: 0;
+  background: var(--brand);
+  box-shadow: 0 0 0 1px var(--paper);
+  animation: none;
+}
+/* Do not show a completed-looking cursor before the article has been read. */
+:root[data-skin="terminal"] .reading-progress[aria-valuenow="0"] > span::after {
+  display: none;
+}
+
+/* Compact mastheads only change placement in responsive.css, not the skin.
+   Neither skin pulses on touch readers or with reduced-motion preferences. */
+@media (max-width: 1024px) {
+  .site-header-reader + .site-body .reading-progress > span::after {
+    animation: none;
+  }
+}
+:root[data-motion="reduced"] .reading-progress > span {
+  transition: none;
+}
+:root[data-motion="reduced"] .reading-progress > span::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .reading-progress > span {
+    transition: none;
+  }
+  :root:not([data-motion="full"]) .reading-progress > span::after {
+    animation: none;
+  }
+}

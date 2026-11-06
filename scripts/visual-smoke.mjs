@@ -225,6 +225,22 @@ try {
               articleNeighbors: select(".article-neighbors"),
               siteFooter: select(".site-footer"),
               readerFont: document.querySelector(".reader-prose") && getComputedStyle(document.querySelector(".reader-prose")).fontSize,
+              readerProgress: (() => {
+                const track = document.querySelector(".reading-progress");
+                const fill = track?.querySelector("span");
+                if (!track || !fill) return null;
+                const marker = getComputedStyle(fill, "::after");
+                return {
+                  role: track.getAttribute("role"),
+                  value: Number(track.getAttribute("aria-valuenow")),
+                  trackPattern: getComputedStyle(track).backgroundImage,
+                  fillPattern: getComputedStyle(fill).backgroundImage,
+                  markerRadius: marker.borderRadius,
+                  markerAnimation: marker.animationName,
+                  markerColor: marker.backgroundColor,
+                  markerDisplay: marker.display,
+                };
+              })(),
               headingTextWrap: (() => {
                 const element = document.querySelector(".reading-article .article-heading h1, .feed-list .feed-body h2");
                 return element ? getComputedStyle(element).textWrap : null;
@@ -244,6 +260,25 @@ try {
           if (route.startsWith("/post/")) {
             assert.equal(geometry.deckTextWrap, "wrap",
               `${label}: article excerpt must use normal line wrapping`);
+            const bar = geometry.readerProgress;
+            assert.ok(bar && bar.role === "progressbar" &&
+              bar.value >= 0 && bar.value <= 100,
+              `${label}: scroll progress semantics must remain intact`);
+            assert.match(bar.fillPattern, /repeating-linear-gradient/,
+              `${label}: progress fill must remain visible`);
+            if (variant.skin === "terminal") {
+              assert.notEqual(bar.trackPattern, "none",
+                `${label}: Terminal must show its subtle empty-cell track`);
+              assert.equal(bar.markerRadius, "0px",
+                `${label}: Terminal cursor must remain square`);
+              assert.equal(bar.markerAnimation, "none",
+                `${label}: Terminal cursor must not pulse`);
+            } else {
+              assert.equal(bar.trackPattern, "none",
+                `${label}: Editorial must retain a clear unfilled track`);
+              assert.equal(bar.markerRadius, "50%",
+                `${label}: Editorial must keep its round marker`);
+            }
           }
           results.push({ route, width, ...variant, ...geometry });
           // Capture before assertions so a failing state is available to review.
