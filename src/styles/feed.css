@@ -121,7 +121,9 @@
 .project-thumb {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 10px;
+  aspect-ratio: auto;
+  min-height: 180px;
   padding: 16px 18px;
   background:
     radial-gradient(
@@ -136,6 +138,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  color: var(--ink);
   min-width: 0;
 }
 .project-initial {
@@ -157,12 +160,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.project-thumb-tags {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-height: 36px;
+}
+.project-thumb-tags .tag-list {
+  margin: 0;
+  gap: 6px;
+}
+.project-thumb-tags .tag-list a {
+  padding: 2px 9px;
+  font-size: 11.5px;
+  line-height: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
 .project-langs {
   display: flex;
   gap: 2px;
+  flex: none;
   height: 6px;
-  margin-top: auto;
-  margin-bottom: 8px;
+  margin-top: 0;
+  margin-bottom: 0;
   border-radius: 3px;
   overflow: hidden;
 }
