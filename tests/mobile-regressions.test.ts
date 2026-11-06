@@ -207,8 +207,10 @@ describe("mobile reader regression contracts", () => {
       responsive.includes('background: transparent;') && responsive.includes('padding-inline: 0;'),
       "both navigation rows must stay visually integrated with their toolbars");
     assert.doesNotMatch(skins, /:root\[data-skin="terminal"\] \.site-header:not\(\.site-header-reader\) #site-nav/);
-    assert.ok(skins.includes('border-bottom-color: transparent;'),
-      "terminal masthead must not draw a dash across first paragraph");
+    assert.ok(skins.includes('border-bottom-color: color-mix(in srgb, var(--line-strong) 40%, transparent);'),
+      "terminal masthead should have a quiet lower edge without a heavy rail");
+    assert.ok(skins.includes('box-shadow: 0 5px 12px -10px color-mix(in srgb, var(--ink) 17%, transparent);'),
+      "editorial masthead should be separated with a subtle shadow, not a tab frame");
     assert.ok(responsive.includes('.page-heading { padding: 32px 0 20px; }') &&
       !responsive.includes('.site-header:not(.site-header-reader) + .site-body .home-hero {'),
       "mobile Home must share the 32px index heading inset with Feed, Archive, Projects and About");
@@ -232,6 +234,13 @@ describe("mobile reader regression contracts", () => {
       "narrow phone tools must not be crossed by a decorative divider");
     assert.ok(responsive.includes('.site-header-reader #site-nav { display: none; }'),
       "the immersive reader must retain its own logo/progress rather than receiving a nav divider");
+  });
+  it("keeps the article detail excerpt complete on mobile", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const block = css.match(/\/\* Mobile reading header:[\s\S]*?\.reading-article \.article-deck \{([^}]*)\}/)?.[1];
+    assert.ok(block, "missing phone article detail styles");
+    assert.doesNotMatch(block, /line-clamp|overflow:\s*hidden|display:\s*-webkit-box/,
+      "reader detail cannot inherit a two-line feed-card excerpt clamp");
   });
   it("keeps quiet article actions without a moving overlay", () => {
     const reader = readFileSync("src/components/Reader.tsx", "utf8");
