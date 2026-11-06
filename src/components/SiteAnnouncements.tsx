@@ -92,6 +92,8 @@ export function AnnouncementBanner({
           <X size={16} />
         </button>
       </div>
+      {/* Static-first fallback: critical text must remain readable without JS. */}
+      <noscript><p className="site-announcement-noscript">{item.body}</p></noscript>
     </aside>
   );
 }
