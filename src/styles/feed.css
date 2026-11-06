@@ -320,6 +320,24 @@
 .tag-list a:hover {
   color: var(--accent);
 }
+/* The save action is an end-of-card utility, not part of the publication facts. */
+.feed-tail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  margin-top: 10px;
+}
+.feed-tail-tags {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.feed-list .feed-tail .tag-list {
+  margin: 0;
+}
+.project-compact-tags {
+  display: none;
+}
 .feed-arrow {
   grid-area: arrow;
   align-self: end;
@@ -417,6 +435,17 @@
 }
 .density-compact .thought-text {
   font-size: 15px;
+}
+/* Compact mode must not acquire a whole additional action row. */
+.density-compact .feed-body {
+  padding-right: 42px;
+}
+.density-compact .feed-tail {
+  position: absolute;
+  top: 14px;
+  right: 38px;
+  margin: 0;
+  min-height: 40px;
 }
 .feed-footer {
   display: flex;
