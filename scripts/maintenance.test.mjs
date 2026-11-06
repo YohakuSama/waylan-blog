@@ -91,8 +91,10 @@ test("browser QA installs are bounded, cached immediately and never skipped by a
     "all three engines must start successfully before browser test gates can pass");
   const probe = readFileSync("scripts/ci-browser-runtime.mjs", "utf8");
   for (const name of ["chromium", "firefox", "webkit"]) assert.ok(probe.includes(name));
-  assert.ok(probe.includes("engine.launch") && probe.includes('mode === "detect"') &&
-    probe.includes('mode === "verify"'));
+  assert.ok(probe.includes("engine.launch") && probe.includes("browser.newPage") &&
+    probe.includes("needs_linux_deps=") &&
+    probe.includes("Browser runtime verification failed after dependency repair"),
+    "probe must launch every browser, report repair need and fail on unsuccessful verification");
   assert.ok(workflow.indexOf("Save browser binaries immediately on cache miss") <
     workflow.indexOf("Phone, tablet and desktop layout"),
     "an unsuccessful visual test must not discard the installed browser cache");
