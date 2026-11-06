@@ -236,7 +236,7 @@ export function NotificationBell({
         <div id="notification-panel" className="notification-popover"
           role="dialog" aria-modal="false" aria-labelledby="notification-heading">
           <header>
-            <strong id="notification-heading">消息通知</strong>
+            <strong id="notification-heading">{tab === "announcements" ? "站点公告" : "消息通知"}</strong>
             <button type="button" className="icon-button" ref={dismiss}
               aria-label="关闭消息" onClick={() => close(true)}>
               <X size={16} />
@@ -253,6 +253,9 @@ export function NotificationBell({
           {tab === "announcements" ? (
             <AnnouncementList items={announcements} read={readAnnouncements}
               onOpen={(item) => {
+                // Preserve a connected trigger as the native dialog's
+                // return-focus target after removing this non-modal popover.
+                trigger.current?.focus({ preventScroll: true });
                 setOpen(false);
                 onOpenAnnouncement(item);
               }} />
