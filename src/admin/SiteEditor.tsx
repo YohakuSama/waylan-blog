@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { parseAnnouncements, type Announcement } from "../../shared/announcements";
 import { list, str } from "./form";
 import { adminApi as api } from "./api";
 import { readImage, pickImage, usedUploads, useLeaveGuard, useSaveKey } from "./helpers";
 import { Field, Markdown } from "./ui";
 import type { Overview, Upload } from "./types";
 
-/** Site identity and about-page editing remain one coherent save transaction. */
+/** Site identity, public announcements and About are one versioned site.json save. */
+type AnnouncementForm = Pick<Announcement, "id" | "title" | "body" | "priority" | "published" | "link">;
 type SiteForm = {
   name: string;
   author: string;
@@ -16,6 +18,7 @@ type SiteForm = {
   profileTags: string;
   socials: { label: string; url: string }[];
   about: string;
+  announcements: AnnouncementForm[];
 };
 export const toSiteForm = (o: Overview): SiteForm => ({
   name: str(o.site.data.name),
@@ -30,6 +33,9 @@ export const toSiteForm = (o: Overview): SiteForm => ({
     url: s.url || "",
   })),
   about: o.about.text.replace(/\n$/, ""),
+  announcements: parseAnnouncements(o.site.data.announcements).map(
+    ({ id, title, body, priority, published, link }) => ({ id, title, body, priority, published, link }),
+  ),
 });
 
 export function SiteEditor({
@@ -53,6 +59,10 @@ export function SiteEditor({
   useLeaveGuard(dirty);
   const update = <K extends keyof SiteForm>(key: K, value: SiteForm[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+  const updateAnnouncement = (i: number, patch: Partial<AnnouncementForm>) =>
+    update("announcements", form.announcements.map((item, index) =>
+      index === i ? { ...item, ...patch } : item,
+    ));
   const setSocial = (i: number, key: "label" | "url", value: string) =>
     update(
       "socials",
@@ -80,6 +90,9 @@ export function SiteEditor({
           intro: form.intro,
           avatar: form.avatar,
           profileTags: list(form.profileTags),
+          // Revision and update date are assigned by the Worker after comparing
+          // with the current repository version, never trusted from the browser.
+          announcements: form.announcements,
           socials: form.socials
             .filter((s) => s.url.trim() || s.label.trim())
             .map((s) => ({ label: s.label, url: s.url })),
@@ -229,6 +242,54 @@ export function SiteEditor({
           )}
         </div>
       </div>
+      <section className="admin-announcements" aria-labelledby="site-announcements-title">
+        <h2 className="section-title" id="site-announcements-title">站点公告</h2>
+        <p className="field-hint">公告随网站部署发布，不需要读者登录。普通公告只进铃铛，重要公告显示横幅，紧急公告在首次访问时弹出。修改已发布内容会自动更新版本，重新提示读者。</p>
+        {form.announcements.map((item, i) => (
+          <fieldset className="announcement-editor" key={item.id}>
+            <legend>公告 {i + 1}</legend>
+            <label>标题
+              <input maxLength={80} value={item.title}
+                onChange={(e) => updateAnnouncement(i, { title: e.target.value })} />
+            </label>
+            <label>正文（纯文本）
+              <textarea maxLength={1800} rows={4} value={item.body}
+                onChange={(e) => updateAnnouncement(i, { body: e.target.value })} />
+            </label>
+            <div className="announcement-editor-row">
+              <label>显示级别
+                <select value={item.priority}
+                  onChange={(e) => updateAnnouncement(i, { priority: e.target.value as AnnouncementForm["priority"] })}>
+                  <option value="normal">普通：仅公告列表</option>
+                  <option value="important">重要：公告列表 + 横幅</option>
+                  <option value="urgent">紧急：公告列表 + 横幅 + 首次弹窗</option>
+                </select>
+              </label>
+              <label>相关链接（可选）
+                <input maxLength={300} value={item.link} placeholder="/post/… 或 https://…"
+                  onChange={(e) => updateAnnouncement(i, { link: e.target.value })} />
+              </label>
+            </div>
+            <div className="announcement-editor-actions">
+              <label className="announcement-published">
+                <input type="checkbox" checked={item.published}
+                  onChange={(e) => updateAnnouncement(i, { published: e.target.checked })} />
+                已发布（取消勾选即撤回）
+              </label>
+              <button type="button" className="ghost danger-text" onClick={() =>
+                update("announcements", form.announcements.filter((_, index) => index !== i))
+              }>删除公告</button>
+            </div>
+          </fieldset>
+        ))}
+        {form.announcements.length < 12 && (
+          <button type="button" className="ghost" onClick={() => update("announcements", [
+            ...form.announcements,
+            { id: `notice-${crypto.randomUUID()}`, title: "", body: "",
+              priority: "normal", published: false, link: "" },
+          ])}>新增公告</button>
+        )}
+      </section>
       <h2 className="section-title">关于页</h2>
       <Markdown
         label="关于页正文（Markdown）"
