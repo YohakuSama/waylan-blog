@@ -7,7 +7,14 @@ import { chromium } from "playwright";
 
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
-const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
+// Keep full breakpoint-boundary coverage for manually requested audits.
+// Normal PRs still cover wide desktop, tablet, the 767/768 split and phones
+// in all four skin/theme combinations, but avoid 16 widths on every edit.
+const fullWidths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
+const smokeWidths = [1440, 1024, 860, 768, 767, 390, 320];
+const matrix = process.env.WAYLAN_VISUAL_MATRIX || "full";
+assert.ok(matrix === "smoke" || matrix === "full", `Unknown visual matrix: ${matrix}`);
+const widths = matrix === "smoke" ? smokeWidths : fullWidths;
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet", "/404"];
 const canonicalReaderExcerpt = JSON.parse(readFileSync(new URL("../src/generated/posts.json", import.meta.url), "utf8"))
@@ -971,7 +978,7 @@ try {
       } finally { await context.close(); }
     }
   }
-  console.log(`Visual geometry checks passed: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including persistent navigation, page-state isolation and theme position parity.`);
+  console.log(`Visual geometry checks passed [${matrix}, ${widths.length} widths]: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including persistent navigation, page-state isolation and theme position parity.`);
 } catch (error) {
   await writeFile(`${out}/failure.txt`, error.stack || String(error));
   throw error;
