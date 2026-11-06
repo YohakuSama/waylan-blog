@@ -70,6 +70,12 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
   });
+  it("keeps tablet home spacing ahead of the generic feed cascade", () => {
+    const generic = responsive.indexOf(".feed-list .feed-item { padding-block: var(--space-5); }");
+    const home = responsive.indexOf(".feed-list.home-list .feed-item { padding-block: var(--space-4); }");
+    assert.ok(generic >= 0 && home > generic,
+      "the 768–1119px home rhythm must override generic feed padding");
+  });
   it("keeps the homepage a single editorial feed with a compact topic doorway", () => {
     assert.ok(shell.includes(".home-feed { border-top:"));
     assert.equal(allSite.includes(".home-feed-heading"), false);
