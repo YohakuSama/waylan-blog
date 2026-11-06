@@ -12,7 +12,7 @@ export function Archive() {
       <header className="page-heading archive-heading">
         <p className="eyebrow mono">WAYLAN / ARCHIVE</p>
         <h1>归档</h1>
-        <p>沿着时间，回看技术记录、实践笔记与思考。</p>
+        <p>按年月整理的技术记录、笔记和项目。</p>
         <div className="archive-summary page-heading-actions">
           <Link href="/feed">按主题浏览<ArrowUpRight size={14} aria-hidden="true" /></Link>
           <span>共 {entries.length} 条记录</span>
