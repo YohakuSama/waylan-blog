@@ -45,6 +45,7 @@ flowchart LR
 | 后台登录、管理看板、编辑内容、媒体上传与站点设置 | `src/admin/main.tsx`（启动）→ `Gate.tsx`（会话）→ `Dashboard.tsx`（路由与刷新）→ `ContentList.tsx`（内容列表） / `Discussions.tsx`（评论区创建） / `PostEditor.tsx` / `SiteEditor.tsx`（表单事务）；通用能力在 `ui.tsx` / `helpers.ts` / `form.ts` / `api.ts`；服务端入口 `worker/admin.ts`（权限、API、数据校验）→ `worker/admin-repo.ts`（内容仓库读写/版本） | `tests/admin-modules.test.ts`、`tests/admin.test.ts`、`tests/admin-repository.test.ts`、`tests/admin-form.test.ts`、`scripts/quality-smoke.mjs` |
 | 文章新增、永久链接、RSS 和预渲染 | `content/*`、`scripts/content.ts`、`scripts/prerender.tsx`、`shared/redirects.ts`、`worker/post-sync.ts` | `tests/post-sync.test.ts`、`tests/redirects.test.ts`、`scripts/check-build.ts` |
 | 深浅主题、editorial / terminal 和动效 | `src/styles/skins.css`、`src/styles/motion.css`、`src/lib/appearance.ts`、`src/lib/motion.ts` | `tests/skin-parity.test.ts`、`tests/motion.test.ts`、`scripts/quality-smoke.mjs` |
+| 公开公告、后台发布及紧急弹窗 | `content/site.json` → `scripts/content.ts` → `src/components/SiteAnnouncements.tsx` / `NotificationBell.tsx`；后台 `SiteEditor.tsx` → `worker/admin.ts` | `shared/announcements.ts`、`tests/announcements.test.ts`、`tests/admin.test.ts` 与三端回归 |
 | 通知状态、阅读清单与浏览量 | `src/components/NotificationBell.tsx` / `Shelf.tsx`、`src/lib/shelf.ts` / `views.ts`、`worker/notifications.ts` / `views.ts` | 相关单测、`scripts/quality-smoke.mjs` |
 | Actions 消耗、测试分类与手动运维 | `.github/workflows/verify.yml`、`scripts/ci-plan.mjs`、`scripts/maintenance.test.mjs`；策略见 `docs/ops/ACTIONS_POLICY.md` | `node --test scripts/maintenance.test.mjs`，必要时手动全套 CI |
 | 部署、D1 迁移与仓库转私有 | `wrangler.jsonc`、`scripts/validate-deploy.ts`、`migrations/*`、`worker/auth.ts`；清单见 `docs/MAINTENANCE.md` | `npm run check`、真实 Worker 验证、受控发布与回滚检查 |
@@ -129,6 +130,7 @@ flowchart LR
 | `src/styles/motion.css` | 转场、悬停、键盘/触摸反馈和减少动效 | `src/lib/motion.ts` |
 | `src/styles/reader-progress.css` | Editorial / Terminal 进度轨道、游标和本控件减少动效；不计算进度 | `src/features/reader/useReadingProgress.ts` |
 | `src/styles/image-viewer.css` | 图片放大弹窗共用尺寸、图片居中、提示文案及手机自适应；不管理 Dialog 动画/焦点 | `src/features/reader/ImageViewer.tsx` |
+| `src/styles/announcements.css` | 公告横幅、弹窗和现有铃铛中的公告切换/列表，含双皮肤差异 | `src/components/SiteAnnouncements.tsx`、`NotificationBell.tsx` |
 
 **按需修改规则：** 先查功能自身负责文件，再查 `responsive.css`、`skins.css` 与 `motion.css`。进度外观与图片放大通用几何分别由后置专用样式负责；主题文件只保留真正的皮肤差异，不能在多个表中复制同一尺寸或用临时优先级覆盖。页面详情摘要保持完整，列表预览才允许截断。共享布局 token 必须跨主题统一。修改导入顺序前先检查真实获胜规则与断点；本表不代表全站 CSS 已完成去重。
 
