@@ -118,6 +118,7 @@ describe("admin data contracts after extraction", () => {
     assert.equal(form.profileTags, "React, Cloudflare");
     assert.deepEqual(form.socials, [{ label: "", url: "https://github.com/example" }]);
     assert.equal(form.about, "About the site.");
+    assert.deepEqual(form.announcements, [], "older site profiles remain editable without notices");
   });
 });
 
