@@ -1014,7 +1014,7 @@ html {
   inset: auto;
   width: 100%;
   max-width: none;
-  height: clamp(168px, 20vw, 220px);
+  height: clamp(168px, 18vw, 196px);
   margin: 0;
   overflow: hidden;
   opacity: .86;
