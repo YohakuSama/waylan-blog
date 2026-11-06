@@ -3,6 +3,7 @@
    reader, dialogs and motion settings remain in their existing modules. */
 :root {
   --content-width: 1366px;
+  --index-frame-width: 1140px;
   --page-gutter: 40px;
   --header-height: 68px;
   --sidebar-width: 300px;
@@ -168,7 +169,7 @@ h3 {
    The masthead owns the full width; the rail begins alongside latest content. */
 .home-page {
   width: 100%;
-  max-width: 1140px;
+  max-width: var(--index-frame-width);
   margin-inline: auto;
 }
 .home-grid { width: 100%; }
@@ -292,7 +293,7 @@ h3 {
   padding: 9px 12px; background: var(--surface); border: 1px solid var(--line);
 }
 .home-resume .resume-link > span { min-width: 0; }
-.home-resume .resume-link strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+.home-resume .resume-link strong { display: block; min-width: 0; overflow-wrap: anywhere; white-space: normal; font-size: 13px; font-weight: 500; }
 .home-resume .resume-link small { font-size: 11px; color: var(--muted); }
 .home-resume .resume-progress { font-family: var(--font-mono); }
 .home-resume .resume-link:hover { border-color: var(--brand); }
@@ -350,7 +351,6 @@ h3 {
 .home-list .feed-item { padding: var(--space-6) 0; grid-template-columns: minmax(0,1fr); grid-template-areas: "body"; }
 .home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,38%) minmax(0,1fr); grid-template-areas: "media body"; }
 .home-list .feed-item.has-media > .feed-media-link { align-self: center; }
-.home-list .feed-arrow { display: none; }
 .home-list .feed-item:not(:first-child), .home-list .feed-item.is-thought {
   grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
 }
@@ -375,7 +375,7 @@ h3 {
 .home-sidebar .popular-list a {
   min-height: 44px;
   grid-template-columns: 26px minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   gap: 8px;
 }
 .home-sidebar .popular-title { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
