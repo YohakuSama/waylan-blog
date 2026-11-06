@@ -116,8 +116,8 @@ try {
           const originY = await page.evaluate(() => window.scrollY);
           await last.click();
           await page.waitForURL(/\/post\/[^/?]+/);
-          await page.locator(".article-actions").waitFor({ state: "visible" });
-          // Route changes remount the masthead at its final single-row geometry.
+          await page.locator(".article-heading-save .article-action-save").waitFor({ state: "visible" });
+          // The masthead remains mounted while its reader class changes.
           // Detect first-frame regressions instead of hiding them with sleep.
           const articleMasthead = await page.evaluate(() => {
             const box = (selector) => {
