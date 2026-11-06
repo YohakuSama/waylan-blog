@@ -23,6 +23,14 @@
   color: var(--brand);
   font-weight: 600;
 }
+.site-announcement-noscript {
+  max-width: var(--content-width);
+  padding: 0 var(--page-gutter) 14px;
+  margin-inline: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
 .site-announcement-title {
   flex: 1 1 auto;
   min-width: 0;
