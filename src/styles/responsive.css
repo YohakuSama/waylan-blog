@@ -89,8 +89,8 @@
     min-width: 0;
   }
   .feed-controls {
-    gap: 10px;
-    padding: 12px;
+    gap: var(--space-3);
+    padding: var(--space-3);
   }
   .feed-controls .feed-search-row {
     grid-column: 1 / -1;
@@ -245,7 +245,7 @@
   .home-list .feed-item:first-child .feed-body h2 { font-size: 24px; }
   .home-list .feed-item:not(:first-child) .feed-body h2 { font-size: 20px; }
   .home-list .feed-excerpt { font-size: 14px; }
-  .home-list .tag-list { margin-top: 10px; }
+  .home-list .tag-list { margin-top: var(--space-3); }
   .feed-item.is-article .feed-media { aspect-ratio: 2.25 / 1; }
   /* One native type picker replaces the six tabs throughout phone widths. */
   .feed-layout .tag-list a {
@@ -294,11 +294,11 @@
   .intro-copy {
     padding-left: 0;
   }
-  .intro-description { margin-top: 10px; line-height: 1.75; }
+  .intro-description { margin-top: var(--space-3); line-height: 1.75; }
   .home-links { gap: 0 12px; }
   .home-resume { margin-bottom: 12px; }
   .home-section-head { padding-top: 8px; }
-  .home-list .feed-item:first-child { padding-top: 14px; }
+  .home-list .feed-item:first-child { padding-top: var(--space-4); }
   .hero-square {
     top: 11px;
     width: 9px;
@@ -439,6 +439,15 @@
   .archive-month-label { padding:6px 0; font-size:12px; }
 }
 
+/* A missing page should remain a useful entry point on a short phone screen. */
+@media (max-width: 767px) {
+  .not-found { padding-block: var(--space-10) var(--space-12); }
+  .not-found > .mono { max-width: 100%; overflow-wrap: anywhere; }
+  .not-found .lost-latest { margin-top: var(--space-6); }
+  .not-found .lost-guess { grid-template-columns: minmax(0, 1fr) auto; }
+  .not-found .lost-guess strong { overflow-wrap: anywhere; }
+}
+
 /* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
 .header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 .header-search:hover { background:var(--surface-muted); }
@@ -464,7 +473,7 @@
   min-width: 0;
   min-height: 44px;
   padding: 0 34px 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--ink-soft);
@@ -502,7 +511,7 @@
   .site-header:not(.site-header-reader) .header-search {
     width: clamp(104px, 25vw, 220px);
     padding: 0 12px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--control-border);
     border-radius: var(--radius-full);
     background: var(--surface);
     justify-content: flex-start;
@@ -514,7 +523,7 @@
   .site-header:not(.site-header-reader) .header-search {
     width: clamp(120px, 12vw, 166px);
     padding: 0 12px;
-    border: 1px solid var(--line);
+    border: 1px solid var(--control-border);
     background: var(--surface);
     border-radius: var(--radius-full);
     justify-content: flex-start;
@@ -674,10 +683,11 @@
 }
 @media (min-width: 768px) and (max-width: 1119px) {
   .home-list .feed-item:first-child .feed-body h2 { font-size: clamp(22px, 2.7vw, 25px); line-height: 1.36; }
-  .home-list .feed-excerpt { margin-top: 6px; line-height: 1.7; }
+  .home-list .feed-item { padding-block: var(--space-5); }
+  .home-list .feed-excerpt { line-height: 1.75; }
 }
 @media (max-width: 767px) {
-  .home-list .feed-excerpt { margin-top: 6px; line-height: 1.65; }
+  .home-list .feed-excerpt { line-height: 1.75; }
 }
 
 /* Phone feed: media is a small, adjacent thumbnail, not an extra full-width row.
@@ -691,13 +701,13 @@
     line-height: 1.34;
     margin-top: 4px;
   }
-  .feed-list .feed-excerpt { margin-top: 6px; line-height: 1.62; }
-  .feed-list .tag-list { margin-top: 9px; gap: 6px; }
+  .feed-list .feed-excerpt { margin-top: var(--space-2); line-height: 1.75; }
+  .feed-list .tag-list { margin-top: var(--space-3); gap: var(--space-2); }
   .feed-list .feed-media-link { margin-top: 10px; }
 }
-@media (max-width: 600px) {
+@media (max-width: 767px) {
   .feed-layout .feed-list.density-full > .feed-item.is-article.has-media {
-    grid-template-columns: minmax(0, 1fr) clamp(108px, 30vw, 124px);
+    grid-template-columns: minmax(0, 1fr) clamp(108px, 25vw, 144px);
     grid-template-areas:
       "meta meta"
       "title title"
@@ -705,7 +715,7 @@
       "tags tags";
     column-gap: 12px;
     row-gap: 0;
-    padding-block: 14px;
+    padding-block: var(--space-4);
   }
   .feed-layout .feed-list.density-full > .feed-item.is-article.has-media > .feed-body {
     display: contents;
@@ -716,16 +726,16 @@
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-body h2 {
     grid-area: title;
-    margin: 4px 0 8px;
+    margin: var(--space-1) 0 var(--space-2);
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-excerpt {
     grid-area: excerpt;
     margin: 0;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.75;
     min-width: 0;
     min-height: 0;
-    max-height: 4.8em;
+    max-height: 5.25em;
     overflow: hidden;
     -webkit-line-clamp: 3;
   }
@@ -739,7 +749,7 @@
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .tag-list {
     grid-area: tags;
-    margin-top: 9px;
+    margin-top: var(--space-3);
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media::before {
     width: 12px;
@@ -747,9 +757,23 @@
   }
 }
 @media (min-width: 768px) and (max-width: 1119px) {
-  .feed-list .feed-item { padding-block: 18px; }
-  .feed-list .tag-list { margin-top: 11px; }
+  .feed-list .feed-item { padding-block: var(--space-5); }
 }
-@media (min-width: 1120px) {
-  .feed-list .tag-list { margin-top: 12px; }
+/* Filter geometry belongs to the shared breakpoint owner, never a skin. */
+@media (min-width: 1025px) {
+  .feed-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--space-6);
+  }
+  .feed-controls > .feed-toolbar { grid-column: 1 / -1; }
+  .feed-controls > .filter-tabs { grid-column: 1; min-width: 0; align-items: center; }
+  .feed-controls > .feed-search-row { grid-column: 2; min-width: 124px; margin-left: auto; }
+}
+@media (pointer: coarse) {
+  .feed-controls select, .type-tab, .filter-tabs button { min-height: 44px; }
+}
+@media (max-width: 767px) {
+  .feed-controls select { font-size: 16px; min-height: 44px; }
+  .query-chip { max-width: 100%; min-height: 40px; height: auto; overflow-wrap: anywhere; }
 }

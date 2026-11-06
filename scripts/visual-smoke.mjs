@@ -8,15 +8,15 @@ import { chromium } from "playwright";
 const origin = "http://127.0.0.1:4173";
 const out = "visual-report";
 // Keep full breakpoint-boundary coverage for manually requested audits.
-// Normal PRs still cover wide desktop, tablet, the 767/768 split and phones
-// in all four skin/theme combinations, but avoid 16 widths on every edit.
-const fullWidths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
-const smokeWidths = [1440, 1024, 860, 768, 767, 390, 320];
+// Normal PRs cover desktop/tablet, 1024/1025 and 767/768 layout switches,
+// the former 600/601 image boundary and phone sizes in all four appearances.
+const fullWidths = [1440, 1280, 1279, 1200, 1120, 1119, 1025, 1024, 861, 860, 768, 767, 701, 700, 601, 600, 390, 320];
+const smokeWidths = [1440, 1025, 1024, 860, 768, 767, 601, 390, 320];
 const matrix = process.env.WAYLAN_VISUAL_MATRIX || "full";
 assert.ok(matrix === "smoke" || matrix === "full", `Unknown visual matrix: ${matrix}`);
 const widths = matrix === "smoke" ? smokeWidths : fullWidths;
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"];
-const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet", "/404"];
+const routes = ["/", "/feed", "/archive", "/projects", "/about", "/privacy", "/post/a-room-on-the-internet", "/404"];
 const canonicalReaderExcerpt = JSON.parse(readFileSync(new URL("../src/generated/posts.json", import.meta.url), "utf8"))
   .find(post => post.slug === "a-room-on-the-internet")?.excerpt;
 assert.ok(canonicalReaderExcerpt, "article excerpt fixture is missing");
@@ -105,6 +105,21 @@ try {
               return { left, top, right, bottom, width, height };
             };
             const select = (selector) => rect(document.querySelector(selector));
+            const luminance = (color) => {
+              const hex = color.trim().match(/^#([\da-f]{6})$/i)?.[1];
+              const channels = hex
+                ? [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16))
+                : color.match(/[\d.]+/g).slice(0, 3).map(Number);
+              return channels.map((channel) => {
+                const value = channel / 255;
+                return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+              }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+            };
+            const contrast = (a, b) => {
+              const values = [luminance(a), luminance(b)].sort((x, y) => x - y);
+              return (values[1] + .05) / (values[0] + .05);
+            };
+            const tokens = getComputedStyle(document.documentElement);
             return {
               viewport: document.documentElement.clientWidth,
               documentWidth: document.documentElement.scrollWidth,
@@ -160,6 +175,27 @@ try {
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
+              filterBoundaries: [...document.querySelectorAll(".feed-controls select")]
+                .filter((el) => rect(el))
+                .map((el) => {
+                  const style = getComputedStyle(el);
+                  return { name: el.getAttribute("aria-label") || el.closest("label")?.textContent.trim(),
+                    contrast: contrast(style.borderTopColor, style.backgroundColor) };
+                }),
+              chipContrast: contrast(tokens.getPropertyValue("--brand"), tokens.getPropertyValue("--brand-soft")),
+              terminalPrefixes: document.documentElement.dataset.skin === "terminal"
+                ? [...document.querySelectorAll(".page-heading h1, .article-heading h1, .reader-prose h2, .reader-prose h3")]
+                  .filter((el) => rect(el) && getComputedStyle(el, "::before").display !== "none")
+                  .map((el) => {
+                    const style = getComputedStyle(el, "::before"), box = rect(el);
+                    return { text: el.textContent.trim(), left: box.right - parseFloat(style.right) - parseFloat(style.width) };
+                  }) : [],
+              cardTitleGaps: [...document.querySelectorAll(".feed-list .feed-item")].map((el) => {
+                const meta = rect(el.querySelector(".entry-meta"));
+                const title = rect(el.querySelector("h2, .thought-text"));
+                return meta && title ? title.top - meta.bottom : null;
+              }).filter((gap) => gap !== null),
+              phoneCovers: [...document.querySelectorAll(".feed-layout .feed-item.is-article .feed-media")].map(rect),
               meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
               years: document.querySelectorAll(".archive-year").length,
@@ -226,6 +262,14 @@ try {
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
               footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
               notFoundHeading: document.querySelector(".not-found h1")?.textContent?.trim(),
+              notFoundGlyphContrast: (() => {
+                const icon = document.querySelector(".not-found .lost-page svg");
+                return icon ? contrast(getComputedStyle(icon).color, tokens.getPropertyValue("--paper")) : null;
+              })(),
+              notFoundCodeGap: (() => {
+                const code = select(".not-found > .mono"), masthead = select(".site-header");
+                return code && masthead ? code.top - masthead.bottom : null;
+              })(),
               notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
               notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
               aboutHeadingLevels: [...document.querySelectorAll(".about-details > div > h2")].map((el) => el.textContent.trim()),
@@ -303,6 +347,26 @@ try {
                 `${label}: hero artwork pushes continue-reading too far down (${gap}px)`);
             }
           }
+          assert.ok(geometry.filterBoundaries.every((sample) => sample.contrast >= 3),
+            `${label}: weak filter boundary: ${JSON.stringify(geometry.filterBoundaries)}`);
+          assert.ok(geometry.chipContrast >= 4.5, `${label}: filter text lacks contrast (${geometry.chipContrast})`);
+          assert.ok(geometry.terminalPrefixes.every((prefix) => prefix.left >= 0),
+            `${label}: terminal prefix clipped: ${JSON.stringify(geometry.terminalPrefixes)}`);
+          assert.ok(geometry.cardTitleGaps.every((gap) => gap >= -1 && gap <= 12),
+            `${label}: inconsistent metadata-to-title spacing: ${geometry.cardTitleGaps}`);
+          if (route === "/feed" && width <= 767) {
+            assert.ok(geometry.phoneCovers.length && geometry.phoneCovers.every((box) => box && box.width <= 144.5 && box.height <= 91),
+              `${label}: a full-width cover displaced phone content`);
+          }
+          if (route === "/404") {
+            assert.ok(geometry.notFoundGlyphContrast !== null && geometry.notFoundGlyphContrast >= 3,
+              `${label}: 404 action icon lacks non-text contrast (${geometry.notFoundGlyphContrast})`);
+          }
+          if (route === "/404" && width <= 767) {
+            assert.ok(geometry.notFoundCodeGap !== null &&
+              geometry.notFoundCodeGap >= -1 && geometry.notFoundCodeGap <= 64,
+              `${label}: 404 entry is too far below mobile header (${geometry.notFoundCodeGap}px)`);
+          }
           // The save shortcut is part of the publication row, not a detached corner.
           if ((route === "/" || route === "/feed") && geometry.entryFacts && geometry.bookmark) {
             const gap = geometry.bookmark.left - geometry.entryFacts.right;
@@ -317,7 +381,7 @@ try {
               `${label}: featured cover is vertically misaligned with text (${dy}px)`);
           }
           // Regression for premature, balanced Chinese title wrapping.
-          // Applied to all 16 viewport widths and editorial/terminal x light/dark.
+          // Applied to all sampled viewport widths and editorial/terminal x light/dark.
           if (route === "/" || route === "/feed" || route.startsWith("/post/")) {
             assert.equal(geometry.headingTextWrap, "wrap",
               `${label}: article heading must fill each line naturally, not text-wrap: balance/pretty`);
@@ -992,6 +1056,10 @@ try {
           notificationResults.push({ width, ...variant, state: "error", bounds: errorBounds });
           assert.ok(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= width && errorBounds.y + errorBounds.height <= 900,
             `${label}: error panel escaped viewport`);
+          // Keep a reference to the original retry node: recovery must unmount it
+          // rather than mutate the same clickable element into OAuth login.
+          const retryNode = await inbox.getByRole("button", { name: "重试", exact: true }).elementHandle();
+          assert.ok(retryNode, `${label}: retry action missing in error state`);
           notificationsStatus = "enabled";
           const recoveredStatus = page.waitForResponse(response =>
             new URL(response.url()).pathname === "/api/status" && response.status() === 200,
@@ -1006,6 +1074,8 @@ try {
           try {
             await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor({ timeout: 12000 });
             assert.equal(new URL(page.url()).pathname, "/", `${label}: recovery must not initiate GitHub OAuth`);
+            assert.equal(await retryNode.evaluate(button => button.isConnected), false,
+              `${label}: React reused Retry as a live GitHub login button`);
           } catch (error) {
             // The accessible dialog may have been unmounted. Inspect the page,
             // not the locator that already failed, to preserve the real cause.

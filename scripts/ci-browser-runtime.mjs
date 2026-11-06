@@ -40,5 +40,5 @@ if (mode === "detect") {
   if (failed.length) console.warn("Missing browser runtime dependencies; attempting apt repair:\n" + failed.join("\n"));
   else console.log("All engines launch: skip apt dependencies");
 } else if (failed.length) {
-  throw new Error("Browser runtime verification failed after dependency repair:\n" + failed.join("\n"));
+  throw new Error("Browser runtime verification failed in the CI environment:\n" + failed.join("\n"));
 }

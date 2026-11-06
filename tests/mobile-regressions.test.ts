@@ -79,6 +79,8 @@ describe("mobile reader regression contracts", () => {
       bell.includes('if (open) void refreshInbox.current()') &&
       bell.includes("serial !== requestSerial"),
       "opening notifications and resuming the phone must refresh without stale requests racing");
+    assert.ok(bell.includes('key="notification-retry"') && bell.includes('key="notification-login"'),
+      "a retiring Retry button must never be reused as the GitHub OAuth action");
   });
   it("does not clip the script wordmark in the narrow header", () => {
     assert.match(responsive, /\.brand \{ overflow: visible; \}/);
@@ -319,7 +321,7 @@ describe("mobile reader regression contracts", () => {
       "article detail must never hide part of the original summary");
     assert.doesNotMatch(mobileHeader, /\.reading-article \.article-byline\s*\{[^}]*flex-direction:\s*row/s,
       "mobile publication facts must stay below the author");
-    assert.ok(base.includes(".feed-item .feed-excerpt"),
+    assert.ok(responsive.includes(".feed-list .feed-excerpt"),
       "list previews retain their independent layout and truncation rules");
   });
 

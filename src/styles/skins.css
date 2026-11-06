@@ -21,6 +21,7 @@ html {
   --muted: #6d675f;
   --line: #e3ddd2;
   --line-strong: #cbc2b3;
+  --control-border: #8e867a;
   --brand: #a3321f;
   --brand-hover: #852617;
   --brand-soft: #f5e7e1;
@@ -63,6 +64,7 @@ html {
   --muted: #9d978d;
   --line: #2f2d33;
   --line-strong: #46434b;
+  --control-border: #77717f;
   --brand: #e88b70;
   --brand-hover: #f2a58e;
   --brand-soft: #36231f;
@@ -106,7 +108,8 @@ html {
   --muted: #5b695e;
   --line: #cdd3c4;
   --line-strong: #a9b29f;
-  --brand: #0f7a3d;
+  --control-border: #74826f;
+  --brand: #0d7138;
   --brand-hover: #0a5f2f;
   --brand-soft: #d6ead8;
   --on-brand: #f2fff5;
@@ -149,6 +152,7 @@ html {
   --muted: #7a8f7f;
   --line: #1e2721;
   --line-strong: #30402f;
+  --control-border: #607967;
   --brand: #3ddc84;
   --brand-hover: #74f0a8;
   --brand-soft: #10281a;
@@ -428,7 +432,7 @@ html {
   color: var(--ink);
   font-weight: 600;
   background: var(--surface);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 0 1px var(--control-border), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 .motion-choices {
   display: grid;
@@ -1076,9 +1080,11 @@ html {
 :root[data-skin="terminal"] .reader-prose h2::before,
 :root[data-skin="terminal"] .reader-prose h3::before {
   position: absolute;
-  top: 0;
+  top: .3em;
   right: calc(100% + .45em);
+  font-size: .65em;
   white-space: nowrap;
+  pointer-events: none;
 }
 @media (max-width: 860px) {
   /* Narrow screen gutters cannot contain a syntax prefix. */
@@ -1311,21 +1317,6 @@ html {
 :root[data-motion="reduced"] .site-header::after { animation:none; width:100%; transform:none; }
 @media(prefers-reduced-motion: reduce){:root:not([data-motion="full"]) .site-header::after { animation:none; width:100%; transform:none; opacity:.6; }}
 
-/* v1.6.5: denser filter rhythm without sacrificing touch targets. */
-@media(min-width:1025px){
-  .feed-controls{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:22px;row-gap:10px}
-  .feed-controls>.feed-toolbar{grid-column:1/-1}
-  .feed-controls>.filter-tabs{grid-column:1;min-width:0;align-items:center}
-  .feed-controls>.feed-search-row{grid-column:2;min-width:124px;margin-left:auto}
-  .feed-controls .sort-control select{height:36px}
-  .feed-controls .filter-tabs button{min-height:36px}
-}
-@media(max-width:700px){
-  .feed-controls{gap:10px}
-  .feed-controls>.feed-search-row{flex-direction:row;align-items:center}
-  .feed-controls .sort-control{margin-left:auto}
-  .feed-controls .sort-control select{min-width:118px;width:auto;height:36px}
-}
 /* Consistent finger feedback; avoid hover transformations on touch-only devices. */
 @media(hover:none){
   .feed-item:hover .feed-media img,.profile-block:hover .profile-mark{transform:none}
@@ -1901,7 +1892,3 @@ html {
 }
 /* Dialog dismissal remains in the same 44px corner target in both skins. */
 .dialog-header .icon-button { width: 44px; height: 44px; flex-shrink: 0; }
-@media (max-width: 767px) {
-  .feed-controls select { font-size: 16px; min-height: 44px; }
-  .query-chip { max-width: 100%; min-height: 40px; height: auto; overflow-wrap: anywhere; }
-}

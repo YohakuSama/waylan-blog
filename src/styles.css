@@ -3017,7 +3017,7 @@ body,
 @media (max-width: 700px) {
   .reading-article .article-heading {
     padding-top: 0;
-    padding-bottom: 12px;
+    padding-bottom: var(--space-4);
   }
   .reading-article .reader-back { margin-bottom: 8px; }
   .reading-article .article-eyebrow { margin-bottom: 8px; }
@@ -3027,7 +3027,7 @@ body,
     letter-spacing: 0;
   }
   .reading-article .article-deck {
-    margin: 10px 0 16px;
+    margin: var(--space-3) 0 var(--space-4);
     font-size: 14px;
     line-height: 1.75;
   }
@@ -3036,62 +3036,22 @@ body,
   .reading-article .article-author { min-height: 24px; gap: 6px; }
   .reading-article .article-meta { gap: 4px 10px; font-size: 12px; line-height: 1.5; }
   .reading-article .article-actions { padding-top: 0; }
-  .reader-content { margin-top: 8px; }
+  .reader-content { margin-top: var(--space-4); }
   .reader-content .article-cover { margin-bottom: 16px; }
 }
 @media (min-width: 701px) and (max-width: 1119px) {
-  .reading-article .article-heading { padding-bottom: 22px; }
+  .reading-article .article-heading { padding-bottom: var(--space-6); }
   .reading-article .reader-back { margin-bottom: 16px; }
   .reading-article .article-eyebrow { margin-bottom: 12px; }
-  .reading-article .article-deck { margin: 12px 0 16px; }
-  .reader-content { margin-top: 20px; }
+  .reading-article .article-deck { margin: var(--space-3) 0 var(--space-4); }
+  .reader-content { margin-top: var(--space-6); }
 }
 @media (min-width: 1120px) {
-  .reading-article .article-heading { padding-bottom: 26px; }
-  .reading-article .article-deck { margin: 14px 0 18px; }
+  .reading-article .article-heading { padding-bottom: var(--space-6); }
+  .reading-article .article-deck { margin: var(--space-4) 0 var(--space-5); }
   .reader-content { margin-top: 24px; }
 }
 
-/* Mobile editorial rhythm: keep the same typography and content, but reduce
-   excessive vertical gaps in feed cards and article introductions. */
 @media (max-width: 700px) {
-  .feed-item .entry-meta {
-    margin-bottom: 12px;
-  }
-  .feed-item .feed-body > h2 {
-    margin-top: 0;
-    margin-bottom: 8px;
-    line-height: 1.4;
-  }
-  .feed-item .feed-excerpt {
-    margin-top: 0;
-    margin-bottom: 12px;
-    line-height: 1.65;
-  }
-  .feed-item .tag-list {
-    margin-top: 12px;
-    margin-bottom: 0;
-  }
-  .feed-item .feed-media-link {
-    margin-top: 12px;
-  }
-  .reader-topbar {
-    margin-bottom: 8px;
-  }
-  .article-heading {
-    padding-bottom: 16px;
-  }
-  .article-eyebrow {
-    margin-bottom: 12px;
-  }
-  .article-heading h1 {
-    line-height: 1.4;
-  }
-  .article-deck {
-    margin: 12px 0 14px;
-    line-height: 1.75;
-  }
-  .article-cover {
-    margin-bottom: 24px;
-  }
+  .reader-topbar { margin-bottom: var(--space-2); }
 }

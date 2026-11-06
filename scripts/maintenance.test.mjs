@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { classify } from "./ci-plan.mjs";
+import { classify, needsFullVisual } from "./ci-plan.mjs";
 
 test("docs-only changes keep a successful, low-cost status", () => {
   assert.deepEqual(classify(["README.md", "docs/ops/BRANCH_ARCHIVE.md"]),
@@ -75,33 +75,39 @@ test("reader feature submodules select reader QA without unrelated feed/motion g
   }
 });
 
-test("browser QA installs are bounded, cached immediately and never skipped by a cache hit", () => {
+test("browser QA uses the pinned image and always launches three engines before testing", () => {
   const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
-  assert.match(workflow, /uses: actions\/cache\/restore@v4/);
-  assert.match(workflow, /uses: actions\/cache\/save@v4/);
-  assert.match(workflow, /id: browsers\s+if:.*\n\s+timeout-minutes: 5/);
-  assert.match(workflow, /npx playwright install-deps chromium firefox webkit/);
-  assert.match(workflow, /npx playwright install chromium firefox webkit/);
-  assert.ok(workflow.indexOf("Probe native browser startup before apt") <
-    workflow.indexOf("Install missing Linux browser libraries only if needed"),
-    "do not apt-install packages before testing whether browsers already launch");
-  assert.match(workflow, /steps\.browser-probe\.outputs\.needs_linux_deps == 'true'/,
-    "native package installation must be strictly conditional on a real failed probe");
+  assert.match(workflow, /container:\s*\n\s*image: mcr\.microsoft\.com\/playwright:v1\.56\.1-noble/);
+  assert.match(workflow, /id: browsers\s+if:[^\n]+\n\s+timeout-minutes: 3/);
+  assert.ok(workflow.includes("npm install --no-save --no-package-lock playwright@1.56.1"),
+    "the image and test package must pin the same Playwright version");
   assert.ok(workflow.includes("node scripts/ci-browser-runtime.mjs verify"),
-    "all three engines must start successfully before browser test gates can pass");
+    "all three engines must launch successfully before browser test gates can pass");
+  assert.doesNotMatch(workflow, /npx playwright install-deps|actions\/cache\/restore@v4|actions\/cache\/save@v4/,
+    "the pinned image must not repeat slow apt downloads or redundant browser caches");
   const probe = readFileSync("scripts/ci-browser-runtime.mjs", "utf8");
   for (const name of ["chromium", "firefox", "webkit"]) assert.ok(probe.includes(name));
   assert.ok(probe.includes("engine.launch") && probe.includes("browser.newPage") &&
-    probe.includes("needs_linux_deps=") &&
-    probe.includes("Browser runtime verification failed after dependency repair"),
-    "probe must launch every browser, report repair need and fail on unsuccessful verification");
-  assert.ok(workflow.indexOf("Save browser binaries immediately on cache miss") <
+    probe.includes("Browser runtime verification failed"),
+    "probe must actively launch every browser and fail closed");
+  assert.ok(workflow.indexOf("Verify pinned Chromium, Firefox and WebKit runtimes") <
     workflow.indexOf("Phone, tablet and desktop layout"),
-    "an unsuccessful visual test must not discard the installed browser cache");
+    "the browser launch check precedes visual audits");
   assert.ok(workflow.includes("steps.browsers.outcome == 'success'"),
-    "a missing browser binary must fail closed, never silently skip QA");
+    "a missing browser binary must never silently skip QA");
 });
 
+test("shared visual owners request exhaustive boundaries only on review PRs", () => {
+  for (const file of ["src/styles.css", "src/styles/index.ts", "src/styles/responsive.css", "src/styles/skins.css"]) {
+    assert.equal(needsFullVisual([file]), true, file);
+    assert.equal(needsFullVisual([file], "push"), false, "main pushes do not rerun browser QA");
+  }
+  for (const file of ["src/pages/About.tsx", "src/components/NotificationBell.tsx", "src/styles/feed.css"]) {
+    assert.equal(needsFullVisual([file]), false, file);
+  }
+  assert.equal(needsFullVisual([], "workflow_dispatch", true), true);
+  assert.equal(needsFullVisual(["src/styles/responsive.css", "src/App.tsx"]), true);
+});
 test("PR visual smoke checks all skins and representative device widths, full keeps breakpoint boundaries", () => {
   const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
   const visual = readFileSync("scripts/visual-smoke.mjs", "utf8");
@@ -112,11 +118,16 @@ test("PR visual smoke checks all skins and representative device widths, full ke
   };
   const focused = parse("smokeWidths");
   const full = parse("fullWidths");
-  assert.deepEqual(focused, [1440, 1024, 860, 768, 767, 390, 320]);
-  assert.equal(full.length, 16);
+  assert.deepEqual(focused, [1440, 1025, 1024, 860, 768, 767, 601, 390, 320]);
+  assert.equal(full.length, 18);
+  assert.ok(full.includes(600) && full.includes(601), "retain both sides of the former phone-cover boundary");
+  assert.ok(full.includes(1024) && full.includes(1025), "retain both sides of the tablet filter boundary");
   for (const width of focused) assert.ok(full.includes(width));
   assert.match(workflow, /WAYLAN_VISUAL_MATRIX:/);
-  assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && 'full' || 'smoke'"));
+  assert.ok(workflow.includes("steps.plan.outputs.visual_full == 'true' && 'full' || 'smoke'"),
+    "shared global CSS PRs and manually requested checks must use all 18 widths");
+  assert.ok(workflow.includes("failure() || steps.plan.outputs.visual_full == 'true'"),
+    "full breakpoint reviews must retain screenshot evidence");
   assert.match(visual, /matrix === "smoke" \? smokeWidths : fullWidths/);
 });
 
