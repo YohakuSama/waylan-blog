@@ -6,6 +6,7 @@
 .about-page {
   width: 100%;
   max-width: 960px;
+  margin-inline: auto;
 }
 .about-layout,
 .feed-layout,
