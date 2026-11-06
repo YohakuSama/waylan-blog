@@ -1515,19 +1515,16 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(location.pathname, "/feed");
     assert.equal(location.search, "");
   });
-  it("shows no reset link by default and keeps feed sidebar section headings honest", async () => {
+  it("keeps content discovery in the filter controls instead of repeating the global sidebar", async () => {
     await mount("/feed");
     assert.equal(document.querySelector(".feed-clear-filters"), null);
-    const headings = [...document.querySelectorAll(".feed-layout .side-head")];
-    assert.ok(headings.length >= 3);
-    for (const name of ["写作主题", "站内导航"]) {
-      const heading = headings.find((el) => el.textContent?.includes(name))!;
-      assert.ok(heading?.querySelector(".side-heading-static"), `${name} must not link to itself`);
-      assert.equal(heading.querySelector("a"), null);
-    }
-    assert.equal(document.querySelector('.feed-layout .side-heading-link[href="/feed"]'), null);
-    assert.equal(document.querySelector('.feed-layout .popular-block a[href="/archive"]'), null);
-    assert.ok(document.querySelector('.feed-layout .recent-list a[href^="/post/"]'));
+    assert.ok(document.querySelector(".feed-page .page-heading h1"));
+    assert.equal(document.querySelector(".feed-layout .site-sidebar"), null);
+    assert.ok(document.querySelector(".feed-layout .type-tabs"));
+    assert.ok(document.querySelector(".feed-layout .filter-tabs"));
+    assert.ok(document.querySelector(".feed-layout .sort-control"));
+    assert.ok(document.querySelector(".feed-layout .view-toggle"));
+    assert.equal(document.querySelectorAll(".feed-layout .feed-item").length > 0, true);
   });
   it("leaves homepage article tags as independent whole-site tag links", async () => {
     await mount("/");
@@ -1566,7 +1563,9 @@ describe("React navigation and reading interactions (DOM integration, not browse
     const projects = posts.filter((p) => p.type === "project").sort((a, b) => b.date.localeCompare(a.date));
     assert.equal(document.querySelectorAll(".projects-layout .feed-item.is-project").length, projects.length);
     assert.equal(document.querySelectorAll(".projects-sidebar .profile-block").length, 0);
-    assert.equal(document.querySelectorAll(".projects-sidebar .side-block").length, 2);
+    assert.equal(document.querySelectorAll(".projects-sidebar .side-block").length, 0);
+    assert.ok(document.querySelector(".projects-page .page-heading h1"));
+    assert.equal(document.querySelector(".projects-layout .site-sidebar"), null);
     for (const project of projects) {
       const card = document.getElementById(`card-${project.id}`)!;
       assert.ok(card);
@@ -1633,19 +1632,19 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelector(".page-heading h1")?.textContent, "关于");
     assert.ok(document.querySelector(".about-layout .about-prose h2"));
     assert.deepEqual(
-      [...document.querySelectorAll(".about-details > div > h2")].map((h) => h.textContent?.trim()),
-      ["写作主题", "技术实现"],
+      [...document.querySelectorAll(".about-details > section > h2")].map((h) => h.textContent?.trim()),
+      ["技术实现", "站点数据"],
     );
-    assert.equal(document.querySelectorAll(".about-details > div > h3").length, 0);
-    assert.ok(document.querySelectorAll(".about-details > div > ul > li").length > 0);
+    assert.equal(document.querySelectorAll(".about-details > section > h3").length, 0);
+    assert.ok(document.querySelectorAll(".about-details > section > ul > li").length > 0);
+    assert.equal(document.querySelector(".about-details")?.textContent?.includes("写作主题"), false);
     const stats = document.querySelector(".about-layout .site-stats");
     assert.ok(stats);
     assert.match(stats.querySelector("div:first-child dd")?.textContent || "", /^\d+条$/);
-    const heading = [...document.querySelectorAll(".about-layout .side-block .side-title")]
-      .find((el) => el.textContent?.trim() === "站点数据");
-    assert.ok(heading);
-    assert.equal(heading.querySelector("a"), null, "stats should not imply that archive is a data dashboard");
-    assert.ok(heading.querySelector(".side-heading-static"));
+    const heading = document.querySelector(".about-stats > h2.side-title");
+    assert.equal(heading?.textContent?.trim(), "站点数据");
+    assert.equal(heading?.querySelector("a"), null, "stats should not imply that archive is a data dashboard");
+    assert.equal(document.querySelector(".about-layout .site-sidebar"), null);
     const github = document.querySelector<HTMLAnchorElement>('.about-text .social-links a');
     assert.ok(github);
     assert.equal(github.getAttribute("href"), "https://github.com/YohakuSama");
@@ -1659,7 +1658,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
   });
   it("keeps the privacy notice on its own route and leaves About uncluttered", async () => {
     await mount("/about");
-    assert.equal(document.querySelector(".about-details > div")?.textContent?.includes("隐私与数据"), false);
+    assert.equal(document.querySelector(".about-details")?.textContent?.includes("隐私与数据") ?? false, false);
     assert.equal(document.querySelector(".about-prose")?.textContent?.includes("保存期限"), false);
     const footerLink = document.querySelector<HTMLAnchorElement>('.site-footer a[href="/privacy"]');
     assert.ok(footerLink, "privacy is available from the footer without a new header tab");
