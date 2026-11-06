@@ -949,8 +949,8 @@ html {
 :root[data-skin="terminal"] .brand-term {
   display: inline-flex;
   align-items: center;
-  gap: .12em;
-  /* The terminal prompt, name and caret together occupy one responsive slot. */
+  gap: .3em;
+  /* Separate the prompt from the name; no trailing caret can read as a letter. */
   font: 700 calc(var(--masthead-wordmark-height) * .72)/1.05 var(--font-mono);
   letter-spacing: -.055em;
   white-space: nowrap;
@@ -966,13 +966,6 @@ html {
   line-height: 1;
 }
 .brand-term b { color: var(--brand); }
-.brand-term-caret {
-  display: inline-block;
-  width: .2em;
-  height: .72em;
-  margin-left: .04em;
-  background: var(--brand);
-}
 :root[data-skin="terminal"] .nav-link .nav-label::before { content: none; }
 :root[data-skin="terminal"] .nav-link:hover .nav-label::before {
   color: var(--brand);
