@@ -94,7 +94,6 @@ export function Home() {
           <div className="hero-visual" aria-hidden="true">
             <NetworkWave />
             <HeroTerminal />
-            <p className="home-motto">{site.hero.lines.join("")}</p>
           </div>
         </section>
         {resume ? (
