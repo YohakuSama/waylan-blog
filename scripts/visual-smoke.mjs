@@ -1056,6 +1056,10 @@ try {
           notificationResults.push({ width, ...variant, state: "error", bounds: errorBounds });
           assert.ok(errorBounds && errorBounds.x >= 0 && errorBounds.x + errorBounds.width <= width && errorBounds.y + errorBounds.height <= 900,
             `${label}: error panel escaped viewport`);
+          // Keep a reference to the original retry node: recovery must unmount it
+          // rather than mutate the same clickable element into OAuth login.
+          const retryNode = await inbox.getByRole("button", { name: "重试", exact: true }).elementHandle();
+          assert.ok(retryNode, `${label}: retry action missing in error state`);
           notificationsStatus = "enabled";
           const recoveredStatus = page.waitForResponse(response =>
             new URL(response.url()).pathname === "/api/status" && response.status() === 200,
@@ -1070,6 +1074,8 @@ try {
           try {
             await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor({ timeout: 12000 });
             assert.equal(new URL(page.url()).pathname, "/", `${label}: recovery must not initiate GitHub OAuth`);
+            assert.equal(await retryNode.evaluate(button => button.isConnected), false,
+              `${label}: React reused Retry as a live GitHub login button`);
           } catch (error) {
             // The accessible dialog may have been unmounted. Inspect the page,
             // not the locator that already failed, to preserve the real cause.

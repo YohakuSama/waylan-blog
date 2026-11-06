@@ -260,14 +260,15 @@ export function NotificationBell({
                 onOpenAnnouncement(item);
               }} />
           ) : availability !== "enabled" ? (
-            <div className="notification-empty">
+            // Distinct keys prevent React reusing a Retry DOM button as OAuth login during recovery.
+            <div key="notification-retry" className="notification-empty">
               <p role="status">{availability === "checking" ? "正在读取通知…" : availability === "disabled" ? "本站暂未开启消息通知。" : "暂时无法读取通知，请重试。"}</p>
               {availability !== "checking" && <button type="button" className="quiet-button" onClick={retry}>
                 {availability === "error" ? "重试" : "重新检查"}
               </button>}
             </div>
           ) : !signedIn ? (
-            <div className="notification-empty">
+            <div key="notification-login" className="notification-empty">
               <p>登录后可查看别人对你的回复。</p>
               <button type="button" className="quiet-button" onClick={login}>使用 GitHub 登录</button>
             </div>

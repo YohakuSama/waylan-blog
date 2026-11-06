@@ -79,6 +79,8 @@ describe("mobile reader regression contracts", () => {
       bell.includes('if (open) void refreshInbox.current()') &&
       bell.includes("serial !== requestSerial"),
       "opening notifications and resuming the phone must refresh without stale requests racing");
+    assert.ok(bell.includes('key="notification-retry"') && bell.includes('key="notification-login"'),
+      "a retiring Retry button must never be reused as the GitHub OAuth action");
   });
   it("does not clip the script wordmark in the narrow header", () => {
     assert.match(responsive, /\.brand \{ overflow: visible; \}/);
