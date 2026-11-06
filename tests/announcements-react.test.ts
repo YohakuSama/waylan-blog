@@ -1,12 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { act, createElement } from "react";
+import { act, createElement, useState, type ReactElement } from "react";
 import type { Root } from "react-dom/client";
 import {
   AnnouncementBanner, AnnouncementDetail, AnnouncementList, useSiteAnnouncements,
 } from "../src/components/SiteAnnouncements";
 import type { Announcement } from "../shared/announcements";
+import { NotificationBell } from "../src/components/NotificationBell";
 
 const initial: Announcement = {
   id: "notice-acceptance",
@@ -30,6 +31,18 @@ function Fixture({ notice }: { notice: Announcement }) {
     }),
     createElement(AnnouncementDetail, {
       item: state.active, onClose: state.closeDetail,
+    }),
+  );
+}
+function BellFixture({ notice }: { notice: Announcement }) {
+  const [active, setActive] = useState<Announcement | null>(null);
+  return createElement("div", {},
+    createElement(NotificationBell, {
+      announcements: [notice], readAnnouncements: new Set<string>(),
+      onOpenAnnouncement: setActive,
+    }),
+    createElement(AnnouncementDetail, {
+      item: active, onClose: () => setActive(null),
     }),
   );
 }
@@ -57,11 +70,13 @@ async function setup() {
   const { createRoot } = await import("react-dom/client");
   const element = dom.window.document.getElementById("test")!;
   let root: Root | null = null;
-  const render = async (item: Announcement) => {
+  const mount = async (node: ReactElement) => {
     if (root) await act(async () => root!.unmount());
     root = createRoot(element);
-    await act(async () => { root!.render(createElement(Fixture, { notice: item })); });
+    await act(async () => { root!.render(node); });
   };
+  const render = (item: Announcement) => mount(createElement(Fixture, { notice: item }));
+  const renderBell = (item: Announcement) => mount(createElement(BellFixture, { notice: item }));
   const click = async (selector: string) => {
     const button = dom.window.document.querySelector<HTMLButtonElement>(selector);
     assert(button, `missing ${selector}`);
@@ -71,7 +86,7 @@ async function setup() {
     if (root) await act(async () => root!.unmount());
     dom.window.close();
   };
-  return { dom, render, click, clear };
+  return { dom, render, renderBell, click, clear };
 }
 
 describe("Announcement interaction and browser persistence", () => {
@@ -97,6 +112,24 @@ describe("Announcement interaction and browser persistence", () => {
       await app.render({ ...initial, revision: 2, body: "新版维护说明" });
       assert(app.dom.window.document.querySelector(".site-announcement-bar"));
       assert.equal(app.dom.window.document.querySelector("output")?.textContent, "1");
+    } finally {
+      await app.clear();
+    }
+  });
+
+  it("opens public announcements without GitHub login and restores focus to the bell", async () => {
+    const app = await setup();
+    try {
+      await app.renderBell(initial);
+      await app.click(".notification-trigger");
+      await app.click(".notification-tabs button:last-child");
+      assert(app.dom.window.document.querySelector(".notification-popover .announcement-item"),
+        "public notices must remain available without a private inbox session");
+      await app.click(".notification-popover .announcement-item");
+      assert(app.dom.window.document.querySelector(".site-announcement-dialog[open]"));
+      await app.click(".site-announcement-dialog .announcement-detail-actions button");
+      assert(app.dom.window.document.activeElement?.classList.contains("notification-trigger"),
+        "closing the detail must return keyboard focus to the persistent bell");
     } finally {
       await app.clear();
     }
