@@ -63,7 +63,9 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(sideCss.includes("min-height: 44px;"));
     assert.ok(sidebarComponent.includes('href={`/feed?topic=${t.id}`}'));
     assert.ok(sidebarComponent.includes('className="side-heading-link side-heading-static"'));
-    assert.ok(pages.includes('mode="feed"'));
+    assert.equal(pages.includes('mode="feed"'), false);
+    assert.ok(pages.includes('className="feed-page"'));
+    assert.ok(pages.includes('className="home-topic-shortcuts"'));
     assert.equal(sidebarComponent.includes("/feed?type=all"), false);
     assert.ok(skins.includes('.side-heading-link::before { content: "##"'));
     assert.ok(skins.includes(".side-heading-link .side-more svg { display: block; }"));
