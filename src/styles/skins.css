@@ -1423,9 +1423,6 @@ html {
   width: 16px;
   height: 16px;
 }
-.entry-meta > .card-bookmark::before {
-  content: none !important;
-}
 .feed-item:hover .card-bookmark,
 .feed-item:focus-within .card-bookmark,
 .card-bookmark.is-saved {
@@ -1881,14 +1878,20 @@ html {
 }
 
 
-/* Keep the save action beside the publication facts in every card variant. */
-.entry-meta .card-bookmark {
+/* A consistent trailing action, separated from type/date/status metadata. */
+.feed-tail .card-bookmark {
   position: static;
   flex: none;
   width: 40px;
   height: 40px;
   margin: 0;
   opacity: 1;
+}
+@media (pointer: coarse) {
+  .feed-tail .card-bookmark {
+    width: 44px;
+    height: 44px;
+  }
 }
 /* Dialog dismissal remains in the same 44px corner target in both skins. */
 .dialog-header .icon-button { width: 44px; height: 44px; flex-shrink: 0; }
