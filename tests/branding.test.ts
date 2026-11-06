@@ -24,6 +24,8 @@ it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、�
   const avatar = readFileSync("public/avatar.svg", "utf8");
   assert.equal(avatar, favicon, "avatar and browser icon should share the same mark");
   assert.match(favicon, /viewBox="0 0 96 96"/);
+  assert.match(favicon, /class="letter"/, "browser icon must use a solid legible W at small sizes");
+  assert.match(favicon, /prefers-color-scheme:dark/, "primary vector icon adapts to device appearance");
   const doc = new JSDOM(readFileSync("dist/index.html", "utf8")).window.document;
   assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute("href"), "/favicon.svg");
   assert.equal(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"), "/apple-touch-icon.png");
