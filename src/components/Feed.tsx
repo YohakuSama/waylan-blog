@@ -320,7 +320,7 @@ export function ViewToggle({
         aria-pressed={density === "full"}
         aria-label="图文 · 详细列表"
         data-tip="详细列表"
-        onClick={() => listTransition(() => flushSync(() => onChange("full")))}
+        onClick={() => onChange("full")}
       >
         <LayoutList size={16} />
         <span>图文</span>
