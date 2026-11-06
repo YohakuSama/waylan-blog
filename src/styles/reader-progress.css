@@ -64,10 +64,16 @@
     animation: none;
   }
 }
+:root[data-motion="reduced"] .reading-progress > span {
+  transition: none;
+}
 :root[data-motion="reduced"] .reading-progress > span::after {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .reading-progress > span {
+    transition: none;
+  }
   :root:not([data-motion="full"]) .reading-progress > span::after {
     animation: none;
   }
