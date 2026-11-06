@@ -18,14 +18,14 @@ flowchart LR
     Worker --> D1["Cloudflare D1"]
     Worker --> GitHub["GitHub Discussions / 内容仓库"]
     Admin["src/admin/main.tsx → Gate → Dashboard → editors → admin/api.ts"] --> Worker
-    Front --> Styles["src/styles/index.ts → base/shell/feed/sidebar/site/responsive/skins/motion"]
+    Front --> Styles["src/styles/index.ts → base/shell/feed/sidebar/site/responsive/skins/motion/reader-progress"]
 ```
 
 - **浏览器路由及页面装配**：`src/App.tsx`、`src/pages.tsx`、`src/pages/*`。`src/components/*` 实现 UI，`src/lib/*` 提供面向浏览器的路由、动效、公共 JSON API、选区和本地持久化能力。
 - **后台**：`src/admin/main.tsx` 仅管理主题同步与挂载；`src/admin/Gate.tsx` 独立管理登录会话、CSRF 初始化及权限提示；`src/admin/Dashboard.tsx` 负责页面切换、部署状态和请求刷新；`src/admin/ContentList.tsx` 只负责文章列表与删除；`src/admin/Discussions.tsx` 单独负责评论区初始化及批处理终止条件；`PostEditor.tsx`、`SiteEditor.tsx` 分别拥有编辑状态与保存事务。共同通过 `src/admin/api.ts` 保留认证、CSRF、专有超时，不与缓存型公开浏览 API `src/lib/api.ts` 混用。
 - **服务端**：`worker/index.ts` 只组织入口及路由；`worker/auth.ts`、`security.ts`、`comments.ts`、`admin.ts`、`notifications.ts`、`views.ts` 分别管理相关责任；后台源码仓库的 GitHub GraphQL/REST 访问、分支 OID 与单次原子提交在 `worker/admin-repo.ts`，`worker/admin.ts` 保留鉴权、输入校验和 API 编排；跨端合同放 `shared/*`。
 - **数据生产线**：`content/*` 为文章/站点配置源；`scripts/content.ts` 构建 `src/generated/*` 与 `worker/generated/*`；不要直接手改生成产物、历史 D1 migrations 或已发布的 `post.id`。
-- **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css` 是阅读器与基础规则；`src/styles/shell.css`、`feed.css`、`sidebar.css`、`site.css` 分别负责页眉首页、信息流、侧栏、索引/页脚；`responsive.css` 负责跨页面断点；`skins.css` 是双皮肤主题覆盖；`motion.css` 负责动画与可访问性动效规则；运行时动画策略在 `src/lib/motion.ts`。
+- **样式与动效**：`src/styles/index.ts` 是正式/离线共用的字体和 CSS 导入顺序；`src/styles.css` 是阅读器与基础规则；`src/styles/shell.css`、`feed.css`、`sidebar.css`、`site.css` 分别负责页眉首页、信息流、侧栏、索引/页脚；`responsive.css` 负责跨页面断点；`skins.css` 是双皮肤主题覆盖；`motion.css` 负责全站交互动效与减少动效；`reader-progress.css` 独占阅读进度条的两皮肤轨道/端点与控件自身的减少动效，进度值归 `useReadingProgress.ts`，定位仍由基础与响应式文件管理；运行时动画策略在 `src/lib/motion.ts`。
 - **验证和部署**：`tests/*` 是单测与契约测试；`scripts/*-smoke.mjs` 为真实浏览器审核；`.github/workflows/verify.yml` 是唯一 GitHub Actions 入口，按 `scripts/ci-plan.mjs` 选择检查。
 
 依赖应单向：`App / pages → components → lib → shared`；`worker 路由 → worker 业务模块 → shared`。`shared` 不应依赖 React、浏览器 DOM、Worker 运行时、GitHub 客户端或 D1；前端业务代码不得直接连接 D1、使用服务器 Token，服务端也不得 import 浏览器组件。跨端交互走版本稳定的 HTTP/共享类型，不允许跨功能深层 import 内部私有实现。
@@ -119,14 +119,15 @@ flowchart LR
 
 | CSS 模块（按级联顺序） | 负责内容 | 最先追踪的组件 / 文档 |
 | --- | --- | --- |
-| `src/styles.css` | 基础颜色/字阶、阅读器、对话框、评论编辑区 | `src/components/Reader.tsx`、`docs/DESIGN_SYSTEM.md` |
+| `src/styles.css` | 基础颜色/字阶、阅读器、对话框（图片查看器通用尺寸、居中和 iOS 高度）、评论编辑区 | `src/components/Reader.tsx`、`docs/DESIGN_SYSTEM.md` |
 | `src/styles/shell.css` | 页面外壳 token、页眉、首页介绍与搜索/切换控件 | `src/App.tsx`、首页组件 |
 | `src/styles/feed.css` | 内容卡片结构、缩略图、摘要与列表基础规则 | `src/components/Feed.tsx` |
 | `src/styles/sidebar.css` | 首页及索引的统一侧栏/目录结构 | `src/components/Sidebar.tsx`（如有分布在页面组件，以实际 JSX 为准） |
 | `src/styles/site.css` | 归档/项目/关于等索引页、页脚、阅读页和站点外壳对齐 | `src/pages/*`、页脚/阅读组件 |
 | `src/styles/responsive.css` | 跨页面的 1280/1120/860/767/700 等断点布局及手机信息流密度 | `docs/RESPONSIVE_LAYOUT.md` 与实际页面 DOM |
 | `src/styles/skins.css` | editorial / terminal 的配色、字体和必要差异覆盖 | `docs/DESIGN_SYSTEM.md` |
-| `src/styles/motion.css` | 转场、悬停、键盘/触摸反馈和减少动效 | `src/lib/motion.ts` |
+| `src/styles/motion.css` | 全站转场、悬停、键盘/触摸反馈和减少动效（不含阅读进度条专用规则） | `src/lib/motion.ts` |
+| `src/styles/reader-progress.css` | 阅读进度条轨道、终端游标、两皮肤外观及该控件减少动效；在 motion.css 后导入 | `src/features/reader/useReadingProgress.ts`（数值）、`src/styles/responsive.css`（定位） |
 
 **按需修改规则：** 单个组件的样式改动先查对应负责文件，再查 `responsive.css`，需要区分皮肤才查 `skins.css`，动效问题最后查 `motion.css`。不要把 `--header-height` 一类布局 token 的修复仅写进 skin；此类值必须跨皮肤共享。新拆分不得移动规则到相反的导入位置，以免同优先级覆盖出现相反结果。此表不代表已完成所有重复样式清除；本批只处理了顺序可证明保持的边界与两组被完全覆盖的手机标题规则。
 
