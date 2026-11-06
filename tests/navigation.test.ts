@@ -7,7 +7,7 @@ import App from "../src/App";
 import { fragmentId, isAppRoute, routeMotionDirection } from "../src/lib/router";
 import Reader from "../src/components/Reader";
 import worker from "../worker/index";
-import { metadata, posts, structuredData, typeLabels } from "../src/lib/data";
+import { metadata, posts, site, structuredData, typeLabels } from "../src/lib/data";
 import { invalidateComments } from "../src/lib/api";
 let dom: JSDOM,
   root: Root,
@@ -1321,7 +1321,7 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".home-feed-heading").length, 0);
     assert.equal(document.querySelector("#latest-heading")?.textContent, "最新内容");
     assert.equal(document.querySelector("#latest-heading")?.classList.contains("sr-only"), false);
-    assert.match(document.querySelector(".intro-description")?.textContent || "", /Waylan 的个人技术博客/);
+    assert.equal(document.querySelector(".intro-description")?.textContent, site.description);
     assert.ok(document.querySelector('.home-links a[href="/about"]'));
     assert.ok(document.querySelector('.home-links a[href="/rss.xml"]'));
     await click(document.querySelector(".hero-browse"));
