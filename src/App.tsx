@@ -103,7 +103,7 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
   // Primary navigation is for destinations, not content-type filters.
   // Every type (article, note, thought, journal, project) lives in /feed.
   const nav = [
-    { url: "/", label: "首页", description: "认识本站，阅读最新内容", term: "~", active: pathname === "/" },
+    { url: "/", label: "首页", description: "站点介绍与最新内容", term: "~", active: pathname === "/" },
     {
       url: "/feed",
       label: "内容",
@@ -114,21 +114,21 @@ function Shell({ reader }: { reader?: ComponentType<{ post: Post }> }) {
     {
       url: "/archive",
       label: "归档",
-      description: "沿着年月回看记录",
+      description: "按日期浏览记录",
       term: "archive",
       active: pathname === "/archive",
     },
     {
       url: "/projects",
       label: "项目",
-      description: "项目、工具与实践成果",
+      description: "项目与实验记录",
       term: "projects",
       active: pathname === "/projects" || post?.type === "project",
     },
     {
       url: "/about",
       label: "关于",
-      description: "了解作者与本站",
+      description: "本站介绍与内容范围",
       term: "about",
       active: pathname === "/about",
     },

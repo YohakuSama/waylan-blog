@@ -79,7 +79,7 @@ export function Home() {
           <div className="intro-copy">
             <p className="eyebrow mono">WAYLAN / HOME</p>
             <HeroTitle />
-            <p className="intro-description">{site.author} 的个人技术博客。{site.description}</p>
+            <p className="intro-description">{site.description}</p>
             <nav className="home-links page-heading-actions" aria-label="博客导览">
               <Link href="/feed" className="home-topic-link">
                 浏览全部内容<ArrowRight size={15} aria-hidden="true" />
@@ -131,7 +131,7 @@ export function Home() {
             density="full"
             empty={
               <div className="empty-state">
-                <h3>第一篇文字，正在路上。</h3>
+                <h3>暂无内容</h3>
                 <p>这里会按发布时间显示最近的记录。</p>
               </div>
             }

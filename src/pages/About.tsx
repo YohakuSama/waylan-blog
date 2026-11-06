@@ -67,10 +67,10 @@ export function About() {
               href="/feed"
               label="浏览全部内容"
             >
-              从这里开始
+              内容分类
             </SideTitle>
             <p className="side-text">
-              想找具体的解决方案，可以按主题浏览；想了解最近的折腾，先读最新文章。
+              可按主题筛选文章，也可查看最近更新。
             </p>
             <ul className="explore-list">
               {usedTopics.map((t) => (

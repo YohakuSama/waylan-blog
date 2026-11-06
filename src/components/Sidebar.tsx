@@ -161,7 +161,7 @@ const siteLinks = [
   { href: "/archive", label: "归档", hint: "按年份回看记录" },
   { href: "/projects", label: "项目", hint: "实践项目与工具实验" },
   { href: "/feed?type=note", label: "笔记", hint: "短篇技术片段" },
-  { href: "/about", label: "关于", hint: "写作方向与实践方式" },
+  { href: "/about", label: "关于", hint: "本站介绍与内容范围" },
 ];
 /** Rail blocks shared by every index page, so the right column reads as one system. */
 export function TopicsBlock({ linkHeading = true }: { linkHeading?: boolean } = {}) {
@@ -293,8 +293,8 @@ export function Sidebar({ current, mode }: { current?: string; mode?: "feed" | "
           <SocialIcons />
         </div>
         <details className="sidebar-note">
-          <summary>给好奇读者的小纸条</summary>
-          <p>选中喜欢的文字可以私人划线；想先把一篇文章放好，点一下书签就行。它们都不会上传到服务器。</p>
+          <summary>阅读与收藏</summary>
+          <p>点击书签可保存文章；选中文字可添加私人划线。相关记录仅保存在当前浏览器。</p>
         </details>
       </section>
       <TopicsBlock linkHeading={mode !== "feed"} />

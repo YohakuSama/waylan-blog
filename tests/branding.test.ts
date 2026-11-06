@@ -9,6 +9,16 @@ it("首页名称清晰，定位不声称作者是前端工程师", () => {
   assert.equal(metadata("/").title, `首页 · ${site.name}`);
 });
 
+it("公开介绍描述内容范围与使用说明，不使用职业标签或否定式定位", () => {
+  const about = readFileSync("content/about.md", "utf8");
+  const source = JSON.parse(readFileSync("content/site.json", "utf8"));
+  const copy = about + source.description + source.intro + source.hero.lines.join("");
+  assert.doesNotMatch(copy, /前端开发教程站|职业身份|真实的技术折腾|值得研究的我都会/);
+  assert.match(about, /操作系统、软件配置、网络服务/);
+  assert.match(about, /运行环境不同/);
+  assert.equal(site.description, source.description, "site metadata must match the authored description");
+});
+
 it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、触控图标", () => {
   const favicon = readFileSync("public/favicon.svg", "utf8");
   const avatar = readFileSync("public/avatar.svg", "utf8");
