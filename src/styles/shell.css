@@ -303,47 +303,30 @@ h3 {
 /* Topic discovery stays near the reading doorway on tablet/phone. */
 .home-topic-shortcuts {
   display: none;
-  padding: var(--space-4) 0 var(--space-5);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: var(--space-3) 0;
   border-top: 1px solid var(--line);
 }
-.home-topic-shortcuts-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-.home-topic-shortcuts-head h2 {
+.home-topic-shortcuts h2 {
+  flex: 0 0 auto;
   margin: 0;
-  font: 600 17px/1.5 var(--font-display);
+  font: 600 15px/1.5 var(--font-display);
 }
-.home-topic-shortcuts-head a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 44px;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.home-topic-shortcuts-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: var(--space-2);
-}
-.home-topic-shortcuts-links a {
+.home-topic-shortcuts a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 7px 14px;
+  padding: 7px 12px;
   border: 1px solid var(--control-border);
   border-radius: var(--radius-full);
   background: var(--surface);
   color: var(--ink-soft);
   font-size: 13px;
 }
-.home-topic-shortcuts-links a:hover,
-.home-topic-shortcuts-links a:focus-visible {
+.home-topic-shortcuts a:hover,
+.home-topic-shortcuts a:focus-visible {
   color: var(--brand);
   border-color: var(--brand);
 }
