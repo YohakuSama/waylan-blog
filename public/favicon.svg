@@ -1,9 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Waylan">
   <title>Waylan</title>
-  <style>.bg{fill:#f7f4ee}.w{fill:#1c1a17}.dot{fill:#a3321f}@media (prefers-color-scheme:dark){.bg{fill:#1d1c21}.w{fill:#ece7df}.dot{fill:#e88b70}}</style>
-  <rect class="bg" width="96" height="96" rx="22"/>
-  <g transform="translate(48 48) scale(1.16) translate(-50 -49)">
-    <path class="w" d="M19.57 29 27.24 29 38.27 69.5 30.6 69.5ZM47.65 29 50.18 29 36.88 69.5 34.36 69.5ZM43.62 29 51.33 29 63.16 69.5 55.45 69.5ZM71.64 29 74.15 29 61.82 69.5 59.31 69.5ZM14.5 28h14.5v2H14.5ZM41 28h12v2H41ZM67.5 28h12v2H67.5Z"/>
-    <circle class="dot" cx="82" cy="66.6" r="3.6"/>
-  </g>
+  <style>.tile{fill:#202b29}.letter{fill:#f7f4ee}.accent{fill:#d45f45}@media (prefers-color-scheme:dark){.tile{fill:#dbece2}.letter{fill:#14241d}.accent{fill:#b74b37}}</style>
+  <rect class="tile" x="4" y="4" width="88" height="88" rx="19"/>
+  <path class="letter" d="M16 27h12l9 35 9-25h7l9 25 9-35h10L67 74H56L49 54l-8 20H30z"/>
+  <rect class="accent" x="69" y="18" width="12" height="5" rx="1"/>
 </svg>

@@ -59,6 +59,7 @@ export function NetworkWave({ className = "" }: { className?: string }) {
     <svg
       className={`network-wave ${className}`}
       viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       focusable="false"
     >

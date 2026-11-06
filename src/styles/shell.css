@@ -171,7 +171,9 @@ h3 {
 .home-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);
+  align-items: start;
+  column-gap: clamp(20px, 3vw, 38px);
   min-height: 0;
 }
 .intro-copy {
@@ -300,7 +302,8 @@ h3 {
 }
 /* The homepage has a stable editorial presentation, independent of the library. */
 .home-list .feed-item { padding: 20px 0; grid-template-columns: minmax(0,1fr); grid-template-areas: "body"; }
-.home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,30%) minmax(0,1fr); grid-template-areas: "media body"; }
+.home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,38%) minmax(0,1fr); grid-template-areas: "media body"; }
+.home-list .feed-item.has-media > .feed-media-link { align-self: center; }
 .home-list .feed-arrow { display: none; }
 .home-list .feed-item:not(:first-child), .home-list .feed-item.is-thought {
   grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
@@ -312,10 +315,9 @@ h3 {
 .home-list .tag-list li:nth-child(n+3) { display: none; }
 .home-list .feed-excerpt { margin-top: 7px; }
 .home-list .entry-meta { font-size: 12px; min-height: 32px; }
-.home-list .entry-meta .card-bookmark { width: 40px; height: 40px; top: -4px; }
+.home-list .entry-meta .card-bookmark { width: 40px; height: 40px; }
 .home-list .entry-views { display: none; }
 .home-list .thought-text { font-size: 18px; line-height: 1.75; }
-.home-motto { position: absolute; bottom: 12px; right: 8px; color: var(--muted); font-size: 12px; background: var(--paper); }
 /* Home discovery is a compact index, not a stack of oversized cards. */
 .home-sidebar { padding-top: 20px; padding-bottom: 12px; }
 .home-sidebar > .side-block { padding: 18px 0; }
@@ -365,29 +367,23 @@ h3 {
 :root[data-skin="terminal"] .home-sidebar .home-reading-note { border-top-style: dashed; }
 .home-about-link { display: inline-flex; align-items: center; min-height: 44px; gap: 5px; font-size: 13px; }
 .hero-visual {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: min(27%, 270px);
-  height: 100%;
+  position: relative;
+  right: auto;
+  top: auto;
+  width: 100%;
+  height: clamp(168px, 18vw, 196px);
   overflow: hidden;
   pointer-events: none;
-  /* Soft edges so the mesh dissolves into the paper instead of ending in a box. */
-  -webkit-mask-image: radial-gradient(
-    ellipse 72% 70% at 55% 52%,
-    #000 55%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 72% 70% at 55% 52%,
-    #000 55%,
-    transparent 100%
-  );
+  /* The illustration owns a bounded column below the heading's top edge. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 93%, transparent);
 }
 /* Dotted network wave (components/Network.tsx). */
 .network-wave {
+  position: absolute;
+  inset: 8px 0 auto auto;
   width: 100%;
-  height: auto;
+  height: calc(100% - 20px);
   overflow: visible;
 }
 .wave-rows path,

@@ -112,12 +112,24 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes('onClick={() => onChange("compact")}'));
     assert.ok(feed.includes('onClick={() => onChange("full")}'));
   });
+  it("keeps hero art bounded and publication facts aligned with their bookmark", () => {
+    const page = readFileSync("src/pages/Home.tsx", "utf8");
+    const mark = readFileSync("src/components/Wordmark.tsx", "utf8");
+    assert.ok(shell.includes("grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);"));
+    assert.ok(shell.includes(".home-list .feed-item.has-media > .feed-media-link { align-self: center; }"));
+    assert.doesNotMatch(page, /className="home-motto"/);
+    assert.ok(feed.includes('className="entry-meta-facts"'));
+    assert.ok(feedCss.includes(".entry-meta-facts > * {"));
+    assert.match(skins, /\.entry-meta \.card-bookmark \{\s*position: static;/);
+    assert.ok(mark.includes('viewBox="0 0 170 46"'));
+    assert.ok(skins.includes(".brand-term-prompt"));
+  });
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = responsive.indexOf("@media (max-width: 1024px)");
     assert.ok(bp > 0);
     const next = responsive.indexOf("/* Narrow screens keep destinations into a menu. */", bp);
     const tablet = responsive.slice(bp, next);
-    assert.ok(tablet.includes("right: 0;"));
-    assert.ok(tablet.includes("width: min(30%, 300px);"));
+    assert.ok(tablet.includes("right: auto;"));
+    assert.ok(tablet.includes(".home-hero > .hero-visual {"));
   });
 });

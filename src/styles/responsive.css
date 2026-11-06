@@ -58,11 +58,9 @@
     border-top: 0;
     padding: 0 0 32px;
   }
-  .hero-visual {
-    width: min(30%, 300px);
-    /* At tablet width the feed takes the entire row; a negative right offset
-       would add horizontal document overflow and a phantom side gutter. */
-    right: 0;
+  .home-hero > .hero-visual {
+    width: 100%;
+    right: auto;
   }
 }
 /* Tablets and phones use the same compact secondary filtering controls.
@@ -181,16 +179,9 @@
   /* Home uses the same .page-heading inset as Feed, Archive, Projects and About.
      No separate top offset: all five page titles share one baseline. */
   .home-hero {
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     isolation: isolate;
-  }
-  .hero-visual {
-    position: relative;
-    right: auto;
-    width: 100%;
-    max-width: 520px;
-    margin: 4px 0 -24px auto;
-    order: 2;
   }
   .home-hero .hero-visual { display: none; }
   .feed-toolbar {
@@ -319,13 +310,6 @@
   .intro-description {
     font-size: 13.5px;
   }
-  :root:not([data-skin="terminal"]) .home-hero .hero-visual {
-    width: 100%;
-    right: 0;
-    height: 100%;
-    margin: 0;
-    opacity: .16;
-  }
   .feed-body h2 {
     font-size: 19px;
   }
@@ -421,7 +405,8 @@
    are intentionally different widths; without a shared slot the entire
    navigation shifts 15px when switching from editorial to terminal. */
 @media (min-width: 861px) {
-  .site-header .brand { min-width: 120px; }
+  /* Both wordmark styles reserve one slot, so changing skins cannot move navigation. */
+  .site-header .brand { min-width: 144px; }
 }
 /* Reserve one shared first-column slot for both editorial SVG and terminal
    wordmark. Without it, the terminal font moves the desktop navigation 15px. */

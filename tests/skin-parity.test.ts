@@ -14,26 +14,24 @@ function rule(source: string, selector: string): string {
 }
 
 describe("both visual themes share home geometry and focus treatments", () => {
-  it("keeps the terminal decoration behind intro instead of adding a feed row", () => {
-    const hero = rule(skin, ':root[data-skin="terminal"] .home-hero');
-    const visual = rule(skin, ':root[data-skin="terminal"] .home-hero .hero-visual');
-    const copy = rule(skin, ':root[data-skin="terminal"] .home-hero .intro-copy');
-    assert.ok(hero.includes("grid-template-columns: minmax(0, 1fr);"));
-    assert.ok(hero.includes("isolation: isolate;"));
-    for (const expected of [
-      "position: absolute;",
-      "z-index: 0;",
-      "height: 100%;",
-      "overflow: hidden;",
-      "pointer-events: none;",
-      "mask-image: radial-gradient",
-    ]) assert.ok(visual.includes(expected), expected);
-    assert.ok(copy.includes("z-index: 1;"));
-    assert.equal(visual.includes("mask-image: none;"), false);
-    assert.equal(skin.includes("grid-template-columns: minmax(0, 1fr) minmax(0, 440px)"), false);
+  it("keeps both hero illustrations inside their own bounded column", () => {
+    const layout = rule(shell, ".home-hero");
     const editorial = rule(shell, ".hero-visual");
-    assert.ok(editorial.includes("position: absolute;"));
+    const terminal = rule(skin, ':root[data-skin="terminal"] .home-hero .hero-visual');
+    const terminalCopy = rule(skin, ':root[data-skin="terminal"] .home-hero .intro-copy');
+    const tablet = rule(responsive, ".home-hero");
+    assert.ok(layout.includes("grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);"));
+    assert.ok(layout.includes("align-items: start;"));
+    assert.ok(editorial.includes("position: relative;"));
+    assert.ok(editorial.includes("height: clamp(168px, 18vw, 196px);"));
     assert.ok(editorial.includes("pointer-events: none;"));
+    assert.ok(terminal.includes("position: relative;"));
+    assert.ok(terminal.includes("width: 100%;"));
+    assert.ok(terminal.includes("pointer-events: none;"));
+    assert.ok(terminalCopy.includes("z-index: 1;"));
+    assert.ok(responsive.includes(".home-hero .hero-visual { display: none; }"));
+    assert.ok(tablet.includes("grid-template-columns: minmax(0, 1fr);"));
+    assert.equal(terminal.includes("mask-image: none;"), false);
   });
 
   it("uses the same compact phone content-type selector for both skins", () => {
