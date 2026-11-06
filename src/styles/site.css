@@ -342,7 +342,8 @@
 .lost-page svg {
   width: 56px;
   height: 56px;
-  color: var(--line-strong);
+  /* This graphic is the visible affordance of an interactive button. */
+  color: var(--muted);
 }
 .not-found h1 {
   font-family: var(--font-display);

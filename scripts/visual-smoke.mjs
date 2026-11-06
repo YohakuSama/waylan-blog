@@ -262,6 +262,10 @@ try {
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
               footerCountText: document.querySelector(".footer-stats")?.textContent?.trim(),
               notFoundHeading: document.querySelector(".not-found h1")?.textContent?.trim(),
+              notFoundGlyphContrast: (() => {
+                const icon = document.querySelector(".not-found .lost-page svg");
+                return icon ? contrast(getComputedStyle(icon).color, tokens.getPropertyValue("--paper")) : null;
+              })(),
               notFoundCodeGap: (() => {
                 const code = select(".not-found > .mono"), masthead = select(".site-header");
                 return code && masthead ? code.top - masthead.bottom : null;
@@ -353,6 +357,10 @@ try {
           if (route === "/feed" && width <= 767) {
             assert.ok(geometry.phoneCovers.length && geometry.phoneCovers.every((box) => box && box.width <= 144.5 && box.height <= 91),
               `${label}: a full-width cover displaced phone content`);
+          }
+          if (route === "/404") {
+            assert.ok(geometry.notFoundGlyphContrast !== null && geometry.notFoundGlyphContrast >= 3,
+              `${label}: 404 action icon lacks non-text contrast (${geometry.notFoundGlyphContrast})`);
           }
           if (route === "/404" && width <= 767) {
             assert.ok(geometry.notFoundCodeGap !== null &&
