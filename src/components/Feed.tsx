@@ -195,16 +195,20 @@ export function FeedEntry({
     );
   else if (showMedia && post.type === "project")
     media = (
-      <Media post={post}>
+      // Project tags are real navigation links, not nested in a cover link.
+      <div className="feed-media-link project-media">
         <div className="feed-media project-thumb">
-          <span className="project-head">
+          <Link href={href} className="project-head">
             <span className="project-initial">{post.title.slice(0, 1)}</span>
             <span className="mono project-code">
               {post.project?.repo
                 ? `仓库 · ${post.project.repo.replace(/^https?:\/\/(www\.)?github\.com\//, "")}`
                 : `项目 · ${post.slug.replace(/^project-/, "")}`}
             </span>
-          </span>
+          </Link>
+          <div className="project-thumb-tags">
+            <TagList tags={post.tags} hrefForTag={tagHref} />
+          </div>
           <span className="project-langs" aria-hidden="true">
             {post.project?.stack.slice(0, 4).map((s, i, all) => (
               <i key={s} style={{ flexGrow: all.length - i + 1 }} />
@@ -214,7 +218,7 @@ export function FeedEntry({
             {post.project?.stack.slice(0, 3).join(" · ")}
           </span>
         </div>
-      </Media>
+      </div>
     );
   if (post.type === "thought")
     return (
@@ -275,7 +279,8 @@ export function FeedEntry({
             )}
           </div>
         )}
-        <TagList tags={post.tags} hrefForTag={tagHref} />
+        {(post.type !== "project" || !media) &&
+          <TagList tags={post.tags} hrefForTag={tagHref} />}
       </div>
       {media}
       <Link
@@ -330,9 +335,7 @@ export function ViewToggle({
         aria-pressed={density === "compact"}
         aria-label="紧凑列表"
         data-tip="紧凑列表"
-        onClick={() =>
-          listTransition(() => flushSync(() => onChange("compact")))
-        }
+        onClick={() => onChange("compact")}
       >
         <List size={16} />
         <span>列表</span>
