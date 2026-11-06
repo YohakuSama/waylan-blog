@@ -82,6 +82,17 @@ test("browser QA installs are bounded, cached immediately and never skipped by a
   assert.match(workflow, /id: browsers\s+if:.*\n\s+timeout-minutes: 5/);
   assert.match(workflow, /npx playwright install-deps chromium firefox webkit/);
   assert.match(workflow, /npx playwright install chromium firefox webkit/);
+  assert.ok(workflow.indexOf("Probe native browser startup before apt") <
+    workflow.indexOf("Install missing Linux browser libraries only if needed"),
+    "do not apt-install packages before testing whether browsers already launch");
+  assert.match(workflow, /steps\.browser-probe\.outputs\.needs_linux_deps == 'true'/,
+    "native package installation must be strictly conditional on a real failed probe");
+  assert.ok(workflow.includes("node scripts/ci-browser-runtime.mjs verify"),
+    "all three engines must start successfully before browser test gates can pass");
+  const probe = readFileSync("scripts/ci-browser-runtime.mjs", "utf8");
+  for (const name of ["chromium", "firefox", "webkit"]) assert.ok(probe.includes(name));
+  assert.ok(probe.includes("engine.launch") && probe.includes('mode === "detect"') &&
+    probe.includes('mode === "verify"'));
   assert.ok(workflow.indexOf("Save browser binaries immediately on cache miss") <
     workflow.indexOf("Phone, tablet and desktop layout"),
     "an unsuccessful visual test must not discard the installed browser cache");
