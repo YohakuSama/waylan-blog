@@ -2,8 +2,12 @@ name: Waylan CI
 
 # One entry point; no duplicate npm ci, builds or browser installations.
 on:
+  # Drafts are development workspaces: create a skipped check without
+  # provisioning a runner. The ready_for_review transition runs the full gate
+  # against the exact current PR head; later commits to a ready PR re-run it.
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   push:
     branches: [main]
   workflow_dispatch: {}
@@ -17,8 +21,12 @@ concurrency:
 
 jobs:
   check:
+    # Avoid allocating CI minutes while a PR is still being actively drafted.
+    # GitHub prevents merging drafts; ready_for_review always triggers this
+    # same required job, including full scoped browser tests for UI changes.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout (include base history for changed-path detection)
         uses: actions/checkout@v4
@@ -48,15 +56,58 @@ jobs:
         if: ${{ steps.plan.outputs.code == 'true' }}
         run: npm run check
 
-      # One browser install and build for all applicable frontend regressions.
-      - name: Install browser QA once
+      # One browser setup for all relevant checks. Separate bounded stages
+      # pinpoint package, Linux library and browser download problems.
+      - name: Install Playwright QA packages (bounded)
+        id: browser-packages
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        timeout-minutes: 4
+        env:
+          npm_config_fetch_retries: 1
+          npm_config_fetch_timeout: 120000
+        run: npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
+      - name: Restore version-pinned browser binaries
+        id: browser-cache
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1-v1
+      - name: Install Linux browser libraries (bounded)
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        timeout-minutes: 4
+        run: npx playwright install-deps chromium firefox webkit
+      - name: Verify Playwright browser binaries (bounded)
         id: browsers
         if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        timeout-minutes: 5
         run: |
-          npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
-          npx playwright install --with-deps chromium firefox webkit
+          # On an exact cache hit this is a fast presence check, not a download.
+          # On a miss it installs all three browsers before any tests begin.
+          npx playwright install chromium firefox webkit
+          node --input-type=module -e '
+            import { existsSync } from "node:fs";
+            import { chromium, firefox, webkit } from "playwright";
+            for (const [name, engine] of Object.entries({ chromium, firefox, webkit })) {
+              if (!existsSync(engine.executablePath())) throw Error(name + " binary missing");
+              console.log(name + ": ready");
+            }
+          '
+          echo "Browser cache hit: ${{ steps.browser-cache.outputs.cache-hit }}" >> "$GITHUB_STEP_SUMMARY"
+      # Save before the longer visual tests. A later assertion failure should
+      # not throw away a successfully installed cache for the next PR commit.
+      - name: Save browser binaries immediately on cache miss
+        if: ${{ success() && steps.plan.outputs.browser == 'true' && steps.browser-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1-v1
       - name: Phone, tablet and desktop layout
         if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
+        timeout-minutes: 15
+        env:
+          # PRs exercise key viewport thresholds; manual full runs retain all 16.
+          WAYLAN_VISUAL_MATRIX: ${{ github.event_name == 'workflow_dispatch' && 'full' || 'smoke' }}
         run: node scripts/visual-smoke.mjs
       - name: Chromium Firefox WebKit and admin interactions
         if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
