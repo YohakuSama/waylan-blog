@@ -405,7 +405,8 @@
    are intentionally different widths; without a shared slot the entire
    navigation shifts 15px when switching from editorial to terminal. */
 @media (min-width: 861px) {
-  .site-header .brand { min-width: 120px; }
+  /* Both wordmark styles reserve one slot, so changing skins cannot move navigation. */
+  .site-header .brand { min-width: 144px; }
 }
 /* Reserve one shared first-column slot for both editorial SVG and terminal
    wordmark. Without it, the terminal font moves the desktop navigation 15px. */
