@@ -5,12 +5,12 @@ import { FeedList, TypeTabs, useDensity, ViewToggle, type TypeFilter } from "../
 import { Sidebar } from "../components/Sidebar";
 
 const feedTitles: Record<TypeFilter, [string, string]> = {
-  all: ["全部内容", "实践记录、笔记、想法、建站日志与项目，按发布时间排列。"],
-  article: ["文章", "完整的长文：背景、步骤、原理，以及踩过的坑。"],
-  note: ["笔记", "围绕一个具体问题的短篇记录，通常附带命令或配置。"],
-  thought: ["想法", "随手记下的简短想法，还没展开成文章。"],
-  journal: ["开发日志", "本站与个人工具的实现、维护和排障记录。"],
-  project: ["项目", "自己做的项目与实验，注明状态与技术栈。"],
+  all: ["全部内容", "文章、笔记、想法、开发日志和项目，按发布时间排列。"],
+  article: ["文章", "较长的技术记录，包含背景、操作过程与结果。"],
+  note: ["笔记", "具体问题的简短记录，包括命令、配置和排查步骤。"],
+  thought: ["想法", "简短的观点与观察。"],
+  journal: ["开发日志", "本站和个人项目的开发、维护及问题排查记录。"],
+  project: ["项目", "项目与实验记录，包含状态和所用技术。"],
 };
 export function Feed() {
   const router = useRouter(),
@@ -184,7 +184,7 @@ export function Feed() {
                   <h2>
                     {posts.length
                       ? "没有找到符合条件的内容。"
-                      : "第一篇文字，正在路上。"}
+                      : "暂无内容"}
                   </h2>
                   <p>试试短一点的关键词，或换一个分类、主题。</p>
                   <button
