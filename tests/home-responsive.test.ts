@@ -155,6 +155,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.equal((feed.match(/<FeedActions post=\{post\} href=\{href\} \/>/g) || []).length, 2,
       "thoughts and other entries must reuse one bookmark/open action group");
     assert.ok(feed.includes('className="feed-actions"'));
+    assert.ok(responsive.includes(".home-list .tag-list a { padding-inline: 8px; }"),
+      "320px terminal cards must wrap tags without orphaning the last label");
     assert.ok(feed.includes('className="feed-arrow"'));
     assert.doesNotMatch(shell, /\.home-list \.feed-arrow\s*\{\s*display:\s*none/);
   });
