@@ -31,7 +31,7 @@ export function NotificationBell({
   announcements?: Announcement[];
   readAnnouncements?: Set<string>;
   onOpenAnnouncement?: (item: Announcement) => void;
-} = {}) {
+}) {
   const [box, setBox] = useState<Inbox>(empty);
   const [csrf, setCsrf] = useState("");
   const [moderator, setModerator] = useState(false);
