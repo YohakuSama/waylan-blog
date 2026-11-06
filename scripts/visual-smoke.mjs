@@ -602,18 +602,17 @@ try {
             assert.ok(geometry.header && Math.abs(geometry.header.height-expectedHeight)<=1,
               `${label}: article masthead must match the ${expectedHeight}px home first row`);
             assert.ok(Math.abs(geometry.brandWordmark.height - home.brandWordmark.height) <= 1 &&
+              Math.abs(geometry.brandWordmark.left - home.brandWordmark.left) <= 1 &&
               Math.abs(geometry.brandWordmark.top - home.brandWordmark.top) <= 1,
-              `${label}: home and reader must render the same logo size and vertical position`);
+              `${label}: home and reader must render the same logo size and position`);
             for (let i = 0; i < 4; i++) {
               const actual = geometry.controls[i], original = home.controls[i];
               assert.ok(actual && original &&
                 Math.abs(actual.height - original.height) <= 1 &&
-                Math.abs(actual.width - (i === 0 && width >= 480 && width <= 860
-                  ? 44 : original.width)) <= 1 &&
+                Math.abs(actual.width - original.width) <= 1 &&
+                Math.abs(actual.left - original.left) <= 1 &&
                 Math.abs(actual.top - original.top) <= 1,
                 `${label}: global action ${i} differs from the home masthead`);
-              if (width < 480) assert.ok(Math.abs(actual.left - original.left) <= 1,
-                `${label}: compact phone action ${i} shifts between home and reader`);
             }
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
