@@ -196,7 +196,7 @@ try {
                 return meta && title ? title.top - meta.bottom : null;
               }).filter((gap) => gap !== null),
               phoneCovers: [...document.querySelectorAll(".feed-layout .feed-item.is-article .feed-media")].map(rect),
-              meta: select(".entry-meta"), bookmark: select(".entry-meta .card-bookmark"),
+              meta: select(".entry-meta"), bookmark: select(".feed-tail .card-bookmark"),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
               years: document.querySelectorAll(".archive-year").length,
               yearLinks: document.querySelectorAll(".archive-year-nav a").length,
@@ -367,11 +367,11 @@ try {
               geometry.notFoundCodeGap >= -1 && geometry.notFoundCodeGap <= 64,
               `${label}: 404 entry is too far below mobile header (${geometry.notFoundCodeGap}px)`);
           }
-          // The save shortcut is part of the publication row, not a detached corner.
+          // The save shortcut follows the card details instead of interrupting
+          // the publication facts (date, status and reading count).
           if ((route === "/" || route === "/feed") && geometry.entryFacts && geometry.bookmark) {
-            const gap = geometry.bookmark.left - geometry.entryFacts.right;
-            assert.ok(gap >= -1 && gap <= 24,
-              `${label}: bookmark is detached from reading metadata (${gap}px)`);
+            assert.ok(geometry.bookmark.top >= geometry.entryFacts.bottom - 1,
+              `${label}: save action overlaps publication metadata`);
           }
           if (route === "/" && width > 767 &&
               geometry.homeFeaturedMedia && geometry.homeFeaturedBody) {
@@ -685,7 +685,7 @@ try {
             assert.ok(geometry.bookmark.width >= 40 && geometry.bookmark.height >= 40, `${label}: small save target`);
             assert.equal(geometry.bookmarkOpacity, "1", `${label}: save target hidden`);
             assert.ok(geometry.bookmark.left >= geometry.meta.left && geometry.bookmark.right <= geometry.meta.right + 1,
-              `${label}: save target escaped its metadata row`);
+              `${label}: save target escaped its content column`);
           }
           if (route === "/feed") {
             if (width < 1120) assert.equal(geometry.sidebar, null, `${label}: redundant feed sidebar should be hidden`);
