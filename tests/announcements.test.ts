@@ -49,7 +49,7 @@ describe("Public site announcements", () => {
       Array.from({ length: 13 }, (_, i) => ({ ...sample, id: `notice-${i}` })),
     ];
     for (const list of invalid)
-      assert.throws(() => parseAnnouncements(list), undefined, JSON.stringify(list).slice(0, 80));
+      assert.throws(() => parseAnnouncements(list), Error, JSON.stringify(list).slice(0, 80));
   });
 
   it("allows a blank unpublished draft but rejects publishing it before completion", () => {
@@ -88,7 +88,7 @@ describe("Public site announcements", () => {
 
   it("renders a public announcement list without a login or private inbox", () => {
     const html = renderToStaticMarkup(createElement(AnnouncementList, {
-      items: [sample], read: new Set(), onOpen: () => {},
+      items: [sample], read: new Set<string>(), onOpen: () => {},
     }));
     assert.match(html, /例行维护/);
     assert.match(html, /未读/);
@@ -102,7 +102,7 @@ describe("Public site announcements", () => {
 
   it("escapes announcement text instead of accepting raw HTML", () => {
     const html = renderToStaticMarkup(createElement(AnnouncementDetail, {
-      item: { ...sample, title: '<script>alert(1)</script>', body: '<img src=x onerror=alert(1)>' },
+      item: { ...sample, title: '<script>alert(1)</script>', body: '<img src=x onerror=alert(1)>', link: '' },
       onClose: () => {},
     }));
     assert.match(html, /&lt;script&gt;/);
