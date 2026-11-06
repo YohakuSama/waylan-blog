@@ -140,6 +140,17 @@ function Media({ post, children }: { post: Post; children: ReactNode }) {
     </Link>
   );
 }
+/** All entry types share one end-aligned action group. */
+function FeedActions({ post, href }: { post: Post; href: string }) {
+  return (
+    <div className="feed-actions" role="group" aria-label={`操作：${post.title}`}>
+      <BookmarkButton post={post} className="card-bookmark" />
+      <Link className="feed-arrow" href={href} aria-label={`打开：${post.title}`}>
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
 export function FeedEntry({
   post,
   discussion,
@@ -236,16 +247,9 @@ export function FeedEntry({
             <div className="feed-tail-tags">
               <TagList tags={post.tags} hrefForTag={tagHref} />
             </div>
-            <BookmarkButton post={post} className="card-bookmark" />
+            <FeedActions post={post} href={href} />
           </div>
         </div>
-        <Link
-          className="feed-arrow"
-          href={href}
-          aria-label={`打开：${post.title}`}
-        >
-          <ArrowRight size={18} />
-        </Link>
       </article>
     );
   return (
@@ -292,17 +296,10 @@ export function FeedEntry({
               </div>
             )}
           </div>
-          <BookmarkButton post={post} className="card-bookmark" />
+          <FeedActions post={post} href={href} />
         </div>
       </div>
       {media}
-      <Link
-        className="feed-arrow"
-        href={href}
-        aria-label={`打开：${post.title}`}
-      >
-        <ArrowRight size={18} />
-      </Link>
     </article>
   );
 }

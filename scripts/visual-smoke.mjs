@@ -204,6 +204,15 @@ try {
               }).filter((gap) => gap !== null),
               phoneCovers: [...document.querySelectorAll(".feed-layout .feed-item.is-article .feed-media")].map(rect),
               meta: select(".entry-meta"), bookmark: select(".feed-tail .card-bookmark"),
+              cardActions: [...document.querySelectorAll(".feed-list .feed-item")].map((card) => ({
+                bookmark: rect(card.querySelector(".feed-actions .card-bookmark")),
+                arrow: rect(card.querySelector(".feed-actions .feed-arrow")),
+                actions: rect(card.querySelector(".feed-actions")),
+              })),
+              popularTitles: [...document.querySelectorAll(".popular-title")].map((title) => ({
+                whiteSpace: getComputedStyle(title).whiteSpace,
+                overflowWrap: getComputedStyle(title).overflowWrap,
+              })),
               bookmarkOpacity: document.querySelector(".card-bookmark") && getComputedStyle(document.querySelector(".card-bookmark")).opacity,
               years: document.querySelectorAll(".archive-year").length,
               yearLinks: document.querySelectorAll(".archive-year-nav a").length,
@@ -252,6 +261,7 @@ try {
               homeCardTags: [...document.querySelectorAll(".home-list .feed-item")].map((card) => ({
                 links: [...card.querySelectorAll(".tag-list a")].map(rect).filter(Boolean),
                 bookmark: rect(card.querySelector(".feed-tail .card-bookmark")),
+                arrow: rect(card.querySelector(".feed-tail .feed-arrow")),
                 tail: rect(card.querySelector(".feed-tail")),
               })),
               homeProjectRows: [...document.querySelectorAll(".home-sidebar .home-projects a")].map(rect),
@@ -488,8 +498,8 @@ try {
           }
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
-          // Five index pages share one vertical heading rhythm; desktop widths
-          // vary by content type, while phone headings still share a left edge.
+          // All five index pages share one outer frame and heading origin;
+          // only the inner reading columns retain separate maximum widths.
           if (["/", "/feed", "/archive", "/projects", "/about"].includes(route)) {
             assert.ok(geometry.pageHeadingEyebrow && geometry.pageHeadingTitle,
               `${label}: index page heading is missing`);
@@ -498,6 +508,7 @@ try {
               pageHeadingBaselines.set(key, {
                 eyebrow: geometry.pageHeadingEyebrow,
                 title: geometry.pageHeadingTitle,
+                frame: geometry.homePage,
               });
             } else {
               const home = pageHeadingBaselines.get(key);
@@ -505,11 +516,13 @@ try {
               for (const part of ["eyebrow", "title"]) {
                 const actual = part === "eyebrow" ? geometry.pageHeadingEyebrow : geometry.pageHeadingTitle;
                 const expected = home[part];
-                for (const axis of (width <= 767 ? ["left", "top"] : ["top"])) {
+                for (const axis of ["left", "top"]) {
                   assert.ok(Math.abs(actual[axis] - expected[axis]) <= 1,
                     `${label}: ${part} ${axis} differs from Home (${actual[axis]} vs ${expected[axis]})`);
                 }
               }
+              assert.ok(geometry.indexPage && Math.abs(geometry.indexPage.width - home.frame.width) <= 1,
+                `${label}: index frame width differs from Home`);
             }
           }
           if (["/", "/feed", "/projects", "/archive", "/about"].includes(route)) {
@@ -589,18 +602,17 @@ try {
             assert.ok(geometry.header && Math.abs(geometry.header.height-expectedHeight)<=1,
               `${label}: article masthead must match the ${expectedHeight}px home first row`);
             assert.ok(Math.abs(geometry.brandWordmark.height - home.brandWordmark.height) <= 1 &&
+              Math.abs(geometry.brandWordmark.left - home.brandWordmark.left) <= 1 &&
               Math.abs(geometry.brandWordmark.top - home.brandWordmark.top) <= 1,
-              `${label}: home and reader must render the same logo size and vertical position`);
+              `${label}: home and reader must render the same logo size and position`);
             for (let i = 0; i < 4; i++) {
               const actual = geometry.controls[i], original = home.controls[i];
               assert.ok(actual && original &&
                 Math.abs(actual.height - original.height) <= 1 &&
-                Math.abs(actual.width - (i === 0 && width >= 480 && width <= 860
-                  ? 44 : original.width)) <= 1 &&
+                Math.abs(actual.width - original.width) <= 1 &&
+                Math.abs(actual.left - original.left) <= 1 &&
                 Math.abs(actual.top - original.top) <= 1,
                 `${label}: global action ${i} differs from the home masthead`);
-              if (width < 480) assert.ok(Math.abs(actual.left - original.left) <= 1,
-                `${label}: compact phone action ${i} shifts between home and reader`);
             }
             assert.ok(geometry.brand && geometry.brandWordmark,
               `${label}: original Waylan logo or brand identity disappeared`);
@@ -713,6 +725,17 @@ try {
               ? geometry.column.right <= geometry.sidebar.left + 1
               : geometry.column.bottom <= geometry.sidebar.top + 1, `${label}: sidebar overlaps content`);
           }
+          if (geometry.cardActions.length) {
+            assert.ok(geometry.cardActions.every((card) => card.bookmark && card.arrow && card.actions &&
+              card.bookmark.width >= 40 && card.bookmark.height >= 40 &&
+              card.arrow.width >= 40 && card.arrow.height >= 40 &&
+              Math.abs(card.bookmark.top - card.arrow.top) <= 2 &&
+              card.bookmark.right <= card.arrow.left + 1 &&
+              card.arrow.right <= card.actions.right + 1),
+              `${label}: bookmark and open buttons are misaligned or clipped`);
+          }
+          assert.ok(geometry.popularTitles.every((title) => title.whiteSpace === "normal" && title.overflowWrap === "anywhere"),
+            `${label}: popular-post titles are still truncated instead of wrapping`);
           if (geometry.bookmark) {
             assert.ok(geometry.bookmark.width >= 40 && geometry.bookmark.height >= 40, `${label}: small save target`);
             assert.equal(geometry.bookmarkOpacity, "1", `${label}: save target hidden`);
@@ -722,7 +745,7 @@ try {
           if (["/feed", "/projects", "/archive", "/about"].includes(route)) {
             assert.ok(geometry.indexPage && geometry.indexHeading && geometry.indexContent,
               `${label}: index heading or content measure missing`);
-            assert.ok(geometry.indexPage.width <= 961,
+            assert.ok(geometry.indexPage.width <= 1141,
               `${label}: index content exceeds the page reading measure`);
             assert.ok(Math.abs(geometry.indexHeading.left - geometry.indexPage.left) <= 1 &&
               Math.abs(geometry.indexContent.left - geometry.indexPage.left) <= 1,
@@ -851,9 +874,10 @@ try {
               geometry.homeCardTags.every((card) =>
                 card.links.length > 0 && card.links.every((tag) =>
                   tag.left >= 0 && tag.right <= geometry.viewport + 1) &&
-                card.bookmark && card.tail &&
+                card.bookmark && card.arrow && card.tail &&
                 card.bookmark.top >= card.tail.top - 1 &&
-                card.bookmark.bottom <= card.tail.bottom + 1),
+                card.bookmark.bottom <= card.tail.bottom + 1 &&
+                Math.abs(card.bookmark.top - card.arrow.top) <= 2),
               `${label}: home cards have invisible tags, orphaned bookmarks or clipped tag links`);
             assert.ok(geometry.resume && geometry.resume.width <= geometry.viewport, `${label}: resume entry missing or clipped`);
             assert.ok(geometry.column && Math.abs(geometry.resume.right - geometry.column.right) <= 1,

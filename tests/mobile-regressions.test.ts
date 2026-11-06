@@ -86,11 +86,16 @@ describe("mobile reader regression contracts", () => {
     assert.match(responsive, /\.brand \{ overflow: visible; \}/);
     assert.match(responsive, /\.brand-wordmark \{ max-width: 100%; overflow: visible; \}/);
   });
-  it("gives phone feed rows their full width without a spare arrow column", () => {
+  it("keeps both bookmark and open buttons in the phone card without a spare grid column", () => {
     const narrow = responsive.slice(responsive.indexOf("@media (max-width: 767px)"));
-    assert.ok(narrow.includes(".feed-item .feed-arrow { display: none; }"));
+    const entries = readFileSync("src/components/Feed.tsx", "utf8");
+    assert.doesNotMatch(narrow, /\.feed-item \.feed-arrow\s*\{\s*display:\s*none/);
     assert.ok(narrow.includes('grid-template-areas: "body" "media";'));
     assert.ok(narrow.includes("grid-template-columns: minmax(0, 1fr);"));
+    assert.ok(entries.includes('className="feed-actions"'));
+    assert.match(feed, /\.feed-actions\s*\{[^}]*align-items:\s*center/s);
+    assert.match(feed, /\.feed-arrow\s*\{[^}]*width:\s*40px;[^}]*height:\s*40px;/s);
+    assert.match(feed, /@media \(pointer: coarse\)\s*\{\s*\.feed-arrow\s*\{ width: 44px; height: 44px; \}/);
   });
   it("uses current theme tokens for the selection tray", () => {
     const tray = style.slice(style.indexOf(".selection-toolbar {"), style.indexOf(".selection-toolbar-context {"));

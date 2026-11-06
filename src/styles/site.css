@@ -6,11 +6,13 @@
 .about-page {
   width: 100%;
   margin-inline: auto;
+  max-width: var(--index-frame-width);
 }
-.feed-page { max-width: 920px; }
-.projects-page { max-width: 960px; }
-.archive-page { max-width: 880px; }
-.about-page { max-width: 720px; }
+/* Align all five page headings; keep long-form content at its reading measure. */
+.feed-layout { max-width: 920px; }
+.projects-layout { max-width: 960px; }
+.archive-main { max-width: 880px; }
+.about-layout { max-width: 720px; }
 .about-layout,
 .feed-layout,
 .projects-layout {

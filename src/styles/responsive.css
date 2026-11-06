@@ -206,7 +206,6 @@
     gap: 0;
   }
   .feed-item:not(.has-media):not(.is-thought) { grid-template-areas: "body"; }
-  .feed-item .feed-arrow { display: none; }
   .feed-media-link {
     margin-top: 16px;
     margin-bottom: 0;
@@ -413,8 +412,8 @@
 /* Reserve one shared first-column slot for both editorial SVG and terminal
    wordmark. Without it, the terminal font moves the desktop navigation 15px. */
 @media (min-width: 1280px) {
-  .site-header:not(.site-header-reader) .header-inner {
-    grid-template-columns: 120px minmax(0, 1fr) auto;
+  .site-header .header-inner {
+    grid-template-columns: 144px minmax(0, 1fr) auto;
   }
 }
 /* Compact desktop header gets distinct space for brand, navigation and tools. */
@@ -499,6 +498,8 @@
 /* The short standalone wordmark and four 44px controls fit on one
    320px row. Use the same two-row header as other phone widths. */
 @media (max-width: 370px) {
+  /* Keep all post tags visible in two rows beside the shared 44px actions on 320px terminals. */
+  .home-list .tag-list a { padding-inline: 8px; }
   .site-header:not(.site-header-reader) .header-inner {
     grid-template-rows: var(--header-bar-height) 43px;
   }
@@ -524,7 +525,7 @@
   .site-header:not(.site-header-reader) .header-tools { gap: clamp(1px, .8vw, 8px); }
 }
 @media (min-width: 1100px) and (max-width: 1279px) {
-  .site-header:not(.site-header-reader) .header-search {
+  .site-header .header-search {
     width: clamp(120px, 12vw, 166px);
     padding: 0 12px;
     border: 1px solid var(--control-border);
@@ -532,7 +533,7 @@
     border-radius: var(--radius-full);
     justify-content: flex-start;
   }
-  .site-header:not(.site-header-reader) .header-search-text { display: inline; }
+  .site-header .header-search-text { display: inline; }
 }
 
 /* The home masthead and article masthead share row height, logo size and
@@ -620,6 +621,27 @@
   }
 }
 
+/* Compact tablet readers keep the same tool spacing as the index masthead. */
+@media (min-width: 861px) and (max-width: 1024px) {
+  .site-header-reader .header-tools { gap: 4px; }
+}
+
+/* Match the same expandable search slot on index and reader mastheads.
+   The reader keeps its compact single row, not different control positions. */
+@media (min-width: 480px) and (max-width: 860px) {
+  .site-header-reader .header-search {
+    width: clamp(104px, 25vw, 220px);
+    min-width: 0;
+    padding: 0 12px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    justify-content: flex-start;
+  }
+  .site-header-reader .header-search-text { display: inline; }
+  .site-header-reader .header-tools { gap: clamp(1px, .8vw, 8px); }
+}
+
 /* Article headlines use natural wrapping at all widths and skins.
    Balancing Chinese text makes lines break early and leaves empty space. */
 @media (max-width: 1024px) {
@@ -680,7 +702,6 @@
 }
 @media (min-width: 768px) and (max-width: 1119px) {
   .home-list .feed-item:first-child .feed-body h2 { font-size: clamp(22px, 2.7vw, 25px); line-height: 1.36; }
-  .home-list .feed-item { padding-block: var(--space-5); }
   .home-list .feed-excerpt { line-height: 1.75; }
 }
 @media (max-width: 767px) {
@@ -758,6 +779,8 @@
 }
 @media (min-width: 768px) and (max-width: 1119px) {
   .feed-list .feed-item { padding-block: var(--space-5); }
+  /* Tablet home cards retain the phone's 16px rhythm; the library keeps 20px. */
+  .feed-list.home-list .feed-item { padding-block: var(--space-4); }
 }
 /* Filter geometry belongs to the shared breakpoint owner, never a skin. */
 @media (min-width: 1025px) {
@@ -790,16 +813,13 @@
 }
 @media (min-width: 768px) and (max-width: 1040px) {
   .feed-item.is-project.has-media {
-    grid-template-columns: minmax(0, 1fr) 24px;
-    grid-template-areas: "body arrow";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body";
   }
 }
 @media (max-width: 767px) {
   .feed-item.is-project.has-media {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "body";
-  }
-  .density-compact .feed-tail {
-    right: 0;
   }
 }
