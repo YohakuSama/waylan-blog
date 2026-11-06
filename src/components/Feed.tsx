@@ -106,7 +106,8 @@ function EntryMeta({
     count = views.enabled ? views.views[post.id] : 0;
   return (
     <div className="entry-meta">
-      <span className={`type-label type-${post.type}`}>
+      <div className="entry-meta-facts">
+        <span className={`type-label type-${post.type}`}>
         <span className="type-mark" aria-hidden="true" />
         {typeLabels[post.type]}
       </span>
@@ -122,7 +123,8 @@ function EntryMeta({
           {discussion.totalCount} 条评论
         </Link>
       )}
-      {!!count && <span className="entry-views">{viewsLabel(count)} 阅读</span>}
+        {!!count && <span className="entry-views">{viewsLabel(count)} 阅读</span>}
+      </div>
       <BookmarkButton post={post} className="card-bookmark" />
     </div>
   );
