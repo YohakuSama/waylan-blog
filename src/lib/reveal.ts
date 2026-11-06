@@ -16,8 +16,7 @@ export function useReveal<T extends HTMLElement>(
     const root = ref.current,
       all = grown.current;
     grown.current = false;
-    if (!root || !motionAllowed() || typeof IntersectionObserver === "undefined")
-      return;
+    if (!root) return;
     // Route remounts and density changes must never animate existing text
     // after scroll restoration. Reveal only entries explicitly loaded in place.
     if (!all) {
@@ -27,6 +26,8 @@ export function useReveal<T extends HTMLElement>(
         row.dataset.revealed = "";
       return;
     }
+    if (!motionAllowed() || typeof IntersectionObserver === "undefined")
+      return;
     const fresh = [...root.querySelectorAll<HTMLElement>(selector)].filter(
       (el) => !("revealed" in el.dataset),
     );
