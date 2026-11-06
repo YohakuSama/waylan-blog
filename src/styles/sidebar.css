@@ -239,8 +239,10 @@
 .recent-list a {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: start;
   gap: 10px;
-  padding: 5px 0;
+  min-height: 44px;
+  padding: 8px 0;
   font-size: 13.5px;
   color: var(--ink-soft);
 }
@@ -250,9 +252,9 @@
   line-height: 22px;
 }
 .recent-title {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .recent-type {
   font-size: 11px;
