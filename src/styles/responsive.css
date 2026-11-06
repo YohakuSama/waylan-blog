@@ -25,6 +25,9 @@
 /* Tablet: sidebar moves below the main column. */
 /* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
 @media (max-width: 1119px) {
+  .home-topic-shortcuts { display: flex; }
+  .home-side-topics { display: none; }
+  .home-sidebar > .home-side-topics + .side-block { padding-top: 0; }
   /* Feed already has type/topic filters and global navigation. Unlike the
      home page, repeating the entire desktop rail after the list adds no route. */
   .feed-layout .site-sidebar { display: none; }
@@ -357,7 +360,6 @@
 @media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
 
 /* Archive is a reading index: one title, quiet year headings, compact rows. */
-.archive-page { max-width: 960px; }
 .archive-heading { border-bottom: 1px solid var(--line); }
 .archive-summary {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -427,6 +429,8 @@
   .header-search-text,.header-search kbd { display:none; }
 }
 @media (max-width:767px) {
+  .archive-activity { flex-direction: column; gap: var(--space-3); }
+  .archive-activity .heatmap { flex: none; width: min(100%, 312px); }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
   .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
   .archive-month-label { font-size:12px; }
@@ -656,6 +660,7 @@
   .home-sidebar .side-head { margin-bottom: 7px; }
   .home-sidebar .explore-list a { min-height: 44px; padding: 7px 6px; }
   .home-sidebar .home-reading-note { margin-top: 0; }
+  .home-sidebar .popular-block { display: none; }
   .reader-main {
     padding-bottom: 24px;
   }
@@ -789,9 +794,6 @@
   }
   .feed-item.is-project .project-compact-tags {
     display: block;
-  }
-  .feed-item.is-project .project-facts .stack-list {
-    display: none;
   }
 }
 @media (min-width: 768px) and (max-width: 1040px) {

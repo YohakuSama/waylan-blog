@@ -168,6 +168,9 @@ try {
               navigation: [...document.querySelectorAll(".nav-label")].map((el) => el.textContent),
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
+              indexPage: select(".feed-page, .projects-page, .archive-page, .about-page"),
+              indexHeading: select(".feed-page > .page-heading, .projects-page > .page-heading, .archive-page > .page-heading, .about-page > .page-heading"),
+              indexContent: select(".feed-layout, .projects-layout, .archive-main, .about-layout"),
               heroAction: select(".hero-browse"),
               pageHeadingEyebrow: select(".page-heading .eyebrow"),
               pageHeadingTitle: select(".page-heading h1"),
@@ -215,12 +218,15 @@ try {
               identity: select(".home-hero .intro-copy"),
               homeLinks: [...document.querySelectorAll(".home-links a")].map((el) => el.getAttribute("href")),
               homeTopicLink: select(".home-topic-link"),
-              sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].map((el) => ({
+              homeShortcuts: select(".home-topic-shortcuts"),
+              homeShortcutLinks: [...document.querySelectorAll(".home-topic-shortcuts a")].map(rect).filter(Boolean),
+              homeSideTopics: select(".home-side-topics"),
+              sideHeadingLinks: [...document.querySelectorAll(".content-grid .site-sidebar .side-heading-link")].filter((el) => rect(el)).map((el) => ({
                 ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
               })),
               sidebarEndSlots: [...document.querySelectorAll(
                 ".content-grid .site-sidebar .side-more, .content-grid .site-sidebar .explore-count, .content-grid .site-sidebar .home-project-end, .content-grid .site-sidebar .sidebar-row-end"
-              )].map((el) => {
+              )].filter((el) => rect(el)).map((el) => {
                 const box = el.getBoundingClientRect();
                 const parent = el.closest(".side-block")?.getBoundingClientRect();
                 return { width: box.width, rightGap: parent ? parent.right - box.right : null };
@@ -256,6 +262,8 @@ try {
               archiveTopicTarget: select(".archive-summary a"),
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
+              archiveActivity: select(".archive-activity"),
+              archiveHeatmap: select(".archive-activity .heatmap"),
               projectCount: document.querySelectorAll(".projects-layout .feed-item.is-project").length,
               projectStatusCount: document.querySelectorAll(".projects-layout .project-status").length,
               projectCodeLabels: [...document.querySelectorAll(".projects-layout .project-code")].map((el) => el.textContent.trim()),
@@ -265,7 +273,7 @@ try {
               projectMedia: select(".projects-layout .project-media"),
               projectInlineTags: select(".projects-layout .project-compact-tags"),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
-              projectSidebarBlockCount: document.querySelectorAll(".projects-layout .site-sidebar > .side-block").length,
+              projectStackItems: [...document.querySelectorAll(".projects-layout .project-facts .stack-list li")].map(rect).filter(Boolean),
               footerLinks: select(".site-footer .footer-links"),
               footerCopy: select(".site-footer .footer-copy"),
               footerTargets: [...document.querySelectorAll(".footer-links a")].map(rect),
@@ -281,16 +289,15 @@ try {
               })(),
               notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
               notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
-              aboutHeadingLevels: [...document.querySelectorAll(".about-details > div > h2")].map((el) => el.textContent.trim()),
-              aboutStatsHeadingIsLink: !![...document.querySelectorAll(".about-layout .side-block .side-title")]
-                .find((el) => el.textContent.trim() === "站点数据")?.querySelector("a"),
+              aboutHeadingLevels: [...document.querySelectorAll(".about-details > section > h2")].map((el) => el.textContent.trim()),
+              aboutStatsHeadingIsLink: !!document.querySelector(".about-stats .side-title a"),
               aboutStatsLabel: document.querySelector(".about-layout .site-stats > div:first-child dd")?.textContent?.trim(),
               aboutSocialTargets: [...document.querySelectorAll(".about-text .social-links a")].map(rect),
               aboutCta: {
                 text: document.querySelector(".about-text > .primary-button")?.textContent?.trim(),
                 href: document.querySelector(".about-text > .primary-button")?.getAttribute("href"),
               },
-              aboutSidebarBlockCount: document.querySelectorAll(".about-layout .site-sidebar > .side-block").length,
+              aboutSectionCount: document.querySelectorAll(".about-details > section").length,
               archiveFilters: document.querySelectorAll(".archive-main .type-tabs").length,
               articleNeighbors: select(".article-neighbors"),
               siteFooter: select(".site-footer"),
@@ -696,9 +703,17 @@ try {
             assert.ok(geometry.bookmark.left >= geometry.meta.left && geometry.bookmark.right <= geometry.meta.right + 1,
               `${label}: save target escaped its content column`);
           }
+          if (["/feed", "/projects", "/archive", "/about"].includes(route)) {
+            assert.ok(geometry.indexPage && geometry.indexHeading && geometry.indexContent,
+              `${label}: index heading or content measure missing`);
+            assert.ok(geometry.indexPage.width <= 961,
+              `${label}: index content exceeds the shared 960px measure`);
+            assert.ok(Math.abs(geometry.indexHeading.left - geometry.indexPage.left) <= 1 &&
+              Math.abs(geometry.indexContent.left - geometry.indexPage.left) <= 1,
+              `${label}: heading, content and index measure have different left edges`);
+          }
           if (route === "/feed") {
-            if (width < 1120) assert.equal(geometry.sidebar, null, `${label}: redundant feed sidebar should be hidden`);
-            else assert.ok(geometry.sidebar, `${label}: desktop discovery rail disappeared`);
+            assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
             assert.equal(geometry.resetLink, null, `${label}: reset filter appears without active filters`);
             if (width <= 767) {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
@@ -728,13 +743,9 @@ try {
               assert.ok(geometry.projectMedia, `${label}: desktop project preview disappeared`);
               assert.equal(geometry.projectInlineTags, null, `${label}: desktop duplicates compact project tags`);
             }
-            if (width < 1120)
-              assert.equal(geometry.sidebar, null, `${label}: projects sidebar should not bury the footer`);
-            else {
-              assert.ok(geometry.sidebar, `${label}: wide-screen project navigation missing`);
-              assert.equal(geometry.projectSidebarBlockCount, 2,
-                `${label}: full-length sidebar returned to projects`);
-            }
+            assert.equal(geometry.sidebar, null, `${label}: project page reintroduced the global navigation rail`);
+            assert.ok(geometry.projectStackItems.length > 0,
+              `${label}: project technologies vanish with the responsive preview`);
             if (width <= 767) {
               assert.ok(geometry.projectTags.length > 0 &&
                 geometry.projectTags.every((box) => box && box.height >= 40 &&
@@ -745,7 +756,7 @@ try {
             }
           }
           if (route === "/about") {
-            assert.deepEqual(geometry.aboutHeadingLevels, ["写作主题", "技术实现"],
+            assert.deepEqual(geometry.aboutHeadingLevels, ["技术实现", "站点数据"],
               `${label}: about section heading levels are inconsistent`);
             assert.equal(geometry.aboutStatsHeadingIsLink, false,
               `${label}: site statistics heading incorrectly navigates to archive`);
@@ -757,14 +768,10 @@ try {
               geometry.aboutSocialTargets.every((box) => box && box.height >= 44 &&
                 box.left >= 0 && box.right <= geometry.viewport),
               `${label}: about social link has a small or clipped click target`);
-            if (width < 1120)
-              assert.equal(geometry.sidebar, null,
-                `${label}: redundant about sidebar extends the narrow-screen page`);
-            else {
-              assert.ok(geometry.sidebar, `${label}: wide-screen about rail vanished`);
-              assert.equal(geometry.aboutSidebarBlockCount, 4,
-                `${label}: about rail content changed unexpectedly`);
-            }
+            assert.equal(geometry.sidebar, null,
+              `${label}: about page repeats the site's global navigation`);
+            assert.equal(geometry.aboutSectionCount, 2,
+              `${label}: about technical facts and statistics must remain visible on every device`);
           }
           if (route === "/404") {
             assert.equal(geometry.notFoundHeading, "页面不存在", `${label}: missing 404 heading`);
@@ -785,6 +792,9 @@ try {
             assert.ok(geometry.archiveYearTargets.every((box) => box?.height >= 44), `${label}: archive year link has a small click target`);
             assert.equal(geometry.archiveTitle, "归档", `${label}: archive label inconsistent`);
             assert.equal(geometry.archiveOverview, false, `${label}: obsolete archive card returned`);
+            assert.ok(geometry.archiveActivity && geometry.archiveHeatmap &&
+              geometry.archiveHeatmap.width <= 320 && geometry.archiveHeatmap.right <= geometry.viewport + 1,
+              `${label}: publishing activity disappeared or breaks the archive width`);
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
           }
           if (route === "/") {
@@ -793,9 +803,22 @@ try {
             assert.ok(geometry.identity && geometry.identity.height > 10, `${label}: blog identity missing`);
             assert.ok(geometry.latestHeading && geometry.latestHeading.height > 20, `${label}: latest section heading hidden`);
             assert.ok(geometry.homeLinks.includes("/about") && geometry.homeLinks.includes("/rss.xml"), `${label}: essential blog entry points buried in sidebar`);
-            assert.ok(geometry.sideHeadingLinks.length >= 2 &&
+            assert.ok(geometry.sideHeadingLinks.length >= (width >= 1120 ? 2 : 1) &&
               geometry.sideHeadingLinks.every((link) => link.width > 44 && link.height >= 44),
               `${label}: sidebar heading not fully tappable`);
+            if (width < 1120) {
+              assert.ok(geometry.homeShortcuts &&
+                geometry.homeShortcuts.bottom <= geometry.latestHeading.top &&
+                geometry.homeShortcutLinks.length > 0 &&
+                geometry.homeShortcutLinks.every((link) => link.height >= 44 &&
+                  link.left >= 0 && link.right <= geometry.viewport + 1),
+                `${label}: compact topic discovery is missing, clipped or below the feed`);
+              assert.equal(geometry.homeSideTopics, null,
+                `${label}: duplicated home topic rail appears below the feed`);
+            } else {
+              assert.equal(geometry.homeShortcuts, null, `${label}: mobile topic picker leaked onto desktop`);
+              assert.ok(geometry.homeSideTopics, `${label}: desktop topic discovery disappeared`);
+            }
             // The hero's primary "Browse all" CTA remains available at every
             // width. Sidebar discovery supplements rather than replaces it.
             assert.ok(geometry.homeTopicLink && geometry.homeTopicLink.height >= 44 &&
@@ -979,8 +1002,8 @@ try {
           // On the phone, verify the heading text itself and the compact hero
           // topic doorway navigate, not just the small arrow glyph.
           if (route === "/" && width === 390 && variant.skin === "editorial" && variant.theme === "light") {
-            await page.locator(".home-sidebar .side-heading-link").first().click({ position: { x: 80, y: 22 } });
-            await page.waitForURL("**/feed");
+            await page.locator(".home-topic-shortcuts a").first().click();
+            await page.waitForURL(/\/feed\?topic=/);
             await page.goto(origin + "/", { waitUntil: "domcontentloaded" });
             await page.locator(".home-topic-link").click();
             await page.waitForURL("**/feed");

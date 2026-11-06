@@ -154,7 +154,7 @@ async function publicBrowsers() {
               stage = "about navigation and scroll restoration";
               await page.locator('#site-nav a[href="/about"]').click();
               await page.waitForURL(/\/about$/, { timeout: 15000 });
-              assert.equal(await page.locator(".about-details > div > h2").count(), 2,
+              assert.equal(await page.locator(".about-details > section > h2").count(), 2,
                 name + ": about independent sections have incorrect heading levels");
               assert.equal(await page.locator(".about-layout .site-sidebar").isVisible(), false,
                 name + ": about appended a redundant small-screen rail");

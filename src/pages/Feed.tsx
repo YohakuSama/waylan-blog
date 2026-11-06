@@ -2,7 +2,6 @@ import { ArrowRight, ChevronDown, Search, X } from "lucide-react";
 import { isContentType, newestFirst, posts, site, topicName, typeLabels, typeOrder, usedTopics } from "../lib/data";
 import { Link, useRouter } from "../lib/router";
 import { FeedList, TypeTabs, useDensity, ViewToggle, type TypeFilter } from "../components/Feed";
-import { Sidebar } from "../components/Sidebar";
 
 const feedTitles: Record<TypeFilter, [string, string]> = {
   all: ["全部内容", "文章、笔记、想法、开发日志和项目，按发布时间排列。"],
@@ -59,13 +58,13 @@ export function Feed() {
     router.navigate(href(values));
   const [title, deck] = feedTitles[type];
   return (
-    <>
+    <div className="feed-page">
       <header className="page-heading">
         <p className="eyebrow mono">WAYLAN / {type.toUpperCase()}</p>
         <h1>{title}</h1>
         <p>{deck}</p>
       </header>
-      <div className="content-grid feed-layout">
+      <div className="feed-layout">
         <section className="feed-column" aria-label={title}>
           <div className="feed-controls">
             <div className="feed-toolbar">
@@ -199,8 +198,7 @@ export function Feed() {
               }
             />
         </section>
-        <Sidebar current={type === "note" ? "/feed?type=note" : undefined} mode="feed" />
       </div>
-    </>
+    </div>
   );
 }

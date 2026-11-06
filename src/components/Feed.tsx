@@ -215,9 +215,6 @@ export function FeedEntry({
               <i key={s} style={{ flexGrow: all.length - i + 1 }} />
             ))}
           </span>
-          <span className="mono">
-            {post.project?.stack.slice(0, 3).join(" · ")}
-          </span>
         </div>
       </div>
     );

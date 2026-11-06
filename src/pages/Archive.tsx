@@ -2,6 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import { newestFirst, posts, typeLabels } from "../lib/data";
 import { Link } from "../lib/router";
 import { useReveal } from "../lib/reveal";
+import { Heatmap } from "../components/Sidebar";
 
 export function Archive() {
   const entries = [...posts].sort(newestFirst);
@@ -23,6 +24,15 @@ export function Archive() {
           <nav className="archive-year-nav" aria-label="跳转到年份">
             {years.map((year) => <a href={`#year-${year}`} key={year}>{year}</a>)}
           </nav>
+        )}
+        {entries.length > 0 && (
+          <section className="archive-activity" aria-label="发布节奏">
+            <div className="archive-activity-copy">
+              <h2>发布节奏</h2>
+              <p>截至最新记录的 16 周</p>
+            </div>
+            <Heatmap />
+          </section>
         )}
         {years.map((year) => {
           const annual = entries.filter((p) => p.date.startsWith(year));

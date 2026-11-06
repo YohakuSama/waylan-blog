@@ -300,6 +300,36 @@ h3 {
   font-size: 12px;
   white-space: nowrap;
 }
+/* Topic discovery stays near the reading doorway on tablet/phone. */
+.home-topic-shortcuts {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+.home-topic-shortcuts h2 {
+  flex: 0 0 auto;
+  margin: 0;
+  font: 600 15px/1.5 var(--font-display);
+}
+.home-topic-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.home-topic-shortcuts a:hover,
+.home-topic-shortcuts a:focus-visible {
+  color: var(--brand);
+  border-color: var(--brand);
+}
 /* The homepage has a stable editorial presentation, independent of the library. */
 .home-list .feed-item { padding: var(--space-6) 0; grid-template-columns: minmax(0,1fr); grid-template-areas: "body"; }
 .home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,38%) minmax(0,1fr); grid-template-areas: "media body"; }

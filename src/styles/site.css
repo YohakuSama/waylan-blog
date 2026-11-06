@@ -1,4 +1,17 @@
 /* ---------- Index pages ---------- */
+/* All editorial index pages share the same leading edge and reading measure. */
+.feed-page,
+.projects-page,
+.archive-page,
+.about-page {
+  width: 100%;
+  max-width: 960px;
+}
+.about-layout,
+.feed-layout,
+.projects-layout {
+  min-width: 0;
+}
 .page-heading {
   padding: var(--space-12) 0 var(--space-6);
 }
@@ -210,6 +223,30 @@
 .archive-row:hover > span {
   color: var(--accent);
 }
+/* Publication activity belongs with the chronological index, not feed filters. */
+.archive-activity {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-6) 0 var(--space-8);
+  border-bottom: 1px solid var(--line);
+}
+.archive-activity-copy h2 {
+  margin: 0;
+  font: 600 18px/1.5 var(--font-display);
+}
+.archive-activity-copy p {
+  margin-top: var(--space-2);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.archive-activity .heatmap {
+  flex: 0 1 312px;
+  width: 100%;
+  min-width: 0;
+}
 /* Separate privacy notice, following the site's existing editorial typography. */
 .privacy-page {
   max-width: 720px;
@@ -280,6 +317,12 @@
   padding: 24px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+.about-details > section {
+  min-width: 0;
+}
+.about-stats .site-stats {
+  margin: 12px 0 0;
 }
 .about-details ul {
   margin: 12px 0 0;

@@ -58,7 +58,7 @@ export function Heatmap() {
       <div
         className="heatmap-grid"
         role="img"
-        aria-label={`最近 ${WEEKS} 周共更新 ${total} 条内容，最新一条在 ${latest}`}
+        aria-label={`截至 ${latest} 的 ${WEEKS} 周共更新 ${total} 条内容`}
       >
         {weeks.map((week, w) => (
           <div className="heatmap-week" key={w}>
@@ -127,7 +127,7 @@ export function SideTitle({
   );
 }
 /** Most-read posts; appears only once the Worker reports real counts. */
-function Popular() {
+export function PopularBlock() {
   const { enabled, views } = useViews();
   const top = enabled
     ? posts
@@ -164,9 +164,9 @@ const siteLinks = [
   { href: "/about", label: "关于", hint: "本站介绍与内容范围" },
 ];
 /** Rail blocks shared by every index page, so the right column reads as one system. */
-export function TopicsBlock({ linkHeading = true }: { linkHeading?: boolean } = {}) {
+export function TopicsBlock({ linkHeading = true, className }: { linkHeading?: boolean; className?: string } = {}) {
   return (
-    <section className="side-block">
+    <section className={`side-block${className ? ` ${className}` : ""}`}>
       <SideTitle
         icon={<Layers size={17} />}
         href={linkHeading ? "/feed" : undefined}
@@ -300,7 +300,7 @@ export function Sidebar({ current, mode }: { current?: string; mode?: "feed" | "
       <TopicsBlock linkHeading={mode !== "feed"} />
       <RecentBlock />
       <SiteLinksBlock current={current} linkHeading={mode !== "feed"} />
-      <Popular />
+      <PopularBlock />
     </aside>
   );
 }
