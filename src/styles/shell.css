@@ -366,11 +366,11 @@ h3 {
 .home-list .thought-text { font-size: 18px; line-height: 1.75; }
 /* Homepage discovery is a compact, typographic rail, not a second feed. */
 .home-sidebar { padding-top: 20px; padding-bottom: 12px; }
-.home-sidebar > .side-block { padding: 16px 0; }
-.home-sidebar > .side-block:first-child { padding-top: 0; }
-.home-sidebar .side-head { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
+.site-sidebar.home-sidebar > .side-block { padding: 16px 0; }
+.site-sidebar.home-sidebar > .side-block:first-child { padding-top: 0; }
+.site-sidebar.home-sidebar .side-head { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
 .home-sidebar .side-title { font-size: 15px; line-height: 1.45; }
-.home-sidebar .side-heading-link { gap: 10px; }
+.site-sidebar.home-sidebar .side-heading-link { gap: 10px; }
 .home-sidebar .explore-list a { font-size: 14px; }
 .home-sidebar .popular-list a {
   min-height: 44px;
