@@ -1,6 +1,7 @@
 /** CI-only Chromium checks. Production ships no browser-testing dependency. */
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 
@@ -9,6 +10,9 @@ const out = "visual-report";
 const widths = [1440, 1280, 1279, 1200, 1120, 1119, 1024, 861, 860, 768, 767, 701, 700, 600, 390, 320];
 const headerControls = [".header-search", ".shelf-trigger", ".notification-trigger", ".header-tools .settings-button"];
 const routes = ["/", "/feed", "/archive", "/projects", "/about", "/post/a-room-on-the-internet", "/404"];
+const canonicalReaderExcerpt = JSON.parse(readFileSync(new URL("../src/generated/posts.json", import.meta.url), "utf8"))
+  .find(post => post.slug === "a-room-on-the-internet")?.excerpt;
+assert.ok(canonicalReaderExcerpt, "article excerpt fixture is missing");
 const variants = [
   { skin: "editorial", theme: "light" },
   { skin: "editorial", theme: "dark" },
@@ -249,6 +253,24 @@ try {
                 const element = document.querySelector(".reading-article .article-deck");
                 return element ? getComputedStyle(element).textWrap : null;
               })(),
+              readerIntro: (() => {
+                const deck = document.querySelector(".reading-article .article-deck");
+                const author = document.querySelector(".reading-article .article-author");
+                const byline = document.querySelector(".reading-article .article-byline");
+                const meta = document.querySelector(".reading-article .article-meta");
+                if (!deck || !author || !byline || !meta) return null;
+                const style = getComputedStyle(deck);
+                return {
+                  text: deck.textContent.trim(),
+                  clamp: style.webkitLineClamp,
+                  visibleHeight: deck.clientHeight,
+                  totalHeight: deck.scrollHeight,
+                  gapAfterDeck: byline.getBoundingClientRect().top - deck.getBoundingClientRect().bottom,
+                  authorBottom: author.getBoundingClientRect().bottom,
+                  metadataTop: meta.getBoundingClientRect().top,
+                  metadataRight: meta.getBoundingClientRect().right,
+                };
+              })(),
             };
           }, headerControls);
           // Regression for premature, balanced Chinese title wrapping.
@@ -260,6 +282,22 @@ try {
           if (route.startsWith("/post/")) {
             assert.equal(geometry.deckTextWrap, "wrap",
               `${label}: article excerpt must use normal line wrapping`);
+            const intro = geometry.readerIntro;
+            assert.ok(intro, `${label}: article introduction and byline must be visible`);
+            assert.equal(intro.text, canonicalReaderExcerpt,
+              `${label}: detail-page summary must use the complete original excerpt`);
+            assert.equal(intro.clamp, "none",
+              `${label}: article detail must not inherit list-card line clamping`);
+            assert.ok(intro.totalHeight <= intro.visibleHeight + 1,
+              `${label}: summary is vertically clipped`);
+            assert.ok(intro.gapAfterDeck >= 8,
+              `${label}: introduction overlaps the byline`);
+            if (width <= 700) {
+              assert.ok(intro.metadataTop >= intro.authorBottom - 1,
+                `${label}: mobile author and publication data must use separate rows`);
+              assert.ok(intro.metadataRight <= width + 1,
+                `${label}: publication metadata overflows the viewport`);
+            }
             const bar = geometry.readerProgress;
             assert.ok(bar && bar.role === "progressbar" &&
               bar.value >= 0 && bar.value <= 100,
@@ -284,6 +322,43 @@ try {
           // Capture before assertions so a failing state is available to review.
           if ([1440, 768, 390, 320].includes(width))
             await page.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
+          if (route.startsWith("/post/") && [390, 768, 1440].includes(width)) {
+            const cover = page.locator('.article-cover-image img[role="button"]').first();
+            assert.ok(await cover.count(), `${label}: image zoom entry missing`);
+            await cover.click();
+            const overlay = page.locator("dialog.image-dialog[open]");
+            await overlay.waitFor();
+            await overlay.locator("img").evaluate(image => image.decode().catch(() => {}));
+            await page.waitForTimeout(550);
+            const zoom = await overlay.evaluate(dialog => {
+              const box = dialog.getBoundingClientRect();
+              const image = dialog.querySelector("img").getBoundingClientRect();
+              const pseudo = getComputedStyle(dialog, "::after");
+              const footer = pseudo.display === "none" ? 0 :
+                (parseFloat(pseudo.height) || 0) +
+                (parseFloat(pseudo.paddingTop) || 0) +
+                (parseFloat(pseudo.paddingBottom) || 0) +
+                (parseFloat(pseudo.borderTopWidth) || 0);
+              return {
+                blank: box.bottom - image.bottom - footer,
+                centerOffset: Math.abs(box.top + box.height / 2 - innerHeight / 2),
+                radius: getComputedStyle(dialog).borderTopLeftRadius,
+                imageRight: image.right,
+                dialogRight: box.right,
+              };
+            });
+            assert.ok(Math.abs(zoom.blank) < 20,
+              `${label}: image viewer left blank space below image (${zoom.blank}px)`);
+            assert.ok(zoom.centerOffset < 30,
+              `${label}: image viewer is not vertically centered (${zoom.centerOffset}px)`);
+            assert.ok(zoom.imageRight <= zoom.dialogRight + 1,
+              `${label}: zoomed image extends outside the dialog`);
+            if (variant.skin === "terminal") {
+              assert.equal(zoom.radius, "0px", `${label}: Terminal image viewer must keep square corners`);
+            }
+            await page.keyboard.press("Escape");
+            await overlay.waitFor({ state: "hidden" });
+          }
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
           // Five index-page headers share the same left edge and top position.
