@@ -1037,7 +1037,13 @@ html {
 }
 :root[data-skin="terminal"] .home-hero .term-body {
   padding: 8px 12px;
+  line-height: 1.55;
 }
+:root[data-skin="terminal"] .home-hero .hero-terminal { color: var(--ink-soft); }
+:root[data-skin="terminal"] .home-hero .t-out { color: var(--muted); }
+:root[data-skin="terminal"] .home-hero .t-title { color: var(--ink-soft); }
+:root[data-skin="terminal"] .home-hero .t-prompt { color: var(--brand); }
+:root[data-skin="terminal"] .home-hero .t-type { color: var(--amber); }
 :root[data-skin="terminal"] .hero-square {
   width: 0.55em;
   height: 1.1em;
