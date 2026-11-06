@@ -2627,19 +2627,54 @@ body,
   border-radius: var(--radius-md);
   background: var(--surface-muted);
 }
-.reading-article .article-actions {
+/* Metadata and bookmark share the header; the optional small-screen TOC
+   remains a separate control instead of reserving an empty desktop row. */
+.reading-article .article-heading-bottom {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+.reading-article .article-heading-bottom .article-byline {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.reading-article .article-heading-save { flex: 0 0 auto; }
+.reading-article .article-heading-save .article-action-save {
+  display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 8px 0 0;
-  border-bottom: 0;
-}
-.reading-article .article-actions .article-action-save { margin-left: auto; }
-.reading-article .article-actions .article-action,
-.reading-article .article-actions .article-action-save {
+  justify-content: center;
+  gap: 7px;
   min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
 }
+.reading-article .article-heading-save .article-action-save:hover,
+.reading-article .article-heading-save .article-action-save:focus-visible {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+}
+.reading-article .article-heading-save .article-action-save.is-saved {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+.reading-article .article-heading-save .article-action-save.is-saved svg { fill: currentColor; }
+.reading-article .article-actions {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+@media (max-width: 1040px) {
+  .reading-article .article-actions { display: flex; justify-content: flex-start; }
+}
+.reading-article .article-actions .article-action { min-height: 44px; }
 .reader-content {
   min-width: 0;
   margin-top: var(--space-8);
@@ -2671,12 +2706,11 @@ body,
   }
   .reading-article .article-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
-    padding: 8px 0 0;
+    padding: 4px 0 0;
   }
-  .reading-article .article-actions .article-action,
-  .reading-article .article-actions .article-action-save {
+  .reading-article .article-actions .article-action {
     flex-direction: row;
     gap: 6px;
     width: auto;

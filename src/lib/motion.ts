@@ -112,7 +112,9 @@ export function navigateWithMotion(
   // A page-wide opacity fade briefly exposes the page background through
   // Safari's translucent bottom toolbar on touch devices. Keep the new route
   // fully opaque from its first frame; desktop may retain the small fade.
-  if (!motionAllowed() || matchMedia("(pointer: coarse)").matches) {
+  // Reader transitions replace different-height documents and restore scroll.
+  // Keep text and covers opaque: an extra fade reads as a visible jump.
+  if (kind !== "collection" || !motionAllowed() || matchMedia("(pointer: coarse)").matches) {
     cleanup();
     return { finished: Promise.resolve(), skipTransition() {} };
   }

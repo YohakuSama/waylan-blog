@@ -3,9 +3,8 @@ import { motionAllowed } from "./motion";
 
 /**
  * One-shot reveal for list items. Items already on screen when the list
- * mounts are left alone (no flashing on load); items further down rise in as
- * they scroll into view. After `grow()` (load more), the newly added items
- * rise in with a short stagger wherever they are.
+ * mounts are left alone (no flashing on load or after returning from a
+ * reader). Only an explicit `grow()` (load more) animates new items.
  */
 export function useReveal<T extends HTMLElement>(
   selector: string,
@@ -17,12 +16,18 @@ export function useReveal<T extends HTMLElement>(
     const root = ref.current,
       all = grown.current;
     grown.current = false;
-    if (!root || !motionAllowed() || typeof IntersectionObserver === "undefined")
+    if (!root) return;
+    // Route remounts and density changes must never animate existing text
+    // after scroll restoration. Reveal only entries explicitly loaded in place.
+    if (!all) {
+      // Treat existing rows as revealed so a later load-more cannot animate
+      // them again while the new batch enters.
+      for (const row of root.querySelectorAll<HTMLElement>(selector))
+        row.dataset.revealed = "";
       return;
-    // Safari's visual viewport changes when its bottom browser chrome moves.
-    // Delaying near-fold text on a touch device makes it flash into view after
-    // a route change. Keep navigation content visible; retain load-more reveals.
-    if (!all && window.matchMedia?.("(pointer: coarse)").matches) return;
+    }
+    if (!motionAllowed() || typeof IntersectionObserver === "undefined")
+      return;
     const fresh = [...root.querySelectorAll<HTMLElement>(selector)].filter(
       (el) => !("revealed" in el.dataset),
     );

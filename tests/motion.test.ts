@@ -96,7 +96,7 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(motionAllowed(), true);
     assert.equal(motionLevel(), "simple");
     let changes = 0;
-    await navigateWithMotion(() => changes++).finished;
+    await navigateWithMotion(() => changes++, "forward", "collection").finished;
     assert.equal(changes, 1);
     assert.ok(
       calls.some(
@@ -144,7 +144,7 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.match(stylesheet, /data-route-motion="resume"\] \.article-heading h1/);
     const transition = navigateWithMotion(sharedScene(), "forward", "resume");
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
-    assert.ok(calls.some((call) => call.element.tagName === "MAIN"));
+    assert.equal(calls.length, 0, "resume keeps the first reader frame fully opaque");
     await transition.finished;
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
   });
@@ -152,11 +152,8 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     const transition = navigateWithMotion(sharedScene(), "forward", "reader");
     assert.equal(document.getElementById("target")!.style.visibility, "");
     assert.equal(document.querySelector(".shared-cover-ghost"), null);
-    assert.ok(calls.some(call =>
-      call.element.tagName === "MAIN" &&
-      Number(call.options.duration) <= 200 &&
-      call.frames.every(frame => frame.transform === undefined)
-    ), "only the mounted main should fade; no translation or resizing");
+    assert.equal(calls.length, 0,
+      "reader navigation must not fade, translate or resize the new text and covers");
     await transition.finished;
   });
   it("respects reduced motion while keeping navigation fully usable", async () => {
@@ -192,7 +189,7 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
       value: () => { nativeCalls++; throw new Error("WebKit native snapshot failed"); },
       configurable: true,
     });
-    await navigateWithMotion(() => changes++).finished;
+    await navigateWithMotion(() => changes++, "forward", "collection").finished;
     assert.equal(changes, 1);
     assert.equal(nativeCalls, 0);
     assert.ok(calls.some(call => call.element.tagName === "MAIN"));

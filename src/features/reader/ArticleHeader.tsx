@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import type { ReactNode } from "react";
 import type { Post } from "../../../shared/types";
 import { site, dateLabel, typeLabels } from "../../lib/data";
 import { viewsLabel } from "../../lib/views";
@@ -10,10 +11,12 @@ export function ArticleHeader({
   post,
   viewCount,
   onBack,
+  bookmark,
 }: {
   post: Post;
   viewCount?: number;
   onBack: () => void;
+  bookmark?: ReactNode;
 }) {
   return (
             <header className="article-heading">
@@ -34,7 +37,8 @@ export function ArticleHeader({
               {!post.autoExcerpt && (
                 <p className="article-deck">{post.excerpt}</p>
               )}
-              <div className="article-byline">
+              <div className="article-heading-bottom">
+                <div className="article-byline">
                 <div className="article-author">
                   <AuthorAvatar size={24} className="author-seal" />
                   <strong>{site.author}</strong>
@@ -54,6 +58,8 @@ export function ArticleHeader({
                     <span className="article-views">{viewsLabel(viewCount)} 次阅读</span>
                   )}
                 </div>
+                </div>
+                {bookmark && <div className="article-heading-save">{bookmark}</div>}
               </div>
               {post.project && (
                 <div className="project-facts">

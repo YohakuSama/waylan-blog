@@ -164,13 +164,15 @@ async function run(engine,name,width){
       await page.evaluate(()=>document.fonts.ready);
       const isReaderHeaderShown=await page.locator(".site-header").isVisible();
       assert.equal(isReaderHeaderShown,true,"Waylan brand masthead must remain visible on every device");
-      assert.equal(await page.locator(".article-actions").isVisible(),true,
-        "full article actions belong below the byline, not a fixed top row");
-      assert.equal(await page.locator(".article-actions .article-action-save").count(),1,
-        "there should be exactly one labeled save-current-post action");
+      assert.equal(await page.locator(".article-heading-bottom .article-heading-save .article-action-save").count(),1,
+        "one labeled bookmark belongs next to the article metadata");
+      assert.equal(await page.locator(".article-heading-save .article-action-save").isVisible(),true,
+        "the save-current-post action must remain visible and operable");
+      assert.equal(await page.locator(".article-actions").isVisible(),width<=1040,
+        "the optional TOC action row should not occupy desktop space");
       assert.equal(await page.locator(".reader-topbar").count(),0,
         "remove the redundant sticky reading toolbar");
-      const actionsLayout=await page.locator(".article-actions").evaluate(el=>({
+      const actionsLayout=await page.locator(".article-heading-save").evaluate(el=>({
         position:getComputedStyle(el).position,buttons:el.querySelectorAll("button").length,
         text:el.textContent?.trim().slice(0,100)
       }));
@@ -199,7 +201,7 @@ async function run(engine,name,width){
       await readingSettings.locator('button[aria-label="关闭"]').click();
       await readingSettings.waitFor({state:"hidden"});
       await page.evaluate(()=>{
-        const inline=document.querySelector(".article-actions").getBoundingClientRect();
+        const inline=document.querySelector(".article-heading-save").getBoundingClientRect();
         window.scrollBy(0,Math.max(550,inline.bottom+220));
       });
       assert.equal(await page.locator(".reader-floating-tools, .reader-floating-trigger, .reader-floating-panel").count(),0,

@@ -90,6 +90,28 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(responsive.includes(".feed-layout .tag-list a"));
     assert.ok(responsive.includes(".feed-layout .load-more"));
   });
+  it("retains the header and notification instance while moving between reader routes", () => {
+    const app = readFileSync("src/App.tsx", "utf8");
+    const articleHeader = readFileSync("src/features/reader/ArticleHeader.tsx", "utf8");
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const readerStyles = readFileSync("src/styles.css", "utf8");
+    assert.doesNotMatch(app, /header key=\{post \?/,
+      "a route-dependent key remounts NotificationBell and briefly loses unread state");
+    assert.ok(app.includes("<NotificationBell announcements="));
+    assert.ok(reader.includes('bookmark={<BookmarkButton post={post}'));
+    assert.ok(articleHeader.includes('className="article-heading-bottom"'));
+    assert.ok(articleHeader.includes('className="article-heading-save"'));
+    assert.ok(readerStyles.includes(".reading-article .article-heading-bottom"));
+    assert.match(readerStyles, /\.reading-article \.article-actions \{\s*display: none;/);
+  });
+  it("uses the same project tag links inside the cover without duplicating them on the right", () => {
+    assert.ok(feed.includes('className="project-thumb-tags"'));
+    assert.ok(feed.includes('<TagList tags={post.tags} hrefForTag={tagHref} />'));
+    assert.ok(feed.includes('(post.type !== "project" || !media)'));
+    assert.ok(feedCss.includes(".project-thumb-tags .tag-list a {"));
+    assert.ok(feed.includes('onClick={() => onChange("compact")}'));
+    assert.ok(feed.includes('onClick={() => onChange("full")}'));
+  });
   it("prevents tablet hero art from creating side-scrolling", () => {
     const bp = responsive.indexOf("@media (max-width: 1024px)");
     assert.ok(bp > 0);
