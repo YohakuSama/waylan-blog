@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { classify } from "./ci-plan.mjs";
+import { classify, needsFullVisual } from "./ci-plan.mjs";
 
 test("docs-only changes keep a successful, low-cost status", () => {
   assert.deepEqual(classify(["README.md", "docs/ops/BRANCH_ARCHIVE.md"]),
@@ -97,6 +97,17 @@ test("browser QA uses the pinned image and always launches three engines before 
     "a missing browser binary must never silently skip QA");
 });
 
+test("shared visual owners request exhaustive boundaries only on review PRs", () => {
+  for (const file of ["src/styles.css", "src/styles/index.ts", "src/styles/responsive.css", "src/styles/skins.css"]) {
+    assert.equal(needsFullVisual([file]), true, file);
+    assert.equal(needsFullVisual([file], "push"), false, "main pushes do not rerun browser QA");
+  }
+  for (const file of ["src/pages/About.tsx", "src/components/NotificationBell.tsx", "src/styles/feed.css"]) {
+    assert.equal(needsFullVisual([file]), false, file);
+  }
+  assert.equal(needsFullVisual([], "workflow_dispatch", true), true);
+  assert.equal(needsFullVisual(["src/styles/responsive.css", "src/App.tsx"]), true);
+});
 test("PR visual smoke checks all skins and representative device widths, full keeps breakpoint boundaries", () => {
   const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
   const visual = readFileSync("scripts/visual-smoke.mjs", "utf8");
@@ -113,7 +124,10 @@ test("PR visual smoke checks all skins and representative device widths, full ke
   assert.ok(full.includes(1024) && full.includes(1025), "retain both sides of the tablet filter boundary");
   for (const width of focused) assert.ok(full.includes(width));
   assert.match(workflow, /WAYLAN_VISUAL_MATRIX:/);
-  assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && 'full' || 'smoke'"));
+  assert.ok(workflow.includes("steps.plan.outputs.visual_full == 'true' && 'full' || 'smoke'"),
+    "shared global CSS PRs and manually requested checks must use all 18 widths");
+  assert.ok(workflow.includes("failure() || steps.plan.outputs.visual_full == 'true'"),
+    "full breakpoint reviews must retain screenshot evidence");
   assert.match(visual, /matrix === "smoke" \? smokeWidths : fullWidths/);
 });
 

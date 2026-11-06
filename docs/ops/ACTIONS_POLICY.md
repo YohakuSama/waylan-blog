@@ -18,7 +18,7 @@
 - 2026-11-06 最终头部 `f497956` 的 [CI #42227310344](https://github.com/YohakuSama/waylan-blog/actions/runs/42227310344) 证明 Chromium、Firefox 已能启动，WebKit 因缺少 `libwayland-server.so.0` 而失败；`install-deps` 进一步从 Ubuntu 镜像拉取大量字体/媒体包，在 8 分钟内超时，导致视觉测试根本未开始。更早的手动完整审计也因此失败。
 - 当前 CI 采用 Playwright 官方预装 Linux 依赖的 `mcr.microsoft.com/playwright:v1.56.1-noble` 镜像，和单次安装的 `playwright@1.56.1` 严格同版本。保留 Node 24、一次 `npm ci` 与构建，以及严格的三引擎真实启动校验；不再依赖 GitHub Runner 的 apt 镜像和 `~/.cache/ms-playwright` 归档。
 - **代价与边界**：同一 Job 中即使 docs-only 或 main push，也需要先拉取该固定容器。镜像大小/拉取耗时应与此前每次下载 apt 和恢复浏览器缓存的实际日志对比，若显著高于收益再评估拆分，但不得牺牲最终浏览器验收。容器镜像固定版本、所有测试未通过时仍然失败，不以跳过 WebKit 换取绿灯。
-- 常规 UI PR 使用涵盖高风险断点的九个宽度、两皮肤与明暗模式；涉及断点边界/全局设计系统的高风险合并或人工最终验收，手动运行 `Waylan CI` 的 `workflow_dispatch` 完整视觉矩阵。手动完整审计不减少原有场景。
+- 常规 UI PR 使用涵盖高风险断点的九个宽度、两皮肤与明暗模式；`ci-plan.mjs` 检测到 `src/styles.css`、`src/styles/index.ts`、`src/styles/responsive.css` 或 `src/styles/skins.css` 修改时，自动对该 PR 执行全部 18 宽度 × 8 页面 × 4 外观（576 组），并留存截图。不涉及共享几何/主题的组件修改维持 288 组，避免常态翻倍；`workflow_dispatch` 仍支持手动完整审计。
 - PR 新提交依旧取消旧 SHA 的运行，避免旧代码通过验收。为避免重复投入，先集中修改并完成静态检查，再提交稳定版本；对运行中的 PR 不为纯进度更新追加无意义提交。
 - Playwright 官方建议在 Linux CI 使用预装系统依赖的版本固定容器，以避免重复 apt 下载；仍需观察容器拉取耗时、三引擎启动结果、视觉回归矩阵和 GitHub 实际账单，失败即保留红灯。
 

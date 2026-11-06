@@ -80,8 +80,8 @@ jobs:
         if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
         timeout-minutes: 15
         env:
-          # PRs exercise nine key widths; manual full runs retain all 18.
-          WAYLAN_VISUAL_MATRIX: ${{ github.event_name == 'workflow_dispatch' && 'full' || 'smoke' }}
+          # Shared responsive / skin CSS and manual audits exercise all 18 widths.
+          WAYLAN_VISUAL_MATRIX: ${{ steps.plan.outputs.visual_full == 'true' && 'full' || 'smoke' }}
         run: node scripts/visual-smoke.mjs
       - name: Chromium Firefox WebKit and admin interactions
         if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
@@ -131,9 +131,9 @@ jobs:
           WAYLAN_AUDIT_ORIGIN: https://waylan.org
           WAYLAN_AUDIT_OUTPUT: live-motion-report
 
-      # Screenshots/storage are useful for failures or requested audits, not every PR.
+      # Store screenshots on failure or when changed shared CSS requires full audit.
       - name: Upload QA evidence if failed or explicitly requested
-        if: ${{ !cancelled() && (failure() || (github.event_name == 'workflow_dispatch')) }}
+        if: ${{ !cancelled() && (failure() || steps.plan.outputs.visual_full == 'true') }}
         uses: actions/upload-artifact@v4
         with:
           name: waylan-qa-evidence

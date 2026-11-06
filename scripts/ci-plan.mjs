@@ -22,6 +22,18 @@ const sharedUI = (p) =>
 
 const relevant = (paths, fn) => paths.some(fn);
 
+// High-risk changes to shared geometry/skins deserve all breakpoint boundaries.
+// Local component edits retain the focused CI matrix.
+const fullVisualOwners = new Set([
+  "src/styles.css",
+  "src/styles/index.ts",
+  "src/styles/responsive.css",
+  "src/styles/skins.css",
+]);
+export function needsFullVisual(paths, event = "pull_request", forceFull = false) {
+  return forceFull || (event === "pull_request" && paths.some((p) => fullVisualOwners.has(p)));
+}
+
 export function classify(paths, event = "pull_request", forceFull = false) {
   if (forceFull) return { code: true, browser: true, reader: true, feed: true, motion: true };
   const code = relevant(paths, (p) => !docOnly(p));
@@ -79,7 +91,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const full = process.env.CI_FORCE_FULL === "true";
   const paths = full ? [] : changedPaths();
   const plan = classify(paths, event, full);
-  const result = Object.entries(plan).map(([key, value]) => key + "=" + value).join("\n") + "\n";
+  const visualFull = needsFullVisual(paths, event, full);
+  const result = Object.entries(plan).map(([key, value]) => key + "=" + value).join("\n") +
+    "\nvisual_full=" + visualFull + "\n";
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, result);
-  console.log(JSON.stringify({ event, full, paths, plan }, null, 2));
+  console.log(JSON.stringify({ event, full, paths, plan, visualFull }, null, 2));
 }
