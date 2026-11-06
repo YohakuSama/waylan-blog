@@ -964,7 +964,8 @@ export default function Reader({ post }: { post: Post }) {
       <div className="reader-layout">
         <div className="reader-column">
           <article ref={article} className="reading-article">
-            <ArticleHeader post={post} viewCount={viewCount} onBack={router.back} />
+            <ArticleHeader post={post} viewCount={viewCount} onBack={router.back}
+              bookmark={<BookmarkButton post={post} className="article-action-save" showLabel />} />
             <div className="article-actions" role="group" aria-label="本文操作">
               <button className="article-action article-action-toc" type="button" ref={tocButton}
                 aria-expanded={tocOpen} aria-controls="reader-toc"
