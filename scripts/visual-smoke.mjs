@@ -987,9 +987,14 @@ try {
           try {
             await inbox.getByRole("button", { name: "使用 GitHub 登录", exact: true }).waitFor({ timeout: 12000 });
           } catch (error) {
-            const state = await inbox.evaluate(element => ({
-              text: element.textContent?.trim(),
+            // The accessible dialog may have been unmounted. Inspect the page,
+            // not the locator that already failed, to preserve the real cause.
+            const state = await page.evaluate(() => ({
+              url: location.href,
+              dialog: document.querySelector("#notification-panel")?.textContent?.trim() ?? null,
               trigger: document.querySelector(".notification-trigger")?.getAttribute("aria-label"),
+              triggerExpanded: document.querySelector(".notification-trigger")?.getAttribute("aria-expanded"),
+              focused: document.activeElement?.getAttribute("aria-label"),
             }));
             await page.screenshot({ path: `${out}/${label}-retry-failure.png`, animations: "disabled" });
             throw new Error(`${label}: notification recovery did not render login state: ${JSON.stringify(state)}; ${error}`);
