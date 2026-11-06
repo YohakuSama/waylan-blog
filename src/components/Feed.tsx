@@ -125,7 +125,6 @@ function EntryMeta({
       )}
         {!!count && <span className="entry-views">{viewsLabel(count)} 阅读</span>}
       </div>
-      <BookmarkButton post={post} className="card-bookmark" />
     </div>
   );
 }
@@ -236,7 +235,12 @@ export function FeedEntry({
               {post.text.trim()}
             </Link>
           </p>
-          <TagList tags={post.tags} hrefForTag={tagHref} />
+          <div className="feed-tail">
+            <div className="feed-tail-tags">
+              <TagList tags={post.tags} hrefForTag={tagHref} />
+            </div>
+            <BookmarkButton post={post} className="card-bookmark" />
+          </div>
         </div>
         <Link
           className="feed-arrow"
@@ -281,8 +285,18 @@ export function FeedEntry({
             )}
           </div>
         )}
-        {(post.type !== "project" || !media) &&
-          <TagList tags={post.tags} hrefForTag={tagHref} />}
+        <div className="feed-tail">
+          <div className="feed-tail-tags">
+            {(post.type !== "project" || !media) &&
+              <TagList tags={post.tags} hrefForTag={tagHref} />}
+            {post.type === "project" && media && (
+              <div className="project-compact-tags">
+                <TagList tags={post.tags} hrefForTag={tagHref} />
+              </div>
+            )}
+          </div>
+          <BookmarkButton post={post} className="card-bookmark" />
+        </div>
       </div>
       {media}
       <Link
