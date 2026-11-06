@@ -29,7 +29,7 @@ export function Archive() {
           <section className="archive-activity" aria-label="发布节奏">
             <div className="archive-activity-copy">
               <h2>发布节奏</h2>
-              <p>最近 16 周的内容更新</p>
+              <p>截至最新记录的 16 周</p>
             </div>
             <Heatmap />
           </section>
