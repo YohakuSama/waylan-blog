@@ -26,6 +26,11 @@ jobs:
     # same required job, including full scoped browser tests for UI changes.
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    # Reproducible, version-pinned native browser libraries; no apt mirror repair.
+    # The Playwright release must match the browser-test npm package version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --user 1001
     timeout-minutes: 30
     steps:
       - name: Checkout (include base history for changed-path detection)
@@ -56,8 +61,8 @@ jobs:
         if: ${{ steps.plan.outputs.code == 'true' }}
         run: npm run check
 
-      # One browser setup for all relevant checks. Separate bounded stages
-      # pinpoint package, Linux library and browser download problems.
+      # The pinned image already contains three browsers and all Linux libraries.
+      # Install only the Playwright JS/API packages used by the test scripts.
       - name: Install Playwright QA packages (bounded)
         id: browser-packages
         if: ${{ success() && steps.plan.outputs.browser == 'true' }}
@@ -66,54 +71,16 @@ jobs:
           npm_config_fetch_retries: 1
           npm_config_fetch_timeout: 120000
         run: npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
-      - name: Restore version-pinned browser binaries
-        id: browser-cache
-        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1-v1
-      # The browser archive is cached, but apt packages are not. Do not
-      # download ~114 MB of Linux libraries/fonts on every new runner when
-      # all three browsers already launch successfully.
-      - name: Ensure pinned browser binaries (bounded)
-        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
-        timeout-minutes: 5
-        run: npx playwright install chromium firefox webkit
-      - name: Probe native browser startup before apt
-        id: browser-probe
-        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
-        timeout-minutes: 2
-        run: node scripts/ci-browser-runtime.mjs detect
-      - name: Install missing Linux browser libraries only if needed
-        if: ${{ success() && steps.plan.outputs.browser == 'true' && steps.browser-probe.outputs.needs_linux_deps == 'true' }}
-        timeout-minutes: 8
-        run: |
-          # Ubuntu mirrors sometimes hang on optional font archives. Bound
-          # individual apt requests and retry transient mirror failures.
-          printf 'Acquire::Retries "2";\nAcquire::http::Timeout "25";\nAcquire::https::Timeout "25";\n' | sudo tee /etc/apt/apt.conf.d/80-waylan-ci
-          npx playwright install-deps chromium firefox webkit
-      - name: Verify Playwright browser binaries (bounded)
+      - name: Verify pinned Chromium, Firefox and WebKit runtimes
         id: browsers
         if: ${{ success() && steps.plan.outputs.browser == 'true' }}
-        timeout-minutes: 5
-        run: |
-          node scripts/ci-browser-runtime.mjs verify
-          echo "Browser cache hit: ${{ steps.browser-cache.outputs.cache-hit }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Linux dependency install needed: ${{ steps.browser-probe.outputs.needs_linux_deps }}" >> "$GITHUB_STEP_SUMMARY"
-      # Save before the longer visual tests. A later assertion failure should
-      # not throw away a successfully installed cache for the next PR commit.
-      - name: Save browser binaries immediately on cache miss
-        if: ${{ success() && steps.plan.outputs.browser == 'true' && steps.browser-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-1.56.1-v1
+        timeout-minutes: 3
+        run: node scripts/ci-browser-runtime.mjs verify
       - name: Phone, tablet and desktop layout
         if: ${{ !cancelled() && steps.plan.outputs.browser == 'true' && steps.browsers.outcome == 'success' }}
         timeout-minutes: 15
         env:
-          # PRs exercise key viewport thresholds; manual full runs retain all 16.
+          # PRs exercise nine key widths; manual full runs retain all 18.
           WAYLAN_VISUAL_MATRIX: ${{ github.event_name == 'workflow_dispatch' && 'full' || 'smoke' }}
         run: node scripts/visual-smoke.mjs
       - name: Chromium Firefox WebKit and admin interactions

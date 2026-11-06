@@ -75,31 +75,26 @@ test("reader feature submodules select reader QA without unrelated feed/motion g
   }
 });
 
-test("browser QA installs are bounded, cached immediately and never skipped by a cache hit", () => {
+test("browser QA uses the pinned image and always launches three engines before testing", () => {
   const workflow = readFileSync(".github/workflows/verify.yml", "utf8");
-  assert.match(workflow, /uses: actions\/cache\/restore@v4/);
-  assert.match(workflow, /uses: actions\/cache\/save@v4/);
-  assert.match(workflow, /id: browsers\s+if:.*\n\s+timeout-minutes: 5/);
-  assert.match(workflow, /npx playwright install-deps chromium firefox webkit/);
-  assert.match(workflow, /npx playwright install chromium firefox webkit/);
-  assert.ok(workflow.indexOf("Probe native browser startup before apt") <
-    workflow.indexOf("Install missing Linux browser libraries only if needed"),
-    "do not apt-install packages before testing whether browsers already launch");
-  assert.match(workflow, /steps\.browser-probe\.outputs\.needs_linux_deps == 'true'/,
-    "native package installation must be strictly conditional on a real failed probe");
+  assert.match(workflow, /container:\s*\n\s*image: mcr\.microsoft\.com\/playwright:v1\.56\.1-noble/);
+  assert.match(workflow, /id: browsers\s+if:[^\n]+\n\s+timeout-minutes: 3/);
+  assert.ok(workflow.includes("npm install --no-save --no-package-lock playwright@1.56.1"),
+    "the image and test package must pin the same Playwright version");
   assert.ok(workflow.includes("node scripts/ci-browser-runtime.mjs verify"),
-    "all three engines must start successfully before browser test gates can pass");
+    "all three engines must launch successfully before browser test gates can pass");
+  assert.doesNotMatch(workflow, /npx playwright install-deps|actions\/cache\/restore@v4|actions\/cache\/save@v4/,
+    "the pinned image must not repeat slow apt downloads or redundant browser caches");
   const probe = readFileSync("scripts/ci-browser-runtime.mjs", "utf8");
   for (const name of ["chromium", "firefox", "webkit"]) assert.ok(probe.includes(name));
   assert.ok(probe.includes("engine.launch") && probe.includes("browser.newPage") &&
-    probe.includes("needs_linux_deps=") &&
-    probe.includes("Browser runtime verification failed after dependency repair"),
-    "probe must launch every browser, report repair need and fail on unsuccessful verification");
-  assert.ok(workflow.indexOf("Save browser binaries immediately on cache miss") <
+    probe.includes("Browser runtime verification failed"),
+    "probe must actively launch every browser and fail closed");
+  assert.ok(workflow.indexOf("Verify pinned Chromium, Firefox and WebKit runtimes") <
     workflow.indexOf("Phone, tablet and desktop layout"),
-    "an unsuccessful visual test must not discard the installed browser cache");
+    "the browser launch check precedes visual audits");
   assert.ok(workflow.includes("steps.browsers.outcome == 'success'"),
-    "a missing browser binary must fail closed, never silently skip QA");
+    "a missing browser binary must never silently skip QA");
 });
 
 test("PR visual smoke checks all skins and representative device widths, full keeps breakpoint boundaries", () => {
