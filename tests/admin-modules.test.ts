@@ -148,6 +148,29 @@ describe("admin publication branch semantics", () => {
   });
 });
 
+describe("admin review PR interface contract", () => {
+  it("makes review mode explicit and never confuses PR creation with going live", () => {
+    const dashboard = read("src/admin/Dashboard.tsx");
+    const post = read("src/admin/PostEditor.tsx");
+    const site = read("src/admin/SiteEditor.tsx");
+    const list = read("src/admin/ContentList.tsx");
+    const repo = read("worker/admin-repo.ts");
+    const handler = read("worker/admin.ts");
+    assert.match(dashboard, /publicationMode === "review-pr"/);
+    assert.match(post, /result\.review/);
+    assert.match(site, /result\.review/);
+    assert.match(list, /result\.review/);
+    assert.match(post, /等待 PR 合并/);
+    assert.match(site, /等待 PR 合并/);
+    assert.match(repo, /draft: true/);
+    assert.match(repo, /base: "main"/);
+    assert.match(repo, /publicationMode\(env\) === "direct"/);
+    assert.match(handler, /publicationMode: publicationMode\(env\)/);
+    assert.doesNotMatch(read("wrangler.jsonc"), /"CONTENT_PUBLISH_MODE"\s*:\s*"review-pr"/,
+      "the production worker must not opt in until a supervised rollout");
+  });
+});
+
 describe("admin discussion provisioning", () => {
   it("returns success only after all pending Discussions have been created", async () => {
     let rounds = 0;
