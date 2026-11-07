@@ -47,7 +47,7 @@ function sameBox(actual, expected, label) {
     assert.ok(Math.abs(actual[key] - expected[key]) <= 1,
       `${label}: ${key} moved from ${expected[key]} to ${actual[key]}`);
 }
-const results = [], notificationResults = [], baselines = new Map();
+const results = [], notificationResults = [], firstVisitResults = [], baselines = new Map();
 const mastheadBaselines = new Map();
 const pageHeadingBaselines = new Map();
 const indexListWidthBaselines = new Map();
@@ -1362,16 +1362,84 @@ try {
           }
           assert.deepEqual(errors, [], `${label}: browser runtime error`);
         }
+        // Existing geometry fixtures always use a 900px-tall viewport and a
+        // 13%-progress reading card. A fresh visitor on a short phone needs
+        // its own independent browser context (no saved reading preference).
+        if (width === 320 || width === 390) {
+          const height = width === 320 ? 568 : 667;
+          const firstVisit = await browser.newContext({
+            viewport: { width, height }, deviceScaleFactor: 1,
+            reducedMotion: "reduce", hasTouch: true, isMobile: true,
+          });
+          try {
+            await firstVisit.addInitScript(({ skin, theme }) => {
+              localStorage.setItem("echo:skin", JSON.stringify(skin));
+              localStorage.setItem("echo:theme", JSON.stringify(theme));
+              localStorage.setItem("echo:motion", JSON.stringify("reduced"));
+            }, variant);
+            const guest = await firstVisit.newPage();
+            const errors = [];
+            guest.on("pageerror", error => errors.push(error.message));
+            await guest.route("**/api/session", route => route.fulfill({ json: { user: null } }));
+            await guest.route("**/api/status", route =>
+              route.fulfill({ json: { notifications: false } }));
+            const response = await guest.goto(origin + "/", { waitUntil: "domcontentloaded" });
+            const label = `home-first-visit-${width}x${height}-${variant.skin}-${variant.theme}`;
+            assert.ok(response?.ok(), `${label}: homepage failed to load`);
+            await guest.getByRole("button", { name: "搜索 Ctrl K", exact: true }).waitFor();
+            await guest.evaluate(() => document.fonts.ready);
+            await guest.waitForFunction(() =>
+              !document.documentElement.classList.contains("font-wait") &&
+              !document.documentElement.classList.contains("font-loader-out"));
+            const sample = await guest.evaluate(() => {
+              const box = (selector) => {
+                const node = document.querySelector(selector);
+                if (!node || !node.getClientRects().length) return null;
+                const bounds = node.getBoundingClientRect();
+                return { top: bounds.top, bottom: bounds.bottom, height: bounds.height };
+              };
+              return {
+                width: document.documentElement.clientWidth,
+                documentWidth: document.documentElement.scrollWidth,
+                readingRecord: localStorage.getItem("echo:reading"),
+                resume: box(".home-resume .resume-link"),
+                pendingResume: document.documentElement.dataset.resumePending,
+                firstHeading: box(".home-feed .feed-body h2"),
+                latestHeading: box("#latest-heading"),
+                topicLinks: [...document.querySelectorAll(".home-topic-shortcuts a")]
+                  .map(node => node.getBoundingClientRect().height),
+                browse: [...document.querySelectorAll(".home-links a")]
+                  .filter(node => node.getAttribute("href") === "/feed")
+                  .map(node => node.getBoundingClientRect().height),
+              };
+            });
+            assert.equal(sample.readingRecord, null, `${label}: guest was given a saved reading record`);
+            assert.equal(sample.resume, null, `${label}: empty resume card occupies the first screen`);
+            assert.ok(!sample.pendingResume, `${label}: stale SSR resume placeholder is still pending`);
+            assert.ok(sample.firstHeading && sample.firstHeading.top <= height - 48 &&
+              sample.latestHeading && sample.latestHeading.top < sample.firstHeading.top,
+              `${label}: first article is below the short phone viewport (${sample.firstHeading?.top ?? "missing"}px)`);
+            assert.ok(sample.documentWidth <= sample.width + 1,
+              `${label}: first-visit layout scrolls horizontally`);
+            assert.ok(sample.topicLinks.length > 0 && sample.topicLinks.every(value => value >= 44) &&
+              sample.browse.length === 1 && sample.browse[0] >= 44,
+              `${label}: topic or browsing touch target was lost`);
+            assert.deepEqual(errors, [], `${label}: browser runtime error`);
+            await guest.screenshot({ path: `${out}/${label}.png`, animations: "disabled" });
+            firstVisitResults.push({ width, height, ...variant, ...sample });
+          } finally { await firstVisit.close(); }
+        }
       } finally { await context.close(); }
     }
   }
-  console.log(`Visual geometry checks passed [${matrix}, ${widths.length} widths]: ${results.length} page/viewport/appearance combinations plus ${notificationResults.length} enabled/error inbox states and retry, including persistent navigation, page-state isolation and theme position parity.`);
+  console.log(`Visual geometry checks passed [${matrix}, ${widths.length} widths]: ${results.length} page/viewport/appearance combinations plus ${firstVisitResults.length} short-phone guest visits and ${notificationResults.length} enabled/error inbox states and retry, including persistent navigation, page-state isolation and theme position parity.`);
 } catch (error) {
   await writeFile(`${out}/failure.txt`, error.stack || String(error));
   throw error;
 } finally {
   await writeFile(`${out}/geometry.json`, JSON.stringify(results, null, 2));
   await writeFile(`${out}/notifications.json`, JSON.stringify(notificationResults, null, 2));
+  await writeFile(`${out}/first-visits.json`, JSON.stringify(firstVisitResults, null, 2));
   await browser?.close();
   preview.kill("SIGTERM");
   preview.stdout.destroy(); preview.stderr.destroy();
