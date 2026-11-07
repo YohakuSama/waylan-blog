@@ -3,7 +3,7 @@ import { typeLabels } from "../../shared/types";
 import { adminApi as api } from "./api";
 import { Confirm } from "./ui";
 import { editsLive, saveMessage } from "./helpers";
-import type { Overview, Summary } from "./types";
+import type { Overview, Review, Summary } from "./types";
 
 /** Content search, editing entrypoints, and deletion; Discussions are isolated. */
 export function Posts({
@@ -21,6 +21,7 @@ export function Posts({
   const [target, setTarget] = useState<Summary | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [review, setReview] = useState<Review | null>(null);
   const q = query.trim().toLowerCase();
   const shown = overview.posts.filter(
     (p) =>
@@ -35,10 +36,17 @@ export function Posts({
     setBusy(true);
     setError("");
     try {
-      await api("/api/admin/post", "DELETE", { file: target.file, oid: target.oid });
-      notify(saveMessage(overview.repo.branch, "delete", target.title));
+      const result = await api<{ commit: string; review?: Review }>(
+        "/api/admin/post", "DELETE", { file: target.file, oid: target.oid },
+      );
+      if (result.review) {
+        setReview(result.review);
+        notify(`已提交删除审核 PR #${result.review.number}；正式文章仍保留。`);
+      } else {
+        notify(saveMessage(overview.repo.branch, "delete", target.title));
+        onDeleted();
+      }
       setTarget(null);
-      onDeleted();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -57,6 +65,13 @@ export function Posts({
         />
         <button onClick={() => onEdit(null)}>写新内容</button>
       </div>
+      {review && (
+        <p className="status" role="status">
+          删除修改尚未发布；请先
+          <a href={review.url} target="_blank" rel="noreferrer">审核草稿 PR #{review.number}</a>。
+          文章会在 PR 合并后从正式站点移除。
+        </p>
+      )}
       {!shown.length && <p className="muted pad">没有找到。</p>}
       <ul className="posts">
         {shown.map((p) => (
@@ -99,14 +114,15 @@ export function Posts({
       <Confirm
         open={!!target}
         title="删除这篇内容？"
-        action="删除"
+        action={overview.publicationMode === "review-pr" ? "提交删除审核" : "删除"}
         busy={busy}
         onConfirm={remove}
         onClose={() => !busy && setTarget(null)}
       >
         <p>
           「{target?.title}」将从{editsLive(overview.repo.branch) ? "网站" : "当前内容分支"}移除。
-          {editsLive(overview.repo.branch) ? "" : "正式网站在 PR 合并前不会变化。"}
+          {overview.publicationMode === "review-pr" || !editsLive(overview.repo.branch) ?
+            "正式网站在 PR 合并前不会变化。" : ""}
           它的评论仍保留在 GitHub Discussions 中；如需恢复，可在仓库的提交历史里找回。
         </p>
         {error && <p className="error">{error}</p>}
