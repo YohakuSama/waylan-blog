@@ -409,17 +409,18 @@
 .stack-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* Technology facts are secondary text. Tags below remain the interactive chips. */
 .stack-list li {
-  padding: 1px 9px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  font: 11.5px/20px var(--font-mono);
-  color: var(--ink-soft);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font: 11.5px/1.75 var(--font-mono);
+  color: var(--muted);
 }
 /* Compact density: titles and meta only. */
 .density-compact .feed-item,
