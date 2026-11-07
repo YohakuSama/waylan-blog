@@ -185,7 +185,7 @@ try {
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
               feedFilterLabels: [...document.querySelectorAll(".feed-filter-label")].filter(el =>
-                getComputedStyle(el).display !== "none").map(el => el.textContent.trim()),
+                el.getClientRects().length > 0).map(el => el.textContent.trim()),
               feedFilterSurface: (() => {
                 const el = document.querySelector(".feed-controls");
                 if (!el) return null;
@@ -291,6 +291,7 @@ try {
               archiveTypeCount: document.querySelectorAll(".archive-row .archive-type").length,
               archiveRowTarget: select(".archive-row"),
               archiveTopicTarget: select(".archive-summary a"),
+              archiveJumpTargets: [...document.querySelectorAll(".archive-summary a")].map(rect),
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
               archiveIndex: select(".archive-index"),
@@ -912,6 +913,11 @@ try {
             assert.match(geometry.archiveSummaryText, /共 \d+ 条记录/, `${label}: incorrect mixed-content counter`);
             assert.ok(geometry.archiveRowTarget?.height >= 54, `${label}: archive row has a small click target`);
             assert.ok(geometry.archiveTopicTarget?.height >= 44, `${label}: archive theme link has a small click target`);
+            assert.ok(geometry.archiveJumpTargets.length === 2 &&
+              geometry.archiveJumpTargets.every(box => box && box.height >= 44) &&
+              geometry.archiveJumpTargets[1].left - geometry.archiveJumpTargets[0].right >= 12 &&
+              geometry.archiveJumpTargets[1].left - geometry.archiveJumpTargets[0].right <= 32,
+              `${label}: archive auxiliary actions are scattered or too small`);
             assert.ok(geometry.archiveYearTargets.every((box) => box?.height >= 44), `${label}: archive year link has a small click target`);
             assert.equal(geometry.archiveTitle, "归档", `${label}: archive label inconsistent`);
             assert.equal(geometry.archiveOverview, false, `${label}: obsolete archive card returned`);
