@@ -32,7 +32,10 @@ export type SiteData = Record<string, unknown> & {
   profileTags?: string[];
   socials?: Socials;
 };
+export type Review = { number: number; url: string; branch: string };
+export type Publication = { commit: string | null; review?: Review };
 export type Overview = Status & {
+  publicationMode?: "direct" | "review-pr";
   repo: { name: string; branch: string };
   site: { oid: string; data: SiteData };
   about: { oid: string | null; text: string };
