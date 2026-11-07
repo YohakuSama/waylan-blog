@@ -335,11 +335,15 @@
   .intro-copy {
     padding-left: 0;
   }
-  .intro-description { margin-top: var(--space-3); line-height: 1.75; }
-  .home-links { gap: 0 12px; }
-  .home-resume { margin-bottom: 12px; }
-  .home-section-head { padding-top: 8px; }
-  .home-list .feed-item:first-child { padding-top: var(--space-4); }
+  /* Preserve the shared page-title baseline; tighten only the gaps below it.
+     Keep the 44px navigation, topic links and saved reading entry intact. */
+  .home-page > .home-hero.page-heading { padding-bottom: var(--space-2); }
+  .intro-description { margin-top: var(--space-2); line-height: 1.75; }
+  .home-hero .home-links { gap: 0 12px; margin-top: 0; }
+  .home-page > .home-resume { margin-bottom: var(--space-2); }
+  .home-page .home-topic-shortcuts { padding-block: var(--space-2); }
+  .home-section-head { padding-top: var(--space-1); }
+  .home-list .feed-item:first-child { padding-top: var(--space-2); }
   .hero-square {
     top: 11px;
     width: 9px;
