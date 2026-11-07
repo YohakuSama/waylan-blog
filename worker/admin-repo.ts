@@ -6,6 +6,16 @@ import { HttpError, type Env } from "./types";
 import { github } from "./github";
 
 export const POSTS = "content/posts";
+export type Review = { number: number; url: string; branch: string };
+export type Publication = { commit: string; review?: Review };
+export function publicationMode(env: Env): "direct" | "review-pr" {
+  const mode = env.CONTENT_PUBLISH_MODE || "direct";
+  if (mode !== "direct" && mode !== "review-pr")
+    throw new HttpError(503, "CONTENT_PUBLISH_MODE", "内容发布模式不正确，请检查 CONTENT_PUBLISH_MODE。");
+  if (mode === "review-pr" && repo(env).branch !== "main")
+    throw new HttpError(503, "CONTENT_PUBLISH_BRANCH", "PR 审核模式必须以 main 作为内容读取分支。");
+  return mode;
+}
 export const repo = (env: Env) => {
   const [owner = "", name = ""] = (env.CONTENT_REPO || "").split("/");
   return { owner, name, branch: env.CONTENT_BRANCH || "main" };
@@ -154,8 +164,8 @@ export type Change =
   | { path: string; text: string }
   | { path: string; base64: string }
   | { path: string; remove: true };
-/** One commit on top of `base`; fails with 409 if the branch moved. */
-export async function commit(env: Env, base: Head, message: string, changes: Change[]) {
+/** Materialize one atomic Git commit, without changing any branch reference. */
+async function createCommit(env: Env, base: Head, message: string, changes: Change[]) {
   const tree = [];
   for (const change of changes) {
     const entry = { path: change.path, mode: "100644", type: "blob" };
@@ -178,15 +188,51 @@ export async function commit(env: Env, base: Head, message: string, changes: Cha
     tree: created.sha,
     parents: [base.oid],
   });
-  const ref = repo(env)
-    .branch.split("/")
-    .map(encodeURIComponent)
-    .join("/");
-  await rest(env, "PATCH", `/git/refs/heads/${ref}`, {
-    sha: next.sha,
-    force: false,
-  });
   return next.sha;
+}
+
+/** Default path: one fast-forward commit to the configured content branch. */
+export async function commit(env: Env, base: Head, message: string, changes: Change[]) {
+  const sha = await createCommit(env, base, message, changes);
+  const ref = repo(env).branch.split("/").map(encodeURIComponent).join("/");
+  await rest(env, "PATCH", `/git/refs/heads/${ref}`, { sha, force: false });
+  return sha;
+}
+
+/** Explicit opt-in: create an isolated review branch and draft PR; never update main. */
+export async function publishChange(env: Env, base: Head, message: string, changes: Change[]): Promise<Publication> {
+  if (publicationMode(env) === "direct") return { commit: await commit(env, base, message, changes) };
+  // An unrelated main update must not make an already-edited draft silently stale.
+  if ((await head(env)).oid !== base.oid) throw conflict();
+  const sha = await createCommit(env, base, message, changes);
+  const branch = `content/review-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  await rest(env, "POST", "/git/refs", { ref: `refs/heads/${branch}`, sha });
+  const { owner, name } = repo(env);
+  let number: number;
+  try {
+    const pr = await rest<{ number: number }>(env, "POST", "/pulls", {
+      title: `内容审核：${message.split("\n")[0].slice(0, 120)}`,
+      head: branch,
+      base: "main",
+      draft: true,
+      body: [
+        "此草稿 PR 由 Waylan Blog 后台创建；需通过人工审核和 CI 后才能合并至 main。",
+        "",
+        "变更文件：",
+        ...changes.map((change) => `- \`${change.path}\``),
+      ].join("\n"),
+    });
+    if (!Number.isInteger(pr.number) || pr.number < 1) throw new Error("Invalid GitHub PR number");
+    number = pr.number;
+  } catch {
+    // The review branch already holds the complete commit; preserve it so no edit is lost.
+    throw new HttpError(503, "CONTENT_REVIEW_PR",
+      `变更已安全保存到分支「${branch}」，但自动创建 PR 失败。请检查 GITHUB_CONTENT_TOKEN 的 Pull requests 写权限，并从 GitHub 手动创建 PR。`);
+  }
+  return {
+    commit: sha,
+    review: { number, branch, url: `https://github.com/${owner}/${name}/pull/${number}` },
+  };
 }
 
 /** Git's object id for a text file, so the client can keep editing after a save. */
