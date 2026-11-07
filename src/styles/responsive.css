@@ -471,6 +471,22 @@
     padding-block: 0;
   }
 }
+/* A near-tablet phone has enough horizontal space for all three selectors.
+   Keep 44px targets instead of spending three full rows above the list. */
+@media (min-width: 600px) and (max-width: 767px) {
+  .feed-controls .feed-toolbar { align-items: center; }
+  .feed-controls .feed-toolbar .mobile-type-select {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+  .feed-controls .feed-toolbar .feed-search-row {
+    flex: 2 1 0;
+    width: auto;
+    min-width: 0;
+    margin-left: 0;
+  }
+}
 /* Phone: one native type picker replaces two dense rows of type pills.
    Tablet/desktop keep the faster one-click category tabs. */
 .mobile-type-select {

@@ -843,7 +843,7 @@ try {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
               assert.ok(geometry.feedControls && geometry.feedControls.height < 150,
-                `${label}: phone filters consume too much of the first screen`);
+                `${label}: phone filters consume too much of the first screen (${geometry.feedControls?.height ?? "missing"}px)`);
               assert.ok(geometry.mobileType && geometry.mobileType.height >= 44 &&
                 geometry.mobileType.left >= 0 && geometry.mobileType.right <= geometry.viewport,
                 `${label}: missing/clipped phone type picker`);
