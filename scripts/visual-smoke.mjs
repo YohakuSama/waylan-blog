@@ -184,6 +184,10 @@ try {
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
+              feedToolbarBox: select(".feed-controls > .feed-toolbar"),
+              feedSortBox: select(".feed-controls .sort-control"),
+              feedTopicsBox: select(".feed-controls > .filter-tabs"),
+              feedResultsBox: select(".feed-controls > .feed-result-line"),
               feedFilterLabels: [...document.querySelectorAll(".feed-filter-label")].filter(el =>
                 el.getClientRects().length > 0).map(el => el.textContent.trim()),
               feedFilterSurface: (() => {
@@ -806,6 +810,22 @@ try {
           }
           if (route === "/privacy") {
             assert.ok(geometry.indexContent.width <= 721, `${label}: privacy prose lost its 720px reading measure`);
+          }
+          if (route === "/feed" && width >= 1120) {
+            // The formerly left-docked 960px reading measure must now be centered.
+            const expectedLeft = (geometry.viewport - geometry.indexPage.width) / 2;
+            assert.ok(Math.abs(geometry.indexPage.left - expectedLeft) <= 2,
+              `${label}: feed index is off-center: ${JSON.stringify({left: geometry.indexPage.left, expectedLeft})}`);
+            assert.ok(geometry.feedToolbarBox && geometry.feedSortBox &&
+              geometry.feedTopicsBox && geometry.feedResultsBox,
+              `${label}: one of the desktop filter bands is missing`);
+            assert.ok(geometry.feedSortBox.top >= geometry.feedToolbarBox.top - 1 &&
+              geometry.feedSortBox.bottom <= geometry.feedToolbarBox.bottom + 1,
+              `${label}: sorting escaped the type-filter band`);
+            assert.ok(Math.abs(geometry.feedTopicsBox.top - geometry.feedResultsBox.top) <= 3,
+              `${label}: results and topics no longer share the second filter band`);
+            assert.ok(geometry.feedResultsBox.right <= geometry.feedControls.right + 1,
+              `${label}: view-switch and result count escape the filter measure`);
           }
           if (route === "/feed") {
             assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
