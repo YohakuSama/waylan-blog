@@ -59,8 +59,13 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes("max-width: var(--index-frame-width);"));
     assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
     assert.ok(shell.includes("--index-list-width: 960px;"));
-    assert.match(pagesCss, /\.feed-layout,\s*\.projects-layout,\s*\.archive-main \{ max-width: var\(--index-list-width\); \}/);
-    assert.ok(pagesCss.includes(".about-layout { max-width: 720px; }"));
+    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-list-width); }"));
+    assert.match(pagesCss, /\.projects-layout,\s*\.archive-main,\s*\.about-layout \{ max-width: var\(--index-frame-width\); \}/);
+    assert.ok(pagesCss.includes("grid-template-columns: minmax(0, 1fr) var(--home-rail-width);"));
+    assert.ok(responsive.includes(".about-layout { max-width: 720px; }"));
+    assert.ok(pagesCss.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"));
+    assert.ok(shell.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
+    assert.ok(pagesCss.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
     assert.ok(shell.includes(".home-grid {"));
     assert.ok(shell.includes(".content-grid.home-grid {"));
     assert.ok(shell.includes("--home-rail-width: 276px;"));
@@ -73,11 +78,25 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
   });
-  it("keeps the archive publication module compact without growing its mobile copy", () => {
-    assert.ok(pagesCss.includes("justify-content: flex-start;"));
-    assert.ok(pagesCss.includes(".archive-activity-copy {"));
-    assert.ok(pagesCss.includes("flex: 0 0 248px;"));
+  it("uses content-led index archetypes without removing their real components", () => {
+    const archive = readFileSync("src/pages/Archive.tsx", "utf8");
+    const about = readFileSync("src/pages/About.tsx", "utf8");
+    const projects = readFileSync("src/pages/Projects.tsx", "utf8");
+    const feedPage = readFileSync("src/pages/Feed.tsx", "utf8");
+    assert.ok(archive.indexOf('className="archive-index"') <
+      archive.indexOf('className="archive-activity"'), "archive chronology must precede its auxiliary chart");
+    assert.ok(archive.includes("<Heatmap />") && archive.includes('id="publication-activity"'));
+    assert.ok(about.indexOf('className="about-text"') <
+      about.indexOf('className="about-details"'), "About prose must be primary");
+    for (const required of ["site.aboutHtml", "<SocialList />", "<SiteStats views />", "about-motto"]) {
+      assert.ok(about.includes(required), required);
+    }
+    assert.ok(projects.includes("<FeedList") && feedCss.includes(".projects-layout .feed-item.is-project"));
+    assert.ok(feedPage.includes('className="feed-filter-label"'));
+    assert.ok(feedPage.includes("<TypeTabs") && feedPage.includes("<ViewToggle"));
+    assert.ok(pagesCss.includes("border-top: 2px solid var(--ink);"));
     assert.ok(responsive.includes(".archive-activity-copy { flex: none; }"));
+    assert.ok(responsive.includes(".about-details > section + section { padding-top: 0; border-top: 0; }"));
   });
   it("keeps tablet home spacing ahead of the generic feed cascade", () => {
     const generic = responsive.indexOf(".feed-list .feed-item { padding-block: var(--space-5); }");
