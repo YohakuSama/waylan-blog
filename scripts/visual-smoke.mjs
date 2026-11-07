@@ -255,7 +255,7 @@ try {
                 ...rect(el), href: el.getAttribute("href"), text: el.textContent.trim(),
               })),
               sidebarEndSlots: [...document.querySelectorAll(
-                ".content-grid .site-sidebar .side-more, .content-grid .site-sidebar .explore-count, .content-grid .site-sidebar .home-project-end, .content-grid .site-sidebar .sidebar-row-end"
+                ".content-grid .site-sidebar .side-more, .content-grid .site-sidebar .explore-count, .content-grid .site-sidebar .home-project-end, .content-grid .site-sidebar .sidebar-row-end, .content-grid .site-sidebar .popular-views"
               )].filter((el) => rect(el)).map((el) => {
                 const box = el.getBoundingClientRect();
                 const parent = el.closest(".side-block")?.getBoundingClientRect();
@@ -330,6 +330,7 @@ try {
               aboutStatsHeadingIsLink: !!document.querySelector(".about-stats .side-title a"),
               aboutStatsLabel: document.querySelector(".about-layout .site-stats > div:first-child dd")?.textContent?.trim(),
               aboutSocialTargets: [...document.querySelectorAll(".about-text .social-links a")].map(rect),
+              aboutCtaBox: select(".about-text > .primary-button"),
               aboutCta: {
                 text: document.querySelector(".about-text > .primary-button")?.textContent?.trim(),
                 href: document.querySelector(".about-text > .primary-button")?.getAttribute("href"),
@@ -736,6 +737,12 @@ try {
               Math.abs(slot.width - 28) <= 1 && slot.rightGap !== null &&
               Math.abs(slot.rightGap) <= (width < 768 ? 6 : 3)),
               `${label}: shared sidebar counts and arrows drift from the trailing column`);
+          }
+          if (route === "/about" && geometry.aboutSocialTargets.length) {
+            assert.ok(geometry.aboutCtaBox && geometry.aboutCtaBox.height >= 44 &&
+              geometry.aboutSocialTargets.every(box =>
+                box && box.height >= 44 && Math.abs(box.height - geometry.aboutCtaBox.height) <= 1),
+              `${label}: About action targets are not equally sized`);
           }
           if (geometry.sideHeadingRows.length) {
             assert.ok(geometry.sideHeadingRows.every((row) =>

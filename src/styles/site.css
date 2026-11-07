@@ -473,6 +473,26 @@
   color: var(--muted);
   font-size: 13px;
 }
+.about-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  column-gap: 12px;
+}
+.about-text > .about-motto,
+.about-text > .about-prose { flex: 0 0 100%; }
+.about-text > .social-links { margin-top: var(--space-5); gap: 12px; }
+.about-text > .primary-button { margin-top: var(--space-5); }
+.about-text > .social-links a,
+.about-text > .primary-button {
+  min-height: 46px;
+  padding: 10px 16px;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .social-links {
   display: flex;
   flex-wrap: wrap;

@@ -807,11 +807,22 @@ textarea::placeholder {
   background: var(--brand-soft);
 }
 .reader-toc {
-  padding-top: var(--space-1);
+  /* Offset the rail from the masthead into the article's reading area. */
+  padding-top: var(--space-12);
+  min-height: 0;
 }
 .toc-inner {
   position: sticky;
-  top: var(--space-10);
+  top: calc(var(--header-height) + var(--space-6));
+}
+@media (min-width: 1041px) {
+  /* Long TOCs stay available without overlapping the bottom of short screens. */
+  .toc-inner {
+    max-height: calc(100dvh - var(--header-height) - var(--space-10));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
 }
 .toc-inner > .eyebrow {
   font-size: 11px;

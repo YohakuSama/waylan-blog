@@ -14,8 +14,9 @@
 
 ## 浏览器图标
 
-- `public/favicon.svg` 与 `public/avatar.svg` 内容一致（`tests/branding.test.ts` 校验），是杂志形态的 W + 圆点，内嵌 `prefers-color-scheme` 样式：浅色为纸色底 `#f7f4ee`，深色为 `#1d1c21` 底。
-- `favicon.ico`（16/32/48）、`favicon-32.png`、`favicon-64.png`、`apple-touch-icon.png` 由同一 SVG 栅格化，修改 SVG 后需一并重新导出。
+- 页面内头像/加载标识保留上文的双皮肤 `Monogram`；小尺寸浏览器标签单独使用更清晰的单线几何 W 和右上角短光标，不将复杂头像硬缩到 16px。
+- `public/favicon.svg` 与 `public/avatar.svg` 内容一致（`tests/branding.test.ts` 校验）；浅色系统为深松绿底/暖白字/薄荷绿光标，深色系统自动反转为浅底深字，保持清晰对比。
+- `favicon.ico`（16/32）、`favicon-32.png`、`favicon-64.png` 与 `apple-touch-icon.png`（180）由该 SVG 栅格化；更改图形时必须同步这四种回退/触控资源，不能仅替换 SVG。
 - `public/theme.js` 在首帧前按皮肤与明暗写入 `meta[name=theme-color]`，移动端地址栏颜色与页面一致。
 
 ## 容器与动效

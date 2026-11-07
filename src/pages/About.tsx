@@ -32,7 +32,7 @@ export function About() {
           <SocialList />
           <Link className="primary-button" href="/feed">
             浏览全部内容
-            <ArrowRight size={17} />
+            <ArrowRight size={17} aria-hidden="true" />
           </Link>
         </section>
         <aside className="about-details" aria-label="站点技术与数据">

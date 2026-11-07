@@ -1130,6 +1130,14 @@ html {
    Re-enable the destination arrow, which the generic icon rule hides. */
 :root[data-skin="terminal"] .side-head .side-title::before { content: none; }
 :root[data-skin="terminal"] .side-heading-link::before { content: "##"; color: var(--brand); }
+/* Prompt and Editorial icon occupy the same left column. */
+:root[data-skin="terminal"] .site-sidebar .side-heading-link::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--sidebar-start-slot);
+  width: var(--sidebar-start-slot);
+}
 :root[data-skin="terminal"] .side-heading-icon { display: none; }
 :root[data-skin="terminal"] .side-heading-link .side-more svg { display: block; }
 :root[data-skin="terminal"] .thought-text,
@@ -1610,45 +1618,7 @@ html {
 .article-views {
   font-variant-numeric: tabular-nums;
 }
-.popular-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: none;
-}
-.popular-list a {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
-  font-size: var(--text-caption);
-  line-height: 1.55;
-  text-decoration: none;
-}
-.popular-list li:last-child a {
-  border-bottom: 0;
-}
-.popular-rank {
-  color: var(--brand);
-  font-size: 11px;
-  font-weight: 600;
-}
-.popular-title {
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.popular-list a:hover .popular-title {
-  color: var(--brand);
-}
-.popular-views {
-  color: var(--muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
+/* Popular item grid belongs to sidebar.css, not a visual skin. */
 
 /* ---------- 2.0 · author mark ---------- */
 .avatar.profile-mark,
