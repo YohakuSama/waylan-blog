@@ -24,14 +24,13 @@ it("desktop reading tools remain below the sticky masthead", () => {
   assert.match(css, /max-height: calc\(100dvh - var\(--header-height\) - var\(--space-10\)\)/);
   assert.match(css, /\.toc-visible \.toc-inner\s*\{\s*position: static;/);
 });
-it("About action row preserves links with consistent touch size", () => {
+it("About action row preserves direct link and consistent touch targets", () => {
   const page = read("src/pages/About.tsx");
   const css = read("src/styles/site.css");
-  assert.match(page, /className="about-actions"/);
-  assert.match(page, /<SocialList\s*\/>/);
-  assert.match(page, /href="\/feed"/);
-  assert.match(css, /\.about-actions\s*\{[^}]*flex-wrap: wrap;/s);
-  assert.match(css, /\.about-actions \.social-links a,\s*\.about-actions \.primary-button\s*\{[^}]*min-height: 46px;/s);
+  assert.match(page, /<SocialList\\s*\\/>/);
+  assert.match(page, /<Link className="primary-button" href="\\/feed">/);
+  assert.match(css, /\\.about-text\\s*\\{[^}]*flex-wrap: wrap;/s);
+  assert.match(css, /\\.about-text > \\.social-links a,\\s*\\.about-text > \\.primary-button\\s*\\{[^}]*min-height: 46px;/s);
 });
 it("small-size Waylan mark is consistent in tab and avatar", () => {
   const svg = read("public/favicon.svg");

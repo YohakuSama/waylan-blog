@@ -473,16 +473,19 @@
   color: var(--muted);
   font-size: 13px;
 }
-.about-actions {
+.about-text {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   align-items: center;
-  gap: 12px;
-  margin-top: var(--space-5);
+  column-gap: 12px;
 }
-.about-actions .social-links { margin: 0; gap: 12px; }
-.about-actions .social-links a,
-.about-actions .primary-button {
+.about-text > .about-motto,
+.about-text > .about-prose { flex: 0 0 100%; }
+.about-text > .social-links { margin-top: var(--space-5); gap: 12px; }
+.about-text > .primary-button { margin-top: var(--space-5); }
+.about-text > .social-links a,
+.about-text > .primary-button {
   min-height: 46px;
   padding: 10px 16px;
   gap: 8px;
