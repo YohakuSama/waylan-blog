@@ -92,6 +92,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pagesCss.includes("border-left: 1px solid var(--line);"));
     assert.ok(responsive.includes(".archive-main, .about-layout {"));
     assert.ok(responsive.includes(".archive-activity-copy { flex: none; }"));
+    assert.ok(responsive.includes(".archive-index { order: 0; }"));
+    assert.ok(responsive.includes("order: 1;"));
     assert.ok(responsive.includes(".archive-activity .heatmap { flex: none;"));
     assert.ok(responsive.includes(".about-details > section + section {"));
   });
@@ -170,6 +172,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes('<TagList tags={post.tags} hrefForTag={tagHref} />'));
     assert.ok(feed.includes('(post.type !== "project" || !media)'));
     assert.ok(feedCss.includes(".project-thumb-tags .tag-list a {"));
+    assert.ok(feedCss.includes("/* Technology facts are secondary text."));
     assert.ok(responsive.includes("@media (max-width: 1040px)"));
     assert.ok(responsive.includes(".feed-item.is-project.has-media .project-media"));
     assert.ok(responsive.includes(".feed-item.is-project .project-compact-tags"));
