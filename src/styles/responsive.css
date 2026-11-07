@@ -460,7 +460,17 @@
   .header-search-text,.header-search kbd { display:none; }
 }
 @media (max-width:767px) {
-  .archive-activity { flex-direction: column; gap: var(--space-3); }
+  /* Chronology is the mobile primary task; publication statistics remain
+     available after the index instead of pushing the first record off-screen. */
+  .archive-index { order: 0; }
+  .archive-activity {
+    order: 1;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-8);
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
   .archive-activity-copy { flex: none; }
   .archive-activity .heatmap { flex: none; width: min(100%, 312px); margin-top: 0; }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
