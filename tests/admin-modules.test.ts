@@ -143,6 +143,8 @@ describe("admin publication branch semantics", () => {
     const dashboard = read("src/admin/Dashboard.tsx");
     assert.match(dashboard, /editsLive\(overview\?\.repo\.branch/);
     assert.match(dashboard, /<DeployStatus status=\{status\} branch=/);
+    assert.match(read("src/admin/PostEditor.tsx"), /!form\.draft && editsLive\(overview\.repo\.branch\)/);
+    assert.match(read("src/admin/ContentList.tsx"), /!p\.error && editsLive\(overview\.repo\.branch\)/);
   });
 });
 
