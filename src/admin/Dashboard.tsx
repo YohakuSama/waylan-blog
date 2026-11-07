@@ -126,6 +126,12 @@ export function Dashboard({ session }: { session: Session }) {
             <DeployStatus status={status} branch={overview?.repo.branch || "main"} />
           </div>
         )}
+        {overview?.publicationMode === "review-pr" && (
+          <div className="panel" role="note">
+            内容审查模式已启用。文章和站点修改将先生成 GitHub 草稿 PR，
+            <strong>不会直接发布到正式网站</strong>；需要通过检查后人工合并到 main。
+          </div>
+        )}
         {overview && !editsLive(overview.repo.branch) && (
           <div className="panel" role="note">
             当前内容保存在 <strong>{overview.repo.branch}</strong>，不会自动部署到网站。
