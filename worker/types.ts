@@ -22,7 +22,9 @@ export type Env = {
   /** Admin: repository holding this site's source, "owner/name". */
   CONTENT_REPO?: string;
   CONTENT_BRANCH?: string;
-  /** Admin: fine-grained token, Contents read/write on CONTENT_REPO only. */
+  /** Optional review PR mode (default: direct); enable only after approval of the deployment path. */
+  CONTENT_PUBLISH_MODE?: "direct" | "review-pr";
+  /** Admin: fine-grained token with Contents write; review-pr also needs Pull requests write. */
   GITHUB_CONTENT_TOKEN?: string;
   GITHUB_CATEGORY_NAME?: string;
 };
