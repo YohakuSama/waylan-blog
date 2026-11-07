@@ -421,6 +421,55 @@
   font: 11.5px/20px var(--font-mono);
   color: var(--ink-soft);
 }
+/* The Projects index presents comparable work records. These are the same
+   semantic FeedList items, with status, stack, tags, save and article links
+   intact; article and Home cards deliberately keep their existing layout. */
+@media (min-width: 1120px) {
+  .projects-layout .feed-item.is-project {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "media" "body";
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    transition: border-color var(--motion-fast) var(--ease);
+  }
+  .projects-layout .feed-item.is-project:hover,
+  .projects-layout .feed-item.is-project:focus-within {
+    border-color: var(--line-strong);
+  }
+  .projects-layout .feed-item.is-project .project-media {
+    width: 100%;
+    min-width: 0;
+  }
+  .projects-layout .feed-item.is-project .project-thumb {
+    min-height: 170px;
+    height: 100%;
+    border-radius: var(--radius-sm);
+  }
+  .projects-layout .feed-item.is-project .feed-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .projects-layout .feed-item.is-project .feed-body h2 {
+    font-size: 24px;
+    line-height: 1.35;
+  }
+  .projects-layout .feed-item.is-project .feed-excerpt {
+    -webkit-line-clamp: 3;
+  }
+  .projects-layout .feed-item.is-project .feed-tail {
+    margin-top: auto;
+    padding-top: var(--space-3);
+  }
+  .projects-layout .feed-item.is-project .project-status {
+    padding-left: var(--space-2);
+    border-left: 2px solid var(--brand);
+  }
+}
 /* Compact density: titles and meta only. */
 .density-compact .feed-item,
 .density-compact .feed-item.has-media,
