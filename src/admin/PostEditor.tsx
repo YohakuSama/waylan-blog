@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { contentTypes, typeLabels, type ContentType } from "../../shared/types";
 import { str, toData, toForm, type Form } from "./form";
 import { adminApi as api } from "./api";
-import { readImage, pickImage, today, usedUploads, useLeaveGuard, useSaveKey } from "./helpers";
+import { readImage, pickImage, today, usedUploads, useLeaveGuard, useSaveKey, editsLive, saveMessage } from "./helpers";
 import { Field, Markdown } from "./ui";
 import type { Overview, Upload } from "./types";
 
@@ -102,7 +102,7 @@ export function PostEditor({
       setSaved(JSON.stringify(form));
       const sent = body.uploads.map((u) => u.path);
       setUploads((all) => all.map((u) => (sent.includes(u.path) ? { ...u, sent: true } : u)));
-      notify(file ? "已保存，网站会在一两分钟后更新。" : "已发布，网站会在一两分钟后更新。");
+      notify(saveMessage(overview.repo.branch, file ? "post" : "new-post"));
       onSaved();
     } catch (e) {
       setError((e as Error).message);
@@ -152,7 +152,7 @@ export function PostEditor({
           </a>
         )}
         <button onClick={save} disabled={busy || (!!file && !dirty)}>
-          {busy ? "提交中…" : file ? "保存" : "发布"}
+          {busy ? "提交中…" : !editsLive(overview.repo.branch) ? "保存到内容分支" : file ? "保存" : "发布"}
         </button>
       </div>
       {error && (
