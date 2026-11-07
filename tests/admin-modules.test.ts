@@ -1,4 +1,4 @@
-import { usedUploads } from "../src/admin/helpers";
+import { usedUploads, editsLive, saveMessage } from "../src/admin/helpers";
 import { createDiscussionBatches } from "../src/admin/Discussions";
 import { toSiteForm } from "../src/admin/SiteEditor";
 import type { Overview, Upload } from "../src/admin/types";
@@ -119,6 +119,32 @@ describe("admin data contracts after extraction", () => {
     assert.deepEqual(form.socials, [{ label: "", url: "https://github.com/example" }]);
     assert.equal(form.about, "About the site.");
     assert.deepEqual(form.announcements, [], "older site profiles remain editable without notices");
+  });
+});
+
+describe("admin publication branch semantics", () => {
+  it("retains immediate-live feedback on the existing main branch", () => {
+    assert.equal(editsLive("main"), true);
+    assert.match(saveMessage("main", "new-post"), /已发布.*一两分钟/);
+    assert.match(saveMessage("main", "post"), /已保存.*一两分钟/);
+    assert.match(saveMessage("main", "site"), /已保存.*一两分钟/);
+    assert.match(saveMessage("main", "delete", "例文"), /已删除「例文」.*一两分钟/);
+  });
+
+  it("never tells authors a staging-branch commit was published", () => {
+    const branch = "content/editorial-review";
+    assert.equal(editsLive(branch), false);
+    for (const operation of ["new-post", "post", "site", "delete"] as const) {
+      const message = saveMessage(branch, operation, "例文");
+      assert.match(message, /PR 合并到 main/);
+      assert.match(message, /content\/editorial-review/);
+      assert.doesNotMatch(message, /一两分钟后更新|已发布/);
+    }
+    const dashboard = read("src/admin/Dashboard.tsx");
+    assert.match(dashboard, /editsLive\(overview\?\.repo\.branch/);
+    assert.match(dashboard, /<DeployStatus status=\{status\} branch=/);
+    assert.match(read("src/admin/PostEditor.tsx"), /!form\.draft && editsLive\(overview\.repo\.branch\)/);
+    assert.match(read("src/admin/ContentList.tsx"), /!p\.error && editsLive\(overview\.repo\.branch\)/);
   });
 });
 

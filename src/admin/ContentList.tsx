@@ -2,6 +2,7 @@ import { useState } from "react";
 import { typeLabels } from "../../shared/types";
 import { adminApi as api } from "./api";
 import { Confirm } from "./ui";
+import { editsLive, saveMessage } from "./helpers";
 import type { Overview, Summary } from "./types";
 
 /** Content search, editing entrypoints, and deletion; Discussions are isolated. */
@@ -35,7 +36,7 @@ export function Posts({
     setError("");
     try {
       await api("/api/admin/post", "DELETE", { file: target.file, oid: target.oid });
-      notify(`已删除「${target.title}」，网站会在一两分钟后更新。`);
+      notify(saveMessage(overview.repo.branch, "delete", target.title));
       setTarget(null);
       onDeleted();
     } catch (e) {
@@ -74,7 +75,7 @@ export function Posts({
               </div>
             </div>
             <div className="post-actions">
-              {p.slug && !p.draft && !p.error && (
+              {p.slug && !p.draft && !p.error && editsLive(overview.repo.branch) && (
                 <a className="ghost button" href={`/post/${p.slug}`} target="_blank" rel="noreferrer">
                   查看
                 </a>
@@ -104,7 +105,9 @@ export function Posts({
         onClose={() => !busy && setTarget(null)}
       >
         <p>
-          「{target?.title}」将从网站移除。它的评论仍保留在 GitHub Discussions 中；如需恢复，可在仓库的提交历史里找回。
+          「{target?.title}」将从{editsLive(overview.repo.branch) ? "网站" : "当前内容分支"}移除。
+          {editsLive(overview.repo.branch) ? "" : "正式网站在 PR 合并前不会变化。"}
+          它的评论仍保留在 GitHub Discussions 中；如需恢复，可在仓库的提交历史里找回。
         </p>
         {error && <p className="error">{error}</p>}
       </Confirm>

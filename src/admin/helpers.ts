@@ -20,6 +20,18 @@ export const ago = (date: string) => {
         : `${Math.round(minutes / 1440)} 天前`;
 };
 
+/** A content branch can store edits without publishing them to the live main branch. */
+export const editsLive = (branch: string) => branch === "main";
+
+export function saveMessage(branch: string, operation: "post" | "new-post" | "site" | "delete", title = "") {
+  if (!editsLive(branch)) return operation === "delete"
+    ? `已从内容分支「${branch}」删除「${title}」，正式网站未受影响；需要通过 PR 合并到 main。`
+    : `已保存到内容分支「${branch}」，尚未发布；需要通过 PR 合并到 main。`;
+  if (operation === "delete") return `已删除「${title}」，网站会在一两分钟后更新。`;
+  if (operation === "new-post") return "已发布，网站会在一两分钟后更新。";
+  return "已保存，网站会在一两分钟后更新。";
+}
+
 /** Reads an image chosen by the author into an upload, or explains why not. */
 export async function readImage(file: File): Promise<Upload> {
   if (file.size > MAX_IMAGE) throw new Error("单张图片不能超过 5 MB。");

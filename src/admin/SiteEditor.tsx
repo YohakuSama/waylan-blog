@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parseAnnouncements, type Announcement } from "../../shared/announcements";
 import { list, str } from "./form";
 import { adminApi as api } from "./api";
-import { readImage, pickImage, usedUploads, useLeaveGuard, useSaveKey } from "./helpers";
+import { readImage, pickImage, usedUploads, useLeaveGuard, useSaveKey, editsLive, saveMessage } from "./helpers";
 import { Field, Markdown } from "./ui";
 import type { Overview, Upload } from "./types";
 
@@ -115,7 +115,7 @@ export function SiteEditor({
       setSaved(JSON.stringify(form));
       const sent = body.uploads.map((u) => u.path);
       setUploads((all) => all.map((u) => (sent.includes(u.path) ? { ...u, sent: true } : u)));
-      notify(result.commit ? "已保存，网站会在一两分钟后更新。" : "内容没有变化。");
+      notify(result.commit ? saveMessage(overview.repo.branch, "site") : "内容没有变化。");
       if (result.commit) await onSaved();
     } catch (e) {
       setError((e as Error).message);
@@ -139,7 +139,7 @@ export function SiteEditor({
         <span className="spacer" />
         {dirty && <span className="muted">有未保存的改动</span>}
         <button onClick={save} disabled={busy || !dirty}>
-          {busy ? "提交中…" : "保存"}
+          {busy ? "提交中…" : editsLive(overview.repo.branch) ? "保存" : "保存到内容分支"}
         </button>
       </div>
       {error && (
