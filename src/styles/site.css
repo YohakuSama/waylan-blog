@@ -302,6 +302,76 @@
   margin-top: var(--space-5);
   padding-top: 0;
 }
+/* Archive index semantics and base geometry belong to the page, not to
+   responsive breakpoints. Years and months lead; article type remains an
+   inline scan marker rather than another card wrapper. */
+.archive-heading { border-bottom: 1px solid var(--line); }
+.archive-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: 13px;
+}
+.archive-summary a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.archive-year-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+  padding-top: var(--space-4);
+}
+.archive-year-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 13px var(--font-mono);
+  color: var(--muted);
+}
+.archive-year-nav a:hover { color: var(--brand); }
+.archive-year { scroll-margin-top: calc(var(--header-height) + var(--space-5)); }
+.archive-month {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+}
+.archive-month-label {
+  padding-top: var(--space-3);
+  font: 600 13px/1.6 var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.archive-month-list {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.archive-month .archive-row { grid-template-columns: 44px minmax(0, 1fr) 16px; }
+.archive-row { min-width: 0; min-height: 54px; }
+.archive-row > span { min-width: 0; overflow-wrap: anywhere; }
+.archive-row .archive-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  margin-right: 10px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font: 11px/18px var(--font-sans);
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
 /* Separate privacy notice, following the site's existing editorial typography. */
 .privacy-page {
   max-width: 720px;
