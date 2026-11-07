@@ -8,6 +8,46 @@ import { github } from "./github";
 export const POSTS = "content/posts";
 export type Review = { number: number; url: string; branch: string };
 export type Publication = { commit: string; review?: Review };
+export type ReviewState = Review & {
+  title: string;
+  state: "open" | "merged" | "closed";
+  updatedAt: string;
+};
+const ADMIN_REVIEW_MARKER = "<!-- waylan-admin-review -->";
+const REVIEW_BRANCH = /^content\/review-\d+-[0-9a-f]{8}$/;
+
+/** Read-only review queue: only PRs created by this admin workflow in this repository. */
+export async function recentReviews(env: Env): Promise<{ reviews: ReviewState[]; truncated: boolean }> {
+  if (publicationMode(env) !== "review-pr") return { reviews: [], truncated: false };
+  type Pull = {
+    number: number;
+    title: string;
+    body: string | null;
+    state: string;
+    merged_at: string | null;
+    updated_at: string;
+    head: { ref: string; repo: { full_name: string } | null };
+    base: { ref: string };
+  };
+  const items = await rest<Pull[]>(env, "GET",
+    "/pulls?state=all&base=main&sort=updated&direction=desc&per_page=100");
+  const { owner, name } = repo(env);
+  const reviews = items.filter((pr) =>
+    Number.isInteger(pr.number) && pr.number > 0 && pr.base?.ref === "main" &&
+    pr.head?.repo?.full_name === `${owner}/${name}` &&
+    REVIEW_BRANCH.test(pr.head.ref) &&
+    (pr.body || "").includes(ADMIN_REVIEW_MARKER),
+  ).map((pr) => ({
+    number: pr.number,
+    title: pr.title,
+    branch: pr.head.ref,
+    url: `https://github.com/${owner}/${name}/pull/${pr.number}`,
+    state: pr.merged_at ? "merged" as const :
+      pr.state === "closed" ? "closed" as const : "open" as const,
+    updatedAt: pr.updated_at,
+  }));
+  return { reviews, truncated: items.length === 100 };
+}
 export function publicationMode(env: Env): "direct" | "review-pr" {
   const mode = env.CONTENT_PUBLISH_MODE || "direct";
   if (mode !== "direct" && mode !== "review-pr")
@@ -217,6 +257,7 @@ export async function publishChange(env: Env, base: Head, message: string, chang
       draft: true,
       body: [
         "此草稿 PR 由 Waylan Blog 后台创建；需通过人工审核和 CI 后才能合并至 main。",
+        ADMIN_REVIEW_MARKER,
         "",
         "变更文件：",
         ...changes.map((change) => `- \`${change.path}\``),
