@@ -59,8 +59,14 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes("max-width: var(--index-frame-width);"));
     assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
     assert.ok(shell.includes("--index-list-width: 960px;"));
-    assert.match(pagesCss, /\.feed-layout,\s*\.projects-layout,\s*\.archive-main \{ max-width: var\(--index-list-width\); \}/);
-    assert.ok(pagesCss.includes(".about-layout { max-width: 720px; }"));
+    assert.match(pagesCss, /\.feed-layout,\s*\.projects-layout \{ max-width: var\(--index-list-width\); \}/);
+    assert.match(pagesCss, /\.archive-main,\s*\.about-layout \{ max-width: var\(--index-frame-width\); \}/);
+    assert.ok(pagesCss.includes("grid-template-columns: minmax(0, 1fr) var(--home-rail-width);"));
+    assert.ok(responsive.includes(".archive-main { max-width: var(--index-list-width); }"));
+    assert.ok(responsive.includes(".about-layout { max-width: 720px; }"));
+    assert.ok(shell.includes(".site-header:not(.site-header-reader) .header-inner {"));
+    assert.ok(shell.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
+    assert.ok(pagesCss.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
     assert.ok(shell.includes(".home-grid {"));
     assert.ok(shell.includes(".content-grid.home-grid {"));
     assert.ok(shell.includes("--home-rail-width: 276px;"));
@@ -73,11 +79,25 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
   });
-  it("keeps the archive publication module compact without growing its mobile copy", () => {
-    assert.ok(pagesCss.includes("justify-content: flex-start;"));
-    assert.ok(pagesCss.includes(".archive-activity-copy {"));
-    assert.ok(pagesCss.includes("flex: 0 0 248px;"));
+  it("places Archive and About existing information in the shared desktop rail", () => {
+    assert.ok(pages.includes('className="archive-index"'));
+    assert.ok(pages.includes('className="archive-activity"'));
+    assert.ok(pages.includes('className="about-details"'));
+    assert.ok(pagesCss.includes(".archive-index,"));
+    assert.ok(pagesCss.includes(".archive-activity {"));
+    assert.ok(pagesCss.includes("grid-column: 2;"));
+    assert.ok(pagesCss.includes(".about-details > section + section {"));
+    assert.ok(pagesCss.includes("border-left: 1px solid var(--line);"));
+    assert.ok(responsive.includes(".archive-main, .about-layout {"));
     assert.ok(responsive.includes(".archive-activity-copy { flex: none; }"));
+    assert.ok(responsive.includes(".archive-activity .heatmap { flex: none;"));
+    assert.ok(responsive.includes(".about-details > section + section {"));
+  });
+  it("keeps feed filters in the editorial index instead of a new card surface", () => {
+    assert.ok(pagesCss.includes("/* Filters belong to the index"));
+    assert.ok(pagesCss.includes("border-radius: 0;"));
+    assert.ok(pagesCss.includes("background: transparent;"));
+    assert.ok(responsive.includes("padding: 0 0 var(--space-4);"));
   });
   it("keeps tablet home spacing ahead of the generic feed cascade", () => {
     const generic = responsive.indexOf(".feed-list .feed-item { padding-block: var(--space-5); }");
