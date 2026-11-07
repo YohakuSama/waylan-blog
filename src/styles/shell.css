@@ -50,6 +50,11 @@ h3 {
   align-items: center;
   gap: clamp(16px, 2.3vw, 34px);
 }
+/* The index masthead and the five main pages share the same content edges.
+   Reader chrome retains its wider, independent layout. */
+.site-header:not(.site-header-reader) .header-inner {
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
+}
 .brand {
   display: inline-flex;
   align-items: center;
