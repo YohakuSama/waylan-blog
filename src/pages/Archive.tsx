@@ -20,15 +20,6 @@ export function Archive() {
         </div>
       </header>
       <section className="archive-main" aria-label="归档列表" ref={listRef}>
-        {entries.length > 0 && (
-          <aside className="archive-activity" aria-label="发布节奏">
-            <div className="archive-activity-copy">
-              <h2>发布节奏</h2>
-              <p>截至最新记录的 16 周</p>
-            </div>
-            <Heatmap />
-          </aside>
-        )}
         <div className="archive-index">
           {years.length > 1 && (
             <nav className="archive-year-nav" aria-label="跳转到年份">
@@ -65,6 +56,15 @@ export function Archive() {
           })}
           {!entries.length && <div className="empty-state">第一篇记录发布后，会出现在这里。</div>}
         </div>
+        {entries.length > 0 && (
+          <aside className="archive-activity" aria-label="发布节奏">
+            <div className="archive-activity-copy">
+              <h2>发布节奏</h2>
+              <p>截至最新记录的 16 周</p>
+            </div>
+            <Heatmap />
+          </aside>
+        )}
       </section>
     </div>
   );
