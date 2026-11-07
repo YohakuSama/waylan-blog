@@ -463,12 +463,23 @@
   .feed-controls .feed-toolbar {
     min-height: 0;
     gap: 4px;
-    padding-block: 4px;
+    padding-block: 2px;
   }
   .feed-controls .feed-search-row { min-height: 0; }
+  .feed-controls .feed-search-row select {
+    height: 44px;
+    min-height: 44px;
+  }
   .feed-controls .feed-result-line {
     min-height: 44px;
     padding-block: 0;
+  }
+  /* Remove only the shell padding: the two actual actions stay 44px tall. */
+  .feed-controls .view-toggle { padding: 0; }
+  .feed-controls .view-toggle::before {
+    top: 0;
+    left: 0;
+    height: 44px;
   }
 }
 /* A near-tablet phone has enough horizontal space for all three selectors.
