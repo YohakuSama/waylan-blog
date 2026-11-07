@@ -1,7 +1,7 @@
 /** A standalone privacy notice, separate from the personal About page. */
 export default function Privacy() {
   return (
-    <>
+    <div className="privacy-frame">
       <header className="page-heading">
         <p className="eyebrow mono">WAYLAN / PRIVACY</p>
         <h1 id="privacy-title">隐私说明</h1>
@@ -89,6 +89,6 @@ export default function Privacy() {
           </p>
         </section>
       </article>
-    </>
+    </div>
   );
 }

@@ -122,6 +122,7 @@ try {
             const tokens = getComputedStyle(document.documentElement);
             return {
               viewport: document.documentElement.clientWidth,
+              touch: matchMedia("(pointer: coarse)").matches,
               documentWidth: document.documentElement.scrollWidth,
               skin: document.documentElement.dataset.skin,
               theme: document.documentElement.dataset.theme,
@@ -172,9 +173,9 @@ try {
               homePage: select(".home-page"),
               homeHero: select(".home-page > .home-hero"),
               homeGrid: select(".home-page .home-grid"),
-              indexPage: select(".feed-page, .projects-page, .archive-page, .about-page"),
-              indexHeading: select(".feed-page > .page-heading, .projects-page > .page-heading, .archive-page > .page-heading, .about-page > .page-heading"),
-              indexContent: select(".feed-layout, .projects-layout, .archive-main, .about-layout"),
+              indexPage: select(".feed-page, .projects-page, .archive-page, .about-page, .privacy-frame"),
+              indexHeading: select(".feed-page > .page-heading, .projects-page > .page-heading, .archive-page > .page-heading, .about-page > .page-heading, .privacy-frame > .page-heading"),
+              indexContent: select(".feed-layout, .projects-layout, .archive-main, .about-layout, .privacy-page"),
               heroAction: select(".hero-browse"),
               pageHeadingEyebrow: select(".page-heading .eyebrow"),
               pageHeadingTitle: select(".page-heading h1"),
@@ -209,6 +210,13 @@ try {
                 arrow: rect(card.querySelector(".feed-actions .feed-arrow")),
                 actions: rect(card.querySelector(".feed-actions")),
               })),
+              tagTargets: [...document.querySelectorAll(".feed-list .tag-list a")].map(rect).filter(Boolean),
+              tagActionOverlaps: [...document.querySelectorAll(".feed-list .feed-item")].flatMap((card) => {
+                const actions = rect(card.querySelector(".feed-actions"));
+                return [...card.querySelectorAll(".tag-list a")].map(rect).filter((tag) =>
+                  tag && actions && Math.min(tag.right, actions.right) - Math.max(tag.left, actions.left) > 1 &&
+                  Math.min(tag.bottom, actions.bottom) - Math.max(tag.top, actions.top) > 1);
+              }),
               popularTitles: [...document.querySelectorAll(".popular-title")].map((title) => ({
                 whiteSpace: getComputedStyle(title).whiteSpace,
                 overflowWrap: getComputedStyle(title).overflowWrap,
@@ -498,9 +506,9 @@ try {
           }
           assert.equal(geometry.skin, variant.skin, `${label}: incorrect skin`);
           assert.equal(geometry.theme, variant.theme, `${label}: incorrect color mode`);
-          // All five index pages share one outer frame and heading origin;
+          // Primary pages and Privacy share one outer frame and heading origin;
           // only the inner reading columns retain separate maximum widths.
-          if (["/", "/feed", "/archive", "/projects", "/about"].includes(route)) {
+          if (["/", "/feed", "/archive", "/projects", "/about", "/privacy"].includes(route)) {
             assert.ok(geometry.pageHeadingEyebrow && geometry.pageHeadingTitle,
               `${label}: index page heading is missing`);
             const key = `${width}:${variant.skin}:${variant.theme}`;
@@ -525,7 +533,7 @@ try {
                 `${label}: index frame width differs from Home`);
             }
           }
-          if (["/", "/feed", "/projects", "/archive", "/about"].includes(route)) {
+          if (["/", "/feed", "/projects", "/archive", "/about", "/privacy"].includes(route)) {
             const measure = route === "/" ? geometry.homePage : geometry.indexPage;
             assert.ok(measure && geometry.pageFrame, `${label}: centered page frame missing`);
             assert.ok(Math.abs((measure.left + measure.right - geometry.pageFrame.left - geometry.pageFrame.right) / 2) <= 1,
@@ -742,7 +750,7 @@ try {
             assert.ok(geometry.bookmark.left >= geometry.meta.left && geometry.bookmark.right <= geometry.meta.right + 1,
               `${label}: save target escaped its content column`);
           }
-          if (["/feed", "/projects", "/archive", "/about"].includes(route)) {
+          if (["/feed", "/projects", "/archive", "/about", "/privacy"].includes(route)) {
             assert.ok(geometry.indexPage && geometry.indexHeading && geometry.indexContent,
               `${label}: index heading or content measure missing`);
             assert.ok(geometry.indexPage.width <= 1141,
@@ -750,6 +758,15 @@ try {
             assert.ok(Math.abs(geometry.indexHeading.left - geometry.indexPage.left) <= 1 &&
               Math.abs(geometry.indexContent.left - geometry.indexPage.left) <= 1,
               `${label}: heading, content and index measure have different left edges`);
+          }
+          assert.equal(geometry.tagActionOverlaps.length, 0, `${label}: tag targets overlap the save/open actions`);
+          if (width <= 767 || geometry.touch) {
+            assert.ok(geometry.tagTargets.every((tag) => tag.height >= 40 &&
+              tag.left >= 0 && tag.right <= geometry.viewport + 1),
+              `${label}: inconsistent or clipped touch tag targets`);
+          }
+          if (route === "/privacy") {
+            assert.ok(geometry.indexContent.width <= 721, `${label}: privacy prose lost its 720px reading measure`);
           }
           if (route === "/feed") {
             assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
@@ -768,7 +785,7 @@ try {
               assert.ok(geometry.types.every((tab) => tab && tab.left >= 0 &&
                 tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
             }
-            assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= 40), `${label}: density preference cannot be changed`);
+            assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= (width <= 767 || geometry.touch ? 44 : 40)), `${label}: density preference cannot be changed`);
           }
           if (route === "/projects") {
             assert.equal(geometry.projectCount, 2, `${label}: missing project entries`);
@@ -1044,6 +1061,16 @@ try {
             sameBox(await close.boundingBox().then((b) => b && ({ left: b.x, top: b.y, width: b.width, height: b.height })),
               { left: closeBox.x, top: closeBox.y, width: closeBox.width, height: closeBox.height }, `${label}: close moved after theme switch`);
             await settings.locator(`.skin-choice-${variant.skin}`).click();
+            const options = await settings.locator(".segmented label").evaluateAll((labels) =>
+              labels.map((label) => {
+                const r = label.getBoundingClientRect();
+                return { text: label.textContent.trim(), height: r.height, left: r.left, right: r.right };
+              }));
+            assert.equal(options.length, 6, `${label}: settings lost a theme or font option`);
+            assert.ok(options.every((option) => Math.abs(option.height - 44) <= 1 &&
+              option.left >= 0 && option.right <= width + 1),
+              `${label}: settings segmented options must share 44px targets`);
+            await writeFile(`${out}/${label}-settings.json`, JSON.stringify(options, null, 2));
             await page.screenshot({ path: `${out}/${label}-settings.png`, animations: "disabled" });
             await close.click();
             await settings.waitFor({ state: "hidden" });
