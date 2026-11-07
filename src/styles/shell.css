@@ -39,7 +39,8 @@ h3 {
   border-bottom-color: var(--line);
 }
 .header-inner {
-  max-width: var(--content-width);
+  /* Every route uses the same physical logo and global tool positions. */
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
   margin: 0 auto;
   padding: 0 var(--page-gutter);
   /* Include the 1px masthead border in --header-height, so the desktop
@@ -49,11 +50,6 @@ h3 {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: clamp(16px, 2.3vw, 34px);
-}
-/* The index masthead and the five main pages share the same content edges.
-   Reader chrome retains its wider, independent layout. */
-.site-header:not(.site-header-reader) .header-inner {
-  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
 }
 .brand {
   display: inline-flex;
