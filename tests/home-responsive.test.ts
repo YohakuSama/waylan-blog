@@ -64,8 +64,10 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pagesCss.includes("grid-template-columns: minmax(0, 1fr) var(--home-rail-width);"));
     assert.ok(responsive.includes(".archive-main { max-width: var(--index-list-width); }"));
     assert.ok(responsive.includes(".about-layout { max-width: 720px; }"));
-    assert.ok(shell.includes(".site-header:not(.site-header-reader) .header-inner {"));
+    assert.ok(shell.includes(".header-inner {"));
     assert.ok(shell.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
+    assert.equal(shell.includes(".site-header:not(.site-header-reader) .header-inner {"), false,
+      "the reader masthead must not retain a different global brand position");
     assert.ok(pagesCss.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
     assert.ok(shell.includes(".home-grid {"));
     assert.ok(shell.includes(".content-grid.home-grid {"));
