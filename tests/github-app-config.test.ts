@@ -12,7 +12,7 @@ describe("production GitHub authorization configuration", () => {
 
   const legacyEnv = {
     DB: {} as D1Database,
-    SITE_ORIGIN: "https://waylan.example",
+    SITE_ORIGIN: "https://waylan.test",
     GITHUB_CLIENT_ID: "legacy-client",
     GITHUB_CLIENT_SECRET: "legacy-secret",
     SESSION_SECRET: "s".repeat(32),
