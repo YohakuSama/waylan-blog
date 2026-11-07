@@ -13,6 +13,10 @@
    Feed: readable list; Projects: comparison grid; Archive/About: metadata rail.
    All share a left edge but not an arbitrary identical body width. */
 .feed-layout { max-width: var(--index-list-width); }
+/* Feed has no secondary rail. Center the heading, controls and cards as one
+   readable search measure rather than parking 960px at the frame's left. */
+.feed-page { max-width: var(--index-list-width); }
+.feed-page > .page-heading { padding-bottom: var(--space-4); }
 .projects-layout,
 .archive-main,
 .about-layout { max-width: var(--index-frame-width); }
@@ -96,11 +100,24 @@
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: var(--space-3);
-  min-height: 68px;
-  padding: var(--space-3) 0;
+  min-height: 60px;
+  padding: var(--space-2) 0;
   border: 0;
   border-bottom: 1px solid var(--line);
 }
+/* Content type and date sorting share the opening toolbar. The topic choices,
+   result count and view switch occupy one secondary band on desktop. */
+.feed-controls .feed-toolbar .feed-search-row {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.feed-controls .feed-result-line {
+  min-height: 56px;
+  padding: var(--space-2) 0;
+  border: 0;
+  gap: var(--space-3);
+}
+.feed-controls .feed-result-line > span { flex: 0 1 auto; }
 .feed-filter-label {
   display: inline-flex;
   align-items: center;
@@ -111,8 +128,7 @@
   letter-spacing: 0.03em;
 }
 .feed-controls .filter-tabs { min-height: 56px; padding-block: var(--space-2); }
-.feed-controls .feed-search-row { min-height: 56px; }
-.feed-controls + .feed-result-line { padding-block: var(--space-3); }
+.feed-controls .feed-search-row { min-height: 40px; }
 .topic-select {
   display: none;
   position: relative;
