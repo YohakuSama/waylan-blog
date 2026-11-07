@@ -371,8 +371,9 @@
     grid-template-columns: 48px minmax(0, 1fr) 16px;
     gap: 10px;
   }
-  /* Wrapped project topics should finish level with save/open actions,
-     not leave the final 40px topic row stranded below both buttons. */
+  /* Wrapped Feed and Projects topics should finish level with save/open
+     actions, not leave the final 40px tag row stranded below both buttons. */
+  .feed-layout .feed-list.density-full .feed-tail,
   .projects-layout .feed-item.is-project .feed-tail {
     align-items: flex-end;
   }
