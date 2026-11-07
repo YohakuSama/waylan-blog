@@ -146,7 +146,7 @@ export function PostEditor({
         <h1>{file ? "编辑" : "写新内容"}</h1>
         <span className="spacer" />
         {dirty && <span className="muted">有未保存的改动</span>}
-        {file && !form.draft && (
+        {file && !form.draft && editsLive(overview.repo.branch) && (
           <a className="ghost button" href={`/post/${str(original.slug) || stem}`} target="_blank" rel="noreferrer">
             查看线上
           </a>
