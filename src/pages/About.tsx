@@ -30,7 +30,12 @@ export function About() {
             dangerouslySetInnerHTML={{ __html: site.aboutHtml }}
           />
           <SocialList />
-          <div className="about-details">
+          <Link className="primary-button" href="/feed">
+            浏览全部内容
+            <ArrowRight size={17} />
+          </Link>
+        </section>
+        <aside className="about-details" aria-label="站点信息">
             <section>
               <h2 className="side-title">技术实现</h2>
               <ul>
@@ -46,12 +51,7 @@ export function About() {
               <h2 className="side-title">站点数据</h2>
               <SiteStats views />
             </section>
-          </div>
-          <Link className="primary-button" href="/feed">
-            浏览全部内容
-            <ArrowRight size={17} />
-          </Link>
-        </section>
+        </aside>
       </div>
     </div>
   );
