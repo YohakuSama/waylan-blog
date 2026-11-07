@@ -457,8 +457,19 @@
 
 @media (max-width: 767px) {
   .feed-filter-label { display: none; }
-  .feed-controls .feed-toolbar { min-height: 0; padding-block: var(--space-2); }
+  /* Three 44px touch rows, without extra desktop spacing between them.
+     Keep type, topic/sort, results and density controls visible at 320px. */
+  .feed-controls { row-gap: 0; }
+  .feed-controls .feed-toolbar {
+    min-height: 0;
+    gap: 4px;
+    padding-block: 4px;
+  }
   .feed-controls .feed-search-row { min-height: 0; }
+  .feed-controls .feed-result-line {
+    min-height: 44px;
+    padding-block: 0;
+  }
 }
 /* Phone: one native type picker replaces two dense rows of type pills.
    Tablet/desktop keep the faster one-click category tabs. */
