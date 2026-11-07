@@ -16,23 +16,16 @@ export function Archive() {
         <p>按年月整理的技术记录、笔记和项目。</p>
         <div className="archive-summary page-heading-actions">
           <Link href="/feed">按主题浏览<ArrowUpRight size={14} aria-hidden="true" /></Link>
+          <a href="#publication-activity">发布节奏</a>
           <span>共 {entries.length} 条记录</span>
         </div>
       </header>
       <section className="archive-main" aria-label="归档列表" ref={listRef}>
+        <div className="archive-index">
         {years.length > 1 && (
           <nav className="archive-year-nav" aria-label="跳转到年份">
             {years.map((year) => <a href={`#year-${year}`} key={year}>{year}</a>)}
           </nav>
-        )}
-        {entries.length > 0 && (
-          <section className="archive-activity" aria-label="发布节奏">
-            <div className="archive-activity-copy">
-              <h2>发布节奏</h2>
-              <p>截至最新记录的 16 周</p>
-            </div>
-            <Heatmap />
-          </section>
         )}
         {years.map((year) => {
           const annual = entries.filter((p) => p.date.startsWith(year));
@@ -63,6 +56,16 @@ export function Archive() {
           );
         })}
         {!entries.length && <div className="empty-state">第一篇记录发布后，会出现在这里。</div>}
+        </div>
+        {entries.length > 0 && (
+          <aside className="archive-activity" id="publication-activity" aria-label="发布节奏">
+            <div className="archive-activity-copy">
+              <h2>发布节奏</h2>
+              <p>截至最新记录的 16 周</p>
+            </div>
+            <Heatmap />
+          </aside>
+        )}
       </section>
     </div>
   );

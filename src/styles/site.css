@@ -9,19 +9,40 @@
   margin-inline: auto;
   max-width: var(--index-frame-width);
 }
-/* Align all five page headings; keep long-form content at its reading measure. */
-/* Lists share a left-aligned measure while the About prose stays narrower. */
+/* The shared masthead frame contains three content-led layouts:
+   Feed: readable list; Projects: comparison grid; Archive/About: metadata rail.
+   All share a left edge but not an arbitrary identical body width. */
+.feed-layout { max-width: var(--index-list-width); }
+.projects-layout,
+.archive-main,
+.about-layout { max-width: var(--index-frame-width); }
 .feed-layout,
 .projects-layout,
-.archive-main { max-width: var(--index-list-width); }
-.about-layout { max-width: 720px; }
-.about-layout,
-.feed-layout,
-.projects-layout {
-  min-width: 0;
+.archive-main,
+.about-layout { min-width: 0; }
+.archive-main,
+.about-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--home-rail-width);
+  column-gap: var(--home-rail-gap);
+  align-items: start;
+}
+.archive-index,
+.about-text { min-width: 0; }
+.about-text { max-width: 720px; }
+
+/* Project records are compared as projects, not as consecutive news articles. */
+@media (min-width: 1120px) {
+  .projects-layout .feed-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: stretch;
+  }
+  .projects-layout .feed-list > .feed-item { min-width: 0; }
 }
 .page-heading {
-  padding: var(--space-12) 0 var(--space-6);
+  padding: var(--space-12) 0 var(--space-5);
 }
 .page-heading .eyebrow {
   font-size: 11px;
@@ -63,13 +84,35 @@
 .feed-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: 0 var(--space-4);
+  padding: 0;
+  border: 0;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
 }
 .feed-controls .feed-toolbar {
-  padding-bottom: 0;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-height: 68px;
+  padding: var(--space-3) 0;
   border: 0;
+  border-bottom: 1px solid var(--line);
 }
+.feed-filter-label {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 64px;
+  min-height: 40px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+.feed-controls .filter-tabs { min-height: 56px; padding-block: var(--space-2); }
+.feed-controls .feed-search-row { min-height: 56px; }
+.feed-controls + .feed-result-line { padding-block: var(--space-3); }
 .topic-select {
   display: none;
   position: relative;
@@ -186,19 +229,20 @@
   color: var(--accent);
 }
 .archive-year {
-  margin-top: 26px;
+  margin-top: var(--space-6);
 }
 .archive-year:first-of-type {
-  margin-top: 8px;
+  margin-top: 0;
 }
 .archive-year h2 {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  padding-bottom: 8px;
-  font-size: 22px;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  font-size: 28px;
+  line-height: 1.35;
   font-weight: 500;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
 }
 .archive-year h2 span {
   font-size: 12px;
@@ -231,17 +275,16 @@
 .archive-row:hover > span {
   color: var(--accent);
 }
-/* Publication activity belongs with the chronological index, not feed filters. */
+/* Archive is a timeline with a contextual publication-data pane.
+   The DOM lists years first so a narrow-screen user meets the primary task
+   before the activity visualization; no component is hidden or cloned. */
+.archive-main { padding-top: var(--space-3); }
 .archive-activity {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: var(--space-12);
-  padding: var(--space-6) 0 var(--space-8);
-  border-bottom: 1px solid var(--line);
-}
-.archive-activity-copy {
-  flex: 0 0 248px;
+  display: block;
+  min-width: 0;
+  padding: var(--space-3) 0 var(--space-5) var(--space-5);
+  border-left: 1px solid var(--line);
+  border-bottom: 0;
 }
 .archive-activity-copy h2 {
   margin: 0;
@@ -254,10 +297,82 @@
   line-height: 1.7;
 }
 .archive-activity .heatmap {
-  flex: 0 1 312px;
   width: 100%;
   min-width: 0;
+  margin-top: var(--space-5);
+  padding-top: 0;
 }
+/* Archive index semantics and base geometry belong to the page, not to
+   responsive breakpoints. Years and months lead; article type remains an
+   inline scan marker rather than another card wrapper. */
+.archive-heading { border-bottom: 1px solid var(--line); }
+.archive-summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: 13px;
+}
+.archive-summary > span { margin-left: auto; }
+.archive-summary a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.archive-year-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+  padding-top: var(--space-4);
+}
+.archive-year-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 13px var(--font-mono);
+  color: var(--muted);
+}
+.archive-year-nav a:hover { color: var(--brand); }
+.archive-year { scroll-margin-top: calc(var(--header-height) + var(--space-5)); }
+.archive-month {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+}
+.archive-month-label {
+  padding-top: var(--space-3);
+  font: 600 13px/1.6 var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.archive-month-list {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.archive-month .archive-row { grid-template-columns: 44px minmax(0, 1fr) 16px; }
+.archive-row { min-width: 0; min-height: 54px; }
+.archive-row > span { min-width: 0; overflow-wrap: anywhere; }
+.archive-row .archive-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  margin-right: 10px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font: 11px/18px var(--font-sans);
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
 /* Separate privacy notice, following the site's existing editorial typography. */
 .privacy-page {
   max-width: 720px;
@@ -322,12 +437,16 @@
 }
 .about-details {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  margin: var(--space-8) 0;
-  padding: 24px 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3) 0 var(--space-6) var(--space-5);
+  border-left: 1px solid var(--line);
+}
+.about-details > section + section {
+  padding-top: var(--space-6);
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
 }
 .about-details > section {
   min-width: 0;
@@ -411,10 +530,10 @@
 }
 /* An independent quotation belongs in About, not beside the masthead logo. */
 .about-motto {
-  margin: 0 0 30px;
-  padding: 20px 24px;
+  margin: 0 0 var(--space-8);
+  padding: var(--space-4) 0 var(--space-4) var(--space-6);
   border-left: 2px solid var(--brand);
-  background: color-mix(in srgb, var(--surface-muted) 75%, transparent);
+  background: transparent;
 }
 .about-motto blockquote {
   margin: 0;
@@ -436,7 +555,7 @@
   color: var(--muted);
 }
 .footer-inner {
-  max-width: var(--content-width);
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
   margin: 0 auto;
   padding: 22px var(--page-gutter) 24px;
   display: grid;

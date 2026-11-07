@@ -30,28 +30,28 @@ export function About() {
             dangerouslySetInnerHTML={{ __html: site.aboutHtml }}
           />
           <SocialList />
-          <div className="about-details">
-            <section>
-              <h2 className="side-title">技术实现</h2>
-              <ul>
-                {stack.map(([k, v]) => (
-                  <li key={k}>
-                    <strong>{k}</strong>
-                    <span>{v}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="about-stats">
-              <h2 className="side-title">站点数据</h2>
-              <SiteStats views />
-            </section>
-          </div>
           <Link className="primary-button" href="/feed">
             浏览全部内容
             <ArrowRight size={17} />
           </Link>
         </section>
+        <aside className="about-details" aria-label="站点技术与数据">
+          <section>
+            <h2 className="side-title">技术实现</h2>
+            <ul>
+              {stack.map(([k, v]) => (
+                <li key={k}>
+                  <strong>{k}</strong>
+                  <span>{v}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="about-stats">
+            <h2 className="side-title">站点数据</h2>
+            <SiteStats views />
+          </section>
+        </aside>
       </div>
     </div>
   );

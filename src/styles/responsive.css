@@ -37,6 +37,37 @@
   /* About already has topics, site details and a direct feed action.
      Do not append the duplicate long desktop discovery rail below them. */
   .about-layout .site-sidebar { display: none; }
+  /* Supplementary information follows the main content on tablets and phones.
+     No data is hidden or cloned and the DOM reading order remains primary-first. */
+  .archive-main, .about-layout { display: block; max-width: var(--index-list-width); }
+  .about-layout { max-width: 720px; }
+  .archive-activity {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .archive-activity-copy { flex: 0 0 200px; }
+  .archive-activity .heatmap {
+    flex: 0 1 312px;
+    width: min(100%, 312px);
+    margin-top: 0;
+  }
+  .about-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .about-details > section + section { padding-top: 0; border-top: 0; }
 }
 @media (max-width: 1024px) {
   .content-grid {
@@ -93,7 +124,7 @@
   }
   .feed-controls {
     gap: var(--space-3);
-    padding: var(--space-3);
+    padding: 0;
   }
   .feed-controls .feed-search-row {
     grid-column: 1 / -1;
@@ -343,38 +374,10 @@
 .discussion-unavailable { color:var(--muted); font-size:12px; border:1px solid var(--line); border-radius:var(--radius-md); padding:7px 10px; }
 .discussion-setup-note { max-width:470px; margin:10px auto 0; color:var(--muted); font-size:13px; line-height:1.8; }
 
-@media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
-
-/* Archive is a reading index: one title, quiet year headings, compact rows. */
-.archive-heading { border-bottom: 1px solid var(--line); }
-.archive-summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin-top: 12px; color: var(--muted); font-size: 13px;
-}
-.archive-summary a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
-.archive-year-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; padding-top: 16px; }
-.archive-year-nav a { display: inline-flex; align-items: center; min-height: 44px; font: 13px var(--font-mono); color: var(--muted); }
-.archive-year-nav a:hover { color: var(--brand); }
-.archive-main { min-width: 0; padding-top: 16px; }
-.archive-year { scroll-margin-top: calc(var(--header-height) + 20px); }
-.archive-month { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 20px; padding-top: 12px; }
-.archive-month-label { padding-top: 14px; font: 500 13px var(--font-sans); color: var(--muted); white-space: nowrap; }
-.archive-month-list { min-width: 0; margin: 0; padding: 0; list-style: none; }
-.archive-month .archive-row { grid-template-columns: 44px minmax(0,1fr) 16px; }
-.archive-row { min-width: 0; min-height: 54px; }
-.archive-row > span { min-width: 0; overflow-wrap: anywhere; }
-.archive-row .archive-type {
-  display: inline-flex;
-  align-items: center;
-  min-height: 19px;
-  margin-right: 10px;
-  padding: 0 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  font: 11px/18px var(--font-sans);
-  vertical-align: 2px;
-  white-space: nowrap;
+/* Only the stacked tablet facts use two columns. Desktop facts are a
+   single readable contextual rail alongside the About article. */
+@media (min-width: 1025px) and (max-width: 1119px) {
+  .about-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 }
 
 /* At 1025–1119px the sidebar follows the feed; wider screens retain two columns. */
@@ -449,6 +452,11 @@
   .type-tab.active:hover { background:var(--ink); border-color:var(--ink); color:var(--paper); }
 }
 
+@media (max-width: 767px) {
+  .feed-filter-label { display: none; }
+  .feed-controls .feed-toolbar { min-height: 0; padding-block: var(--space-2); }
+  .feed-controls .feed-search-row { min-height: 0; }
+}
 /* Phone: one native type picker replaces two dense rows of type pills.
    Tablet/desktop keep the faster one-click category tabs. */
 .mobile-type-select {

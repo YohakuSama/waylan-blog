@@ -66,8 +66,9 @@ export function Feed() {
       </header>
       <div className="feed-layout">
         <section className="feed-column" aria-label={title}>
-          <div className="feed-controls">
+          <div className="feed-controls" role="region" aria-label="内容筛选与排序">
             <div className="feed-toolbar">
+              <span className="feed-filter-label" aria-hidden="true">内容类型</span>
               <TypeTabs
                 active={type}
                 source={scoped}
@@ -94,6 +95,7 @@ export function Feed() {
               </label>
             </div>
             <div className="filter-tabs" role="group" aria-label="按主题筛选">
+              <span className="feed-filter-label" aria-hidden="true">写作主题</span>
               <button
                 type="button"
                 className={topic === "all" ? "active" : ""}
