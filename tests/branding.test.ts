@@ -33,6 +33,12 @@ it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、�
   assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute("href"), "/favicon.svg?v=4");
   assert.equal(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"), "/apple-touch-icon.png?v=4");
   assert(doc.querySelector('link[rel="alternate icon"]'));
+  const staticHead = readFileSync("index.html", "utf8");
+  const prerender = readFileSync("scripts/prerender.tsx", "utf8");
+  for (const icon of ["/favicon.svg?v=4", "/favicon.ico?v=4", "/apple-touch-icon.png?v=4"]) {
+    assert(staticHead.includes(icon), `missing static icon revision: ${icon}`);
+    assert(prerender.includes(icon), `SSR must use the same icon revision: ${icon}`);
+  }
   for (const name of ["favicon.ico", "favicon-32.png", "favicon-64.png", "apple-touch-icon.png"])
     assert(readFileSync("public/" + name).length > 100);
 });
