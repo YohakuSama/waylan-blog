@@ -22,6 +22,49 @@
     display: none;
   }
 }
+/* Under the desktop rail breakpoint Archive and About retain the same readable
+   single-column flow as Feed/Projects, without hiding the actual information. */
+@media (max-width: 1119px) {
+  .archive-main, .about-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .archive-main { max-width: var(--index-list-width); }
+  .about-layout { max-width: 720px; }
+  .archive-activity {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--space-8);
+    width: 100%;
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-6) 0 var(--space-8);
+  }
+  .archive-activity-copy { flex: 0 0 200px; }
+  .archive-activity .heatmap {
+    flex: 0 1 312px;
+    width: min(100%, 312px);
+    margin-top: 0;
+  }
+  .archive-index { width: 100%; }
+  .about-details {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+    margin: var(--space-8) 0;
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .about-details > section + section {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
 /* Tablet: sidebar moves below the main column. */
 /* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
 @media (max-width: 1119px) {
@@ -93,7 +136,7 @@
   }
   .feed-controls {
     gap: var(--space-3);
-    padding: var(--space-3);
+    padding: 0 0 var(--space-4);
   }
   .feed-controls .feed-search-row {
     grid-column: 1 / -1;
@@ -343,7 +386,9 @@
 .discussion-unavailable { color:var(--muted); font-size:12px; border:1px solid var(--line); border-radius:var(--radius-md); padding:7px 10px; }
 .discussion-setup-note { max-width:470px; margin:10px auto 0; color:var(--muted); font-size:13px; line-height:1.8; }
 
-@media (min-width:1025px) { .about-details { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:22px; } }
+@media (min-width:1025px) and (max-width:1119px) {
+  .about-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+}
 
 /* Archive is a reading index: one title, quiet year headings, compact rows. */
 .archive-heading { border-bottom: 1px solid var(--line); }
@@ -417,7 +462,7 @@
 @media (max-width:767px) {
   .archive-activity { flex-direction: column; gap: var(--space-3); }
   .archive-activity-copy { flex: none; }
-  .archive-activity .heatmap { flex: none; width: min(100%, 312px); }
+  .archive-activity .heatmap { flex: none; width: min(100%, 312px); margin-top: 0; }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
   .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
   .archive-month-label { font-size:12px; }
