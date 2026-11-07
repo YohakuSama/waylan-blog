@@ -75,7 +75,7 @@ export function Posts({
               </div>
             </div>
             <div className="post-actions">
-              {p.slug && !p.draft && !p.error && (
+              {p.slug && !p.draft && !p.error && editsLive(overview.repo.branch) && (
                 <a className="ghost button" href={`/post/${p.slug}`} target="_blank" rel="noreferrer">
                   查看
                 </a>
