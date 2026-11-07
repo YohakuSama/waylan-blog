@@ -184,6 +184,14 @@ try {
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
+              feedFilterLabels: [...document.querySelectorAll(".feed-filter-label")].filter(el =>
+                getComputedStyle(el).display !== "none").map(el => el.textContent.trim()),
+              feedFilterSurface: (() => {
+                const el = document.querySelector(".feed-controls");
+                if (!el) return null;
+                const style = getComputedStyle(el);
+                return { topBorder: style.borderTopWidth, background: style.backgroundColor };
+              })(),
               filterBoundaries: [...document.querySelectorAll(".feed-controls select")]
                 .filter((el) => rect(el))
                 .map((el) => {
@@ -285,10 +293,12 @@ try {
               archiveTopicTarget: select(".archive-summary a"),
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
+              archiveIndex: select(".archive-index"),
               archiveActivity: select(".archive-activity"),
               archiveActivityCopy: select(".archive-activity-copy"),
               archiveHeatmap: select(".archive-activity .heatmap"),
               projectCount: document.querySelectorAll(".projects-layout .feed-item.is-project").length,
+              projectCards: [...document.querySelectorAll(".projects-layout .feed-item.is-project")].map(rect),
               projectStatusCount: document.querySelectorAll(".projects-layout .project-status").length,
               projectCodeLabels: [...document.querySelectorAll(".projects-layout .project-code")].map((el) => el.textContent.trim()),
               // A desktop preview and a compact responsive row share tag data.
@@ -313,6 +323,8 @@ try {
               })(),
               notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
               notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
+              aboutText: select(".about-text"),
+              aboutDetails: select(".about-details"),
               aboutHeadingLevels: [...document.querySelectorAll(".about-details > section > h2")].map((el) => el.textContent.trim()),
               aboutStatsHeadingIsLink: !!document.querySelector(".about-stats .side-title a"),
               aboutStatsLabel: document.querySelector(".about-layout .site-stats > div:first-child dd")?.textContent?.trim(),
@@ -767,14 +779,21 @@ try {
               tag.left >= 0 && tag.right <= geometry.viewport + 1),
               `${label}: inconsistent or clipped touch tag targets`);
           }
-          // Feed, Projects and Archive are three views of the same index column.
+          // Shared outer frame, with functional inner measures rather than
+          // forcing project comparison, archive chronology and Feed to 960px.
           if (["/feed", "/archive", "/projects"].includes(route)) {
             const key = `${width}:${variant.skin}:${variant.theme}`;
-            if (route === "/feed") indexListWidthBaselines.set(key, geometry.indexContent.width);
-            else {
-              const baseline = indexListWidthBaselines.get(key);
-              assert.ok(baseline && Math.abs(geometry.indexContent.width - baseline) <= 1,
-                `${label}: index column changed width (${geometry.indexContent.width} vs ${baseline})`);
+            if (route === "/feed") {
+              indexListWidthBaselines.set(key, geometry.indexContent.width);
+              assert.ok(geometry.indexContent.width <= 961,
+                `${label}: Feed's scanning width became excessive`);
+            } else if (route === "/archive" && width < 1120) {
+              const feedWidth = indexListWidthBaselines.get(key);
+              assert.ok(feedWidth && Math.abs(geometry.indexContent.width - feedWidth) <= 1,
+                `${label}: stacked archive must use the readable index width`);
+            } else if (width >= 1120) {
+              assert.ok(Math.abs(geometry.indexContent.width - geometry.indexPage.width) <= 1,
+                `${label}: page-specific desktop layout fails to use its outer frame`);
             }
           }
           if (route === "/privacy") {
@@ -783,6 +802,15 @@ try {
           if (route === "/feed") {
             assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
             assert.equal(geometry.resetLink, null, `${label}: reset filter appears without active filters`);
+            assert.ok(geometry.feedFilterSurface &&
+              geometry.feedFilterSurface.topBorder === "2px" &&
+              ["rgba(0, 0, 0, 0)", "transparent"].includes(geometry.feedFilterSurface.background),
+              `${label}: filters lost their editorial control rule or regained a disconnected card`);
+            if (width >= 768) {
+              assert.deepEqual(geometry.feedFilterLabels,
+                width <= 1024 ? ["内容类型"] : ["内容类型", "写作主题"],
+                `${label}: filter groups have no visible purpose labels`);
+            }
             if (width <= 767) {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
@@ -806,6 +834,19 @@ try {
           if (route === "/projects") {
             assert.equal(geometry.projectCount, 2, `${label}: missing project entries`);
             assert.equal(geometry.projectStatusCount, 2, `${label}: missing project status`);
+            assert.equal(geometry.projectCards.length, geometry.projectCount,
+              `${label}: project comparison cards disappeared`);
+            if (width >= 1120) {
+              const [first, second] = geometry.projectCards;
+              assert.ok(first && second &&
+                Math.abs(first.top - second.top) <= 1 &&
+                second.left >= first.right + 16 &&
+                Math.abs(first.width - second.width) <= 1,
+                `${label}: project entries are not a comparable two-column collection`);
+            } else if (geometry.projectCards.length > 1) {
+              assert.ok(geometry.projectCards[1].top >= geometry.projectCards[0].bottom,
+                `${label}: project entries overlap in the single-column view`);
+            }
             assert.ok(geometry.projectCodeLabels.every((text) => text.startsWith("项目 · ")),
               `${label}: unpublished slug looks like a public repository`);
             if (width <= 1040) {
@@ -844,6 +885,16 @@ try {
               `${label}: about page repeats the site's global navigation`);
             assert.equal(geometry.aboutSectionCount, 2,
               `${label}: about technical facts and statistics must remain visible on every device`);
+            assert.ok(geometry.aboutText && geometry.aboutDetails,
+              `${label}: About article or contextual facts are missing`);
+            if (width >= 1120) {
+              assert.ok(geometry.aboutDetails.left >= geometry.aboutText.right + 20 &&
+                Math.abs(geometry.aboutDetails.top - geometry.aboutText.top) <= 1,
+                `${label}: About data is not in its supporting rail`);
+            } else {
+              assert.ok(geometry.aboutDetails.top >= geometry.aboutText.bottom - 1,
+                `${label}: narrow About facts overlap the reading column`);
+            }
           }
           if (route === "/404") {
             assert.equal(geometry.notFoundHeading, "页面不存在", `${label}: missing 404 heading`);
@@ -867,13 +918,18 @@ try {
             assert.ok(geometry.archiveActivity && geometry.archiveActivityCopy && geometry.archiveHeatmap &&
               geometry.archiveHeatmap.width <= 320 && geometry.archiveHeatmap.right <= geometry.indexContent.right + 1,
               `${label}: publishing activity disappeared or breaks the archive width`);
-            if (width >= 768) {
-              const gap = geometry.archiveHeatmap.left - geometry.archiveActivityCopy.right;
-              assert.ok(gap >= 40 && gap <= 56,
-                `${label}: archive graph detached from its heading (${gap}px)`);
+            assert.ok(geometry.archiveIndex, `${label}: chronological archive is missing`);
+            if (width >= 1120) {
+              assert.ok(geometry.archiveIndex.right + 20 <= geometry.archiveActivity.left &&
+                Math.abs(geometry.archiveIndex.top - geometry.archiveActivity.top) <= 1,
+                `${label}: timeline and its supporting activity rail are not aligned`);
+              assert.ok(geometry.archiveHeatmap.left >= geometry.archiveActivity.left &&
+                geometry.archiveHeatmap.right <= geometry.archiveActivity.right + 1,
+                `${label}: chart exceeds the supporting rail`);
             } else {
-              assert.ok(geometry.archiveActivityCopy.height <= 110,
-                `${label}: archive activity reserved unnecessary mobile height`);
+              assert.ok(geometry.archiveActivity.top >= geometry.archiveIndex.bottom - 1 &&
+                geometry.archiveActivityCopy.height <= 110,
+                `${label}: narrow archive puts a secondary chart before or over the timeline`);
             }
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
           }
