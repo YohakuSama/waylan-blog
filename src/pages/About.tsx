@@ -29,11 +29,13 @@ export function About() {
             className="about-prose"
             dangerouslySetInnerHTML={{ __html: site.aboutHtml }}
           />
-          <SocialList />
-          <Link className="primary-button" href="/feed">
-            浏览全部内容
-            <ArrowRight size={17} />
-          </Link>
+          <div className="about-actions" role="group" aria-label="关于本站相关链接">
+            <SocialList />
+            <Link className="primary-button" href="/feed">
+              浏览全部内容
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+          </div>
         </section>
         <aside className="about-details" aria-label="站点技术与数据">
           <section>

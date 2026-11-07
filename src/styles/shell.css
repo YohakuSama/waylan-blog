@@ -375,14 +375,8 @@ h3 {
 .site-sidebar.home-sidebar > .side-block:first-child { padding-top: 0; }
 .site-sidebar.home-sidebar .side-head { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
 .home-sidebar .side-title { font-size: 15px; line-height: 1.45; }
-.site-sidebar.home-sidebar .side-heading-link { gap: 10px; }
+.site-sidebar.home-sidebar .side-heading-link { gap: var(--sidebar-row-gap); }
 .home-sidebar .explore-list a { font-size: 14px; }
-.home-sidebar .popular-list a {
-  min-height: 44px;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 8px;
-}
 .home-sidebar .popular-title { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 @media (min-width: 1120px) {
   /* Start the first widget with the reading list, not the page introduction. */

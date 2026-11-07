@@ -2,13 +2,14 @@
 /* All index-page rails share the same left label and right-action columns.
    Numbers, navigation arrows and disclosure controls occupy one fixed slot. */
 .site-sidebar {
-  --sidebar-start-slot: 17px;
+  --sidebar-start-slot: 24px;
+  --sidebar-row-gap: 12px;
   --sidebar-end-slot: 28px;
 }
 .site-sidebar .side-block { padding-block: 20px; }
 .site-sidebar .side-block:first-child { padding-top: 0; }
 .site-sidebar .side-head { padding-bottom: 8px; margin-bottom: 10px; }
-.site-sidebar .side-heading-link { gap: 12px; }
+.site-sidebar .side-heading-link { gap: var(--sidebar-row-gap); }
 .site-sidebar .side-heading-icon {
   flex: 0 0 var(--sidebar-start-slot);
   width: var(--sidebar-start-slot);
@@ -25,7 +26,7 @@
 }
 .site-sidebar .explore-list a {
   min-height: 44px;
-  gap: 12px;
+  gap: var(--sidebar-row-gap);
   padding: 6px 0;
 }
 .site-sidebar .explore-icon {
@@ -37,7 +38,43 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.site-sidebar .home-projects a { padding-inline: 0; }
+.site-sidebar .home-projects a {
+  padding-right: 0;
+  padding-left: calc(var(--sidebar-start-slot) + var(--sidebar-row-gap));
+}
+/* Shared three-column layout across topics, popular posts and arrow controls.
+   Baselines keep the rank and views aligned to the first line of a wrapped title. */
+.popular-list { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.site-sidebar .popular-list a {
+  display: grid;
+  grid-template-columns: var(--sidebar-start-slot) minmax(0, 1fr) var(--sidebar-end-slot);
+  align-items: baseline;
+  column-gap: var(--sidebar-row-gap);
+  min-height: 44px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+  text-decoration: none;
+}
+.popular-list li:last-child a { border-bottom: 0; }
+.popular-rank {
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.popular-title { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.popular-list a:hover .popular-title { color: var(--brand); }
+.popular-views {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .site-sidebar .sidebar-note summary::after {
   flex: 0 0 var(--sidebar-end-slot);
   text-align: center;

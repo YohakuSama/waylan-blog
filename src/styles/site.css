@@ -473,6 +473,23 @@
   color: var(--muted);
   font-size: 13px;
 }
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: var(--space-5);
+}
+.about-actions .social-links { margin: 0; gap: 12px; }
+.about-actions .social-links a,
+.about-actions .primary-button {
+  min-height: 46px;
+  padding: 10px 16px;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .social-links {
   display: flex;
   flex-wrap: wrap;
