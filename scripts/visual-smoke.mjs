@@ -914,8 +914,9 @@ try {
                 `${label}: archive tablet activity row is misaligned`);
             } else {
               assert.ok(geometry.archiveActivityCopy.height <= 110 &&
-                geometry.archiveIndex.top >= geometry.archiveActivity.bottom - 1,
-                `${label}: mobile archive reserves excessive height or overlaps the index`);
+                geometry.archiveActivity.top >= geometry.archiveIndex.bottom - 1 &&
+                geometry.archiveIndex.top <= geometry.indexContent.top + 20,
+                `${label}: mobile chronology must precede publication statistics`);
             }
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
           }
