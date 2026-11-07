@@ -34,6 +34,11 @@ export type SiteData = Record<string, unknown> & {
 };
 export type Review = { number: number; url: string; branch: string };
 export type Publication = { commit: string | null; review?: Review };
+export type ReviewState = Review & {
+  title: string;
+  state: "open" | "merged" | "closed";
+  updatedAt: string;
+};
 export type Overview = Status & {
   publicationMode?: "direct" | "review-pr";
   repo: { name: string; branch: string };
