@@ -39,7 +39,8 @@ h3 {
   border-bottom-color: var(--line);
 }
 .header-inner {
-  max-width: var(--content-width);
+  /* Every route, including article readers, keeps the same brand position. */
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
   margin: 0 auto;
   padding: 0 var(--page-gutter);
   /* Include the 1px masthead border in --header-height, so the desktop
@@ -309,7 +310,7 @@ h3 {
   padding-top: 12px;
 }
 .home-section-head h2 {
-  font: 600 20px/1.5 var(--font-display);
+  font: 600 22px/1.45 var(--font-display);
 }
 .home-section-head > a {
   display: inline-flex;
