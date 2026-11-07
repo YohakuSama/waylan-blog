@@ -58,17 +58,26 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes("--index-frame-width: 1140px;"));
     assert.ok(shell.includes("max-width: var(--index-frame-width);"));
     assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
-    for (const measure of [".feed-layout { max-width: 920px; }", ".projects-layout { max-width: 960px; }", ".archive-main { max-width: 880px; }", ".about-layout { max-width: 720px; }"]) {
-      assert.ok(pagesCss.includes(measure), `missing inner reading measure: ${measure}`);
-    }
+    assert.ok(shell.includes("--index-list-width: 960px;"));
+    assert.match(pagesCss, /\.feed-layout,\s*\.projects-layout,\s*\.archive-main \{ max-width: var\(--index-list-width\); \}/);
+    assert.ok(pagesCss.includes(".about-layout { max-width: 720px; }"));
     assert.ok(shell.includes(".home-grid {"));
     assert.ok(shell.includes(".content-grid.home-grid {"));
-    assert.ok(shell.includes("column-gap: 44px;"));
+    assert.ok(shell.includes("--home-rail-width: 276px;"));
+    assert.ok(shell.includes("--home-rail-gap: 44px;"));
+    assert.ok(shell.includes("column-gap: var(--home-rail-gap);"));
+    assert.ok(shell.includes("width: calc(100% - var(--home-rail-width) - var(--home-rail-gap));"));
     assert.ok(shell.includes(".site-sidebar.home-sidebar .side-head {"));
     assert.ok(shell.includes(".site-sidebar.home-sidebar > .side-block {"));
     assert.ok(shell.includes(".site-sidebar.home-sidebar .side-heading-link {"));
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
+  });
+  it("keeps the archive publication module compact without growing its mobile copy", () => {
+    assert.ok(pagesCss.includes("justify-content: flex-start;"));
+    assert.ok(pagesCss.includes(".archive-activity-copy {"));
+    assert.ok(pagesCss.includes("flex: 0 0 248px;"));
+    assert.ok(responsive.includes(".archive-activity-copy { flex: none; }"));
   });
   it("keeps tablet home spacing ahead of the generic feed cascade", () => {
     const generic = responsive.indexOf(".feed-list .feed-item { padding-block: var(--space-5); }");
