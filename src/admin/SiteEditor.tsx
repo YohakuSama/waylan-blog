@@ -4,7 +4,7 @@ import { list, str } from "./form";
 import { adminApi as api } from "./api";
 import { readImage, pickImage, usedUploads, useLeaveGuard, useSaveKey, editsLive, saveMessage } from "./helpers";
 import { Field, Markdown } from "./ui";
-import type { Overview, Upload } from "./types";
+import type { Overview, Review, Upload } from "./types";
 
 /** Site identity, public announcements and About are one versioned site.json save. */
 type AnnouncementForm = Pick<Announcement, "id" | "title" | "body" | "priority" | "published" | "link">;
@@ -55,6 +55,7 @@ export function SiteEditor({
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<Review | null>(null);
   const dirty = JSON.stringify(form) !== saved;
   useLeaveGuard(dirty);
   const update = <K extends keyof SiteForm>(key: K, value: SiteForm[K]) =>
@@ -70,7 +71,7 @@ export function SiteEditor({
     );
 
   const save = async () => {
-    if (busy || !dirty) return;
+    if (busy || !!review || !dirty) return;
     setError("");
     let body: {
       oid: string;
@@ -106,11 +107,17 @@ export function SiteEditor({
     }
     setBusy(true);
     try {
-      const result = await api<{ oid: string; aboutOid: string | null; commit: string | null }>(
+      const result = await api<{ oid: string; aboutOid: string | null; commit: string | null; review?: Review }>(
         "/api/admin/site",
         "PUT",
         body,
       );
+      if (result.review) {
+        setReview(result.review);
+        setSaved(JSON.stringify(form));
+        notify(`已生成草稿 PR #${result.review.number}，尚未发布到网站。`);
+        return;
+      }
       setOids({ oid: result.oid, aboutOid: result.aboutOid });
       setSaved(JSON.stringify(form));
       const sent = body.uploads.map((u) => u.path);
@@ -138,10 +145,18 @@ export function SiteEditor({
         <h1>站点资料</h1>
         <span className="spacer" />
         {dirty && <span className="muted">有未保存的改动</span>}
-        <button onClick={save} disabled={busy || !dirty}>
-          {busy ? "提交中…" : editsLive(overview.repo.branch) ? "保存" : "保存到内容分支"}
+        <button onClick={save} disabled={busy || !!review || !dirty}>
+          {review ? "等待 PR 合并" : busy ? "提交中…" : overview.publicationMode === "review-pr" ?
+            "提交 PR 审核" : editsLive(overview.repo.branch) ? "保存" : "保存到内容分支"}
         </button>
       </div>
+      {review && (
+        <p className="status" role="status">
+          站点修改已保存在「{review.branch}」，尚未发布。
+          请先<a href={review.url} target="_blank" rel="noreferrer">审核草稿 PR #{review.number}</a>，
+          合并后重新进入编辑器；为防止重复提交，本次编辑已锁定。
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
