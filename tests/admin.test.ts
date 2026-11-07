@@ -13,6 +13,7 @@ import {
   stringifyFrontmatter,
 } from "../shared/content-rules";
 import { toBase64, uploadPath } from "../shared/uploads";
+import { head, publishChange } from "../worker/admin-repo";
 
 const ORIGIN = "https://echo.test",
   csrf = "admin-csrf",
@@ -84,7 +85,10 @@ let env: Env,
   tokens: string[],
   beforeRef: (() => void) | null,
   githubDown: number | null,
-  discussions: { id: string; number: number; url: string; body: string }[];
+  discussions: { id: string; number: number; url: string; body: string }[],
+  reviewBranches: Map<string, string>,
+  reviewPRs: { number: number; head: string; base: string; draft: boolean; title: string; body: string }[],
+  rejectReviewPR: boolean;
 
 function seed() {
   const files: Record<string, string | Buffer> = {
@@ -198,6 +202,25 @@ function rest(method: string, path: string, body: any) {
     });
     return [201, { sha }];
   }
+  if (method === "POST" && path === "/git/refs") {
+    assert.match(body.ref, /^refs\/heads\/content\/review-\d+-[a-f0-9]{8}$/);
+    assert(repo.commits.has(body.sha), "the review ref must point at a materialized commit");
+    const branch = body.ref.slice("refs/heads/".length);
+    assert.equal(reviewBranches.has(branch), false, "review branches are unique");
+    reviewBranches.set(branch, body.sha);
+    return [201, { ref: body.ref }];
+  }
+  if (method === "POST" && path === "/pulls") {
+    if (rejectReviewPR) return [403, {}];
+    assert.equal(body.base, "main");
+    assert.equal(body.draft, true);
+    assert(reviewBranches.has(body.head), "must write a review branch first");
+    assert.match(body.title, /^内容审核：/);
+    assert.match(body.body, /变更文件：/);
+    const number = reviewPRs.length + 200;
+    reviewPRs.push({ number, ...body });
+    return [201, { number, html_url: `https://github.com/site-owner/blog-source/pull/${number}` }];
+  }
   if (method === "PATCH" && path === "/git/refs/heads/main") {
     beforeRef?.();
     assert.equal(body.force, false);
@@ -287,6 +310,9 @@ beforeEach(async () => {
   beforeRef = null;
   githubDown = null;
   discussions = [];
+  reviewBranches = new Map();
+  reviewPRs = [];
+  rejectReviewPR = false;
   await login("site-owner");
   mock.method(globalThis, "fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input)),
@@ -546,6 +572,114 @@ describe("Admin: posts", () => {
     const r = await content();
     assert.equal(r.status, 503);
     assert.equal(r.body.code, "CONTENT_TOKEN");
+  });
+});
+
+describe("Admin: optional review PR publishing", () => {
+  it("keeps the real main tree untouched while atomically staging a post and image", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    const path = (await uploadPath(png))!;
+    const r = await save({
+      ...draft({ cover: path, coverAlt: "一张图" }),
+      body: `正文\n\n![图](${path})\n`,
+      uploads: [{ path, data: toBase64(png) }],
+    });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    assert.equal(repo.head, "c0");
+    assert.equal(repo.text("content/posts/from-admin.md"), undefined);
+    assert.equal(repo.files().get(`public${path}`), undefined);
+    assert.equal(r.body.review.number, 200);
+    assert.match(r.body.review.url, /^https:\/\/github\.com\/site-owner\/blog-source\/pull\/200$/);
+    assert.equal(reviewPRs[0].draft, true);
+    assert.equal(reviewPRs[0].base, "main");
+    assert.match(reviewPRs[0].body, /content\/posts\/from-admin\.md/);
+    assert.match(reviewPRs[0].body, /public\/images/);
+    const branchCommit = reviewBranches.get(r.body.review.branch)!;
+    assert.equal(branchCommit, r.body.commit);
+    assert.equal(repo.commits.get(branchCommit)?.parent, "c0");
+    const staged = repo.files(branchCommit);
+    assert.match(staged.get("content/posts/from-admin.md")!.toString(), /后台发布的第一篇/);
+    assert.deepEqual(staged.get(`public${path}`), png);
+    assert.equal(calls.some(call => call.startsWith("PATCH /repos/site-owner/blog-source/git/refs")), false,
+      "review PR must never update the live main reference");
+    assert.equal((await content()).body.publicationMode, "review-pr");
+  });
+
+  it("stages an edited post and its 301 alias in the same draft PR", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    const before = (await call("/api/admin/post?file=slow-tools.md")).body;
+    const r = await save({
+      file: "slow-tools.md",
+      oid: before.oid,
+      data: { ...before.data, slug: "slower-tools" },
+      body: before.body,
+    });
+    assert.equal(r.status, 200);
+    assert.equal(repo.head, "c0");
+    const staged = repo.files(r.body.commit);
+    assert.match(staged.get("public/_redirects")!.toString(), /\/post\/slow-tools \/post\/slower-tools 301/);
+    assert.match(staged.get("content/posts/slow-tools.md")!.toString(), /slug: slower-tools/);
+  });
+
+  it("stages site profile and deletion separately without touching the live branch", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    const original = (await content()).body;
+    const site = await call("/api/admin/site", {
+      method: "PUT",
+      json: { oid: original.site.oid, aboutOid: original.about.oid,
+        site: { ...original.site.data, name: "审核中的新名字" }, about: original.about.text },
+    });
+    assert.equal(site.status, 200);
+    assert.equal(repo.head, "c0");
+    assert.equal(JSON.parse(repo.text("content/site.json")!).name, original.site.data.name);
+    assert.equal(JSON.parse(repo.files(site.body.commit).get("content/site.json")!.toString()).name,
+      "审核中的新名字");
+    const file = "slow-tools.md";
+    const oid = oidOf(repo.files().get(`content/posts/${file}`)!);
+    const deleted = await call("/api/admin/post", { method: "DELETE", json: { file, oid } });
+    assert.equal(deleted.status, 200);
+    assert.equal(repo.head, "c0");
+    assert.equal(repo.files(deleted.body.commit).has(`content/posts/${file}`), false);
+    assert.equal(repo.files().has(`content/posts/${file}`), true);
+    assert.equal(reviewPRs.length, 2);
+  });
+
+  it("rejects invalid mode / content branch before issuing privileged GitHub mutations", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    env.CONTENT_BRANCH = "content/staging";
+    assert.equal((await content()).status, 503);
+    assert.equal((await call("/api/admin/session")).body.configured, false);
+    assert.equal(reviewBranches.size, 0);
+    env.CONTENT_BRANCH = "main";
+    env.CONTENT_PUBLISH_MODE = "typo" as Env["CONTENT_PUBLISH_MODE"];
+    assert.equal((await content()).status, 503);
+    assert.equal(reviewBranches.size, 0);
+  });
+
+  it("preserves staged commit and offers recovery if Pull requests permission is missing", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    rejectReviewPR = true;
+    const r = await save(draft());
+    assert.equal(r.status, 503);
+    assert.equal(r.body.code, "CONTENT_REVIEW_PR");
+    assert.match(r.body.message, /Pull requests 写权限/);
+    assert.equal(repo.head, "c0");
+    assert.equal(reviewBranches.size, 1);
+    const branch = [...reviewBranches.keys()][0];
+    assert.match(r.body.message, new RegExp(branch));
+    assert(repo.files(reviewBranches.get(branch)!).has("content/posts/from-admin.md"));
+  });
+
+  it("rejects a stale edit before creating a review ref", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    const at = await head(env);
+    repo.push("README.md", "another editor wrote to main");
+    await assert.rejects(
+      publishChange(env, at, "提审：过期编辑", [{ path: "content/about.md", text: "updated" }]),
+      (error: any) => error?.status === 409 && error.code === "CONFLICT",
+    );
+    assert.equal(reviewBranches.size, 0);
+    assert.equal(reviewPRs.length, 0);
   });
 });
 

@@ -23,7 +23,8 @@ import {
   head,
   files,
   posts,
-  commit,
+  publishChange,
+  publicationMode,
   blobOid,
   conflict,
   type Blob,
@@ -79,6 +80,9 @@ export function adminMissing(env: Env) {
         .map(([name]) => name),
     );
   if (!present(env.GITHUB_CONTENT_TOKEN)) missing.push("GITHUB_CONTENT_TOKEN");
+  if ((env.CONTENT_PUBLISH_MODE && !["direct", "review-pr"].includes(env.CONTENT_PUBLISH_MODE)) ||
+    (env.CONTENT_PUBLISH_MODE === "review-pr" && repo(env).branch !== "main"))
+    missing.push("CONTENT_PUBLISH_MODE");
   if (!/^[\w.-]+\/[\w.-]+$/.test(env.CONTENT_REPO || "") || !present(env.CONTENT_REPO))
     missing.push("CONTENT_REPO");
   if (!admins(env).length || !present(env.ADMIN_GITHUB_LOGINS))
@@ -209,6 +213,7 @@ async function overview(env: Env) {
   }
   return json({
     repo: { name: env.CONTENT_REPO, branch: repo(env).branch },
+    publicationMode: publicationMode(env),
     head: { oid: at.oid, date: at.date },
     live: build.commit,
     site: { oid: meta[SITE]!.oid, data: siteJson },
@@ -328,17 +333,17 @@ async function savePost(request: Request, env: Env, login: string) {
     }
   }
   const markdown = stringifyFrontmatter(data, body);
-  const sha = await commit(
+  const published = await publishChange(
     env,
     at,
-    `${editing ? "更新" : "发布"}：${post.title}${by(login)}`,
+    `${publicationMode(env) === "review-pr" ? "提审" : editing ? "更新" : "发布"}：${post.title}${by(login)}`,
     [
       { path: `${POSTS}/${file}`, text: markdown },
       ...(redirectText ? [{ path: "public/_redirects", text: redirectText }] : []),
       ...uploads.map((u) => ({ path: `public${u.path}`, base64: u.base64 })),
     ],
   );
-  return json({ file, oid: await blobOid(markdown), commit: sha }, editing ? 200 : 201);
+  return json({ file, oid: await blobOid(markdown), ...published }, editing ? 200 : 201);
 }
 
 async function deletePost(request: Request, env: Env, login: string) {
@@ -359,11 +364,11 @@ async function deletePost(request: Request, env: Env, login: string) {
     slug = String(data.slug || slug);
   } catch {}
   const redirects = removePostRedirects(source["public/_redirects"]?.text || "", slug);
-  const sha = await commit(env, at, `删除：${title}${by(login)}`, [
+  const published = await publishChange(env, at, `删除：${title}${by(login)}`, [
     { path, remove: true },
     ...(redirects !== null ? [{ path: "public/_redirects", text: redirects }] : []),
   ]);
-  return json({ commit: sha });
+  return json(published);
 }
 
 async function saveSite(request: Request, env: Env, login: string) {
@@ -430,8 +435,8 @@ async function saveSite(request: Request, env: Env, login: string) {
       : (current[ABOUT]?.oid ?? null),
   };
   if (!changes.length) return json({ ...result, commit: null });
-  const sha = await commit(env, at, `更新站点资料${by(login)}`, changes);
-  return json({ ...result, commit: sha });
+  const published = await publishChange(env, at, `更新站点资料${by(login)}`, changes);
+  return json({ ...result, ...published });
 }
 
 /**
