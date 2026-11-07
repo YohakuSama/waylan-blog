@@ -38,6 +38,8 @@ export type ReviewState = Review & {
   title: string;
   state: "open" | "merged" | "closed";
   updatedAt: string;
+  draft: boolean;
+  target: { kind: "post" | "site" | "delete"; file?: string } | null;
 };
 export type Overview = Status & {
   publicationMode?: "direct" | "review-pr";
