@@ -910,8 +910,9 @@ try {
                 `${label}: archive heatmap overflows or overlaps its rail heading`);
             } else if (width >= 768) {
               const gap = geometry.archiveHeatmap.left - geometry.archiveActivityCopy.right;
-              assert.ok(gap >= 24 && gap <= 40 && geometry.archiveIndex.top >= geometry.archiveActivity.bottom - 1,
-                `${label}: archive tablet activity row is misaligned`);
+              assert.ok(gap >= 24 && gap <= 40 &&
+                geometry.archiveActivity.top >= geometry.archiveIndex.bottom - 1,
+                `${label}: archive tablet activity row must follow the chronological index`);
             } else {
               assert.ok(geometry.archiveActivityCopy.height <= 110 &&
                 geometry.archiveActivity.top >= geometry.archiveIndex.bottom - 1 &&
