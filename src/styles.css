@@ -2752,7 +2752,6 @@ body,
   border-color: var(--brand);
   background: var(--brand-soft);
 }
-.reader-font-choices label { min-height: 44px; }
 
 
 /* Selected excerpts retain a solid outline until the selection is closed.

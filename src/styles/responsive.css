@@ -249,21 +249,8 @@
   .home-list .feed-excerpt { font-size: 14px; }
   .home-list .tag-list { margin-top: var(--space-3); }
   .feed-item.is-article .feed-media { aspect-ratio: 2.25 / 1; }
-  /* One native type picker replaces the six tabs throughout phone widths. */
-  .feed-layout .tag-list a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 4px 12px;
-  }
   .feed-layout .load-more { min-height: 44px; height: auto; }
   .feed-layout .project-facts a { min-height: 40px; }
-  .projects-layout .tag-list a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 4px 12px;
-  }
   .projects-layout .project-facts a {
     min-height: 44px;
     padding-inline: 4px;
@@ -795,6 +782,17 @@
 }
 @media (pointer: coarse) {
   .feed-controls select, .type-tab, .filter-tabs button { min-height: 44px; }
+}
+/* TagList has the same target on every feed, including Home and touch tablets.
+   The narrow Home padding override still fits tags beside its card actions. */
+@media (max-width: 767px), (pointer: coarse) {
+  .tag-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 12px;
+  }
+  .view-toggle button { height: 44px; }
 }
 @media (max-width: 767px) {
   .feed-controls select { font-size: 16px; min-height: 44px; }

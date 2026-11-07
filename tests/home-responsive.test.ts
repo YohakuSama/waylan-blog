@@ -116,7 +116,7 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(feed.includes("tagHref={tagHref}"));
     assert.ok(pages.includes('tagHref={(selectedTag) => href({ tag: selectedTag })}'));
     assert.ok(pages.includes('className="feed-clear-filters"'));
-    assert.ok(responsive.includes(".feed-layout .tag-list a"));
+    assert.ok(responsive.includes(".tag-list a {"));
     assert.ok(responsive.includes(".feed-layout .load-more"));
   });
   it("retains the header and notification instance while moving between reader routes", () => {
