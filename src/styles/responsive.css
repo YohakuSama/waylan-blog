@@ -785,7 +785,7 @@
 @media (min-width: 1025px) {
   .feed-controls {
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    align-items: stretch;
     column-gap: var(--space-6);
   }
   .feed-controls > .feed-toolbar { grid-column: 1 / -1; }
