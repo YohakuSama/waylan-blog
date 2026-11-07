@@ -336,7 +336,7 @@ async function savePost(request: Request, env: Env, login: string) {
   const published = await publishChange(
     env,
     at,
-    `${editing ? "更新" : "发布"}：${post.title}${by(login)}`,
+    `${publicationMode(env) === "review-pr" ? "提审" : editing ? "更新" : "发布"}：${post.title}${by(login)}`,
     [
       { path: `${POSTS}/${file}`, text: markdown },
       ...(redirectText ? [{ path: "public/_redirects", text: redirectText }] : []),
