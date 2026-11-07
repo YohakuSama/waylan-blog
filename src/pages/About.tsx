@@ -36,21 +36,21 @@ export function About() {
           </Link>
         </section>
         <aside className="about-details" aria-label="站点信息">
-            <section>
-              <h2 className="side-title">技术实现</h2>
-              <ul>
-                {stack.map(([k, v]) => (
-                  <li key={k}>
-                    <strong>{k}</strong>
-                    <span>{v}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="about-stats">
-              <h2 className="side-title">站点数据</h2>
-              <SiteStats views />
-            </section>
+          <section>
+            <h2 className="side-title">技术实现</h2>
+            <ul>
+              {stack.map(([k, v]) => (
+                <li key={k}>
+                  <strong>{k}</strong>
+                  <span>{v}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="about-stats">
+            <h2 className="side-title">站点数据</h2>
+            <SiteStats views />
+          </section>
         </aside>
       </div>
     </div>
