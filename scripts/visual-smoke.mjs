@@ -850,6 +850,13 @@ try {
             } else {
               assert.equal(geometry.types.length, 6, `${label}: missing tablet/desktop type filters`);
               assert.equal(geometry.mobileType, null, `${label}: duplicated type filter on wider screen`);
+              if (width <= 1024) {
+                assert.ok(geometry.feedControls && geometry.feedControls.height <= 160,
+                  `${label}: tablet filters waste the first screen (${geometry.feedControls?.height ?? "missing"}px)`);
+                assert.ok(geometry.types.every((tab) => tab.height >= 44) &&
+                  geometry.feedSortBox && geometry.feedSortBox.height >= 44,
+                  `${label}: tablet filtering lost its 44px targets`);
+              }
               assert.ok(geometry.types.every((tab) => tab && tab.left >= 0 &&
                 tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
             }
