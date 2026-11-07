@@ -4,7 +4,7 @@ import { str, toData, toForm, type Form } from "./form";
 import { adminApi as api } from "./api";
 import { readImage, pickImage, today, usedUploads, useLeaveGuard, useSaveKey, editsLive, saveMessage } from "./helpers";
 import { Field, Markdown } from "./ui";
-import type { Overview, Upload } from "./types";
+import type { Overview, Review, Upload } from "./types";
 
 /** Post editing owns only the post draft, image staging and save transaction. */
 export function PostEditor({
@@ -29,6 +29,7 @@ export function PostEditor({
   const [error, setError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<Review | null>(null);
   const stem = (file || "").replace(/\.md$/, "");
 
   const load = useCallback(async () => {
@@ -69,7 +70,7 @@ export function PostEditor({
   useLeaveGuard(dirty);
 
   const save = async () => {
-    if (!form || busy || (file && !dirty)) return;
+    if (!form || busy || review || (file && !dirty)) return;
     setError("");
     let body: {
       file?: string;
@@ -91,11 +92,17 @@ export function PostEditor({
     }
     setBusy(true);
     try {
-      const result = await api<{ file: string; oid: string; commit: string }>(
+      const result = await api<{ file: string; oid: string; commit: string; review?: Review }>(
         "/api/admin/post",
         "PUT",
         body,
       );
+      if (result.review) {
+        setReview(result.review);
+        setSaved(JSON.stringify(form));
+        notify(`已生成草稿 PR #${result.review.number}，尚未发布到网站。`);
+        return;
+      }
       setFile(result.file);
       setOid(result.oid);
       setOriginal(body.data);
@@ -151,10 +158,18 @@ export function PostEditor({
             查看线上
           </a>
         )}
-        <button onClick={save} disabled={busy || (!!file && !dirty)}>
-          {busy ? "提交中…" : !editsLive(overview.repo.branch) ? "保存到内容分支" : file ? "保存" : "发布"}
+        <button onClick={save} disabled={busy || !!review || (!!file && !dirty)}>
+          {review ? "等待 PR 合并" : busy ? "提交中…" : overview.publicationMode === "review-pr" ? "提交 PR 审核" :
+            !editsLive(overview.repo.branch) ? "保存到内容分支" : file ? "保存" : "发布"}
         </button>
       </div>
+      {review && (
+        <p className="status" role="status">
+          修改已安全保存在审查分支「{review.branch}」，尚未进入正式网站。
+          请先<a href={review.url} target="_blank" rel="noreferrer">打开草稿 PR #{review.number}</a>，
+          完成审核并合并后重新进入编辑器。为防止重复提交，本次编辑已锁定。
+        </p>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}
