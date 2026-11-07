@@ -227,7 +227,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  /* Publication facts no longer reserve a removed bookmark button slot. */
+  min-height: 24px;
   font-size: 13px;
   color: var(--muted);
 }
@@ -328,7 +329,7 @@
   align-items: center;
   gap: 12px;
   min-height: 40px;
-  margin-top: 10px;
+  margin-top: var(--space-2);
 }
 .feed-tail-tags {
   flex: 1 1 auto;

@@ -727,7 +727,7 @@
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .entry-meta {
     grid-area: meta;
-    min-height: 32px;
+    min-height: 24px;
   }
   .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-body h2 {
     grid-area: title;
@@ -786,6 +786,7 @@
 /* TagList has the same target on every feed, including Home and touch tablets.
    The narrow Home padding override still fits tags beside its card actions. */
 @media (max-width: 767px), (pointer: coarse) {
+  .feed-list .tag-list { row-gap: var(--space-1); }
   .tag-list a {
     display: inline-flex;
     align-items: center;
