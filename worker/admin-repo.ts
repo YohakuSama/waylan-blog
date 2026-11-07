@@ -8,11 +8,33 @@ import { github } from "./github";
 export const POSTS = "content/posts";
 export type Review = { number: number; url: string; branch: string };
 export type Publication = { commit: string; review?: Review };
+export type ReviewEdit = { number: number; commit: string };
+export type ReviewTarget = { kind: "post" | "site" | "delete"; file?: string };
 export type ReviewState = Review & {
   title: string;
   state: "open" | "merged" | "closed";
+  draft: boolean;
+  target: ReviewTarget | null;
   updatedAt: string;
 };
+function targetOf(changes: Change[]): ReviewTarget {
+  const post = changes.find((c) => c.path.startsWith(POSTS + "/"));
+  if (!post) return { kind: "site" };
+  return { kind: "remove" in post ? "delete" : "post", file: post.path.slice(POSTS.length + 1) };
+}
+function targetMarker(target: ReviewTarget) {
+  return \`<!-- waylan-admin-review-target:\${target.kind}:\${encodeURIComponent(target.file || "")} -->\`;
+}
+function targetFromBody(body: string | null): ReviewTarget | null {
+  const match = (body || "").match(/<!-- waylan-admin-review-target:(post|site|delete):([^<\n]*) -->/);
+  if (!match) return null;
+  try {
+    const file = decodeURIComponent(match[2]);
+    if (match[1] === "site") return file ? null : { kind: "site" };
+    if (!file.endsWith(".md") || file.includes("/") || file.includes("\\\\")) return null;
+    return { kind: match[1] as "post" | "delete", file };
+  } catch { return null; }
+}
 const ADMIN_REVIEW_MARKER = "<!-- waylan-admin-review -->";
 const REVIEW_BRANCH = /^content\/review-\d+-[0-9a-f]{8}$/;
 
@@ -26,7 +48,8 @@ export async function recentReviews(env: Env): Promise<{ reviews: ReviewState[];
     state: string;
     merged_at: string | null;
     updated_at: string;
-    head: { ref: string; repo: { full_name: string } | null };
+    head: { ref: string; sha: string; repo: { full_name: string } | null };
+    draft: boolean;
     base: { ref: string };
   };
   const items = await rest<Pull[]>(env, "GET",
@@ -44,9 +67,36 @@ export async function recentReviews(env: Env): Promise<{ reviews: ReviewState[];
     url: `https://github.com/${owner}/${name}/pull/${pr.number}`,
     state: pr.merged_at ? "merged" as const :
       pr.state === "closed" ? "closed" as const : "open" as const,
+    draft: pr.draft,
+    target: targetFromBody(pr.body),
     updatedAt: pr.updated_at,
   }));
   return { reviews, truncated: items.length === 100 };
+}
+/** Revalidate the GitHub PR before reading or updating its branch. */
+export async function reviewBase(env: Env, number: number) {
+  if (publicationMode(env) !== "review-pr" || !Number.isSafeInteger(number) || number < 1)
+    throw new HttpError(422, "CONTENT_REVIEW", "审核 PR 编号无效或审核模式尚未启用。");
+  type Pull = {
+    number: number; state: string; draft: boolean; body: string | null;
+    head: { ref: string; sha: string; repo: { full_name: string } | null };
+    base: { ref: string };
+  };
+  const pr = await rest<Pull>(env, "GET", \`/pulls/\${number}\`);
+  const { owner, name } = repo(env);
+  const target = targetFromBody(pr.body);
+  if (pr.number !== number || pr.state !== "open" || !pr.draft ||
+    pr.base?.ref !== "main" || pr.head?.repo?.full_name !== \`\${owner}/\${name}\` ||
+    !REVIEW_BRANCH.test(pr.head.ref) ||
+    !(pr.body || "").includes(ADMIN_REVIEW_MARKER) || !target)
+    throw new HttpError(409, "CONTENT_REVIEW_CLOSED",
+      "此 PR 已合并、关闭或进入正式审核，不能再从后台改动。请刷新审核队列。");
+  const at = await head(env, pr.head.ref);
+  if (at.oid !== pr.head.sha) throw conflict();
+  return {
+    at, target,
+    review: { number, branch: pr.head.ref, url: \`https://github.com/\${owner}/\${name}/pull/\${number}\` },
+  };
 }
 export function publicationMode(env: Env): "direct" | "review-pr" {
   const mode = env.CONTENT_PUBLISH_MODE || "direct";
@@ -130,7 +180,7 @@ async function query<T>(env: Env, text: string, variables: Record<string, unknow
 }
 
 export type Head = { oid: string; tree: string; date: string };
-export async function head(env: Env): Promise<Head> {
+export async function head(env: Env, branch = repo(env).branch): Promise<Head> {
   const data = await query<{
     repository: {
       ref: {
@@ -140,7 +190,7 @@ export async function head(env: Env): Promise<Head> {
   }>(
     env,
     `query($owner:String!,$name:String!,$ref:String!){repository(owner:$owner,name:$name){ref(qualifiedName:$ref){target{... on Commit{oid committedDate tree{oid}}}}}}`,
-    { ref: `refs/heads/${repo(env).branch}` },
+    { ref: `refs/heads/${branch}` },
   );
   if (!data.repository) throw tokenError();
   const target = data.repository.ref?.target;
@@ -148,7 +198,7 @@ export async function head(env: Env): Promise<Head> {
     throw new HttpError(
       503,
       "CONTENT_BRANCH",
-      `源码仓库里找不到分支「${repo(env).branch}」，请检查 CONTENT_BRANCH。`,
+      `源码仓库里找不到分支「${branch}」，请检查 CONTENT_BRANCH。`,
     );
   return { oid: target.oid, tree: target.tree.oid, date: target.committedDate };
 }
@@ -240,7 +290,21 @@ export async function commit(env: Env, base: Head, message: string, changes: Cha
 }
 
 /** Explicit opt-in: create an isolated review branch and draft PR; never update main. */
-export async function publishChange(env: Env, base: Head, message: string, changes: Change[]): Promise<Publication> {
+export async function publishChange(
+  env: Env, base: Head, message: string, changes: Change[], editing?: ReviewEdit,
+): Promise<Publication> {
+  if (editing) {
+    const existing = await reviewBase(env, editing.number);
+    if (existing.at.oid !== editing.commit || base.oid !== editing.commit) throw conflict();
+    const target = targetOf(changes);
+    if (existing.target.kind !== target.kind || existing.target.file !== target.file)
+      throw new HttpError(422, "CONTENT_REVIEW_TARGET", "不能在同一 PR 中改动其他内容。");
+    const sha = await createCommit(env, base, message, changes);
+    // GitHub rejects a non-fast-forward update if another editor changed this PR.
+    const ref = existing.review.branch.split("/").map(encodeURIComponent).join("/");
+    await rest(env, "PATCH", \`/git/refs/heads/\${ref}\`, { sha, force: false });
+    return { commit: sha, review: existing.review };
+  }
   if (publicationMode(env) === "direct") return { commit: await commit(env, base, message, changes) };
   // An unrelated main update must not make an already-edited draft silently stale.
   if ((await head(env)).oid !== base.oid) throw conflict();
@@ -258,6 +322,7 @@ export async function publishChange(env: Env, base: Head, message: string, chang
       body: [
         "此草稿 PR 由 Waylan Blog 后台创建；需通过人工审核和 CI 后才能合并至 main。",
         ADMIN_REVIEW_MARKER,
+        targetMarker(targetOf(changes)),
         "",
         "变更文件：",
         ...changes.map((change) => `- \`${change.path}\``),
