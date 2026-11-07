@@ -171,6 +171,7 @@ try {
               controls: headerControls.map(select),
               column: select(".content-grid .feed-column"), sidebar: select(".content-grid .site-sidebar"),
               pageFrame: select(".site-main"),
+              mastheadBrand: select(".site-header:not(.site-header-reader) .brand"),
               homePage: select(".home-page"),
               homeHero: select(".home-page > .home-hero"),
               homeGrid: select(".home-page .home-grid"),
@@ -184,6 +185,12 @@ try {
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
+              filterSurface: (() => {
+                const el = document.querySelector(".feed-controls");
+                if (!el) return null;
+                const style = getComputedStyle(el);
+                return { borderWidth: style.borderTopWidth, background: style.backgroundColor };
+              })(),
               filterBoundaries: [...document.querySelectorAll(".feed-controls select")]
                 .filter((el) => rect(el))
                 .map((el) => {
@@ -285,6 +292,7 @@ try {
               archiveTopicTarget: select(".archive-summary a"),
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
+              archiveIndex: select(".archive-index"),
               archiveActivity: select(".archive-activity"),
               archiveActivityCopy: select(".archive-activity-copy"),
               archiveHeatmap: select(".archive-activity .heatmap"),
@@ -313,6 +321,8 @@ try {
               })(),
               notFoundLatest: [...document.querySelectorAll(".not-found .lost-latest a")].map(rect),
               notFoundActions: [...document.querySelectorAll(".not-found > a")].map(rect),
+              aboutText: select(".about-text"),
+              aboutDetails: select(".about-layout > .about-details"),
               aboutHeadingLevels: [...document.querySelectorAll(".about-details > section > h2")].map((el) => el.textContent.trim()),
               aboutStatsHeadingIsLink: !!document.querySelector(".about-stats .side-title a"),
               aboutStatsLabel: document.querySelector(".about-layout .site-stats > div:first-child dd")?.textContent?.trim(),
@@ -513,6 +523,11 @@ try {
           if (["/", "/feed", "/archive", "/projects", "/about", "/privacy"].includes(route)) {
             assert.ok(geometry.pageHeadingEyebrow && geometry.pageHeadingTitle,
               `${label}: index page heading is missing`);
+            if (width >= 861) {
+              assert.ok(geometry.mastheadBrand &&
+                Math.abs(geometry.mastheadBrand.left - geometry.pageHeadingEyebrow.left) <= 1,
+                `${label}: the brand and index title have different horizontal origins`);
+            }
             const key = `${width}:${variant.skin}:${variant.theme}`;
             if (route === "/") {
               pageHeadingBaselines.set(key, {
@@ -767,8 +782,9 @@ try {
               tag.left >= 0 && tag.right <= geometry.viewport + 1),
               `${label}: inconsistent or clipped touch tag targets`);
           }
-          // Feed, Projects and Archive are three views of the same index column.
-          if (["/feed", "/archive", "/projects"].includes(route)) {
+          // Feed and Projects share one list width. Archive joins the Home
+          // dual-column frame when desktop space is available.
+          if (["/feed", "/projects"].includes(route)) {
             const key = `${width}:${variant.skin}:${variant.theme}`;
             if (route === "/feed") indexListWidthBaselines.set(key, geometry.indexContent.width);
             else {
@@ -783,6 +799,9 @@ try {
           if (route === "/feed") {
             assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
             assert.equal(geometry.resetLink, null, `${label}: reset filter appears without active filters`);
+            assert.ok(geometry.filterSurface && geometry.filterSurface.borderWidth === "0px" &&
+              ["rgba(0, 0, 0, 0)", "transparent"].includes(geometry.filterSurface.background),
+              `${label}: feed filter controls reintroduced a separate card surface`);
             if (width <= 767) {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
