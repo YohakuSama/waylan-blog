@@ -14,10 +14,11 @@
 
 ## 浏览器图标
 
-- 页面内头像/加载标识保留上文的双皮肤 `Monogram`；小尺寸浏览器标签单独使用更清晰的单线几何 W 和右上角短光标，不将复杂头像硬缩到 16px。
-- `public/favicon.svg` 与 `public/avatar.svg` 内容一致（`tests/branding.test.ts` 校验）；浅色系统为深松绿底/暖白字/薄荷绿光标，深色系统自动反转为浅底深字，保持清晰对比。
-- `favicon.ico`（16/32）、`favicon-32.png`、`favicon-64.png` 与 `apple-touch-icon.png`（180）由该 SVG 栅格化；更改图形时必须同步这四种回退/触控资源，不能仅替换 SVG。
-- `public/theme.js` 在首帧前按皮肤与明暗写入 `meta[name=theme-color]`，移动端地址栏颜色与页面一致。
+- 原有页眉 `Waylan` 手写字标与站内双皮肤 `Monogram` 保持不变。浏览器标签不再使用深绿色方形应用图标，而以站内 `MONOGRAM_W` 相同的高对比衬线 W 字形为基础，放大并调整纵横比后，增加一枚低调的朱红落款圆点：透明底 `W.`。
+- `public/favicon.svg` 与 `public/avatar.svg` 保持同源；浏览器矢量图标依照系统深浅模式反转墨色，不能依赖站点页面的主题变量。避免增加背景容器、小字和复杂装饰，优先检查 16px 可辨性。
+- 32/64px PNG 与 16/32px ICO 是浏览器回退；180px Apple touch 图标使用同一 W.，但加不透明暖纸色背景以适配主屏幕。以上文件必须一起重新导出。
+- `index.html` 的图标查询版本号独立于部署文件名，更新时同步递增，避免浏览器长期缓存旧标识。
+- `public/theme.js` 在首帧前按皮肤与明暗写入页面 `theme-color`；站内主题颜色与浏览器 UI 外观是不同层级。
 
 ## 容器与动效
 

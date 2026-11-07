@@ -148,7 +148,7 @@ export function Feed() {
                 ))}
             </div>
             <div className="feed-result-line" aria-live="polite">
-            <span>
+              <span>
               <span className="sr-only">{topic === "all" ? "全部主题" : topicName(topic)}</span>
               {query && (
                 <Link className="query-chip" href={href({ q: "" })}>
@@ -163,14 +163,14 @@ export function Feed() {
                   <X size={12} aria-label="移除标签筛选" />
                 </Link>
               )}
-              <span className="meta-dot">·</span>
+              {(query || tag) && <span className="meta-dot">·</span>}
               共 {filtered.length} 条内容
               {hasActiveFilters && (
                 <Link className="feed-clear-filters" href="/feed">
                   清除筛选
                 </Link>
               )}
-            </span>
+              </span>
               <ViewToggle density={density} onChange={setDensity} />
             </div>
           </div>
