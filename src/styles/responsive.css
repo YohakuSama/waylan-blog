@@ -37,6 +37,37 @@
   /* About already has topics, site details and a direct feed action.
      Do not append the duplicate long desktop discovery rail below them. */
   .about-layout .site-sidebar { display: none; }
+  /* Supplementary information follows the main content on tablets and phones.
+     No data is hidden or cloned and the DOM reading order remains primary-first. */
+  .archive-main, .about-layout { display: block; max-width: var(--index-list-width); }
+  .about-layout { max-width: 720px; }
+  .archive-activity {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .archive-activity-copy { flex: 0 0 200px; }
+  .archive-activity .heatmap {
+    flex: 0 1 312px;
+    width: min(100%, 312px);
+    margin-top: 0;
+  }
+  .about-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .about-details > section + section { padding-top: 0; border-top: 0; }
 }
 @media (max-width: 1024px) {
   .content-grid {
@@ -93,7 +124,7 @@
   }
   .feed-controls {
     gap: var(--space-3);
-    padding: var(--space-3);
+    padding: 0;
   }
   .feed-controls .feed-search-row {
     grid-column: 1 / -1;
@@ -449,6 +480,11 @@
   .type-tab.active:hover { background:var(--ink); border-color:var(--ink); color:var(--paper); }
 }
 
+@media (max-width: 767px) {
+  .feed-filter-label { display: none; }
+  .feed-controls .feed-toolbar { min-height: 0; padding-block: var(--space-2); }
+  .feed-controls .feed-search-row { min-height: 0; }
+}
 /* Phone: one native type picker replaces two dense rows of type pills.
    Tablet/desktop keep the faster one-click category tabs. */
 .mobile-type-select {
