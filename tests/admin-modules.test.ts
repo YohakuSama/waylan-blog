@@ -157,6 +157,8 @@ describe("admin review PR interface contract", () => {
     const repo = read("worker/admin-repo.ts");
     const handler = read("worker/admin.ts");
     assert.match(dashboard, /publicationMode === "review-pr"/);
+    assert.match(dashboard, /刷新审核状态/);
+    assert.match(dashboard, /已合并 main（待确认部署）/);
     assert.match(post, /result\.review/);
     assert.match(site, /result\.review/);
     assert.match(list, /result\.review/);
