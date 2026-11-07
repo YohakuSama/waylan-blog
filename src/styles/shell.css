@@ -4,6 +4,9 @@
 :root {
   --content-width: 1366px;
   --index-frame-width: 1140px;
+  --index-list-width: 960px;
+  --home-rail-width: 276px;
+  --home-rail-gap: 44px;
   --page-gutter: 40px;
   --header-height: 68px;
   --sidebar-width: 300px;
@@ -175,11 +178,11 @@ h3 {
 .home-grid { width: 100%; }
 @media (min-width: 1120px) {
   .content-grid.home-grid {
-    grid-template-columns: minmax(0, 1fr) 276px;
-    column-gap: 44px;
+    grid-template-columns: minmax(0, 1fr) var(--home-rail-width);
+    column-gap: var(--home-rail-gap);
   }
   /* Reading progress belongs to the article stream, not the full masthead. */
-  .home-page > .home-resume { width: calc(100% - 320px); }
+  .home-page > .home-resume { width: calc(100% - var(--home-rail-width) - var(--home-rail-gap)); }
 }
 .feed-column {
   min-width: 0;
