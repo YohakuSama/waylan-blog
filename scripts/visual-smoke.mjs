@@ -1038,6 +1038,14 @@ try {
                 `${label}: floating back-to-top must not cover the footer`);
               await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
             }
+            if (width <= 390) {
+              // The 13%-progress fixture must still expose the first story title
+              // on a short 568px phone; keep the resume card and 44px links.
+              assert.ok(geometry.firstHeading && geometry.firstHeading.top <= 560,
+                `${label}: first article title starts below a short phone viewport (${geometry.firstHeading?.top ?? "missing"}px)`);
+              assert.ok(geometry.resume && geometry.resume.height >= 56,
+                `${label}: mobile reading progress entry was compressed or removed`);
+            }
             if (width <= 768) assert.ok(geometry.homeSecondEntry?.top < 820, `${label}: second entry is buried below the first screen`);
             if (geometry.firstHeading) assert.ok(geometry.firstHeading.top < 660, `${label}: first article pushed below the first screen`);
           }
