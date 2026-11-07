@@ -26,6 +26,8 @@ import {
   publishChange,
   publicationMode,
   recentReviews,
+  reviewBase,
+  type ReviewEdit,
   blobOid,
   conflict,
   type Blob,
@@ -187,7 +189,20 @@ async function requireFiles(env: Env, at: string, paths: string[], uploaded: str
     if (!found[`public${p}`]) throw invalid(`找不到图片 ${p}，请重新上传。`);
 }
 
-const by = (login: string) => `\n\n通过 /admin 提交，操作者 @${login}`;
+const by = (login: string) => \`\n\n通过 /admin 提交，操作者 @\${login}\`;
+function reviewInput(value: unknown): ReviewEdit | undefined {
+  if (value === undefined) return undefined;
+  if (!isObject(value) || !Number.isSafeInteger(value.number) ||
+      (value.number as number) < 1 || typeof value.commit !== "string" ||
+      value.commit.length > 64 || !value.commit)
+    throw invalid("草稿 PR 版本信息无效，请重新进入审核队列。");
+  return { number: value.number as number, commit: value.commit };
+}
+function reviewNumber(raw: string | null) {
+  if (!raw || !/^[1-9]\d{0,8}$/.test(raw))
+    throw invalid("审核 PR 编号无效。");
+  return Number(raw);
+}
 
 // ---------------------------------------------------------------- endpoints
 
@@ -234,9 +249,12 @@ async function overview(env: Env) {
   });
 }
 
-async function readPost(env: Env, file: string) {
+async function readPost(env: Env, file: string, reviewParam: string | null = null) {
   if (!FILE.test(file)) throw invalid("文件名不正确。");
-  const at = await head(env);
+  const editing = reviewParam ? await reviewBase(env, reviewNumber(reviewParam)) : null;
+  if (editing && (editing.target.kind !== "post" || editing.target.file !== file))
+    throw invalid("此 PR 的文章文件不匹配。");
+  const at = editing?.at || await head(env);
   const blob = (await files(env, at.oid, [`${POSTS}/${file}`]))[`${POSTS}/${file}`];
   if (!blob) throw new HttpError(404, "POST_NOT_FOUND", "这篇文章已不在仓库里。");
   let parsed;
@@ -245,7 +263,8 @@ async function readPost(env: Env, file: string) {
   } catch (error) {
     throw invalid(`这篇文章的 front matter 无法解析：${(error as Error).message}`);
   }
-  return json({ file, oid: blob.oid, data: plain(parsed.data), body: parsed.content });
+  return json({ file, oid: blob.oid, data: plain(parsed.data), body: parsed.content,
+    ...(editing ? { review: { ...editing.review, commit: at.oid } } : {}) });
 }
 
 async function savePost(request: Request, env: Env, login: string) {
@@ -268,7 +287,11 @@ async function savePost(request: Request, env: Env, login: string) {
   text(data.title, "标题", 200, true);
   if (data.excerpt !== undefined) text(data.excerpt, "摘要", 600);
 
-  const at = await head(env);
+  const reviewEdit = reviewInput(input.review);
+  const review = reviewEdit ? await reviewBase(env, reviewEdit.number) : null;
+  if (review && (review.target.kind !== "post" || review.at.oid !== reviewEdit!.commit))
+    throw conflict();
+  const at = review?.at || await head(env);
   const [all, meta] = await Promise.all([posts(env, at.oid), files(env, at.oid, [SITE])]);
   const topics = topicsOf(parseSite(meta[SITE]));
   let file: string;
@@ -276,6 +299,7 @@ async function savePost(request: Request, env: Env, login: string) {
   let wasPublished = false;
   if (editing) {
     file = input.file as string;
+    if (review && review.target.file !== file) throw invalid("此 PR 的文章文件不匹配。");
     const current = all.find((p) => p.file === file);
     if (!current) throw new HttpError(404, "POST_NOT_FOUND", "这篇文章已不在仓库里。");
     if (current.oid !== input.oid) throw conflict();
@@ -287,6 +311,7 @@ async function savePost(request: Request, env: Env, login: string) {
     wasPublished = !before.draft;
     if (String(data.id || data.slug || stem) !== id) data.id = id;
   } else {
+    if (review) throw invalid("继续编辑 PR 时必须提供已保存的文章文件。");
     const slug = text(data.slug, "链接名（slug）", 80, true);
     if (!SLUG.test(slug))
       throw invalid(`链接名（slug）${slugRule}，例如 my-first-post。`);
@@ -343,6 +368,7 @@ async function savePost(request: Request, env: Env, login: string) {
       ...(redirectText ? [{ path: "public/_redirects", text: redirectText }] : []),
       ...uploads.map((u) => ({ path: `public${u.path}`, base64: u.base64 })),
     ],
+    reviewEdit,
   );
   return json({ file, oid: await blobOid(markdown), ...published }, editing ? 200 : 201);
 }
@@ -372,11 +398,25 @@ async function deletePost(request: Request, env: Env, login: string) {
   return json(published);
 }
 
+async function readReviewSite(env: Env, param: string | null) {
+  const existing = await reviewBase(env, reviewNumber(param));
+  if (existing.target.kind !== "site") throw invalid("此 PR 不是站点资料修改。");
+  const source = await files(env, existing.at.oid, [SITE, ABOUT]);
+  return json({
+    site: { oid: source[SITE]!.oid, data: parseSite(source[SITE]) },
+    about: { oid: source[ABOUT]?.oid ?? null, text: source[ABOUT]?.text ?? "" },
+    review: { ...existing.review, commit: existing.at.oid },
+  });
+}
 async function saveSite(request: Request, env: Env, login: string) {
   const input = await readBody(request, MAX_BODY);
   if (!isObject(input) || !isObject(input.site)) throw invalid("内容格式不正确。");
   const s = input.site;
-  const at = await head(env);
+  const reviewEdit = reviewInput(input.review);
+  const review = reviewEdit ? await reviewBase(env, reviewEdit.number) : null;
+  if (review && (review.target.kind !== "site" || review.at.oid !== reviewEdit!.commit))
+    throw conflict();
+  const at = review?.at || await head(env);
   const current = await files(env, at.oid, [SITE, ABOUT]);
   if (current[SITE]?.oid !== input.oid || (current[ABOUT]?.oid ?? null) !== (input.aboutOid ?? null))
     throw conflict();
@@ -436,7 +476,7 @@ async function saveSite(request: Request, env: Env, login: string) {
       : (current[ABOUT]?.oid ?? null),
   };
   if (!changes.length) return json({ ...result, commit: null });
-  const published = await publishChange(env, at, `更新站点资料${by(login)}`, changes);
+  const published = await publishChange(env, at, `更新站点资料${by(login)}`, changes, reviewEdit);
   return json({ ...result, ...published });
 }
 
@@ -565,7 +605,9 @@ export async function admin(request: Request, env: Env, path: string) {
     return json({ head: { oid: at.oid, date: at.date }, live: build.commit });
   }
   if (path === "/api/admin/post" && request.method === "GET")
-    return readPost(env, url.searchParams.get("file") || "");
+    return readPost(env, url.searchParams.get("file") || "", url.searchParams.get("review"));
+  if (path === "/api/admin/site" && request.method === "GET")
+    return readReviewSite(env, url.searchParams.get("review"));
   if (path === "/api/admin/post" && request.method === "PUT")
     return savePost(request, env, login);
   if (path === "/api/admin/post" && request.method === "DELETE")
