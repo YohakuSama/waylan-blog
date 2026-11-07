@@ -133,6 +133,24 @@
     min-height: 44px;
   }
 }
+/* Tablet filters keep explicit content types but should not spend almost
+   200px before the first result. Preserve all three control groups and
+   their 44px touch targets while removing inherited desktop gutters. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .feed-controls { row-gap: 0; }
+  .feed-controls .feed-toolbar {
+    min-height: 0;
+    row-gap: 4px;
+    padding-block: 2px;
+  }
+  .feed-controls .type-tab { min-height: 44px; }
+  .feed-controls .feed-search-row { min-height: 44px; }
+  .feed-controls .feed-search-row select { height: 44px; min-height: 44px; }
+  .feed-controls .feed-result-line { min-height: 44px; padding-block: 0; }
+  .feed-controls .view-toggle { padding: 0; }
+  .feed-controls .view-toggle::before { top: 0; left: 0; height: 44px; }
+  .feed-controls .view-toggle button { height: 44px; }
+}
 /* Narrow screens keep destinations in a separate, always-visible row. */
 @media (max-width: 860px) {
   :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
