@@ -36,6 +36,7 @@ it("small-size Waylan mark is consistent in tab and avatar", () => {
   const svg = read("public/favicon.svg");
   assert.equal(read("public/avatar.svg"), svg);
   assert.match(svg, /class="letter"/);
-  assert.match(svg, /stroke-width="9"/);
-  assert.match(svg, /prefers-color-scheme:dark/);
+  assert.match(svg, /scale\(1\.15 1\.44\)/);
+  assert.doesNotMatch(svg, /class="tile"/);
+  assert.match(svg, /prefers-color-scheme:\s*dark/);
 });

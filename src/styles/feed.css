@@ -20,6 +20,13 @@
 .feed-item.is-article.has-media {
   grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
 }
+/* Feed uses the whole site frame rather than an unused right margin; keep
+   the editorial illustration from growing with the available page width. */
+@media (min-width: 768px) {
+  .feed-layout .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  }
+}
 .feed-media-link {
   grid-area: media;
   display: block;

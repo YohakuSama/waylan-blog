@@ -93,6 +93,35 @@ export function Feed() {
                 </select>
                 <ChevronDown size={14} aria-hidden="true" />
               </label>
+              <div className="feed-search-row">
+                <label className="topic-select">
+                  <span className="sr-only">按主题筛选</span>
+                  <select
+                    aria-label="按主题筛选"
+                    value={topic}
+                    onChange={(e) => update({ topic: e.target.value })}
+                  >
+                    <option value="all">全部主题</option>
+                    {site.topics
+                      .filter((t) => t.id === topic || usedTopics.includes(t))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </label>
+                <label className="sort-control">
+                  <span className="sr-only">发布日期排序</span>
+                  <select
+                    value={sort}
+                    onChange={(e) => update({ sort: e.target.value })}
+                  >
+                    <option value="newest">由新到旧</option>
+                    <option value="oldest">由旧到新</option>
+                  </select>
+                  <ChevronDown size={13} />
+                </label>
+              </div>
             </div>
             <div className="filter-tabs" role="group" aria-label="按主题筛选">
               <span className="feed-filter-label" aria-hidden="true">写作主题</span>
@@ -118,39 +147,9 @@ export function Feed() {
                   </button>
                 ))}
             </div>
-            <div className="feed-search-row">
-              <label className="topic-select">
-                <span className="sr-only">按主题筛选</span>
-                <select
-                  aria-label="按主题筛选"
-                  value={topic}
-                  onChange={(e) => update({ topic: e.target.value })}
-                >
-                  <option value="all">全部主题</option>
-                  {site.topics
-                    .filter((t) => t.id === topic || usedTopics.includes(t))
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                </select>
-                <ChevronDown size={13} aria-hidden="true" />
-              </label>
-              <label className="sort-control">
-                <span className="sr-only">发布日期排序</span>
-                <select
-                  value={sort}
-                  onChange={(e) => update({ sort: e.target.value })}
-                >
-                  <option value="newest">由新到旧</option>
-                  <option value="oldest">由旧到新</option>
-                </select>
-                <ChevronDown size={13} />
-              </label>
-            </div>
-          </div>
-          <div className="feed-result-line" aria-live="polite">
-            <span>
-              {topic === "all" ? "全部主题" : topicName(topic)}
+            <div className="feed-result-line" aria-live="polite">
+              <span>
+              <span className="sr-only">{topic === "all" ? "全部主题" : topicName(topic)}</span>
               {query && (
                 <Link className="query-chip" href={href({ q: "" })}>
                   <Search size={14} aria-hidden="true" />“{query}”
@@ -164,15 +163,16 @@ export function Feed() {
                   <X size={12} aria-label="移除标签筛选" />
                 </Link>
               )}
-              <span className="meta-dot">·</span>
-              {filtered.length} 条
+              {(query || tag) && <span className="meta-dot">·</span>}
+              共 {filtered.length} 条内容
               {hasActiveFilters && (
                 <Link className="feed-clear-filters" href="/feed">
                   清除筛选
                 </Link>
               )}
-            </span>
-            <ViewToggle density={density} onChange={setDensity} />
+              </span>
+              <ViewToggle density={density} onChange={setDensity} />
+            </div>
           </div>
           <FeedList
               items={filtered}

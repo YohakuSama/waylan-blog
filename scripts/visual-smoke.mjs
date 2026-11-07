@@ -184,6 +184,10 @@ try {
               mobileType: select(".mobile-type-select"),
               mobileTypeOptions: document.querySelector(".mobile-type-select select")?.options.length,
               feedControls: select(".feed-controls"),
+              feedToolbarBox: select(".feed-controls > .feed-toolbar"),
+              feedSortBox: select(".feed-controls .sort-control"),
+              feedTopicsBox: select(".feed-controls > .filter-tabs"),
+              feedResultsBox: select(".feed-controls > .feed-result-line"),
               feedFilterLabels: [...document.querySelectorAll(".feed-filter-label")].filter(el =>
                 el.getClientRects().length > 0).map(el => el.textContent.trim()),
               feedFilterSurface: (() => {
@@ -787,18 +791,18 @@ try {
               tag.left >= 0 && tag.right <= geometry.viewport + 1),
               `${label}: inconsistent or clipped touch tag targets`);
           }
-          // Shared outer frame, with functional inner measures rather than
-          // forcing project comparison, archive chronology and Feed to 960px.
+          // Each index route uses the same outer horizontal origin.
+          // Feed fills that frame; stacked Archive keeps its narrower timeline.
           if (["/feed", "/archive", "/projects"].includes(route)) {
             const key = `${width}:${variant.skin}:${variant.theme}`;
             if (route === "/feed") {
               indexListWidthBaselines.set(key, geometry.indexContent.width);
-              assert.ok(geometry.indexContent.width <= 961,
-                `${label}: Feed's scanning width became excessive`);
+              assert.ok(geometry.indexContent.width <= 1141,
+                `${label}: Feed exceeded the shared 1140px page frame`);
             } else if (route === "/archive" && width < 1120) {
               const feedWidth = indexListWidthBaselines.get(key);
-              assert.ok(feedWidth && Math.abs(geometry.indexContent.width - feedWidth) <= 1,
-                `${label}: stacked archive must use the readable index width`);
+              assert.ok(feedWidth && Math.abs(geometry.indexContent.width - Math.min(feedWidth, 960)) <= 1,
+                `${label}: stacked archive must keep its 960px reading measure`);
             } else if (width >= 1120) {
               assert.ok(Math.abs(geometry.indexContent.width - geometry.indexPage.width) <= 1,
                 `${label}: page-specific desktop layout fails to use its outer frame`);
@@ -806,6 +810,22 @@ try {
           }
           if (route === "/privacy") {
             assert.ok(geometry.indexContent.width <= 721, `${label}: privacy prose lost its 720px reading measure`);
+          }
+          if (route === "/feed" && width >= 1120) {
+            // Feed fills the same centered 1140px frame as Home's heading.
+            const expectedLeft = (geometry.viewport - geometry.indexPage.width) / 2;
+            assert.ok(Math.abs(geometry.indexPage.left - expectedLeft) <= 2,
+              `${label}: feed index is off-center: ${JSON.stringify({left: geometry.indexPage.left, expectedLeft})}`);
+            assert.ok(geometry.feedToolbarBox && geometry.feedSortBox &&
+              geometry.feedTopicsBox && geometry.feedResultsBox,
+              `${label}: one of the desktop filter bands is missing`);
+            assert.ok(geometry.feedSortBox.top >= geometry.feedToolbarBox.top - 1 &&
+              geometry.feedSortBox.bottom <= geometry.feedToolbarBox.bottom + 1,
+              `${label}: sorting escaped the type-filter band`);
+            assert.ok(Math.abs(geometry.feedTopicsBox.top - geometry.feedResultsBox.top) <= 3,
+              `${label}: results and topics no longer share the second filter band`);
+            assert.ok(geometry.feedResultsBox.right <= geometry.feedControls.right + 1,
+              `${label}: view-switch and result count escape the filter measure`);
           }
           if (route === "/feed") {
             assert.equal(geometry.sidebar, null, `${label}: feed sidebar duplicates the search and filters`);
@@ -823,7 +843,7 @@ try {
               assert.equal(geometry.types.length, 0, `${label}: desktop type pills duplicate the phone picker`);
               assert.equal(geometry.mobileTypeOptions, 6, `${label}: phone picker lost content types`);
               assert.ok(geometry.feedControls && geometry.feedControls.height < 150,
-                `${label}: phone filters consume too much of the first screen`);
+                `${label}: phone filters consume too much of the first screen (${geometry.feedControls?.height ?? "missing"}px)`);
               assert.ok(geometry.mobileType && geometry.mobileType.height >= 44 &&
                 geometry.mobileType.left >= 0 && geometry.mobileType.right <= geometry.viewport,
                 `${label}: missing/clipped phone type picker`);

@@ -107,12 +107,14 @@
     display: inline-flex;
   }
   .feed-controls .feed-search-row {
+    flex: 1 1 100%;
     flex-direction: row;
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 8px;
     width: 100%;
+    margin-left: 0;
   }
   .feed-controls .feed-search-row .sort-control {
     flex: 1 1 0;
@@ -126,8 +128,9 @@
     gap: var(--space-3);
     padding: 0;
   }
-  .feed-controls .feed-search-row {
+  .feed-controls .feed-result-line {
     grid-column: 1 / -1;
+    min-height: 44px;
   }
 }
 /* Narrow screens keep destinations in a separate, always-visible row. */
@@ -454,8 +457,46 @@
 
 @media (max-width: 767px) {
   .feed-filter-label { display: none; }
-  .feed-controls .feed-toolbar { min-height: 0; padding-block: var(--space-2); }
+  /* Three 44px touch rows, without extra desktop spacing between them.
+     Keep type, topic/sort, results and density controls visible at 320px. */
+  .feed-controls { row-gap: 0; }
+  .feed-controls .feed-toolbar {
+    min-height: 0;
+    gap: 4px;
+    padding-block: 2px;
+  }
   .feed-controls .feed-search-row { min-height: 0; }
+  .feed-controls .feed-search-row select {
+    height: 44px;
+    min-height: 44px;
+  }
+  .feed-controls .feed-result-line {
+    min-height: 44px;
+    padding-block: 0;
+  }
+  /* Remove only the shell padding: the two actual actions stay 44px tall. */
+  .feed-controls .view-toggle { padding: 0; }
+  .feed-controls .view-toggle::before {
+    top: 0;
+    left: 0;
+    height: 44px;
+  }
+}
+/* A near-tablet phone has enough horizontal space for all three selectors.
+   Keep 44px targets instead of spending three full rows above the list. */
+@media (min-width: 600px) and (max-width: 767px) {
+  .feed-controls .feed-toolbar { align-items: center; }
+  .feed-controls .feed-toolbar .mobile-type-select {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+  .feed-controls .feed-toolbar .feed-search-row {
+    flex: 2 1 0;
+    width: auto;
+    min-width: 0;
+    margin-left: 0;
+  }
 }
 /* Phone: one native type picker replaces two dense rows of type pills.
    Tablet/desktop keep the faster one-click category tabs. */
@@ -782,12 +823,13 @@
 @media (min-width: 1025px) {
   .feed-controls {
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    align-items: stretch;
     column-gap: var(--space-6);
   }
   .feed-controls > .feed-toolbar { grid-column: 1 / -1; }
-  .feed-controls > .filter-tabs { grid-column: 1; min-width: 0; align-items: center; }
-  .feed-controls > .feed-search-row { grid-column: 2; min-width: 124px; margin-left: auto; }
+  .feed-controls > .filter-tabs { grid-column: 1; min-width: 0; align-self: stretch; align-items: center; }
+  .feed-controls > .feed-result-line { grid-column: 2; min-width: 0; align-self: stretch; justify-content: flex-end; }
+  .feed-controls .feed-toolbar .feed-search-row { min-width: 124px; }
 }
 @media (pointer: coarse) {
   .feed-controls select, .type-tab, .filter-tabs button { min-height: 44px; }

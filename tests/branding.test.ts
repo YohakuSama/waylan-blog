@@ -24,12 +24,21 @@ it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、�
   const avatar = readFileSync("public/avatar.svg", "utf8");
   assert.equal(avatar, favicon, "avatar and browser icon should share the same mark");
   assert.match(favicon, /viewBox="0 0 96 96"/);
-  assert.match(favicon, /class="letter"/, "browser icon must use a solid legible W at small sizes");
-  assert.match(favicon, /prefers-color-scheme:dark/, "primary vector icon adapts to device appearance");
+  assert.match(favicon, /class="letter"/, "browser icon must use a strong W at small sizes");
+  assert.doesNotMatch(favicon, /class="tile"/, "browser tabs should not force a foreign dark app-tile");
+  assert.match(favicon, /M19\.57 29 27\.24 29/, "favicon W must derive from the editorial author monogram");
+  assert.match(favicon, /class="accent"/, "editorial W retains its ink-red full stop");
+  assert.match(favicon, /prefers-color-scheme:\s*dark/, "primary vector icon adapts to device appearance");
   const doc = new JSDOM(readFileSync("dist/index.html", "utf8")).window.document;
-  assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute("href"), "/favicon.svg");
-  assert.equal(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"), "/apple-touch-icon.png");
+  assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute("href"), "/favicon.svg?v=4");
+  assert.equal(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"), "/apple-touch-icon.png?v=4");
   assert(doc.querySelector('link[rel="alternate icon"]'));
+  const staticHead = readFileSync("index.html", "utf8");
+  const prerender = readFileSync("scripts/prerender.tsx", "utf8");
+  for (const icon of ["/favicon.svg?v=4", "/favicon.ico?v=4", "/apple-touch-icon.png?v=4"]) {
+    assert(staticHead.includes(icon), `missing static icon revision: ${icon}`);
+    assert(prerender.includes(icon), `SSR must use the same icon revision: ${icon}`);
+  }
   for (const name of ["favicon.ico", "favicon-32.png", "favicon-64.png", "apple-touch-icon.png"])
     assert(readFileSync("public/" + name).length > 100);
 });

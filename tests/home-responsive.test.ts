@@ -59,7 +59,8 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes("max-width: var(--index-frame-width);"));
     assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
     assert.ok(shell.includes("--index-list-width: 960px;"));
-    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-list-width); }"));
+    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-frame-width); }"));
+    assert.equal(pagesCss.includes(".feed-page { max-width: var(--index-list-width); }"), false);
     assert.match(pagesCss, /\.projects-layout,\s*\.archive-main,\s*\.about-layout \{ max-width: var\(--index-frame-width\); \}/);
     assert.ok(pagesCss.includes("grid-template-columns: minmax(0, 1fr) var(--home-rail-width);"));
     assert.ok(responsive.includes(".about-layout { max-width: 720px; }"));
@@ -77,6 +78,20 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(shell.includes(".site-sidebar.home-sidebar .side-heading-link {"));
     assert.ok(pages.includes('className="home-page"'));
     assert.ok(responsive.includes(".home-sidebar { display: none; }"));
+  });
+  it("shares the site-wide index origin and keeps desktop filters in two bands", () => {
+    const source = readFileSync("src/pages/Feed.tsx", "utf8");
+    const toolbar = source.indexOf('className="feed-toolbar"');
+    const sorting = source.indexOf('className="feed-search-row"', toolbar);
+    const topics = source.indexOf('className="filter-tabs"', sorting);
+    const results = source.indexOf('className="feed-result-line"', topics);
+    const list = source.indexOf("<FeedList", results);
+    assert.ok(toolbar > 0 && sorting > toolbar && topics > sorting && results > topics && list > results);
+    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-frame-width); }"));
+    assert.ok(pagesCss.includes(".feed-controls .feed-result-line {"));
+    assert.ok(responsive.includes(".feed-controls > .feed-result-line { grid-column: 2;"));
+    assert.ok(responsive.includes(".feed-controls .feed-result-line {"));
+    assert.ok(source.includes("<ViewToggle density={density} onChange={setDensity} />"));
   });
   it("uses content-led index archetypes without removing their real components", () => {
     const archive = readFileSync("src/pages/Archive.tsx", "utf8");
