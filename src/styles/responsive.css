@@ -789,8 +789,8 @@
     column-gap: var(--space-6);
   }
   .feed-controls > .feed-toolbar { grid-column: 1 / -1; }
-  .feed-controls > .filter-tabs { grid-column: 1; min-width: 0; align-items: center; }
-  .feed-controls > .feed-result-line { grid-column: 2; min-width: 0; justify-content: flex-end; }
+  .feed-controls > .filter-tabs { grid-column: 1; min-width: 0; align-self: stretch; align-items: center; }
+  .feed-controls > .feed-result-line { grid-column: 2; min-width: 0; align-self: stretch; justify-content: flex-end; }
   .feed-controls .feed-toolbar .feed-search-row { min-width: 124px; }
 }
 @media (pointer: coarse) {
