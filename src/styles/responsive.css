@@ -416,6 +416,7 @@
 }
 @media (max-width:767px) {
   .archive-activity { flex-direction: column; gap: var(--space-3); }
+  .archive-activity-copy { flex: none; }
   .archive-activity .heatmap { flex: none; width: min(100%, 312px); }
   .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
   .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }

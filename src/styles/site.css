@@ -10,9 +10,10 @@
   max-width: var(--index-frame-width);
 }
 /* Align all five page headings; keep long-form content at its reading measure. */
-.feed-layout { max-width: 920px; }
-.projects-layout { max-width: 960px; }
-.archive-main { max-width: 880px; }
+/* Lists share a left-aligned measure while the About prose stays narrower. */
+.feed-layout,
+.projects-layout,
+.archive-main { max-width: var(--index-list-width); }
 .about-layout { max-width: 720px; }
 .about-layout,
 .feed-layout,
@@ -234,10 +235,13 @@
 .archive-activity {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-8);
+  justify-content: flex-start;
+  gap: var(--space-12);
   padding: var(--space-6) 0 var(--space-8);
   border-bottom: 1px solid var(--line);
+}
+.archive-activity-copy {
+  flex: 0 0 248px;
 }
 .archive-activity-copy h2 {
   margin: 0;

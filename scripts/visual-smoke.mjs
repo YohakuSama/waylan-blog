@@ -50,6 +50,7 @@ function sameBox(actual, expected, label) {
 const results = [], notificationResults = [], baselines = new Map();
 const mastheadBaselines = new Map();
 const pageHeadingBaselines = new Map();
+const indexListWidthBaselines = new Map();
 const editorialLogoBaselines = new Map();
 let browser;
 try {
@@ -285,6 +286,7 @@ try {
               archiveYearTargets: [...document.querySelectorAll(".archive-year-nav a")].map(rect),
               archiveSummaryText: document.querySelector(".archive-summary")?.textContent || "",
               archiveActivity: select(".archive-activity"),
+              archiveActivityCopy: select(".archive-activity-copy"),
               archiveHeatmap: select(".archive-activity .heatmap"),
               projectCount: document.querySelectorAll(".projects-layout .feed-item.is-project").length,
               projectStatusCount: document.querySelectorAll(".projects-layout .project-status").length,
@@ -765,6 +767,16 @@ try {
               tag.left >= 0 && tag.right <= geometry.viewport + 1),
               `${label}: inconsistent or clipped touch tag targets`);
           }
+          // Feed, Projects and Archive are three views of the same index column.
+          if (["/feed", "/archive", "/projects"].includes(route)) {
+            const key = `${width}:${variant.skin}:${variant.theme}`;
+            if (route === "/feed") indexListWidthBaselines.set(key, geometry.indexContent.width);
+            else {
+              const baseline = indexListWidthBaselines.get(key);
+              assert.ok(baseline && Math.abs(geometry.indexContent.width - baseline) <= 1,
+                `${label}: index column changed width (${geometry.indexContent.width} vs ${baseline})`);
+            }
+          }
           if (route === "/privacy") {
             assert.ok(geometry.indexContent.width <= 721, `${label}: privacy prose lost its 720px reading measure`);
           }
@@ -786,6 +798,10 @@ try {
                 tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
             }
             assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= (width <= 767 || geometry.touch ? 44 : 40)), `${label}: density preference cannot be changed`);
+          }
+          if (route === "/" && width >= 1120 && geometry.resume && geometry.column) {
+            assert.ok(Math.abs(geometry.resume.right - geometry.column.right) <= 1,
+              `${label}: continue-reading width differs from the article column`);
           }
           if (route === "/projects") {
             assert.equal(geometry.projectCount, 2, `${label}: missing project entries`);
@@ -848,9 +864,17 @@ try {
             assert.ok(geometry.archiveYearTargets.every((box) => box?.height >= 44), `${label}: archive year link has a small click target`);
             assert.equal(geometry.archiveTitle, "归档", `${label}: archive label inconsistent`);
             assert.equal(geometry.archiveOverview, false, `${label}: obsolete archive card returned`);
-            assert.ok(geometry.archiveActivity && geometry.archiveHeatmap &&
-              geometry.archiveHeatmap.width <= 320 && geometry.archiveHeatmap.right <= geometry.viewport + 1,
+            assert.ok(geometry.archiveActivity && geometry.archiveActivityCopy && geometry.archiveHeatmap &&
+              geometry.archiveHeatmap.width <= 320 && geometry.archiveHeatmap.right <= geometry.indexContent.right + 1,
               `${label}: publishing activity disappeared or breaks the archive width`);
+            if (width >= 768) {
+              const gap = geometry.archiveHeatmap.left - geometry.archiveActivityCopy.right;
+              assert.ok(gap >= 40 && gap <= 56,
+                `${label}: archive graph detached from its heading (${gap}px)`);
+            } else {
+              assert.ok(geometry.archiveActivityCopy.height <= 110,
+                `${label}: archive activity reserved unnecessary mobile height`);
+            }
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
           }
           if (route === "/") {
