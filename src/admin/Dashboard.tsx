@@ -4,7 +4,7 @@ import { adminApi as api } from "./api";
 import { ago, editsLive } from "./helpers";
 import { PostEditor } from "./PostEditor";
 import { SiteEditor } from "./SiteEditor";
-import type { Overview, Session, Status } from "./types";
+import type { Overview, ReviewState, Session, Status } from "./types";
 import { Posts } from "./ContentList";
 import { Discussions } from "./Discussions";
 
@@ -42,6 +42,10 @@ export function Dashboard({ session }: { session: Session }) {
   const [error, setError] = useState("");
   const [view, setView] = useState<View>({ name: "list" });
   const [toast, setToast] = useState("");
+  const [reviews, setReviews] = useState<ReviewState[]>([]);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewTruncated, setReviewTruncated] = useState(false);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const toastTimer = useRef(0);
   const notify = (message: string) => {
     setToast(message);
@@ -65,6 +69,32 @@ export function Dashboard({ session }: { session: Session }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const refreshReviews = useCallback(async () => {
+    setLoadingReviews(true);
+    try {
+      const result = await api<{ reviews: ReviewState[]; truncated: boolean }>("/api/admin/reviews");
+      setReviews(result.reviews);
+      setReviewTruncated(result.truncated);
+      setReviewError("");
+    } catch (e) {
+      setReviewError((e as Error).message);
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, []);
+  // Only review mode uses the extra GitHub PR-list request. Refreshing the queue
+  // reflects merged/closed PRs without assuming that merge means deployed.
+  useEffect(() => {
+    if (overview?.publicationMode !== "review-pr") {
+      setReviews([]);
+      return;
+    }
+    if (view.name !== "list") return;
+    void refreshReviews();
+    const timer = setInterval(() => { void refreshReviews(); }, 60_000);
+    return () => clearInterval(timer);
+  }, [overview?.publicationMode, view.name, refreshReviews]);
 
   // While a commit is waiting to go live, check every 30 seconds.
   const pendingDeploy = editsLive(overview?.repo.branch || "") &&
@@ -149,6 +179,38 @@ export function Dashboard({ session }: { session: Session }) {
         {!overview && !error && <p className="muted pad">正在读取仓库…</p>}
         {overview && view.name === "list" && (
           <>
+            {overview.publicationMode === "review-pr" && (
+              <section className="panel" aria-label="内容审核队列">
+                <div className="panel-head">
+                  <h2>内容审核队列</h2>
+                  <button className="ghost" onClick={() => void refreshReviews()} disabled={loadingReviews}>
+                    {loadingReviews ? "读取中…" : "刷新审核状态"}
+                  </button>
+                </div>
+                <p className="muted">
+                  显示本后台创建的最近审核 PR。合并到 main 不代表已经完成 Cloudflare 部署。
+                </p>
+                {reviewError && <p className="error" role="alert">{reviewError}</p>}
+                {reviewTruncated && <p className="muted">最近 100 条 PR 已达到查询上限；请到 GitHub 查看更早的审核记录。</p>}
+                {!reviews.length && !reviewError && <p className="muted">暂无可显示的内容审核 PR。</p>}
+                {!!reviews.length && (
+                  <ul className="posts">
+                    {reviews.map((review) => (
+                      <li key={review.number}>
+                        <span>
+                          <strong>{review.title}</strong>
+                          <span className="muted"> · #{review.number} · {review.state === "open" ? "待审核" :
+                            review.state === "merged" ? "已合并 main（待确认部署）" : "已关闭，未合并"}</span>
+                        </span>
+                        <a href={review.url} className="ghost button" target="_blank" rel="noreferrer">
+                          打开 PR
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
             <Discussions overview={overview} onDone={refresh} notify={notify} />
             <section className="panel site-card">
               <div>

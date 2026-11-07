@@ -25,6 +25,7 @@ import {
   posts,
   publishChange,
   publicationMode,
+  recentReviews,
   blobOid,
   conflict,
   type Blob,
@@ -557,6 +558,8 @@ export async function admin(request: Request, env: Env, path: string) {
     await limit(env, `admin:${login.toLowerCase()}`, 60, 600);
   const url = new URL(request.url);
   if (path === "/api/admin/content" && request.method === "GET") return overview(env);
+  if (path === "/api/admin/reviews" && request.method === "GET")
+    return json(await recentReviews(env));
   if (path === "/api/admin/status" && request.method === "GET") {
     const at = await head(env);
     return json({ head: { oid: at.oid, date: at.date }, live: build.commit });

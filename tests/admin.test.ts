@@ -210,6 +210,16 @@ function rest(method: string, path: string, body: any) {
     reviewBranches.set(branch, body.sha);
     return [201, { ref: body.ref }];
   }
+  if (method === "GET" && path === "/pulls") {
+    return [200, reviewPRs.map((pr) => ({
+      ...pr,
+      state: (pr as any).state || "open",
+      merged_at: (pr as any).merged_at || null,
+      updated_at: "2026-11-07T15:00:00Z",
+      head: { ref: pr.head, repo: { full_name: "site-owner/blog-source" } },
+      base: { ref: pr.base },
+    }))];
+  }
   if (method === "POST" && path === "/pulls") {
     if (rejectReviewPR) return [403, {}];
     assert.equal(body.base, "main");
@@ -217,6 +227,7 @@ function rest(method: string, path: string, body: any) {
     assert(reviewBranches.has(body.head), "must write a review branch first");
     assert.match(body.title, /^内容审核：/);
     assert.match(body.body, /变更文件：/);
+    assert.match(body.body, /<!-- waylan-admin-review -->/);
     const number = reviewPRs.length + 200;
     reviewPRs.push({ number, ...body });
     return [201, { number, html_url: `https://github.com/site-owner/blog-source/pull/${number}` }];
@@ -572,6 +583,38 @@ describe("Admin: posts", () => {
     const r = await content();
     assert.equal(r.status, 503);
     assert.equal(r.body.code, "CONTENT_TOKEN");
+  });
+});
+
+describe("Admin: review status synchronization", () => {
+  it("does not query GitHub PR history when review mode is disabled", async () => {
+    const r = await call("/api/admin/reviews");
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.body, { reviews: [], truncated: false });
+    assert.equal(calls.some((c) => c === "GET /repos/site-owner/blog-source/pulls"), false);
+  });
+
+  it("lists only marked same-repository review PRs and distinguishes merged from closed", async () => {
+    env.CONTENT_PUBLISH_MODE = "review-pr";
+    const saved = await save(draft());
+    assert.equal(saved.status, 201);
+    const first = await call("/api/admin/reviews");
+    assert.equal(first.status, 200);
+    assert.equal(first.body.reviews.length, 1);
+    assert.equal(first.body.reviews[0].state, "open");
+    assert.equal(first.body.reviews[0].url, saved.body.review.url);
+    (reviewPRs[0] as any).state = "closed";
+    (reviewPRs[0] as any).merged_at = "2026-11-07T15:10:00Z";
+    const merged = await call("/api/admin/reviews");
+    assert.equal(merged.body.reviews[0].state, "merged");
+    (reviewPRs[0] as any).merged_at = null;
+    const closed = await call("/api/admin/reviews");
+    assert.equal(closed.body.reviews[0].state, "closed");
+    reviewPRs.push({
+      number: 999, title: "unrelated", body: "external PR", head: saved.body.review.branch,
+      base: "main", draft: true,
+    });
+    assert.equal((await call("/api/admin/reviews")).body.reviews.length, 1);
   });
 });
 
