@@ -313,6 +313,10 @@ try {
                 tags: [...card.querySelectorAll(".feed-tail-tags .tag-list a")].map(rect).filter(Boolean),
                 actions: rect(card.querySelector(".feed-tail .feed-actions")),
               })),
+              feedTagActionRows: [...document.querySelectorAll(".feed-layout .feed-list .feed-item")].map((card) => ({
+                tags: [...card.querySelectorAll(".feed-tail-tags .tag-list a")].map(rect).filter(Boolean),
+                actions: rect(card.querySelector(".feed-tail .feed-actions")),
+              })),
               projectMedia: select(".projects-layout .project-media"),
               projectInlineTags: select(".projects-layout .project-compact-tags"),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
@@ -865,6 +869,12 @@ try {
                 tab.right <= geometry.viewport && tab.height >= 40), `${label}: clipped/small filter`);
             }
             assert.ok(geometry.densityControls.length === 2 && geometry.densityControls.every((box) => box && box.width >= 40 && box.height >= (width <= 767 || geometry.touch ? 44 : 40)), `${label}: density preference cannot be changed`);
+          }
+          if (route === "/feed" && width <= 480) {
+            const taggedRows = geometry.feedTagActionRows.filter(({ tags }) => tags.length > 0);
+            assert.ok(taggedRows.length > 0 && taggedRows.every(({ tags, actions }) => actions &&
+              Math.abs(actions.bottom - Math.max(...tags.map((tag) => tag.bottom))) <= 2),
+              `${label}: feed actions float above the last wrapped topic row`);
           }
           if (route === "/" && width >= 1120 && geometry.resume && geometry.column) {
             assert.ok(Math.abs(geometry.resume.right - geometry.column.right) <= 1,
