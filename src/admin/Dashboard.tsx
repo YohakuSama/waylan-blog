@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { str } from "./form";
 import { adminApi as api } from "./api";
-import { ago } from "./helpers";
+import { ago, editsLive } from "./helpers";
 import { PostEditor } from "./PostEditor";
 import { SiteEditor } from "./SiteEditor";
 import type { Overview, Session, Status } from "./types";
@@ -9,7 +9,13 @@ import { Posts } from "./ContentList";
 import { Discussions } from "./Discussions";
 
 /** Dashboard coordinates navigation and refresh; editors own their own unsaved state. */
-function DeployStatus({ status }: { status: Status }) {
+function DeployStatus({ status, branch }: { status: Status; branch: string }) {
+  if (!editsLive(branch))
+    return (
+      <span className="status">
+        当前编辑的是内容分支「{branch}」，提交不会直接上线。请先在 GitHub 创建 PR，待通过审核后合并到 main。
+      </span>
+    );
   if (!status.live)
     return (
       <span className="status">
@@ -61,7 +67,8 @@ export function Dashboard({ session }: { session: Session }) {
   }, [refresh]);
 
   // While a commit is waiting to go live, check every 30 seconds.
-  const pendingDeploy = !!status?.live && status.live !== status.head.oid;
+  const pendingDeploy = editsLive(overview?.repo.branch || "") &&
+    !!status?.live && status.live !== status.head.oid;
   useEffect(() => {
     if (!pendingDeploy) return;
     const timer = setInterval(async () => {
@@ -116,7 +123,15 @@ export function Dashboard({ session }: { session: Session }) {
       <main>
         {status && (
           <div className="deploy">
-            <DeployStatus status={status} />
+            <DeployStatus status={status} branch={overview?.repo.branch || "main"} />
+          </div>
+        )}
+        {overview && !editsLive(overview.repo.branch) && (
+          <div className="panel" role="note">
+            当前内容保存在 <strong>{overview.repo.branch}</strong>，不会自动部署到网站。
+            <a href={`https://github.com/${overview.repo.name}/compare/main...${encodeURIComponent(overview.repo.branch)}?expand=1`}
+              target="_blank" rel="noreferrer">在 GitHub 查看差异并创建 PR</a>。
+            合并 PR 后请重新打开后台查看线上版本。
           </div>
         )}
         {error && (
