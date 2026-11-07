@@ -204,6 +204,31 @@ async function run(engine,name,width){
         const inline=document.querySelector(".article-heading-save").getBoundingClientRect();
         window.scrollBy(0,Math.max(550,inline.bottom+220));
       });
+      if (width > 1040) {
+        const rail = await page.evaluate(() => {
+          const inner = document.querySelector(".reader-toc .toc-inner");
+          const outer = document.querySelector(".reader-toc");
+          const style = getComputedStyle(inner);
+          const box = inner.getBoundingClientRect();
+          const parent = outer.getBoundingClientRect();
+          return {
+            position: style.position,
+            top: box.top,
+            stickyTop: Number.parseFloat(style.top),
+            parentBottom: parent.bottom,
+            innerHeight: box.height,
+            scrollY: window.scrollY,
+          };
+        });
+        observations.push({browser:name,width,scenario:"sticky reading rail clears header while scrolling",rail});
+        assert.equal(rail.position, "sticky", "desktop reading utilities must use native sticky positioning");
+        assert.ok(Number.isFinite(rail.stickyTop) && rail.stickyTop >= 80,
+          "sticky reading rail must clear the global header");
+        if (rail.scrollY > 200 && rail.parentBottom >= rail.stickyTop + rail.innerHeight + 2) {
+          assert.ok(Math.abs(rail.top - rail.stickyTop) <= 3,
+            "desktop reading rail fails to stick below the masthead: " + JSON.stringify(rail));
+        }
+      }
       assert.equal(await page.locator(".reader-floating-tools, .reader-floating-trigger, .reader-floating-panel").count(),0,
         "no moving reader controls may cover the article while scrolling");
       await page.evaluate(()=>window.scrollTo(0,0));
