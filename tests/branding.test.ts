@@ -28,7 +28,7 @@ it("每个预渲染页面都有与头像同源的 favicon、旧图标回退、�
   assert.doesNotMatch(favicon, /class="tile"/, "browser tabs should not force a foreign dark app-tile");
   assert.match(favicon, /M19\.57 29 27\.24 29/, "favicon W must derive from the editorial author monogram");
   assert.match(favicon, /class="accent"/, "editorial W retains its ink-red full stop");
-  assert.match(favicon, /prefers-color-scheme:dark/, "primary vector icon adapts to device appearance");
+  assert.match(favicon, /prefers-color-scheme:\s*dark/, "primary vector icon adapts to device appearance");
   const doc = new JSDOM(readFileSync("dist/index.html", "utf8")).window.document;
   assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute("href"), "/favicon.svg?v=4");
   assert.equal(doc.querySelector('link[rel="apple-touch-icon"]')?.getAttribute("href"), "/apple-touch-icon.png?v=4");
