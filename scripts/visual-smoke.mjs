@@ -791,18 +791,18 @@ try {
               tag.left >= 0 && tag.right <= geometry.viewport + 1),
               `${label}: inconsistent or clipped touch tag targets`);
           }
-          // Shared outer frame, with functional inner measures rather than
-          // forcing project comparison, archive chronology and Feed to 960px.
+          // Each index route uses the same outer horizontal origin.
+          // Feed fills that frame; stacked Archive keeps its narrower timeline.
           if (["/feed", "/archive", "/projects"].includes(route)) {
             const key = `${width}:${variant.skin}:${variant.theme}`;
             if (route === "/feed") {
               indexListWidthBaselines.set(key, geometry.indexContent.width);
-              assert.ok(geometry.indexContent.width <= 961,
-                `${label}: Feed's scanning width became excessive`);
+              assert.ok(geometry.indexContent.width <= 1141,
+                `${label}: Feed exceeded the shared 1140px page frame`);
             } else if (route === "/archive" && width < 1120) {
               const feedWidth = indexListWidthBaselines.get(key);
-              assert.ok(feedWidth && Math.abs(geometry.indexContent.width - feedWidth) <= 1,
-                `${label}: stacked archive must use the readable index width`);
+              assert.ok(feedWidth && Math.abs(geometry.indexContent.width - Math.min(feedWidth, 960)) <= 1,
+                `${label}: stacked archive must keep its 960px reading measure`);
             } else if (width >= 1120) {
               assert.ok(Math.abs(geometry.indexContent.width - geometry.indexPage.width) <= 1,
                 `${label}: page-specific desktop layout fails to use its outer frame`);
@@ -812,7 +812,7 @@ try {
             assert.ok(geometry.indexContent.width <= 721, `${label}: privacy prose lost its 720px reading measure`);
           }
           if (route === "/feed" && width >= 1120) {
-            // The formerly left-docked 960px reading measure must now be centered.
+            // Feed fills the same centered 1140px frame as Home's heading.
             const expectedLeft = (geometry.viewport - geometry.indexPage.width) / 2;
             assert.ok(Math.abs(geometry.indexPage.left - expectedLeft) <= 2,
               `${label}: feed index is off-center: ${JSON.stringify({left: geometry.indexPage.left, expectedLeft})}`);

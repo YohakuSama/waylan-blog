@@ -12,10 +12,9 @@
 /* The shared masthead frame contains three content-led layouts:
    Feed: readable list; Projects: comparison grid; Archive/About: metadata rail.
    All share a left edge but not an arbitrary identical body width. */
-.feed-layout { max-width: var(--index-list-width); }
-/* Feed has no secondary rail. Center the heading, controls and cards as one
-   readable search measure rather than parking 960px at the frame's left. */
-.feed-page { max-width: var(--index-list-width); }
+.feed-layout { max-width: var(--index-frame-width); }
+/* Feed has no secondary rail: use the shared 1140px index frame for heading,
+   filters and cards. Keep long text readable within individual feed entries. */
 .feed-page > .page-heading { padding-bottom: var(--space-4); }
 .projects-layout,
 .archive-main,
