@@ -309,6 +309,10 @@ try {
               // A desktop preview and a compact responsive row share tag data.
               // Only visible links have usable hit targets at a given width.
               projectTags: [...document.querySelectorAll(".projects-layout .tag-list a")].map(rect).filter(Boolean),
+              projectTagActionRows: [...document.querySelectorAll(".projects-layout .feed-item.is-project")].map((card) => ({
+                tags: [...card.querySelectorAll(".feed-tail-tags .tag-list a")].map(rect).filter(Boolean),
+                actions: rect(card.querySelector(".feed-tail .feed-actions")),
+              })),
               projectMedia: select(".projects-layout .project-media"),
               projectInlineTags: select(".projects-layout .project-compact-tags"),
               projectExternal: [...document.querySelectorAll(".projects-layout .project-facts a")].map(rect),
@@ -901,6 +905,12 @@ try {
                 `${label}: small or clipped project tags`);
               assert.ok(geometry.projectExternal.every((box) => box && box.height >= 44),
                 `${label}: future project links need 44px targets`);
+              if (width <= 480) {
+                assert.ok(geometry.projectTagActionRows.length === geometry.projectCount &&
+                  geometry.projectTagActionRows.every(({ tags, actions }) => tags.length > 0 && actions &&
+                    Math.abs(actions.bottom - Math.max(...tags.map((tag) => tag.bottom))) <= 2),
+                  `${label}: project actions float above the last wrapped topic row`);
+              }
             }
           }
           if (route === "/about") {
