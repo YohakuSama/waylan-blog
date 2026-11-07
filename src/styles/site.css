@@ -11,15 +11,25 @@
 }
 /* Align all five page headings; keep long-form content at its reading measure. */
 /* Lists share a left-aligned measure while the About prose stays narrower. */
+/* Editorial pages share the 1140px outer frame. Lists without a rail
+   retain a 960px measure; Archive and About reuse the Home rail. */
 .feed-layout,
-.projects-layout,
-.archive-main { max-width: var(--index-list-width); }
-.about-layout { max-width: 720px; }
-.about-layout,
-.feed-layout,
-.projects-layout {
-  min-width: 0;
+.projects-layout { max-width: var(--index-list-width); }
+.archive-main,
+.about-layout { max-width: var(--index-frame-width); }
+.archive-main,
+.about-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--home-rail-width);
+  column-gap: var(--home-rail-gap);
+  align-items: start;
 }
+.archive-index,
+.about-text,
+.feed-layout,
+.projects-layout { min-width: 0; }
+.archive-index,
+.about-text { grid-column: 1; grid-row: 1; }
 .page-heading {
   padding: var(--space-12) 0 var(--space-6);
 }
@@ -64,7 +74,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
-  padding: var(--space-4);
+  /* Filters belong to the index, rather than an unrelated raised card. */
+  padding: 0 0 var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .feed-controls .feed-toolbar {
   padding-bottom: 0;
@@ -231,17 +245,14 @@
 .archive-row:hover > span {
   color: var(--accent);
 }
-/* Publication activity belongs with the chronological index, not feed filters. */
+/* Publication activity uses the same narrow right rail as Home,
+   instead of delaying the timeline with a wide decorative row. */
 .archive-activity {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: var(--space-12);
-  padding: var(--space-6) 0 var(--space-8);
-  border-bottom: 1px solid var(--line);
-}
-.archive-activity-copy {
-  flex: 0 0 248px;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding: var(--space-4) 0 var(--space-6) var(--space-5);
+  border-left: 1px solid var(--line);
 }
 .archive-activity-copy h2 {
   margin: 0;
@@ -254,9 +265,9 @@
   line-height: 1.7;
 }
 .archive-activity .heatmap {
-  flex: 0 1 312px;
   width: 100%;
   min-width: 0;
+  margin-top: var(--space-5);
 }
 /* Separate privacy notice, following the site's existing editorial typography. */
 .privacy-page {
@@ -321,13 +332,20 @@
   color: var(--muted);
 }
 .about-details {
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  margin: var(--space-8) 0;
-  padding: 24px 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--space-6);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4) 0 var(--space-6) var(--space-5);
+  border-left: 1px solid var(--line);
+}
+.about-details > section + section {
+  padding-top: var(--space-6);
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
 }
 .about-details > section {
   min-width: 0;
@@ -436,7 +454,7 @@
   color: var(--muted);
 }
 .footer-inner {
-  max-width: var(--content-width);
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
   margin: 0 auto;
   padding: 22px var(--page-gutter) 24px;
   display: grid;
