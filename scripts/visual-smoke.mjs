@@ -863,6 +863,16 @@ try {
               `${label}: about page repeats the site's global navigation`);
             assert.equal(geometry.aboutSectionCount, 2,
               `${label}: about technical facts and statistics must remain visible on every device`);
+            assert.ok(geometry.aboutText && geometry.aboutDetails,
+              `${label}: About content or technical facts disappeared`);
+            if (width >= 1120) {
+              assert.ok(geometry.aboutText.right + 40 <= geometry.aboutDetails.left &&
+                Math.abs(geometry.aboutText.top - geometry.aboutDetails.top) <= 24,
+                `${label}: About facts are not aligned in the desktop information rail`);
+            } else {
+              assert.ok(geometry.aboutDetails.top >= geometry.aboutText.bottom - 1,
+                `${label}: About facts overlap the body on a narrow screen`);
+            }
           }
           if (route === "/404") {
             assert.equal(geometry.notFoundHeading, "页面不存在", `${label}: missing 404 heading`);
@@ -886,13 +896,26 @@ try {
             assert.ok(geometry.archiveActivity && geometry.archiveActivityCopy && geometry.archiveHeatmap &&
               geometry.archiveHeatmap.width <= 320 && geometry.archiveHeatmap.right <= geometry.indexContent.right + 1,
               `${label}: publishing activity disappeared or breaks the archive width`);
-            if (width >= 768) {
+            assert.ok(geometry.archiveIndex, `${label}: archive timeline index is missing`);
+            if (width >= 1120) {
+              const home = pageHeadingBaselines.get(`${width}:${variant.skin}:${variant.theme}`);
+              assert.ok(home && Math.abs(geometry.indexContent.width - home.frame.width) <= 1,
+                `${label}: archive should use the same desktop frame as Home`);
+              assert.ok(geometry.archiveIndex.right + 40 <= geometry.archiveActivity.left &&
+                Math.abs(geometry.archiveActivity.top - geometry.archiveIndex.top) <= 24,
+                `${label}: archive chart is not aligned with its date index`);
+              assert.ok(geometry.archiveHeatmap.left >= geometry.archiveActivity.left &&
+                geometry.archiveHeatmap.right <= geometry.archiveActivity.right + 1 &&
+                geometry.archiveHeatmap.top >= geometry.archiveActivityCopy.bottom,
+                `${label}: archive heatmap overflows or overlaps its rail heading`);
+            } else if (width >= 768) {
               const gap = geometry.archiveHeatmap.left - geometry.archiveActivityCopy.right;
-              assert.ok(gap >= 40 && gap <= 56,
-                `${label}: archive graph detached from its heading (${gap}px)`);
+              assert.ok(gap >= 24 && gap <= 40 && geometry.archiveIndex.top >= geometry.archiveActivity.bottom - 1,
+                `${label}: archive tablet activity row is misaligned`);
             } else {
-              assert.ok(geometry.archiveActivityCopy.height <= 110,
-                `${label}: archive activity reserved unnecessary mobile height`);
+              assert.ok(geometry.archiveActivityCopy.height <= 110 &&
+                geometry.archiveIndex.top >= geometry.archiveActivity.bottom - 1,
+                `${label}: mobile archive reserves excessive height or overlaps the index`);
             }
             if (geometry.years === 1) assert.equal(geometry.yearLinks, 0, `${label}: isolated year button returned`);
           }
