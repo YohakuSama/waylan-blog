@@ -1,0 +1,590 @@
+/* ---------- Feed entries ---------- */
+.feed-list {
+  display: flex;
+  flex-direction: column;
+}
+.feed-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "body";
+  gap: 0;
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--line);
+}
+.feed-item.has-media {
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  grid-template-areas: "media body";
+  gap: 0 24px;
+}
+.feed-item.is-article.has-media {
+  grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
+}
+/* Feed uses the whole site frame rather than an unused right margin; keep
+   the editorial illustration from growing with the available page width. */
+@media (min-width: 768px) {
+  .feed-layout .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  }
+}
+.feed-media-link {
+  grid-area: media;
+  display: block;
+  align-self: start;
+}
+.feed-media {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  aspect-ratio: 2 / 1;
+  background: var(--surface-green);
+}
+.is-article .feed-media {
+  aspect-ratio: 344 / 200;
+}
+.is-article .feed-media::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 30px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.feed-media img,
+.feed-media .art-fallback {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--motion-page) var(--ease);
+}
+.feed-item:hover .feed-media img {
+  transform: scale(1.02);
+}
+.code-thumb {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  padding: 34px 18px 14px;
+  aspect-ratio: auto;
+  min-height: 134px;
+}
+.code-thumb .code-dots,
+.code-thumb .code-dots::before,
+.code-thumb .code-dots::after {
+  position: absolute;
+  top: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.code-thumb .code-dots {
+  left: 18px;
+  background: #e0605a;
+}
+.code-thumb .code-dots::before,
+.code-thumb .code-dots::after {
+  content: "";
+  top: 0;
+}
+.code-thumb .code-dots::before {
+  left: 13px;
+  background: #b98ae8;
+}
+.code-thumb .code-dots::after {
+  left: 26px;
+  background: #d7d2de;
+}
+.code-thumb .code-lang {
+  position: absolute;
+  right: 14px;
+  top: 8px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--code-ink) 65%, transparent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.code-thumb pre {
+  margin: 0;
+  font: 12px/1.65 var(--font-mono);
+  overflow: hidden;
+  counter-reset: code-line;
+}
+.code-line {
+  display: block;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.code-line::before {
+  counter-increment: code-line;
+  content: counter(code-line);
+  display: inline-block;
+  width: 18px;
+  margin-right: 8px;
+  color: color-mix(in srgb, var(--code-ink) 40%, transparent);
+  text-align: right;
+}
+.project-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  aspect-ratio: auto;
+  min-height: 180px;
+  padding: 16px 18px;
+  background:
+    radial-gradient(
+      circle at 85% 20%,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      transparent 55%
+    ),
+    var(--surface-green);
+  border: 1px solid var(--line);
+}
+.project-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  min-width: 0;
+}
+/* Keep the original whole-thumbnail article target. Real tag links sit
+   above this stretched link rather than nesting links inside one another. */
+.project-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.project-head:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.project-initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--surface);
+}
+.project-code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-thumb-tags {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-height: 36px;
+}
+.project-thumb-tags .tag-list {
+  margin: 0;
+  gap: 6px;
+}
+.project-thumb-tags .tag-list a {
+  padding: 2px 9px;
+  font-size: 11.5px;
+  line-height: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.project-langs {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  height: 6px;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.project-langs i {
+  flex-basis: 0;
+  background: var(--accent);
+}
+.project-langs i:nth-child(2) {
+  opacity: 0.66;
+}
+.project-langs i:nth-child(3) {
+  opacity: 0.42;
+}
+.project-langs i:nth-child(4) {
+  opacity: 0.24;
+}
+.project-thumb .mono {
+  font-size: 11px;
+  color: var(--muted);
+}
+.feed-body {
+  grid-area: body;
+  min-width: 0;
+}
+/* All publication cards share two stable starting columns. Extra facts may
+   wrap, but type, date and title never depend on neighboring label lengths. */
+.entry-meta {
+  display: flex;
+  align-items: baseline;
+  min-height: 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.entry-meta-facts {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.entry-meta-facts > * {
+  display: inline-flex;
+  align-items: baseline;
+  min-height: 24px;
+  line-height: 1.5;
+}
+.entry-meta-facts > .type-label {
+  flex: 0 0 74px;
+  white-space: nowrap;
+}
+.entry-meta-facts > time {
+  flex: 0 0 88px;
+  font-variant-numeric: tabular-nums;
+}
+.entry-meta-facts > * + *::before {
+  content: none;
+}
+.entry-meta-facts > .sample-label::before,
+.entry-meta-facts > time::before {
+  content: none;
+}
+.entry-meta-facts > time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.entry-meta-facts > .sample-label {
+  margin-left: 10px;
+}
+.type-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+.type-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+}
+.project-status {
+  color: var(--muted);
+}
+.feed-body h2 {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.is-article .feed-body h2 {
+  font-size: clamp(22px, 1.8vw, 24px);
+  margin-top: var(--space-2);
+}
+.post-card-link:hover {
+  color: var(--accent);
+}
+.feed-excerpt {
+  margin-top: 8px;
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tag-list a {
+  display: inline-block;
+  padding: 2px 13px;
+  border-radius: var(--radius-full);
+  background: var(--tag-bg);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 22px;
+}
+.tag-list a:hover {
+  color: var(--accent);
+}
+/* One quiet tag variant for editorial previews and project entries, with
+   the same interaction and tap geometry instead of page-specific overrides. */
+.tag-list.tag-list--quiet { gap: var(--space-1) var(--space-3); }
+.tag-list.tag-list--quiet a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 2px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.tag-list.tag-list--quiet a:hover,
+.tag-list.tag-list--quiet a:focus-visible {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (pointer: coarse) {
+  .tag-list.tag-list--quiet a { min-height: 44px; }
+}
+/* The save action is an end-of-card utility, not part of the publication facts. */
+.feed-tail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  margin-top: var(--space-2);
+}
+.feed-tail-tags {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.feed-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  gap: 4px;
+  margin-left: auto;
+}
+.feed-list .feed-tail .tag-list {
+  margin: 0;
+}
+.project-compact-tags {
+  display: none;
+}
+.feed-arrow {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--ink);
+  border-radius: 50%;
+}
+.feed-arrow:hover {
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+@media (pointer: coarse) {
+  .feed-arrow { width: 44px; height: 44px; }
+}
+.is-thought {
+  grid-template-columns: 50px minmax(0, 1fr);
+  grid-template-areas: "quote body";
+  align-items: start;
+  padding: var(--space-6) 0;
+}
+.thought-mark {
+  grid-area: quote;
+  margin: 8px 0 0 12px;
+  color: var(--accent);
+  fill: none;
+  stroke-width: 1.6;
+}
+.is-thought .feed-body {
+  border-left: 1px solid var(--line);
+  padding-left: 28px;
+}
+.thought-text {
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.is-thought .tag-list {
+  margin-top: 10px;
+}
+.feed-item.is-project .project-facts:empty { display: none; }
+.project-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+.project-facts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+}
+/* A technology stack is descriptive data, not an additional set of tag links. */
+.stack-list {
+  display: block;
+  flex: 1 1 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.8;
+  list-style: none;
+}
+.stack-list li {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font: var(--text-caption)/1.8 var(--font-mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.stack-list li + li::before {
+  content: " · ";
+  white-space: pre;
+  color: var(--muted);
+}
+/* Use semantic sizes only in the library: Home and Projects keep their own hierarchy. */
+.feed-layout .feed-body h2 { font-size: var(--text-card-title); }
+.feed-layout .is-article .feed-body h2 { font-size: var(--text-xl); }
+.feed-layout .feed-excerpt { font-size: var(--text-base); }
+.feed-layout .entry-meta,
+.feed-layout .type-label,
+.feed-layout .project-facts,
+.feed-layout .tag-list a { font-size: var(--text-caption); }
+.feed-layout .thought-text { font-size: var(--text-lg); }
+.feed-layout .stack-list li,
+.feed-layout .project-thumb .mono,
+.feed-layout .project-thumb-tags .tag-list a { font-size: var(--text-sm); }
+.feed-layout .code-thumb .code-lang { font-size: var(--text-xs); }
+
+/* Compact density: titles and meta, with both shared actions. */
+.density-compact .feed-item,
+.density-compact .feed-item.has-media,
+.density-compact .feed-item.is-article.has-media {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "body";
+  padding: 14px 0;
+}
+.density-compact .feed-media-link,
+.density-compact .feed-excerpt,
+.density-compact .tag-list,
+.density-compact .project-facts,
+.density-compact .thought-mark {
+  display: none;
+}
+/* Compact hides supporting content, but never rescales a headline.
+   Both density modes keep identical type metrics and reading hierarchy. */
+.feed-layout .density-compact .feed-body h2 {
+  font-size: var(--text-card-title);
+  line-height: 1.45;
+  margin-top: 4px;
+}
+.feed-layout .density-compact .is-article .feed-body h2 {
+  font-size: var(--text-xl);
+}
+.density-compact .is-thought .feed-body {
+  border: 0;
+  padding: 0;
+}
+.density-compact .thought-text {
+  font-size: 15px;
+}
+.feed-layout .density-compact .thought-text { font-size: var(--text-lg); }
+/* Keep the shared save/open pair beside metadata, leaving titles full width.
+   Reserve the 44px touch targets without pushing a second action row. */
+.density-compact .feed-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  grid-template-areas: "meta actions" "title title";
+  gap: var(--space-1) var(--space-2);
+  padding-right: 0;
+}
+.density-compact .entry-meta {
+  grid-area: meta;
+  min-width: 0;
+  align-self: center;
+}
+.density-compact .feed-body h2,
+.density-compact .thought-text {
+  grid-area: title;
+  min-width: 0;
+  margin-top: 0;
+  align-self: start;
+}
+.density-compact .feed-tail {
+  grid-area: actions;
+  position: static;
+  min-height: 44px;
+  margin: 0;
+  align-self: start;
+}
+.density-compact .feed-tail-tags { display: none; }
+.density-compact .feed-actions { gap: 4px; }
+.feed-footer {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 8px;
+}
+.load-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font-size: 14px;
+}
+.load-more:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.load-more .mono {
+  font-size: 11px;
+  color: var(--muted);
+}
+.feed-end {
+  font-size: 12px;
+  color: var(--muted);
+}
+.empty-state {
+  margin-top: var(--space-6);
+  border-radius: var(--radius-md);
+}
+.empty-state h3 {
+  font-size: var(--text-lg);
+  color: var(--ink);
+  margin-bottom: var(--space-2);
+}

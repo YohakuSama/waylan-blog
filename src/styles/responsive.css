@@ -1,0 +1,1018 @@
+/* ---------- Responsive ---------- */
+@media (max-width: 1280px) {
+  :root {
+    --sidebar-width: 280px;
+    --page-gutter: 32px;
+  }
+  .content-grid {
+    gap: 0 48px;
+  }
+  .site-sidebar {
+    padding-left: 28px;
+  }
+  .header-search {
+    width: 180px;
+  }
+}
+@media (max-width: 1100px) {
+  .header-search {
+    width: auto;
+  }
+  .header-search-text {
+    display: none;
+  }
+}
+/* Tablet: sidebar moves below the main column. */
+/* A clear topic doorway prevents the stacked sidebar from hiding discovery. */
+@media (max-width: 1119px) {
+  .home-side-topics { display: none; }
+  .home-sidebar > .home-side-topics + .side-block { padding-top: 0; }
+  /* Feed already has type/topic filters and global navigation. Unlike the
+     home page, repeating the entire desktop rail after the list adds no route. */
+  .feed-layout .site-sidebar { display: none; }
+  /* About already exposes global navigation and its own site details.
+     Do not append a duplicate discovery rail below them. */
+  .about-layout .site-sidebar { display: none; }
+  /* Supplementary information follows the main content on tablets and phones.
+     No data is hidden or cloned and the DOM reading order remains primary-first. */
+  .archive-main, .about-layout { display: block; max-width: var(--index-list-width); }
+  .about-layout { max-width: 720px; }
+  .archive-activity {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .archive-activity-copy { flex: 0 0 200px; }
+  .archive-activity .heatmap {
+    flex: 0 1 312px;
+    width: min(100%, 312px);
+    margin-top: 0;
+  }
+  .about-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+    padding: var(--space-6) 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
+  .about-details > section + section { padding-top: 0; border-top: 0; }
+}
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .site-sidebar {
+    min-height: 0;
+    align-content: start;
+    border-left: 0;
+    border-top: 1px solid var(--ink);
+    margin-top: 40px;
+    padding: 32px 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 48px;
+  }
+  .page-heading + .content-grid .site-sidebar {
+    padding-top: 32px;
+  }
+  .side-block,
+  .side-block:first-child {
+    border-top: 0;
+    padding: 0 0 32px;
+  }
+  .home-hero > .hero-visual {
+    width: 100%;
+    right: auto;
+  }
+}
+/* Tablets and phones use the same compact secondary filtering controls.
+   Content types remain explicit; topic + sort share one row. */
+@media (max-width: 1024px) {
+  .feed-controls .filter-tabs {
+    display: none;
+  }
+  .feed-controls .topic-select {
+    display: inline-flex;
+  }
+  .feed-controls .feed-search-row {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    margin-left: 0;
+  }
+  .feed-controls .feed-search-row .sort-control {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .feed-controls .feed-search-row .sort-control select {
+    width: 100%;
+    min-width: 0;
+  }
+  .feed-controls {
+    gap: var(--space-3);
+    padding: 0;
+  }
+  .feed-controls .feed-result-line {
+    grid-column: 1 / -1;
+    min-height: 44px;
+  }
+}
+/* Tablet filters keep explicit content types but should not spend almost
+   200px before the first result. Preserve all three control groups and
+   their 44px touch targets while removing inherited desktop gutters. */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .feed-controls { row-gap: 0; }
+  .feed-controls .feed-toolbar {
+    min-height: 0;
+    row-gap: 4px;
+    padding-block: 2px;
+  }
+  .feed-controls .type-tab { min-height: 44px; }
+  .feed-controls .feed-search-row { min-height: 44px; }
+  .feed-controls .feed-search-row select { height: 44px; min-height: 44px; }
+  .feed-controls .feed-result-line { min-height: 44px; padding-block: 0; }
+  .feed-controls .view-toggle { padding: 0; }
+  .feed-controls .view-toggle::before { top: 0; left: 0; height: 44px; }
+  .feed-controls .view-toggle button { height: 44px; }
+}
+/* Narrow screens keep destinations in a separate, always-visible row. */
+@media (max-width: 860px) {
+  :root { --header-height: 104px; --header-bar-height: 60px; --page-gutter: 24px; }
+  .page-heading { padding: 32px 0 20px; }
+  /* Only index pages have a two-row masthead; reader uses one compact row.
+     The generic min-height otherwise keeps an invisible 43px nav row inside
+     the 60px reader header and pushes its logo downward. */
+  .site-header:not(.site-header-reader) .header-inner {
+    position: relative;
+    height: auto; min-height: calc(var(--header-height) - 1px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--header-bar-height) 43px;
+    column-gap: 6px; row-gap: 0;
+  }
+  /* The brand-navigation separator belongs only to the *site* masthead.
+     Reader #42 has its own compact branded masthead and reading-progress
+     hairline; it must not inherit an extra divider. */
+  :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) .header-inner::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--header-bar-height) - 5px);
+    left: calc(var(--page-gutter) + 14px);
+    right: calc(var(--page-gutter) + 14px);
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg,
+      transparent,
+      color-mix(in srgb, var(--line-strong) 35%, transparent) 18%,
+      color-mix(in srgb, var(--line-strong) 35%, transparent) 82%,
+      transparent);
+  }
+  .brand {
+    grid-row: 1; grid-column: 1;
+    min-width: 0;
+    width: 100%;
+    gap: 7px;
+  }
+  .brand-wordmark { flex: 0 0 auto; }
+  .header-tools {
+    grid-row: 1; grid-column: 2;
+    border-left: 0;
+    padding-left: 0;
+    gap: 0;
+  }
+  #site-nav {
+    display: flex; grid-row: 2; grid-column: 1 / -1;
+    position: relative; align-items: center; gap: 0;
+    width: 100%; min-width: 0; min-height: 43px; border: 0;
+  }
+  /* All skins share the original light, full-width navigation geometry.
+     Only the selected destination is filled: never tint the entire row
+     or inset it relative to the existing logo and tool actions. */
+  .site-header:not(.site-header-reader) #site-nav {
+    padding-inline: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .nav-link {
+    flex: 1; width: auto; min-width: 0;
+    height: 40px; margin-block: 1px;
+    font-size: 13px; border-radius: 10px;
+  }
+  .nav-description { display: none; }
+  .nav-indicator { bottom: 3px; }
+  .notification-popover {
+    position: fixed; top: calc(var(--header-height) + 8px); right: var(--page-gutter);
+    width: calc(100vw - 2 * var(--page-gutter)); max-width: 360px;
+  }
+  .header-search {
+    margin-right: 0;
+    border: 0;
+    background: none;
+    padding: 0;
+    width: var(--header-control-size);
+    height: var(--header-control-size);
+    justify-content: center;
+  }
+  .header-search kbd {
+    display: none;
+  }
+  /* Home uses the same .page-heading inset as Feed, Archive, Projects and About.
+     No separate top offset: all five page titles share one baseline. */
+  .home-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    isolation: isolate;
+  }
+  .home-hero .hero-visual { display: none; }
+  .feed-toolbar {
+    align-items: flex-start;
+  }
+}
+/* On mid-size tablets, use the available reading width before shrinking
+   type: the shared Home H1 adds a genuine navigation landmark, but must not
+   push the latest publication below the discovery viewport. */
+@media (min-width: 600px) and (max-width: 860px) {
+  .home-hero .intro-copy,
+  .home-hero .intro-description { max-width: 100%; }
+  .home-page > .home-hero.page-heading { padding-bottom: var(--space-2); }
+  .home-list .feed-item:first-child { padding-block: var(--space-4); }
+}
+
+@media (max-width: 767px) {
+  .site-sidebar {
+    /* A single-column sidebar should flow naturally on iOS Safari. */
+    display: block;
+  }
+  /* The article title already links to the post; on phones the second
+     arrow column only narrows metadata and pulls the bookmark inwards. */
+  .feed-item,
+  .feed-item.has-media,
+  .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body" "media";
+    gap: 0;
+  }
+  .feed-item:not(.has-media):not(.is-thought) { grid-template-areas: "body"; }
+  .feed-media-link {
+    margin-top: 16px;
+    margin-bottom: 0;
+  }
+  .feed-item:not(.is-article) .feed-media {
+    aspect-ratio: 5 / 2;
+  }
+  /* Project tags are interactive; allow their rows to grow instead of clipping. */
+  .feed-item.is-project.has-media .project-thumb {
+    aspect-ratio: auto;
+    min-height: 152px;
+  }
+  .code-thumb {
+    aspect-ratio: auto;
+    min-height: 0;
+  }
+  .is-thought {
+    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-areas: "quote body";
+  }
+  .thought-mark {
+    margin: 8px 0 0;
+    width: 22px;
+  }
+  .is-thought .feed-body {
+    padding-left: 16px;
+  }
+  .density-compact .feed-item,
+  .density-compact .feed-item.has-media,
+  .density-compact .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body";
+  }
+  .home-list .feed-item, .home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
+    gap: 0 8px; padding: 16px 0;
+  }
+  .home-list .feed-media-link { display: none; }
+  .home-list .feed-excerpt { font-size: var(--text-base); }
+  .home-list .tag-list { margin-top: var(--space-3); }
+  .feed-item.is-article .feed-media { aspect-ratio: 2.25 / 1; }
+  .feed-layout .load-more { min-height: 44px; height: auto; }
+  .feed-layout .project-facts a { min-height: 40px; }
+  .sort-control select {
+    width: 100%;
+  }
+  .about-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+@media (max-width: 480px) {
+  :root {
+    --page-gutter: 18px;
+    --masthead-wordmark-height: 32px;
+  }
+  /* Keep the full wordmark curves visible without increasing the header slot. */
+  .brand { overflow: visible; }
+  .brand-wordmark { max-width: 100%; overflow: visible; }
+  .site-header:not(.site-header-reader) .brand-wordmark { height: var(--masthead-wordmark-height); }
+  .header-tools {
+    gap: 0;
+  }
+  .intro-copy {
+    padding-left: 0;
+  }
+  /* Preserve the shared page-title baseline; tighten only the gaps below it.
+     Keep the 44px navigation, topic links and saved reading entry intact. */
+  .home-page > .home-hero.page-heading { padding-bottom: 0; }
+  .intro-description {
+    margin-top: var(--space-1);
+    font-size: var(--text-base);
+    line-height: 1.65;
+  }
+  .home-hero .home-links { gap: 0 12px; margin-top: 0; }
+  /* A reading resume should not create a redundant gap before the article stream. */
+  .home-page > .home-resume { margin-bottom: 0; }
+  .home-list .feed-item:first-child { padding-top: var(--space-4); }
+  .hero-square {
+    top: 11px;
+    width: 9px;
+    height: 9px;
+  }
+  .home-resume .resume-link { padding-block: 6px; }
+  .feed-body h2 {
+    font-size: 19px;
+  }
+  .is-article .feed-body h2 {
+    font-size: 21px;
+  }
+  .thought-text {
+    font-size: 16px;
+  }
+  .archive-row {
+    grid-template-columns: 48px minmax(0, 1fr) 16px;
+    gap: 10px;
+  }
+  /* Wrapped Feed and Projects topics should finish level with save/open
+     actions, not leave the final 40px tag row stranded below both buttons. */
+  .feed-layout .feed-list.density-full .feed-tail {
+    align-items: flex-end;
+  }
+}
+@media print {
+  .site-header,
+  .site-sidebar,
+  .site-footer,
+  .hero-visual {
+    display: none;
+  }
+  .content-grid {
+    display: block;
+  }
+}
+
+/* Saved private highlights: scannable and keyboard-accessible in both skins. */
+.settings-highlight-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.settings-highlight-head .settings-label { margin-bottom: 7px; }
+.settings-highlight-head .muted { font-size:12px; }
+.saved-highlights { list-style:none; padding:0; margin:0; max-height:210px; overflow:auto; border:1px solid var(--line); border-radius:var(--radius-md); }
+.saved-highlights li + li { border-top:1px solid var(--line); }
+.saved-highlights a { display:flex; align-items:center; gap:9px; padding:10px 12px; font-size:13px; }
+.saved-highlights a > span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.saved-highlights a > small { white-space:nowrap; color:var(--muted); }
+.saved-highlights a:hover { background:var(--surface-muted); }
+.settings-muted { margin-top:8px; font-size:12px; line-height:1.7; color:var(--muted); }
+.highlights-clear { margin-top:8px; color:var(--danger); }
+.discussion-unavailable { color:var(--muted); font-size:12px; border:1px solid var(--line); border-radius:var(--radius-md); padding:7px 10px; }
+.discussion-setup-note { max-width:470px; margin:10px auto 0; color:var(--muted); font-size:13px; line-height:1.8; }
+
+/* Only the stacked tablet facts use two columns. Desktop facts are a
+   single readable contextual rail alongside the About article. */
+@media (min-width: 1025px) and (max-width: 1119px) {
+  .about-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+}
+
+/* At 1025–1119px the sidebar follows the feed; wider screens retain two columns. */
+@media (min-width:1025px) and (max-width:1119px) {
+  .content-grid { grid-template-columns:minmax(0,1fr); }
+  .site-sidebar {
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    align-content:start; gap:0 36px; min-height:0;
+    padding:30px 0 0; margin-top:40px;
+    border-left:0; border-top:1px solid var(--ink);
+  }
+  .page-heading + .content-grid .site-sidebar { padding-top:30px; }
+  .site-sidebar > * { min-width:0; }
+}
+/* Reserve one desktop logo slot for both skins. Their rendered wordmarks
+   are intentionally different widths; without a shared slot the entire
+   navigation shifts 15px when switching from editorial to terminal. */
+@media (min-width: 861px) {
+  /* Both wordmark styles reserve one slot, so changing skins cannot move navigation. */
+  .site-header .brand { min-width: 144px; }
+}
+/* Reserve one shared first-column slot for both editorial SVG and terminal
+   wordmark. Without it, the terminal font moves the desktop navigation 15px. */
+@media (min-width: 1280px) {
+  .site-header .header-inner {
+    grid-template-columns: 144px minmax(0, 1fr) auto;
+  }
+}
+/* Compact desktop header gets distinct space for brand, navigation and tools. */
+@media (min-width:861px) and (max-width:1279px) {
+  .header-inner { grid-template-columns:auto minmax(0,1fr) auto; gap:20px; }
+  #site-nav { justify-content:center; gap:12px; min-width:0; }
+  .header-tools { gap:4px; }
+  .header-search {
+    width:var(--header-control-size); height:var(--header-control-size); justify-content:center;
+    padding:0; margin-right:0; border-radius:var(--radius-md);
+  }
+  .header-search-text,.header-search kbd { display:none; }
+}
+/* The archive calendar can fill the remaining width on tablets without
+   growing its day cells beyond a readable compact size. */
+@media (min-width:768px) and (max-width:1119px) {
+  .archive-activity-copy { flex-basis: 160px; }
+  .archive-activity .heatmap { flex: 1 1 auto; width: 100%; max-width: 420px; }
+}
+@media (max-width:767px) {
+  .archive-activity {
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+    padding: var(--space-4) 0;
+  }
+  .archive-activity-copy { flex: none; }
+  .archive-activity .heatmap { flex: none; width: 100%; max-width: none; }
+  .archive-activity .heatmap-grid,
+  .archive-activity .heatmap-week { gap: 4px; }
+  .archive-month { grid-template-columns:52px minmax(0,1fr); gap:10px; }
+  .archive-month .archive-row { grid-template-columns:45px minmax(0,1fr) 16px; gap:8px; }
+  .archive-month-label { font-size: var(--text-caption); }
+}
+@media (max-width:480px) {
+  .type-tabs .type-tab { min-height:40px; height:auto; font-size:12px; padding:6px 5px; }
+  .type-tab-label { gap:5px; }
+  .type-tab .tab-count { min-width:18px; padding:0 4px; font-size:10px; }
+  .archive-month { grid-template-columns:minmax(0,1fr); gap:0; }
+  .archive-month-label { padding: var(--space-2) 0; font-size: var(--text-caption); }
+  .archive-month .archive-row { align-items: start; }
+  .archive-month .archive-row time,
+  .archive-month .archive-row > svg { margin-top: var(--space-1); }
+}
+
+/* A missing page should remain a useful entry point on a short phone screen. */
+@media (max-width: 767px) {
+  .not-found { padding-block: var(--space-10) var(--space-12); }
+  .not-found > .mono { max-width: 100%; overflow-wrap: anywhere; }
+  .not-found .lost-latest { margin-top: var(--space-6); }
+  .not-found .lost-guess { grid-template-columns: minmax(0, 1fr) auto; }
+  .not-found .lost-guess strong { overflow-wrap: anywhere; }
+}
+
+/* Interactive targets share a calm 40–44px rhythm on desktop and touch. */
+.header-search { min-height:40px; transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+.header-search:hover { background:var(--surface-muted); }
+.feed-controls .sort-control select, .feed-controls .topic-select select { min-height:40px; }
+.feed-result-line a:hover, .timeline-result a:hover { color:var(--brand); }
+@media (hover:none) {
+  .type-tab:hover { background:var(--surface); border-color:var(--line); color:var(--ink-soft); }
+  .type-tab.active:hover { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+}
+
+/* Phones reuse the masthead search; list controls own only category filters,
+   sorting and density. URL state is shared at all widths. */
+@media (max-width: 767px) {
+  /* Phone library: one compact, ruled command area. The heading and
+     controls introduce the posts instead of filling the entire first screen. */
+  /* Match the other index pages' headline baseline; only reduce the gap below. */
+  .feed-page > .page-heading { padding-bottom: var(--space-2); }
+  .feed-page > .page-heading > p:not(.eyebrow) { margin-top: var(--space-2); line-height: 1.65; }
+  .feed-controls .feed-desktop-controls { display: none; }
+  .feed-controls { row-gap: 0; }
+  .feed-controls .feed-mobile-controls { display: block; padding-top: 0; }
+  .feed-controls .feed-mobile-filter-row { min-height: 48px; padding-block: 0; }
+  .feed-controls .feed-mobile-filter-trigger {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .feed-controls .feed-result-line {
+    min-height: 48px;
+    padding-block: 0;
+  }
+  .feed-controls .feed-result-line .feed-search-trigger { display: none; }
+  /* Result status stays on the left and the compact view switch stays
+     anchored on the right, even when an active search chip is present. */
+  .feed-controls .feed-result-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .feed-controls .feed-result-line > span {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    min-width: 0;
+    min-height: 44px;
+    overflow-wrap: normal;
+  }
+  .feed-controls .feed-result-line .query-chip {
+    flex: 0 1 auto;
+    max-width: min(38vw, 156px);
+    height: 36px;
+    min-height: 36px;
+    margin-right: 0;
+    padding-inline: 8px;
+    white-space: nowrap;
+  }
+  .feed-controls .feed-result-line .meta-dot,
+  .feed-controls .feed-result-line .feed-count-noun { display: none; }
+  .feed-controls .feed-result-count { white-space: nowrap; }
+  .feed-controls .feed-secondary-actions { margin: 0; justify-self: end; }
+  /* Keep 44px targets without the double rounded-pill outline.
+     A quiet selection matches the editorial dividers. */
+  .feed-controls .view-toggle {
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+  }
+  .feed-controls .view-toggle button {
+    width: 44px;
+    height: 44px;
+    border-radius: calc(var(--radius-md) - 1px);
+  }
+  .feed-controls .view-toggle button[aria-pressed="true"] {
+    color: var(--accent);
+    box-shadow: none;
+  }
+  .feed-controls .view-toggle button span { display: none; }
+  .feed-controls .view-toggle::before {
+    top: 0;
+    left: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: calc(var(--radius-md) - 1px);
+    background: var(--surface-muted);
+  }
+  .feed-controls .view-toggle:has(button:last-child[aria-pressed="true"])::before {
+    transform: translateX(44px);
+  }
+}
+
+@media (max-width: 370px) {
+  /* Keep the query removable without pushing the density control off-screen. */
+  .feed-controls .feed-result-line .query-chip { max-width: 108px; }
+}
+
+/* The short standalone wordmark and four 44px controls fit on one
+   320px row. Use the same two-row header as other phone widths. */
+@media (max-width: 370px) {
+  /* Keep all post tags visible in two rows beside the shared 44px actions on 320px terminals. */
+  .site-header:not(.site-header-reader) .header-inner {
+    grid-template-rows: var(--header-bar-height) 43px;
+  }
+  /* The short grid has no separate controls row for a decorative divider. */
+  :root:not([data-skin="terminal"]) .site-header:not(.site-header-reader) .header-inner::before {
+    content: none;
+  }
+}
+
+
+/* Use available width for a genuine search action, not decorative logo text.
+   Keep icon-only search on 390px phones and all immersive reading mastheads. */
+@media (min-width: 480px) and (max-width: 860px) {
+  .site-header:not(.site-header-reader) .header-search {
+    width: clamp(104px, 25vw, 220px);
+    padding: 0 12px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    justify-content: flex-start;
+  }
+  .site-header:not(.site-header-reader) .header-search-text { display: inline; }
+  .site-header:not(.site-header-reader) .header-tools { gap: clamp(1px, .8vw, 8px); }
+}
+@media (min-width: 1100px) and (max-width: 1279px) {
+  .site-header .header-search {
+    width: clamp(120px, 12vw, 166px);
+    padding: 0 12px;
+    border: 1px solid var(--control-border);
+    background: var(--surface);
+    border-radius: var(--radius-full);
+    justify-content: flex-start;
+  }
+  .site-header .header-search-text { display: inline; }
+}
+
+/* The home masthead and article masthead share row height, logo size and
+   control targets. Only the home page adds the destination-navigation row.
+   The article retains its own reading progress and inline actions. */
+@media (max-width: 1024px) {
+  .site-header.site-header-reader {
+    display: block;
+    height: var(--header-bar-height);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper) 96%, transparent);
+  }
+  .site-header-reader .header-inner {
+    min-height: calc(var(--header-bar-height) - 1px);
+    height: calc(var(--header-bar-height) - 1px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: 6px;
+    row-gap: 0;
+  }
+  .site-header-reader #site-nav { display: none; }
+  /* reader-progress.css owns the base indicator geometry. This scoped
+     breakpoint places it below the compact reader masthead for both skins. */
+  .site-header-reader + .site-body .reading-progress {
+    top: calc(var(--reader-brand-height) - 2px);
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+  .site-header-reader .brand {
+    grid-row: 1;
+    grid-column: 1;
+    min-width: 0;
+    width: auto;
+    gap: 6px;
+  }
+  .site-header-reader .brand-wordmark {
+    height: var(--masthead-wordmark-height);
+    width: auto;
+    flex-shrink: 0;
+  }
+  .site-header-reader .header-tools {
+    display: flex;
+  }
+}
+/* Keep all four site tools visible in the article's compact masthead.
+   The reading-progress indicator remains a separate 2px line. */
+@media (max-width: 1024px) {
+  .site-header-reader .header-tools {
+    grid-row: 1;
+    grid-column: 2;
+    gap: 0;
+    border-left: 0;
+    padding-left: 0;
+  }
+  .site-header-reader .header-search,
+  .site-header-reader .header-tools .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--header-control-size);
+    min-width: var(--header-control-size);
+    height: var(--header-control-size);
+    min-height: var(--header-control-size);
+    flex-shrink: 0;
+    margin-right: 0;
+    padding: 0;
+  }
+  .site-header-reader .header-tools .notification-root {
+    display: flex;
+    align-items: center;
+    flex: 0 0 var(--header-control-size);
+    min-width: var(--header-control-size);
+  }
+}
+
+/* Compact tablet readers keep the same tool spacing as the index masthead. */
+@media (min-width: 861px) and (max-width: 1024px) {
+  .site-header-reader .header-tools { gap: 4px; }
+}
+
+/* Match the same expandable search slot on index and reader mastheads.
+   The reader keeps its compact single row, not different control positions. */
+@media (min-width: 480px) and (max-width: 860px) {
+  .site-header-reader .header-search {
+    width: clamp(104px, 25vw, 220px);
+    min-width: 0;
+    padding: 0 12px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-full);
+    background: var(--surface);
+    justify-content: flex-start;
+  }
+  .site-header-reader .header-search-text { display: inline; }
+  .site-header-reader .header-tools { gap: clamp(1px, .8vw, 8px); }
+}
+
+/* Article headlines use natural wrapping at all widths and skins.
+   Balancing Chinese text makes lines break early and leaves empty space. */
+@media (max-width: 1024px) {
+  .site-main {
+    padding-bottom: 40px;
+  }
+  .reader-main {
+    padding-bottom: 38px;
+  }
+  /* More room on tablets without letting the reading line become too long. */
+  .reader-main {
+    max-width: 820px;
+  }
+}
+@media (max-width: 767px) {
+  /* Phone: one quiet closing column with no duplicate logo. */
+  .site-footer .footer-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "copy" "links";
+    gap: 9px;
+    padding-top: 17px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .site-footer .footer-links {
+    justify-content: flex-start;
+    padding-top: 5px;
+    border-top: 1px solid var(--line);
+    gap: 0 18px;
+  }
+  :root[data-skin="terminal"] .site-footer .footer-links { border-top-style: dashed; }
+  /* Mobile uses the inline topic doorway and latest articles. Desktop rail
+     content would repeat those destinations after six long posts. */
+  .home-sidebar { display: none; }
+  .reader-main {
+    padding-bottom: 24px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .home-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 8px 28px;
+    margin-top: 28px;
+    padding: 20px 0 12px;
+    border-top: 1px solid var(--line);
+  }
+  .home-sidebar > .side-block { min-width: 0; }
+  .home-sidebar > .home-reading-note {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+}
+
+/* Latest articles follow the introduction directly. Topic navigation sits
+   after the stream rather than competing with the first-screen actions. */
+@media (max-width: 1119px) {
+  .home-page .home-feed { margin-top: var(--space-3); }
+}
+
+/* Every home entry has the same title role, regardless of publication order.
+   Only the surrounding column and excerpt rhythm change with the viewport. */
+@media (min-width: 1120px) {
+  .home-list .feed-excerpt { line-height: 1.7; }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .home-list .feed-excerpt { line-height: 1.75; }
+}
+@media (max-width: 767px) {
+  /* Keep the same home title scale at every width. Only supporting content
+     and the homepage's final spacing become more compact on phones. */
+  .home-list .feed-excerpt { line-height: 1.7; }
+  /* The 44px topic links already provide a full touch target; avoid
+     stacking shortcut padding with the page's closing gap above the footer. */
+  .site-main:has(.home-page) { padding-bottom: var(--space-2); }
+  .home-topic-shortcuts { padding-block: 0; }
+}
+
+/* Phone feed: media is a small, adjacent thumbnail, not an extra full-width row.
+   display: contents lets the existing semantic card contents occupy explicit tracks.
+   Apply only to article cards with a cover in detailed library mode. */
+@media (max-width: 767px) {
+  .feed-list .feed-item { padding-block: 16px; }
+  /* Desktop's aligned type/date columns leave holes on phones. Use the
+     actual label widths in both skins and keep each fact on one line. */
+  .feed-layout .feed-list .entry-meta-facts { column-gap: var(--space-3); }
+  .feed-layout .feed-list .entry-meta-facts > * { white-space: nowrap; }
+  .feed-layout .feed-list .feed-item .entry-meta-facts > :is(.type-label, time) {
+    flex: 0 0 auto;
+  }
+  .feed-layout .feed-list .feed-item.is-article .feed-body h2 {
+    line-height: 1.34;
+    margin-top: 4px;
+  }
+  .feed-list .feed-excerpt { margin-top: var(--space-2); line-height: 1.75; }
+  .feed-list .tag-list { margin-top: var(--space-3); gap: var(--space-2); }
+  .feed-list .feed-media-link { margin-top: 10px; }
+}
+@media (max-width: 767px) {
+  .feed-layout .feed-list.density-full > .feed-item.is-article.has-media {
+    grid-template-columns: minmax(0, 1fr) clamp(108px, 25vw, 144px);
+    grid-template-areas:
+      "meta meta"
+      "title title"
+      "excerpt media"
+      "tags tags";
+    column-gap: 12px;
+    row-gap: 0;
+    padding-block: var(--space-4);
+  }
+  .feed-layout .feed-list.density-full > .feed-item.is-article.has-media > .feed-body {
+    display: contents;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .entry-meta {
+    grid-area: meta;
+    min-height: 24px;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-body h2 {
+    grid-area: title;
+    margin: var(--space-1) 0 var(--space-2);
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-excerpt {
+    grid-area: excerpt;
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.75;
+    min-width: 0;
+    min-height: 0;
+    max-height: 5.25em;
+    overflow: hidden;
+    -webkit-line-clamp: 3;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media-link {
+    grid-area: media;
+    align-self: start;
+    margin: 0;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media {
+    aspect-ratio: 8 / 5;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-tail {
+    grid-area: tags;
+    margin-top: var(--space-3);
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-tail .tag-list {
+    margin-top: 0;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-article.has-media .feed-media::before {
+    width: 12px;
+    height: 15px;
+  }
+}
+/* Phone library previews have a controlled rhythm. The full snippet remains in the reader. */
+@media (max-width: 767px) {
+  .feed-layout .feed-list .feed-item.is-article .feed-body h2 {
+    font-size: var(--text-card-title);
+  }
+  /* Phone compact view is for scanning, not a second full-size article layout.
+     The complete titles remain links; detailed mode retains every fact. */
+  /* Match the detailed card's metadata/headline tracks at phone widths.
+     Supporting content and trailing padding still collapse in compact view. */
+  .feed-layout .feed-list.density-compact > .feed-item {
+    padding-block: var(--space-4) 10px;
+  }
+  /* Compact rows reserve the metadata track for type/date beside both actions. */
+  .feed-layout .feed-list.density-compact .entry-reading-time,
+  .feed-layout .feed-list.density-compact .entry-comment-count,
+  .feed-layout .feed-list.density-compact .entry-views,
+  .feed-layout .feed-list.density-compact .project-status {
+    display: none;
+  }
+  /* Both 44px action targets share the existing 24px metadata row, using
+     the top padding as their touch area without moving article titles. */
+  .feed-layout .feed-list.density-compact .feed-body { row-gap: var(--space-2); }
+  .feed-layout .feed-list.density-compact .is-article .feed-body { row-gap: var(--space-1); }
+  .feed-layout .feed-list.density-compact .is-thought .feed-body { row-gap: 6px; }
+  .feed-layout .feed-list.density-compact .feed-tail {
+    height: 24px;
+    min-height: 24px;
+  }
+  .feed-layout .feed-list.density-compact .feed-actions {
+    margin-block: -16px -4px;
+  }
+  .feed-layout .feed-list.density-compact .feed-tail .card-bookmark {
+    width: 44px;
+    height: 44px;
+    margin-block: 0;
+  }
+  /* Compact mode removes previews, never changes headline typography.
+     Keep the same type metrics as detailed cards so density toggling does not
+     resize text or change its line breaks on phone screens. */
+  .feed-layout .feed-list.density-compact .feed-item .feed-body h2 {
+    font-size: var(--text-card-title);
+    line-height: 1.45;
+    margin-top: 0;
+  }
+  .feed-layout .feed-list.density-compact .feed-item.is-article .feed-body h2 {
+    font-size: var(--text-card-title);
+    line-height: 1.34;
+  }
+  .feed-layout .feed-list.density-compact .thought-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: var(--text-lg);
+    line-height: 1.75;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-note .code-thumb {
+    /* Override the generic mobile 5 / 2 media ratio: code is content-led. */
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: var(--space-8) var(--space-4) var(--space-3);
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-note .code-thumb .code-line:nth-child(n + 4) {
+    display: none;
+  }
+  .feed-layout .feed-list.density-full .feed-item.is-project .project-thumb {
+    min-height: 0;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+  }
+}
+@media (min-width: 768px) and (max-width: 1119px) {
+  .feed-list .feed-item { padding-block: var(--space-5); }
+  /* Tablet home cards retain the phone's 16px rhythm; the library keeps 20px. */
+  .feed-list.home-list .feed-item { padding-block: var(--space-4); }
+}
+/* Filter geometry belongs to the shared breakpoint owner, never a skin. */
+@media (min-width: 1025px) {
+  .feed-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    column-gap: var(--space-6);
+  }
+  .feed-controls .feed-desktop-controls > .feed-toolbar { grid-column: 1 / -1; }
+  .feed-controls .feed-desktop-controls > .filter-tabs { grid-column: 1; min-width: 0; align-self: stretch; align-items: center; }
+  .feed-controls > .feed-result-line { grid-column: 2; min-width: 0; align-self: stretch; justify-content: flex-end; }
+  .feed-controls .feed-toolbar .feed-search-row { min-width: 124px; }
+}
+@media (pointer: coarse) {
+  .feed-controls select, .type-tab, .filter-tabs button { min-height: 44px; }
+}
+/* TagList has the same target on every feed, including Home and touch tablets.
+   The narrow Home padding override still fits tags beside its card actions. */
+@media (max-width: 767px), (pointer: coarse) {
+  .feed-list .tag-list { row-gap: var(--space-1); }
+  .tag-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 4px 12px;
+  }
+  .view-toggle button { height: 44px; }
+}
+@media (max-width: 767px) {
+  .feed-controls select { font-size: 16px; min-height: 44px; }
+  .query-chip { max-width: 100%; min-height: 40px; height: auto; overflow-wrap: anywhere; }
+}
+
+/* Project previews need not repeat a large desktop-style showcase on smaller
+   screens. Keep tag navigation and repository/demo links in the text column. */
+@media (max-width: 1040px) {
+  .feed-item.is-project.has-media .project-media {
+    display: none;
+  }
+  .feed-item.is-project .project-compact-tags {
+    display: block;
+  }
+}
+@media (min-width: 768px) and (max-width: 1040px) {
+  .feed-item.is-project.has-media {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body";
+  }
+}
+@media (max-width: 767px) {
+  .feed-item.is-project.has-media {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body";
+  }
+}
+
+/* On 320px phones the full secondary summary otherwise takes a third line.
+   Keep the meaning, featured title, 44px links and saved-reading card intact. */
+@media (max-width: 340px) {
+  .home-hero .intro-description {
+    font-size: var(--text-caption);
+    line-height: 1.65;
+  }
+  .home-resume .resume-link {
+    gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+  .home-resume .resume-link strong {
+    font-size: var(--text-sm);
+    line-height: 1.5;
+  }
+}

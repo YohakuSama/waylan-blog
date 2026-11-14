@@ -1,0 +1,3 @@
+# 旧链接跳转（Cloudflare Pages 格式）：旧路径 新路径 状态码
+# 例如修改了文章 slug 后保留旧地址：
+# /post/old-slug /post/new-slug 301

@@ -1,0 +1,58 @@
+{
+  "name": "Waylan",
+  "tagline": "系统、软件与技术实践",
+  "avatar": "",
+  "hero": {
+    "lines": [
+      "系统与软件，",
+      "配置与技术记录。"
+    ],
+    "highlight": "配置与技术记录"
+  },
+  "author": "Waylan",
+  "description": "个人技术记录，涉及操作系统、软件配置、网络服务、脚本工具、技术实验和本站维护。",
+  "intro": "系统配置、软件使用、网络服务、脚本工具和技术实验的操作与排查记录。",
+  "topics": [
+    {
+      "id": "system",
+      "name": "系统与软件",
+      "description": "Linux、Windows、macOS 的安装、配置与日常使用"
+    },
+    {
+      "id": "network",
+      "name": "网络与服务",
+      "description": "网络环境、代理、自建服务与远程访问"
+    },
+    {
+      "id": "dev",
+      "name": "工具与开发",
+      "description": "脚本自动化、实用工具、代码与问题排查"
+    },
+    {
+      "id": "explore",
+      "name": "新技术",
+      "description": "Web3、AI 等新事物的上手与体验"
+    },
+    {
+      "id": "notes",
+      "name": "随笔",
+      "description": "阅读、思考与杂谈"
+    }
+  ],
+  "socials": [
+    {
+      "url": "https://github.com/YohakuSama"
+    },
+    {
+      "url": "https://x.com/yohakusama"
+    }
+  ],
+  "sampleContent": false,
+  "profileTags": [
+    "系统配置",
+    "网络服务",
+    "工具实践",
+    "新技术"
+  ],
+  "announcements": []
+}

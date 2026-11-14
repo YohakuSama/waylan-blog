@@ -1,0 +1,550 @@
+/* Shared site shell: tokens, header, home hero and top controls.
+   Feed, sidebar, index layouts and breakpoint choreography have separate owners;
+   reader, dialogs and motion settings remain in their existing modules. */
+:root {
+  --content-width: 1366px;
+  --index-frame-width: 1140px;
+  --index-list-width: 960px;
+  --home-rail-width: 276px;
+  --home-rail-gap: var(--space-12);
+  --page-gutter: 40px;
+  --header-height: 68px;
+  --sidebar-width: 300px;
+  --header-control-size: 44px;
+  --masthead-wordmark-height: 38px;
+  --nav-item-width: 56px;
+  --header-bar-height: 68px;
+}
+
+body {
+  font-size: var(--text-base);
+  line-height: 1.75;
+}
+h1,
+h2,
+h3 {
+  letter-spacing: 0;
+}
+/* ---------- Header ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid transparent;
+}
+.site-header:has(+ .site-body .reader-main) {
+  border-bottom-color: var(--line);
+}
+.header-inner {
+  /* Every route, including article readers, keeps the same brand position. */
+  max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+  /* Include the 1px masthead border in --header-height, so the desktop
+     banner and all sticky offsets share one physical position. */
+  height: calc(var(--header-bar-height) - 1px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(16px, 2.3vw, 34px);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  color: var(--ink);
+  justify-self: start;
+}
+.brand:hover {
+  color: var(--ink);
+}
+#site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: 12px;
+}
+.nav-link {
+  position: relative;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 6px;
+  width: var(--nav-item-width);
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.nav-link:hover {
+  color: var(--ink);
+}
+.nav-link.selected {
+  color: var(--accent);
+  background: var(--brand-soft);
+}
+/* Destination names and slots are identical in both skins. */
+.nav-description { display: none; }
+/* A real element, so view transitions can slide it between pages. */
+.nav-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.header-tools {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.header-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 212px;
+  height: var(--header-control-size);
+  padding: 0 10px 0 14px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  margin-right: var(--space-3);
+  flex-shrink: 0;
+}
+.header-search:hover {
+  border-color: var(--brand);
+  color: var(--ink-soft);
+}
+.header-search-text {
+  flex: 1;
+  text-align: left;
+}
+.header-search kbd {
+  font: 11px var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.header-tools .icon-button {
+  color: var(--ink-soft);
+}
+.header-tools .icon-button:hover {
+  color: var(--ink);
+}
+/* ---------- Page frame ---------- */
+.site-body {
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
+}
+.site-main {
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter) var(--space-16);
+  flex: 1;
+}
+/* The homepage ends with navigation, so its closing space is intentionally
+   smaller than other index pages' general content padding. */
+.site-main:has(.home-page) {
+  padding-bottom: var(--space-8);
+}
+.reader-main {
+  width: 100%;
+  padding: 0 var(--page-gutter) var(--space-16);
+  flex: 1;
+}
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  gap: 0 var(--space-12);
+  align-items: start;
+}
+/* The home edition shares a centered page frame with the four index pages.
+   The masthead owns the full width; the rail begins alongside latest content. */
+.home-page {
+  width: 100%;
+  max-width: var(--index-frame-width);
+  margin-inline: auto;
+}
+.home-grid { width: 100%; }
+@media (min-width: 1120px) {
+  .content-grid.home-grid {
+    grid-template-columns: minmax(0, 1fr) var(--home-rail-width);
+    column-gap: var(--home-rail-gap);
+  }
+  /* Reading progress belongs to the article stream, not the full masthead. */
+  .home-page > .home-resume { width: calc(100% - var(--home-rail-width) - var(--home-rail-gap)); }
+}
+.feed-column {
+  min-width: 0;
+}
+/* ---------- Hero ---------- */
+.home-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);
+  align-items: start;
+  column-gap: clamp(20px, 3vw, 38px);
+  min-height: 0;
+}
+.intro-copy {
+  position: relative;
+  z-index: 1;
+  padding-left: 0;
+  max-width: 540px;
+}
+.hero-square {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 11px;
+  height: 11px;
+  background: var(--accent);
+}
+.intro-description {
+  margin-top: var(--space-3);
+  font-family: var(--font-cjk-sans);
+  font-size: var(--text-base);
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 36em;
+}
+.home-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 20px;
+  margin-top: 8px;
+}
+.home-links > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--ink-soft);
+  font: 13px/1.75 var(--font-cjk-sans);
+}
+.home-links > a:hover { color: var(--brand); }
+
+.resume-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: fit-content;
+  margin-top: var(--space-4);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.resume-link small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+/* The prerendered homepage has no access to local reading progress.
+   Reserve the card height before hydration so Safari never moves the entire
+   publication list up for one frame and then drops it back down. */
+.home-resume-placeholder { display: none; }
+:root[data-resume-pending="true"] .home-resume-placeholder {
+  display: block;
+  min-height: 56px;
+}
+.home-resume-placeholder .resume-preview-title::before {
+  content: var(--resume-preload-title, "");
+}
+.home-resume-placeholder .resume-preview-progress::before {
+  content: var(--resume-preload-progress, "");
+}
+/* A remembered reading position is secondary to the current publication list. */
+.home-resume { margin: 0 0 16px; }
+.home-resume .resume-link {
+  display: grid; grid-template-columns: 20px minmax(0,1fr) auto 16px;
+  width: 100%; min-height: 56px; margin: 0; gap: 10px;
+  padding: 9px 12px; background: var(--surface); border: 1px solid var(--line);
+}
+.home-resume .resume-link > span { min-width: 0; }
+.home-resume .resume-link strong { display: block; min-width: 0; overflow-wrap: anywhere; white-space: normal; font-size: 13px; font-weight: 500; }
+.home-resume .resume-link small { font-size: 11px; color: var(--muted); }
+.home-resume .resume-progress { font-family: var(--font-mono); }
+.home-resume .resume-link:hover { border-color: var(--brand); }
+.home-feed { border-top: 1px solid var(--line); }
+/* One compact end-of-stream navigation row. The last story already
+   supplies its divider; don't add a second ruled section or duplicate CTA. */
+.home-topic-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-5);
+  margin: 0;
+  padding: var(--space-2) 0 var(--space-3);
+}
+.home-topic-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  color: var(--ink-soft);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+.home-topic-shortcuts a svg { color: currentColor; }
+.home-topic-shortcuts a:hover,
+.home-topic-shortcuts a:focus-visible { color: var(--brand); }
+@media (min-width: 1120px) {
+  /* Desktop topics already live in the adjacent sidebar; hide duplicate links. */
+  .home-topic-shortcuts { display: none; }
+}
+/* The homepage has a stable editorial presentation, independent of the library. */
+/* Slightly denser home rhythm keeps the next story in view on 768px tablets. */
+.home-list .feed-item { padding: var(--space-5) 0; grid-template-columns: minmax(0,1fr); grid-template-areas: "body"; }
+.home-list .feed-item.has-media, .home-list .feed-item.is-article.has-media { grid-template-columns: minmax(0,38%) minmax(0,1fr); grid-template-areas: "media body"; }
+.home-list .feed-item.has-media > .feed-media-link { align-self: center; }
+.home-list .feed-item:not(:first-child), .home-list .feed-item.is-thought {
+  grid-template-columns: minmax(0,1fr); grid-template-areas: "body";
+}
+.home-list .feed-item .feed-body h2 { font-size: var(--text-home-title); line-height: 1.36; font-weight: 600; margin-top: var(--space-1); }
+.home-list .feed-item .feed-body { border: 0; padding-left: 0; }
+/* Keep real tags visible in the compact home index, including later posts.
+   The shared trailing row already pairs them with the save action. */
+.home-list .thought-mark, .home-list .project-facts { display: none; }
+.home-list .stack-list { display: none; }
+.home-list .feed-excerpt { margin-top: var(--space-2); }
+/* Wrapped labels set the tail height. Actions align with the last label
+   row instead of floating between two rows in the Terminal monospace skin. */
+.home-list .feed-tail { align-items: flex-end; }
+.home-list .entry-meta { font-size: 12px; }
+.home-list .entry-views { display: none; }
+.home-list .thought-text { font-size: 18px; line-height: 1.75; }
+/* Homepage discovery is a compact, typographic rail, not a second feed. */
+.home-sidebar { padding-top: var(--space-5); padding-bottom: var(--space-3); }
+.site-sidebar.home-sidebar > .side-block { padding: var(--space-4) 0; }
+.site-sidebar.home-sidebar > .side-block:first-child { padding-top: 0; }
+.site-sidebar.home-sidebar .side-head { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
+.home-sidebar .side-title { font-size: var(--text-base); line-height: 1.45; }
+.site-sidebar.home-sidebar .side-heading-link { gap: var(--sidebar-row-gap); }
+.home-sidebar .explore-list a { font-size: 14px; }
+.home-sidebar .popular-title { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+@media (min-width: 1120px) {
+  /* Start the first widget with the reading list, not the page introduction. */
+  .site-sidebar.home-sidebar { padding: 16px 0 12px 22px; min-height: 0; }
+}
+.home-projects { list-style: none; margin: 0; padding: 0; }
+.home-projects li + li { border-top: 1px solid var(--line); }
+.home-projects a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 9px 2px;
+  color: var(--ink);
+}
+.home-projects a:hover,
+.home-projects a:focus-visible { color: var(--brand); }
+.home-project-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--sidebar-start-slot);
+  width: var(--sidebar-start-slot);
+  color: var(--ink-soft);
+}
+.home-project-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+.home-projects strong {
+  display: block;
+  font-size: var(--text-caption);
+  font-weight: 550;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.home-project-state {
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.home-project-arrow {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.home-projects a:hover .home-project-arrow,
+.home-projects a:focus-visible .home-project-arrow { color: var(--brand); }
+.home-sidebar .home-reading-note {
+  margin: 4px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+.home-sidebar .home-reading-note summary { min-height: 44px; }
+:root[data-skin="terminal"] .home-sidebar .home-reading-note { border-top-style: dashed; }
+.home-about-link { display: inline-flex; align-items: center; min-height: 44px; gap: 5px; font-size: 13px; }
+.hero-visual {
+  position: relative;
+  right: auto;
+  top: auto;
+  width: 100%;
+  height: clamp(168px, 18vw, 196px);
+  overflow: hidden;
+  pointer-events: none;
+  /* The illustration owns a bounded column below the heading's top edge. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 93%, transparent);
+}
+/* Dotted network wave (components/Network.tsx). */
+.network-wave {
+  position: absolute;
+  inset: 8px 0 auto auto;
+  width: 100%;
+  height: calc(100% - 20px);
+  overflow: visible;
+}
+.wave-rows path,
+.wave-cols path {
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 4.6;
+}
+.wave-cols path {
+  stroke-width: 1.3;
+  stroke-dasharray: 0.1 5.4;
+  opacity: 0.7;
+}
+.wave-rows path {
+  animation: wave-drift 9s linear infinite;
+}
+.wave-links path {
+  fill: none;
+  stroke: var(--wave-ink);
+  stroke-width: 0.8;
+  opacity: 0.32;
+}
+.wave-rings circle {
+  fill: none;
+  stroke: var(--wave-ink);
+  stroke-width: 0.7;
+  opacity: 0.22;
+}
+.wave-nodes rect {
+  fill: var(--wave-ink);
+}
+.wave-nodes rect.accent {
+  fill: var(--accent);
+  animation: node-pulse 3.6s var(--ease) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.wave-cross path {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+@keyframes wave-drift {
+  to {
+    stroke-dashoffset: -9.4;
+  }
+}
+@keyframes node-pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .network-wave * {
+    animation: none !important;
+  }
+}
+:root[data-motion="reduced"] .network-wave * {
+  animation: none !important;
+}
+/* ---------- Tabs & toolbar ---------- */
+.feed-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+/* Simple single-layer filter controls: selected text never has a duplicate overlay. */
+.type-tabs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.type-tab {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:40px; padding:0 13px;
+  border:1px solid var(--line); border-radius:var(--radius-full);
+  background:var(--surface); color:var(--ink-soft);
+  font-size:13px; font-weight:500; white-space:nowrap;
+  transition:background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.type-tab-label { display:inline-flex; align-items:center; gap:7px; }
+.type-tab:hover { background:var(--surface-muted); border-color:var(--line-strong); color:var(--ink); }
+.type-tab .tab-count {
+  min-width:20px; padding:0 6px; border-radius:var(--radius-full);
+  background:var(--tag-bg); color:var(--muted);
+  font-size:11px; line-height:19px; text-align:center;
+}
+.type-tab.active { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.type-tab.active .tab-count {
+  background:color-mix(in srgb, var(--paper) 18%, transparent); color:var(--paper);
+}
+.type-tab.empty:not(.active) { color:var(--muted); }
+.view-toggle {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 40px;
+  gap: 5px;
+  font-size: 12px;
+  border-radius: var(--radius-full);
+  color: var(--muted);
+}
+.view-toggle button[aria-pressed="true"] {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--control-border);
+}
+.view-toggle::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  left: 3px;
+  width: 68px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--tag-bg);
+  transition: transform var(--motion-base) var(--ease-spring);
+}
+.view-toggle:has(button:last-child[aria-pressed="true"])::before {
+  transform: translateX(68px);
+}

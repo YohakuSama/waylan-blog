@@ -1,0 +1,246 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const shell = readFileSync("src/styles/shell.css", "utf8");
+const feedCss = readFileSync("src/styles/feed.css", "utf8");
+const projectCss = readFileSync("src/styles/projects.css", "utf8");
+const sideCss = readFileSync("src/styles/sidebar.css", "utf8");
+const pagesCss = readFileSync("src/styles/site.css", "utf8");
+const responsive = readFileSync("src/styles/responsive.css", "utf8");
+// Absence checks cover all former site.css sections; positive checks use their owner.
+const allSite = [shell, feedCss, projectCss, sideCss, pagesCss, responsive].join("\n");
+const feed = readFileSync("src/components/Feed.tsx", "utf8");
+const pages = ["Home", "Feed", "Projects", "Archive", "About", "NotFound"]
+  .map((name) => readFileSync(`src/pages/${name}.tsx`, "utf8")).join("\n");
+const sidebarComponent = readFileSync("src/components/Sidebar.tsx", "utf8");
+const skins = readFileSync("src/styles/skins.css", "utf8");
+
+/** These contracts guard layout regressions without requiring a live Worker. */
+describe("home hero mobile and tablet layout", () => {
+  it("shares the index-page heading geometry and 44px action rows with archive", () => {
+    assert.ok(pages.includes('className="home-hero page-heading"'));
+    assert.ok(pages.includes('className="eyebrow mono">WAYLAN / HOME'));
+    assert.ok(pages.includes('className="home-page-title">首页</h1>'));
+    assert.equal(pages.includes('className="hero-title"'), false, "home intro should not repeat the page title with a second headline");
+    assert.ok(pages.includes('className="eyebrow mono">WAYLAN / ARCHIVE'));
+    assert.ok(pages.includes('className="home-links page-heading-actions"'));
+    assert.ok(pages.includes('className="archive-summary page-heading-actions"'));
+    assert.ok(pagesCss.includes(".page-heading-actions > a {"));
+    assert.ok(responsive.includes("min-height: 44px;"));
+    assert.ok(responsive.includes(".page-heading { padding: 32px 0 20px; }"));
+    assert.equal(allSite.includes(".archive-heading h1 {"), false);
+    assert.equal(allSite.includes(".home-links > .home-topic-link { display: none; }"), false);
+    assert.ok(pages.includes("浏览全部内容<ArrowRight"));
+  });
+  it("keeps accessible category tabs on wider screens and progressive filters on phones", () => {
+    assert.ok(responsive.includes(".feed-controls .feed-desktop-controls { display: none; }"));
+    assert.ok(responsive.includes(".feed-controls .feed-mobile-controls { display: block;"));
+    assert.ok(pages.includes('className="feed-mobile-filter-trigger"'));
+    assert.ok(pages.includes('className="feed-mobile-filter-fields"'));
+    assert.ok(pages.includes('aria-expanded={mobileFiltersOpen}'));
+    assert.ok(pages.includes('value={type}'));
+    assert.ok(pagesCss.includes(".feed-mobile-filter-fields select {"));
+    assert.ok(pagesCss.includes("min-height: 44px;"));
+    assert.ok(feed.includes("aria-pressed={selected}"));
+    assert.equal(feed.includes('className="type-fill"'), false);
+  });
+  it("keeps two columns from 1120px and stacks the sidebar below that width", () => {
+    const sidebar = responsive.slice(responsive.indexOf("/* At 1025–1119px"));
+    assert.ok(sidebar.includes("@media (min-width:1025px) and (max-width:1119px)"));
+    assert.ok(sidebar.includes(".content-grid { grid-template-columns:minmax(0,1fr); }"));
+    assert.ok(sidebar.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
+    assert.ok(sidebar.includes("@media (min-width:861px) and (max-width:1279px)"));
+    assert.ok(sidebar.includes(".header-search-text,.header-search kbd { display:none; }"));
+    assert.ok(sidebar.includes("grid-template-columns:auto minmax(0,1fr) auto"));
+  });
+  it("centers the adaptive index pages and gives the homepage one editorial frame", () => {
+    assert.ok(pagesCss.includes("margin-inline: auto;"));
+    for (const name of [".feed-page", ".projects-page", ".archive-page", ".about-page"]) {
+      assert.ok(pagesCss.includes(name), name);
+    }
+    assert.ok(shell.includes(".home-page {"));
+    assert.ok(shell.includes("--index-frame-width: 1140px;"));
+    assert.ok(shell.includes("max-width: var(--index-frame-width);"));
+    assert.ok(pagesCss.includes("max-width: var(--index-frame-width);"));
+    assert.ok(shell.includes("--index-list-width: 960px;"));
+    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-frame-width); }"));
+    assert.equal(pagesCss.includes(".feed-page { max-width: var(--index-list-width); }"), false);
+    assert.match(pagesCss, /\.projects-layout,\s*\.archive-main,\s*\.about-layout \{ max-width: var\(--index-frame-width\); \}/);
+    assert.ok(pagesCss.includes("grid-template-columns: minmax(0, 1fr) var(--home-rail-width);"));
+    assert.ok(responsive.includes(".about-layout { max-width: 720px; }"));
+    assert.ok(projectCss.includes("grid-template-columns: repeat(2, minmax(0, 1fr));"));
+    assert.ok(shell.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
+    assert.ok(pagesCss.includes("max-width: calc(var(--index-frame-width) + 2 * var(--page-gutter));"));
+    assert.ok(shell.includes(".home-grid {"));
+    assert.ok(shell.includes(".content-grid.home-grid {"));
+    assert.ok(shell.includes("--home-rail-width: 276px;"));
+    assert.ok(shell.includes("--home-rail-gap: var(--space-12);"));
+    assert.ok(shell.includes("column-gap: var(--home-rail-gap);"));
+    assert.ok(shell.includes("width: calc(100% - var(--home-rail-width) - var(--home-rail-gap));"));
+    assert.ok(shell.includes(".site-sidebar.home-sidebar .side-head {"));
+    assert.ok(shell.includes(".site-sidebar.home-sidebar > .side-block {"));
+    assert.ok(shell.includes(".site-sidebar.home-sidebar .side-heading-link {"));
+    assert.ok(pages.includes('className="home-page"'));
+    assert.ok(responsive.includes(".home-sidebar { display: none; }"));
+  });
+  it("shares the site-wide index origin and keeps desktop filters in two bands", () => {
+    const source = readFileSync("src/pages/Feed.tsx", "utf8");
+    const toolbar = source.indexOf('className="feed-toolbar"');
+    const sorting = source.indexOf('className="feed-search-row"', toolbar);
+    const topics = source.indexOf('className="filter-tabs"', sorting);
+    const results = source.indexOf('className="feed-result-line"', topics);
+    const list = source.indexOf("<FeedList", results);
+    assert.ok(toolbar > 0 && sorting > toolbar && topics > sorting && results > topics && list > results);
+    assert.ok(pagesCss.includes(".feed-layout { max-width: var(--index-frame-width); }"));
+    assert.ok(pagesCss.includes(".feed-controls .feed-result-line {"));
+    assert.ok(responsive.includes(".feed-controls > .feed-result-line { grid-column: 2;"));
+    assert.ok(responsive.includes(".feed-controls .feed-result-line {"));
+    assert.ok(source.includes("<ViewToggle density={density} onChange={setDensity} />"));
+  });
+  it("uses content-led index archetypes without removing their real components", () => {
+    const archive = readFileSync("src/pages/Archive.tsx", "utf8");
+    const about = readFileSync("src/pages/About.tsx", "utf8");
+    const projects = readFileSync("src/pages/Projects.tsx", "utf8");
+    const feedPage = readFileSync("src/pages/Feed.tsx", "utf8");
+    assert.ok(archive.indexOf('className="archive-index"') <
+      archive.indexOf('className="archive-activity"'), "archive chronology must precede its auxiliary chart");
+    assert.ok(archive.includes("<Heatmap showDates />") && archive.includes('id="publication-activity"'),
+      "Archive must retain its activity chart with accessible date details");
+    assert.ok(about.indexOf('className="about-text"') <
+      about.indexOf('className="about-details"'), "About prose must be primary");
+    for (const required of ["site.aboutHtml", "<SocialList />", "<SiteStats views />", "about-motto"]) {
+      assert.ok(about.includes(required), required);
+    }
+    assert.ok(projects.includes("<FeedList") && projectCss.includes(".projects-page .projects-layout .feed-item.is-project"));
+    assert.ok(feedPage.includes('className="feed-filter-label"'));
+    assert.ok(feedPage.includes("<TypeTabs") && feedPage.includes("<ViewToggle"));
+    assert.doesNotMatch(pagesCss, /\.feed-controls\s*\{[^}]*border-top: 2px solid var\(--ink\);/s);
+    assert.ok(responsive.includes(".archive-activity-copy { flex: none; }"));
+    assert.ok(responsive.includes(".about-details > section + section { padding-top: 0; border-top: 0; }"));
+  });
+  it("keeps tablet home spacing ahead of the generic feed cascade", () => {
+    const generic = responsive.indexOf(".feed-list .feed-item { padding-block: var(--space-5); }");
+    const home = responsive.indexOf(".feed-list.home-list .feed-item { padding-block: var(--space-4); }");
+    assert.ok(generic >= 0 && home > generic,
+      "the 768–1119px home rhythm must override generic feed padding");
+  });
+  it("keeps the homepage a single editorial feed with a compact topic doorway", () => {
+    assert.ok(shell.includes(".home-feed { border-top:"));
+    assert.ok(pages.includes('className="sr-only">最新内容</h2>'));
+    assert.ok(!pages.includes('className="home-section-head"'),
+      "the visible Latest section title should not interrupt the home article flow");
+    assert.equal(allSite.includes(".home-feed-heading"), false);
+    assert.ok(shell.includes(".home-resume .resume-link"));
+    assert.ok(pages.includes('href="/feed" className="home-topic-link"'));
+    assert.ok(responsive.includes("@media (max-width: 1119px)"));
+  });
+  it("makes the entire sidebar heading a keyboard-reachable 44px link", () => {
+    assert.ok(sidebarComponent.includes('className="side-heading-link"'));
+    assert.ok(sidebarComponent.includes('className="side-heading-text"'));
+    assert.ok(sideCss.includes(".side-heading-link:focus-visible"));
+    assert.ok(sideCss.includes("min-height: 44px;"));
+    assert.ok(sidebarComponent.includes('href={`/feed?topic=${t.id}`}'));
+    assert.ok(sidebarComponent.includes('className="side-heading-link side-heading-static"'));
+    assert.equal(pages.includes('mode="feed"'), false);
+    assert.ok(pages.includes('className="feed-page"'));
+    const home = readFileSync("src/pages/Home.tsx", "utf8");
+    assert.ok(home.indexOf('className="home-topic-shortcuts"') > home.indexOf('id="latest-heading"'),
+      "topic links should follow the article stream, not compete with the introduction");
+    assert.doesNotMatch(readFileSync("src/pages/Feed.tsx", "utf8"), /className="feed-mobile-search"/,
+      "phones must reuse the existing masthead search");
+    assert.equal(sidebarComponent.includes("/feed?type=all"), false);
+    assert.ok(skins.includes('.side-heading-link::before { content: "##"'));
+    assert.ok(skins.includes(".side-heading-link .side-more svg { display: block; }"));
+  });
+  it("reduces tablet and phone content filtering to adjacent selects", () => {
+    const start = responsive.indexOf("/* Tablets and phones use the same compact");
+    assert.ok(start > 0);
+    const compact = responsive.slice(start, responsive.indexOf("/* Narrow screens keep destinations", start));
+    assert.ok(compact.includes("@media (max-width: 1024px)"));
+    assert.ok(compact.includes(".feed-controls .filter-tabs"));
+    assert.ok(compact.includes("display: none;"));
+    assert.ok(compact.includes(".feed-controls .topic-select"));
+    assert.ok(compact.includes("display: inline-flex;"));
+    assert.ok(compact.includes(".feed-controls .feed-search-row"));
+    assert.ok(compact.includes("flex-direction: row;"));
+    assert.ok(responsive.includes(".feed-layout .site-sidebar { display: none; }"));
+    assert.ok(compact.includes(".feed-controls .feed-search-row .sort-control"));
+  });
+  it("preserves existing filters on card tag clicks and provides a reset affordance", () => {
+    assert.ok(feed.includes("hrefForTag?.(tag)"));
+    assert.ok(feed.includes("tagHref={tagHref}"));
+    assert.ok(pages.includes('tagHref={(selectedTag) => href({ tag: selectedTag })}'));
+    assert.ok(pages.includes('className="feed-clear-filters"'));
+    assert.ok(responsive.includes(".tag-list a {"));
+    assert.ok(responsive.includes(".feed-layout .load-more"));
+  });
+  it("retains the header and notification instance while moving between reader routes", () => {
+    const app = readFileSync("src/App.tsx", "utf8");
+    const articleHeader = readFileSync("src/features/reader/ArticleHeader.tsx", "utf8");
+    const reader = readFileSync("src/components/Reader.tsx", "utf8");
+    const readerStyles = readFileSync("src/styles.css", "utf8");
+    assert.doesNotMatch(app, /header key=\{post \?/,
+      "a route-dependent key remounts NotificationBell and briefly loses unread state");
+    assert.ok(app.includes("<NotificationBell announcements="));
+    assert.ok(reader.includes('bookmark={<BookmarkButton post={post}'));
+    assert.ok(articleHeader.includes('className="article-heading-bottom"'));
+    assert.ok(articleHeader.includes('className="article-heading-save"'));
+    assert.ok(readerStyles.includes(".reading-article .article-heading-bottom"));
+    assert.match(readerStyles, /\.reading-article \.article-actions \{\s*display: none;/);
+  });
+  it("keeps desktop project previews while replacing bulky phone/tablet cards with usable tags", () => {
+    assert.ok(feed.includes('className="project-thumb-tags"'));
+    assert.ok(feed.includes('className="project-compact-tags"'));
+    assert.ok(feed.includes('<TagList tags={post.tags} hrefForTag={tagHref} />'));
+    assert.ok(feed.includes('(post.type !== "project" || !media)'));
+    assert.ok(feedCss.includes(".project-thumb-tags .tag-list a {"));
+    assert.ok(responsive.includes("@media (max-width: 1040px)"));
+    assert.ok(responsive.includes(".feed-item.is-project.has-media .project-media"));
+    assert.ok(responsive.includes(".feed-item.is-project .project-compact-tags"));
+    assert.ok(responsive.includes("@media (min-width: 768px) and (max-width: 1040px)"));
+    assert.ok(feed.includes('onClick={() => onChange("compact")}'));
+    assert.ok(feed.includes('onClick={() => onChange("full")}'));
+  });
+  it("shows homepage tags for every post instead of leaving bookmark-only rows", () => {
+    assert.ok(shell.includes(".home-list .thought-mark, .home-list .project-facts { display: none; }"));
+    assert.doesNotMatch(shell, /\.home-list \.feed-item:not\(:first-child\) \.tag-list\s*\{\s*display:\s*none/);
+    assert.doesNotMatch(shell, /\.home-list \.tag-list li:nth-child\(n\+3\)/);
+    assert.ok(feed.includes('className="feed-tail-tags"'));
+    assert.ok(feed.includes('<BookmarkButton post={post} className="card-bookmark" />'));
+    assert.equal((feed.match(/<FeedActions post=\{post\} href=\{href\} \/>/g) || []).length, 2,
+      "thoughts and other entries must reuse one bookmark/open action group");
+    assert.ok(feed.includes('className="feed-actions"'));
+    assert.equal(feedCss.includes('.density-compact .feed-arrow { display: none; }'), false,
+      "compact cards retain the shared save and open actions");
+    assert.ok(feedCss.includes('grid-template-columns: minmax(0, 1fr) 92px;'),
+      "compact metadata reserves one row for the shared action pair");
+    assert.ok(feedCss.includes(".tag-list.tag-list--quiet a {") &&
+      feedCss.includes(".tag-list.tag-list--quiet a { min-height: 44px; }"),
+      "320px terminal cards must use the shared quiet tag style with accessible tap targets");
+    assert.ok(feed.includes('className="feed-arrow"'));
+    assert.doesNotMatch(shell, /\.home-list \.feed-arrow\s*\{\s*display:\s*none/);
+  });
+  it("keeps hero art bounded and save actions separate from publication facts", () => {
+    const page = readFileSync("src/pages/Home.tsx", "utf8");
+    const mark = readFileSync("src/components/Wordmark.tsx", "utf8");
+    assert.ok(shell.includes("grid-template-columns: minmax(0, 1fr) minmax(220px, 34%);"));
+    assert.ok(shell.includes(".home-list .feed-item.has-media > .feed-media-link { align-self: center; }"));
+    assert.doesNotMatch(page, /className="home-motto"/);
+    assert.ok(feed.includes('className="entry-meta-facts"'));
+    assert.ok(feedCss.includes(".entry-meta-facts > * {"));
+    assert.ok(feed.includes('className="feed-tail"'));
+    assert.ok(!feed.includes('<BookmarkButton post={post} className="card-bookmark" />\n    </div>'));
+    assert.match(skins, /\.feed-tail \.card-bookmark \{\s*position: static;/);
+    assert.ok(mark.includes('viewBox="-3.7 -83.3 313.4 117.2"'));
+    assert.ok(skins.includes(".brand-term-prompt"));
+  });
+  it("prevents tablet hero art from creating side-scrolling", () => {
+    const bp = responsive.indexOf("@media (max-width: 1024px)");
+    assert.ok(bp > 0);
+    const next = responsive.indexOf("/* Narrow screens keep destinations into a menu. */", bp);
+    const tablet = responsive.slice(bp, next);
+    assert.ok(tablet.includes("right: auto;"));
+    assert.ok(tablet.includes(".home-hero > .hero-visual {"));
+  });
+});

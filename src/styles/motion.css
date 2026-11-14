@@ -1,0 +1,446 @@
+/* ==========================================================================
+   Motion — one vocabulary for the whole site. Loaded last.
+   Everything returns the way it came: pages slide in the direction of travel,
+   dialogs grow out of their trigger and shrink back into it, list items keep
+   their identity and glide to new slots. lib/motion.ts reads these tokens.
+   ========================================================================== */
+:root {
+  --motion-fast: 170ms;
+  --motion-base: 260ms;
+  --motion-page: 320ms;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-in: cubic-bezier(.4, 0, .9, .6);
+  /* A critically-damped spring with a whisper of overshoot. */
+  --ease-spring: linear(0, .099, .305, .528, .719, .861, .954, 1.008, 1.032, 1.038, 1.035, 1.027, 1.018, 1.011, 1.005, 1.002, 1, .999, .999, .999, 1);
+  --press-scale: .96;
+  --interactive-lift: -2px;
+  --dialog-motion: pop;
+}
+/* Both skins share the same duration, easing and press feedback.
+   Square corners and mono typography supply the terminal identity. */
+
+/* ---------- Dialog styles (read by animateDialog) ---------- */
+.image-dialog { --dialog-motion: zoom; }
+.discussion-dialog { --dialog-motion: panel; }
+@media (max-width: 700px) {
+  .discussion-dialog,
+  .search-dialog,
+  .settings-dialog { --dialog-motion: sheet; }
+}
+/* Avoid translating the native search top layer during software-keyboard focus.
+   iOS Safari can paint the input caret separately from its sliding dialog. */
+@media (max-width: 700px), (pointer: coarse) {
+  .search-dialog { --dialog-motion: instant; }
+}
+@media (max-width: 600px) {
+  .shelf-dialog { --dialog-motion: sheet; }
+}
+
+/* ---------- Hover & press ---------- */
+a,
+button,
+summary {
+  transition:
+    color var(--motion-fast) var(--ease),
+    background-color var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    box-shadow var(--motion-base) var(--ease),
+    transform var(--motion-base) var(--ease-spring);
+}
+a:hover {
+  color: var(--brand);
+}
+/* Press sinks fast and springs back on release. */
+:is(button, .primary-button, .quiet-button, .icon-button, .type-tab, .header-search, .text-button):active:not(:disabled) {
+  transform: scale(var(--press-scale));
+  transition-duration: 80ms;
+  transition-timing-function: var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .feed-item,
+  .archive-row,
+  .profile-tags span,
+  .explore-list a,
+  .recent-list a,
+  .link-list a {
+    transition:
+      background-color var(--motion-base) var(--ease),
+      border-color var(--motion-base) var(--ease),
+      color var(--motion-fast) var(--ease),
+      transform var(--motion-base) var(--ease-spring);
+  }
+  .feed-item:hover { background: color-mix(in srgb, var(--surface-muted) 35%, transparent); }
+  .feed-media img { transition: transform 430ms var(--ease-out); }
+  .feed-item:hover .feed-media img { transform: scale(1.025); }
+  .archive-row:hover { background: color-mix(in srgb, var(--surface-muted) 60%, transparent); }
+  /* Arrows lean toward where the link goes. */
+  .archive-row > svg,
+  .side-more svg,
+  .link-list a > svg,
+  .feed-result-line a > svg,
+  .primary-button > svg:last-child,
+  .text-button > svg:last-child {
+    transition: transform var(--motion-base) var(--ease-spring), color var(--motion-fast) var(--ease);
+  }
+  .archive-row:hover > svg,
+  .link-list a:hover > svg,
+  .feed-result-line a:hover > svg { transform: translate(2px, -2px); color: var(--accent); }
+  .side-more:hover svg,
+  .primary-button:hover > svg:last-child,
+  .text-button:hover > svg:last-child { transform: translateX(3px); }
+  .explore-list a:hover,
+  .recent-list a:hover { transform: translateX(2px); }
+  .profile-tags span:hover { border-color: var(--line-strong); transform: translateY(var(--interactive-lift)); }
+  /* Heatmap days answer the pointer with a ring; the tooltip names the day. */
+  .heat-cell[data-tip] { transition: box-shadow var(--motion-fast) var(--ease); }
+  .heat-cell[data-tip]:hover { box-shadow: 0 0 0 1.5px var(--ink); }
+  .header-search:hover,
+  .icon-button:hover,
+  .quiet-button:hover,
+  .primary-button:hover,
+  .type-tab:hover { box-shadow: 0 9px 23px -17px rgb(38 29 25 / .24); }
+}
+
+/* ---------- Route transitions ---------- */
+/* Router shows this only after an actual delayed reader-chunk load. Quick
+   cached navigation has no loading flash, but a slow first open has feedback. */
+:root[data-navigation="loading"] .site-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 30%;
+  height: 2px;
+  background: var(--brand);
+  pointer-events: none;
+  animation: waylan-reader-loading 1050ms var(--ease) infinite alternate;
+}
+@keyframes waylan-reader-loading {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(335%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"])[data-navigation="loading"] .site-header::after {
+    animation: none;
+    transform: none;
+  }
+}
+:root[data-motion="reduced"][data-navigation="loading"] .site-header::after {
+  animation: none;
+  transform: none;
+}
+/* The header holds still; the indicator under the nav slides to the new page. */
+.site-header { view-transition-name: site-header; }
+.nav-indicator { view-transition-name: nav-indicator; }
+::view-transition-group(site-header) { animation: none; }
+::view-transition-group(*) {
+  animation-duration: var(--motion-page);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-group(nav-indicator) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-spring);
+}
+/* List pages can contain the same post at very different coordinates:
+   homepage cards, the full feed, and the project subset. Moving every title
+   and cover as a shared element makes them fly/flash independently of the
+   page. Keep shared post motion only for an actual reader transition. */
+:root[data-route-motion="collection"] .feed-item .feed-body h2,
+:root[data-route-motion="collection"] .feed-item .feed-media {
+  view-transition-name: none !important;
+}
+/* Resuming at a saved scroll location cannot safely morph thumbnail/title
+   geometry into a reader that immediately scrolls away from its heading. */
+:root[data-route-motion="resume"] .feed-item .feed-body h2,
+:root[data-route-motion="resume"] .feed-item .feed-media,
+:root[data-route-motion="resume"] .article-heading h1,
+:root[data-route-motion="resume"] .article-cover-image {
+  view-transition-name: none !important;
+}
+:root[data-route-motion="resume"]::view-transition-old(root) {
+  animation: var(--motion-fast) ease both vt-fade-out;
+}
+:root[data-route-motion="resume"]::view-transition-new(root) {
+  animation: var(--motion-fast) ease both vt-fade-in;
+}
+/* Forward: old page lifts away, new one rises in. Back mirrors it. */
+::view-transition-old(root) { animation: var(--motion-fast) var(--ease-in) both vt-out; }
+::view-transition-new(root) { animation: var(--motion-page) var(--ease-out) 40ms both vt-in; }
+:root[data-nav-dir="back"]::view-transition-old(root) { animation-name: vt-out-back; }
+:root[data-nav-dir="back"]::view-transition-new(root) { animation-name: vt-in-back; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes vt-out-back { to { opacity: 0; transform: translateY(6px); } }
+@keyframes vt-in-back { from { opacity: 0; transform: translateY(-8px); } }
+
+/* Sliding selections: the nav block moves underneath while each label rides in
+   its own layer above it, cross-fading its colour. Left in the page snapshot,
+   the labels would sit under the moving block and pop in at the end. */
+.nav-label,
+.type-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+}
+.nav-label { view-transition-name: var(--vt-label); }
+/* The type tabs stay live: their fill slides by CSS (see TypeTabs) instead of
+   two snapshots cross-fading out of step with a moving pill. */
+:root[data-vt="list"] .type-tabs { view-transition-name: type-tabs; }
+::view-transition-old(type-tabs) { display: none; }
+::view-transition-new(type-tabs) { animation: none; }
+/* The density toggle stays live so its thumb slides instead of ghosting. */
+:root[data-vt="list"] .view-toggle { view-transition-name: view-toggle; }
+::view-transition-old(view-toggle) { display: none; }
+::view-transition-new(view-toggle) { animation: none; }
+
+/* Same-page filtering: cards keep identity and glide; inner shared names step aside. */
+:root[data-vt="list"] :is(.feed-item, .archive-row, .archive-year > h2) { view-transition-name: match-element; }
+:root[data-vt="list"] :is(.feed-item, .archive-row) * { view-transition-name: none !important; }
+:root[data-vt="list"]::view-transition-old(root) { animation: var(--motion-fast) ease both vt-fade-out; }
+:root[data-vt="list"]::view-transition-new(root) { animation: var(--motion-base) ease both vt-fade-in; }
+:root[data-vt="list"]::view-transition-old(*):only-child { animation: var(--motion-fast) var(--ease-in) both vt-shrink; }
+:root[data-vt="list"]::view-transition-new(*):only-child { animation: var(--motion-base) var(--ease-out) 60ms both vt-grow; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes vt-shrink { to { opacity: 0; transform: scale(.98); } }
+@keyframes vt-grow { from { opacity: 0; transform: scale(.98); } }
+
+/* ---------- Load-time reveals ---------- */
+/* Below-the-fold items rise once as they arrive; set by useReveal(). */
+:root[data-motion="full"] .reveal-pending {
+  opacity: 0;
+  transform: translateY(14px);
+}
+:root[data-motion="full"] .reveal-in {
+  transition:
+    opacity 480ms var(--ease-out) var(--reveal-delay, 0ms),
+    transform 560ms var(--ease-out) var(--reveal-delay, 0ms);
+}
+/* Images fade in as they decode rather than painting row by row. */
+:root[data-motion="full"] img.art-loading { opacity: 0; }
+:root[data-motion="full"] img.art-loaded { transition: opacity 360ms var(--ease-out); }
+/* Skeleton shimmer for comments and the lazy reader. */
+.skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--surface-muted) 30%, color-mix(in srgb, var(--surface-muted) 40%, var(--paper)) 50%, var(--surface-muted) 70%) 0 0 / 300% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+@keyframes skeleton { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.skeleton-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+}
+.comment-skeleton {
+  box-sizing: border-box;
+  min-height: 218px;
+  padding: 20px var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.comment-skeleton > div {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+.comment-skeleton .skeleton-dot { grid-row: span 2; }
+.comment-skeleton .skeleton-line:nth-of-type(2) { width: 30%; }
+.comment-skeleton .skeleton-line:nth-of-type(3) { width: 82%; }
+.reader-skeleton {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+  margin: 56px auto;
+  padding: 0 var(--space-6);
+}
+.reader-skeleton .skeleton-line:first-of-type { height: 28px; width: 64%; margin-bottom: 18px; }
+.reader-skeleton .skeleton-line:last-of-type { width: 46%; }
+/* Placeholders only shimmer after a beat, so quick loads never flash. */
+:is(.comment-skeleton, .reader-skeleton) { animation: vt-fade-in 200ms 150ms both; }
+
+/* A list transition is a scoped transaction, not a page-wide click lock.
+   Other links, text inputs, scrolling and dialog close buttons remain usable. */
+:root[data-list-busy] .type-tabs :is(button, a),
+:root[data-list-busy] .view-toggle button,
+:root[data-list-busy] .feed-controls .filter-tabs button,
+:root[data-list-busy] .feed-controls .topic-select select,
+:root[data-list-busy] .feed-controls .sort-control select {
+  pointer-events: none;
+  cursor: progress;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  :root:not([data-motion="full"])::view-transition-group(*),
+  :root:not([data-motion="full"])::view-transition-old(*),
+  :root:not([data-motion="full"])::view-transition-new(*) { animation: none !important; }
+}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+:root[data-motion="reduced"]::view-transition-group(*),
+:root[data-motion="reduced"]::view-transition-old(*),
+:root[data-motion="reduced"]::view-transition-new(*) { animation: none !important; }
+
+/* ---------- Scrollbars ---------- */
+/* Inner scrollers get a thin, quiet bar that matches the skin. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+@supports not (scrollbar-color: red blue) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--line-strong) content-box;
+  }
+}
+/* The page itself uses the overlay bar (components/Scrollbar.tsx) wherever a
+   fine pointer can use it; touch screens keep the system's. */
+.page-scrollbar { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  html { scrollbar-width: none; }
+  html::-webkit-scrollbar { display: none; }
+  .page-scrollbar {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 40;
+    display: block;
+    width: 14px;
+  }
+  .page-scrollbar[hidden],
+  .dialog-open .page-scrollbar { display: none; }
+  .page-scrollbar-thumb {
+    position: absolute;
+    top: 0;
+    right: 3px;
+    width: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 34%, transparent);
+    opacity: 0;
+    transition:
+      opacity 420ms var(--ease) 120ms,
+      width var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease);
+  }
+  /* Surfaces while the page moves; settles away a beat after it stops. */
+  .page-scrollbar[data-active] .page-scrollbar-thumb,
+  .page-scrollbar:hover .page-scrollbar-thumb {
+    opacity: 1;
+    transition-delay: 0ms;
+  }
+  .page-scrollbar:hover .page-scrollbar-thumb,
+  .page-scrollbar[data-dragging] .page-scrollbar-thumb {
+    width: 8px;
+    background: color-mix(in srgb, var(--ink) 52%, transparent);
+  }
+  :root[data-skin="terminal"] .page-scrollbar-thumb { border-radius: 0; }
+  :root[data-skin="terminal"] .page-scrollbar:hover .page-scrollbar-thumb,
+  :root[data-skin="terminal"] .page-scrollbar[data-dragging] .page-scrollbar-thumb { background: var(--brand); }
+}
+@media print {
+  .page-scrollbar { display: none !important; }
+}
+
+/* ---------- Tooltip (components/Tooltip.tsx) ---------- */
+.tooltip {
+  position: fixed;
+  inset: auto;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 5px 9px;
+  max-width: min(280px, calc(100vw - 16px));
+  overflow: visible;
+  border: 0;
+  border-radius: 7px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 500 12px/1.4 var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(.94) translateY(-3px);
+  transition:
+    opacity 120ms var(--ease),
+    transform 160ms var(--ease-in);
+}
+.tooltip[data-side="above"] { transform: scale(.94) translateY(3px); }
+.tooltip[data-show] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 260ms var(--ease-spring);
+}
+:root[data-skin="terminal"] .tooltip {
+  border-radius: 0;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  box-shadow: 0 0 0 1px var(--line-strong);
+  font-family: var(--font-mono);
+}
+
+/* ---------- Section links ---------- */
+/* Heading margins collapse through the shell, so its box is the heading's. */
+.heading-anchor { display: none; }
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+  .heading-anchor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -34px;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--muted);
+    font: 500 15px/1 var(--font-mono);
+    cursor: pointer;
+    user-select: none;
+    opacity: 0;
+    transform: translateX(4px);
+    transition:
+      opacity var(--motion-fast) var(--ease),
+      transform var(--motion-base) var(--ease-spring),
+      color var(--motion-fast) var(--ease);
+  }
+  .block-heading:hover .heading-anchor,
+  .heading-anchor:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+  .heading-anchor:hover { color: var(--brand); }
+}
+
+/* Reduced motion must not hold the boot-rise's translated first frame while
+   its delay runs. Keep initial content and controls at their final position. */
+:root[data-motion="reduced"].font-loader-out #root main {
+  animation: none;
+  transform: none;
+}

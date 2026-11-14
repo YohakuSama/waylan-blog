@@ -1,0 +1,176 @@
+/* /projects only. FeedEntry stays shared with Home and /feed. */
+.projects-page .projects-layout .feed-list {
+  gap: var(--space-4);
+}
+/* A bordered project card owns its top edge. Do not draw a second rule
+   immediately above it in the result toolbar. */
+.projects-page .projects-result-line {
+  border-bottom: 0;
+  padding-block: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.projects-page .projects-layout .feed-item.is-project {
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.projects-page .projects-layout .feed-item.is-project:hover,
+.projects-page .projects-layout .feed-item.is-project:focus-within {
+  border-color: var(--line-strong);
+}
+
+/* Status is the useful fact; "project" is already the page's category. */
+.projects-page .projects-layout .feed-item.is-project .type-label {
+  display: none;
+}
+.projects-page .projects-layout .feed-item.is-project .entry-meta-facts {
+  gap: 4px 10px;
+}
+.projects-page .projects-layout .feed-item.is-project .project-status {
+  order: -1;
+  flex: 0 0 74px;
+  padding: 2px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.projects-page .projects-layout .feed-item.is-project .feed-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.projects-page .projects-layout .feed-item.is-project .feed-body h2 {
+  margin-top: var(--space-3);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.projects-page .projects-layout .feed-item.is-project .feed-excerpt {
+  display: block;
+  overflow: visible;
+  max-width: 64ch;
+  -webkit-line-clamp: unset;
+}
+/* Summary cards link to topics and the full project detail; technologies
+   belong on the detail page, not in a second duplicate list of tags. */
+.projects-page .projects-layout .feed-item.is-project .stack-list { display: none; }
+.projects-page .projects-layout .feed-item.is-project .project-facts:not(:has(a)) { display: none; }
+.projects-page .projects-layout .feed-item.is-project .project-facts {
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+.projects-page .projects-layout .feed-item.is-project .project-facts a {
+  min-height: 44px;
+  padding-inline: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.projects-page .projects-layout .feed-item.is-project .feed-tail {
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+.projects-page .projects-layout .feed-item.is-project .feed-tail-tags {
+  min-width: 0;
+}
+.projects-page .projects-layout .feed-item.is-project .feed-tail .tag-list {
+  margin: 0;
+  gap: 6px 12px;
+}
+/* A single tag navigation, adjacent to the card actions, at every width. */
+.projects-page .projects-layout .feed-item.is-project .project-compact-tags {
+  display: block;
+}
+.projects-page .projects-layout .feed-item.is-project .project-thumb-tags,
+.projects-page .projects-layout .feed-item.is-project .project-langs {
+  display: none;
+}
+
+/* The monogram is an identity cue, not a screenshot or a language chart. */
+.projects-page .projects-layout .feed-item.is-project .project-thumb {
+  height: 112px;
+  min-height: 112px;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-green);
+}
+.projects-page .projects-layout .feed-item.is-project .project-head {
+  flex: 1 1 auto;
+}
+.projects-page .projects-layout .feed-item.is-project .project-initial {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xl);
+}
+.projects-page .projects-layout .feed-item.is-project .project-code {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* One owner for the project comparison grid and its desktop card geometry. */
+@media (min-width: 1120px) {
+  .projects-page .projects-layout .feed-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: stretch;
+  }
+  .projects-page .projects-layout .feed-list > .feed-item { min-width: 0; }
+  .projects-page .projects-layout .feed-item.is-project {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "media" "body";
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-4);
+    transition: border-color var(--motion-fast) var(--ease);
+  }
+  .projects-page .projects-layout .feed-item.is-project .project-media {
+    width: 100%;
+    min-width: 0;
+  }
+  .projects-page .projects-layout .feed-item.is-project .feed-body h2 {
+    font-size: var(--text-xl);
+  }
+}
+/* 1041–1119: a short identity preview beside readable project facts. */
+@media (min-width: 1041px) and (max-width: 1119px) {
+  .projects-page .projects-layout .feed-item.is-project.has-media {
+    grid-template-columns: minmax(0, 24%) minmax(0, 1fr);
+    grid-template-areas: "media body";
+    gap: var(--space-5);
+  }
+}
+/* Hidden previews do not leave an empty grid track behind. */
+@media (max-width: 1040px) {
+  .projects-page .projects-layout .feed-item.is-project.has-media {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body";
+    gap: 0;
+  }
+  .projects-page .projects-layout .feed-item.is-project .project-media {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .projects-page .projects-layout .feed-item.is-project {
+    padding: var(--space-4);
+  }
+  .projects-page .projects-layout .feed-item.is-project .feed-body h2 {
+    font-size: 20px;
+    line-height: 1.4;
+  }
+  .projects-page .projects-layout .feed-item.is-project .feed-tail {
+    margin-top: 0;
+  }
+}
+
+/* Terminal keeps its technical dashed separators; only its existing radius token changes corners. */
+:root[data-skin="terminal"] .projects-page .projects-layout .feed-item.is-project {
+  border-style: dashed;
+}

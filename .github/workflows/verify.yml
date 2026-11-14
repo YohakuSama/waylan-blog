@@ -1,0 +1,178 @@
+name: Waylan CI
+
+# One entry point; no duplicate npm ci, builds or browser installations.
+on:
+  # Drafts are development workspaces: create a skipped check without
+  # provisioning a runner. The ready_for_review transition runs the full gate
+  # against the exact current PR head; later commits to a ready PR re-run it.
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: waylan-ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    # Avoid allocating CI minutes while a PR is still being actively drafted.
+    # GitHub prevents merging drafts; ready_for_review always triggers this
+    # same required job, including full scoped browser tests for UI changes.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    # Reproducible, version-pinned native browser libraries; no apt mirror repair.
+    # The Playwright release must match the browser-test npm package version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --user 1001
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (include base history for changed-path detection)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select checks by changed surface
+        id: plan
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.sha }}
+          CI_FORCE_FULL: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node scripts/ci-plan.mjs
+      - name: Validate CI scope policy
+        if: ${{ steps.plan.outputs.code == 'true' }}
+        run: node --test scripts/maintenance.test.mjs
+      - name: Node 24 with shared npm cache
+        if: ${{ success() && steps.plan.outputs.core_mode != 'none' && steps.plan.outputs.core_mode != 'policy' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies once
+        if: ${{ success() && steps.plan.outputs.core_mode != 'none' && steps.plan.outputs.core_mode != 'policy' }}
+        run: npm ci
+      - name: Typecheck, build, unit and static integrity tests
+        if: ${{ success() && steps.plan.outputs.core_mode == 'full' }}
+        run: npm run check
+      - name: CSS-only build and generated-output integrity
+        if: ${{ success() && steps.plan.outputs.core_mode == 'build' }}
+        run: |
+          npm run build
+          node --import tsx scripts/check-build.ts
+          node --import tsx scripts/check-preview.ts
+
+      # The pinned image already contains three browsers and all Linux libraries.
+      # Install only the Playwright JS/API packages used by the test scripts.
+      - name: Install Playwright QA packages (bounded)
+        id: browser-packages
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        timeout-minutes: 4
+        env:
+          npm_config_fetch_retries: 1
+          npm_config_fetch_timeout: 120000
+        run: npm install --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.14.0
+      - name: Verify pinned Chromium, Firefox and WebKit runtimes
+        id: browsers
+        if: ${{ success() && steps.plan.outputs.browser == 'true' }}
+        timeout-minutes: 3
+        run: node scripts/ci-browser-runtime.mjs verify
+      - name: Affected-page phone, tablet and desktop layout
+        if: ${{ success() && steps.plan.outputs.browser == 'true' && steps.plan.outputs.visual_full != 'true' && steps.plan.outputs.visual_scope != 'none' && steps.browsers.outcome == 'success' }}
+        timeout-minutes: 5
+        env:
+          WAYLAN_VISUAL_SCOPE: ${{ steps.plan.outputs.visual_scope }}
+        run: node scripts/ci-visual-focused.mjs
+      - name: Phone, tablet and desktop layout (exhaustive)
+        if: ${{ success() && steps.plan.outputs.browser == 'true' && steps.plan.outputs.visual_full == 'true' && steps.browsers.outcome == 'success' }}
+        timeout-minutes: 15
+        env:
+          WAYLAN_VISUAL_MATRIX: full
+        run: node scripts/visual-smoke.mjs
+      - name: Functional UI state and visual matrix (mock APIs)
+        if: ${{ success() && steps.plan.outputs.functional == 'true' && steps.browsers.outcome == 'success' }}
+        timeout-minutes: 6
+        run: node scripts/functional-ui-smoke.mjs
+      - name: Upload functional UI screenshots and state results
+        if: ${{ success() && steps.plan.outputs.functional == 'true' && steps.browsers.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-functional-ui-matrix
+          path: functional-ui-report/
+          if-no-files-found: ignore
+          retention-days: 3
+      - name: Chromium Firefox WebKit and admin interactions
+        if: ${{ success() && steps.plan.outputs.quality == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/quality-smoke.mjs
+      - name: WCAG accessibility checks
+        if: ${{ success() && steps.plan.outputs.a11y == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/a11y-smoke.mjs
+
+      # Targeted functional groups, not five independent workflows/runners.
+      - name: Reader navigation, TOC and settings
+        if: ${{ success() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/reader-deep-smoke.mjs
+      - name: iOS excerpt and composer touch behavior
+        if: ${{ success() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/selection-composer-smoke.mjs
+      - name: Android iPhone iPad and desktop navigation parity
+        if: ${{ success() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/responsive-navigation-smoke.mjs
+      - name: Rapid-navigation ghosting regression
+        if: ${{ success() && steps.plan.outputs.reader == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/route-motion-ghost-smoke.mjs
+      - name: Excerpt and floating control audit
+        if: ${{ success() && steps.plan.outputs.feed == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/excerpt-audit.mjs
+      - name: Search, sort and state-machine regression
+        if: ${{ success() && steps.plan.outputs.feed == 'true' && steps.browsers.outcome == 'success' }}
+        run: node scripts/interaction-state-smoke.mjs
+      - name: Preview motion across three engines
+        if: ${{ success() && steps.plan.outputs.motion == 'true' && steps.browsers.outcome == 'success' }}
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4180 --strictPort > /tmp/waylan-motion-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" || true' EXIT
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:4180/feed/ >/dev/null; then break; fi
+            sleep 1
+          done
+          WAYLAN_AUDIT_ORIGIN=http://127.0.0.1:4180 \
+            WAYLAN_AUDIT_OUTPUT=preview-motion-report \
+            node scripts/live-sort-motion-audit.mjs
+      - name: Read-only production motion comparison (manual full only)
+        if: ${{ success() && github.event_name == 'workflow_dispatch' && steps.browsers.outcome == 'success' }}
+        continue-on-error: true
+        run: node scripts/live-sort-motion-audit.mjs
+        env:
+          WAYLAN_AUDIT_ORIGIN: https://waylan.org
+          WAYLAN_AUDIT_OUTPUT: live-motion-report
+
+      # Preserve evidence on failure or on explicit exhaustive audits.
+      - name: Upload QA evidence if failed or explicitly requested
+        if: ${{ !cancelled() && (failure() || steps.plan.outputs.visual_full == 'true' || steps.plan.outputs.admin_evidence == 'true') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: waylan-qa-evidence
+          path: |
+            visual-report/
+            functional-ui-report/
+            quality-report/
+            accessibility-report/
+            responsive-navigation-report/
+            reader-audit-report/
+            route-motion-ghost-report/
+            excerpt-audit-report/
+            interaction-report/
+            preview-motion-report/
+            live-motion-report/
+          if-no-files-found: ignore
+          retention-days: 3
+
+
