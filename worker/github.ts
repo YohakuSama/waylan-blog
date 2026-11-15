@@ -16,7 +16,7 @@ export async function github<T>(
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "User-Agent": "ECHO-Blog/1.0",
+        "User-Agent": "Waylan-Blog/2.3",
         "X-GitHub-Api-Version": "2022-11-28",
       },
       body: JSON.stringify({ query, variables }),

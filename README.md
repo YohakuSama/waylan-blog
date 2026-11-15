@@ -1,6 +1,6 @@
 # Waylan / 系统、软件与技术实践
 
-**当前源码版本：2.3.0**（以 `package.json` 为准）。当前工程在仓库根目录；历史版本说明已归档，不需要额外进入 `source/`。
+**当前源码版本：2.3.0**（以 `package.json` 为准）。工程位于仓库根目录。
 
 一个可以自行部署到 Cloudflare 的个人博客工程。采用 **React + TypeScript + Vite 静态预渲染 + Workers Static Assets + D1 + GitHub Discussions**。
 
@@ -9,8 +9,6 @@
 **页面本身是静态网页。GitHub 登录、发表评论、跨设备公开批注必须由 Worker 服务端处理，不能只上传静态 HTML 就安全实现。** 本工程把两部分放在同一个 Cloudflare Worker 部署，无需额外服务器、Vercel 或 Supabase。
 
 本站写的是**系统配置、软件使用、网络服务、脚本自动化和新技术实践**；React 等仅是建站所用工具，不代表作者职业或写作方向。
-
-历史版本和旧单文件离线包的说明已归档至 [版本历史](docs/HISTORY.md)。当前命令与目录以本 README 为准。
 
 ## 开发调试
 
@@ -29,11 +27,11 @@ npm run build        # 生成 dist/ 完整 HTML、JS、CSS、RSS、Sitemap
 npm run preview      # 预览静态构建；API 需完整 Worker 模式
 ```
 
-GitHub Actions 仅保留 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围执行必要检查，完整审计可以手动触发；已停用 ThinkPad 自托管 Runner 和历史分支 GC，清理记录见 [分支结项说明](docs/ops/BRANCH_ARCHIVE.md)。
+GitHub Actions 使用 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范围执行检查；完整浏览器审计需手动触发。
 
 **维护前先查看 [架构与问题定位地图](docs/ARCHITECTURE.md) 和 [维护手册](docs/MAINTENANCE.md)**。
 
-**正式发布/生产验收与回滚交接**：见 [软件交付与生产核验清单](docs/ops/RELEASE_HANDOFF.md)，按仓库、CI、Cloudflare、真实站点四层分别取证，不将成功构建等同线上验收。两处分别记录模块责任与依赖方向、故障定位路径、PR 验证/回滚和私有仓库转换清单；避免每次维护从头扫描整个仓库。
+**正式发布与回滚**：见 [生产核对清单](docs/ops/RELEASE_HANDOFF.md)。源码检查、Cloudflare 部署与真实设备验收应分别记录。
 
 `dist/` 是正式 HTTP 部署产物，必须经由 Web 服务器访问；请勿双击 `dist/index.html` 测试站内链接。只有生成的 `preview/index.html` 可直接本地打开。根目录的 `index.html` 是 Vite 开发入口；运行 `npm run build` 会重新生成 `preview/index.html`。
 
@@ -93,7 +91,7 @@ GitHub Actions 仅保留 [Waylan CI](docs/ops/ACTIONS_POLICY.md)：按变更范�
 
 ## Cloudflare 第一次部署
 
-**上线前必须检查**：`SITE_URL`、`wrangler.jsonc` 的域名与数据库绑定须与实际账号一致。当前打包仍含原项目的演示性质文章，发布前应由站长核实其真实性和版权；见根目录 `上线前核对.md`。源码附带的 `tests/` 用于质量验证，不会被部署为静态资源。
+**上线前必须检查**：`SITE_URL`、`wrangler.jsonc` 的域名与数据库绑定须与实际账号一致。仓库中含从旧项目导入的示例文章，发布前请逐篇核对内容真实性与版权，并执行 [生产核对清单](docs/ops/RELEASE_HANDOFF.md)。源码附带的 `tests/` 用于质量验证，不会被部署为静态资源。
 
 ### 1. 设置域名和仓库
 
@@ -107,7 +105,7 @@ GITHUB_CATEGORY_NAME=Blog
 GITHUB_SETUP_TOKEN=your-maintainer-token
 ```
 
-在 GitHub 仓库 Settings → General → Features 启用 Discussions，创建 **open-ended discussion** 分类，例如 `Blog`。不要使用只允许维护者发帖、且禁止普通读者评论的仓库策略。
+在计划用于评论的 GitHub 仓库 Settings → General → Features 启用 Discussions，创建 **open-ended discussion** 分类，例如 `Blog`。当前 `YohakuSama/waylan-blog` 尚未启用 Discussions，不能直接充当评论仓库。不要使用只允许维护者发帖、且禁止普通读者评论的仓库策略。
 
 `GITHUB_SETUP_TOKEN` 只给本机初始化脚本使用，需要指定仓库的 Discussions 读写权限。它以维护者身份建立文章的 Discussion **主帖**，不用于代表读者发表评论。初始化完成后可以撤销该 Token 并从 `.env` 删除。
 
@@ -189,7 +187,7 @@ npm run deploy
 
 这个命令先完成类型、测试、静态构建和配置校验，再应用迁移并执行 Wrangler 部署。部署后的 Worker 会从本次构建生成的文章清单自动校准 D1 元数据（slug、标题、版本），不再需要在部署前手工执行文章同步。域名或数据库仍是占位符时会阻止部署。
 
-Cloudflare 控制台 → Workers & Pages → `echo-blog` → Settings → Domains & Routes → Add → Custom Domain，填入自己的完整域名。域名已由同一 Cloudflare 账户管理时，平台负责所需 DNS 和证书。已有同名 DNS 记录请先在控制台核对，避免误覆盖其他服务。
+Cloudflare 控制台 → Workers & Pages → `waylan-blog` → Settings → Domains & Routes → Add → Custom Domain，填入自己的完整域名。域名已由同一 Cloudflare 账户管理时，平台负责所需 DNS 和证书。已有同名 DNS 记录请先在控制台核对，避免误覆盖其他服务。
 
 也可在 `wrangler.jsonc` 顶层添加：
 
@@ -214,7 +212,7 @@ GitHub 仓库 → Settings → Webhooks：
 
 Webhook 校验 SHA-256 签名和仓库名，编辑后失效缓存，删除后清理对应定位。没有 Webhook 时，公开读取缓存最长 60 秒更新；短暂上游故障可使用 15 分钟内的缓存，并明确标记为缓存内容。活动页面每 60 秒或回到窗口时重新读取。
 
-## 网页后台 /admin（2.2 新增）
+## 网页后台 /admin
 
 上线后打开 `https://你的域名/admin`，用 GitHub 登录即可在浏览器里管理网站，不用再开终端：
 
@@ -232,9 +230,9 @@ Webhook 校验 SHA-256 签名和仓库名，编辑后失效缓存，删除后清
 
 ### 启用步骤（在上面 1–5 步之后做一次）
 
-**A. 把源码放进 GitHub 仓库。** 新建一个仓库（可以是**私有**），把本目录推上去。`.env`、`.dev.vars` 已在 `.gitignore` 中，不会被提交。这个“源码仓库”和第 1 步的“评论仓库”可以是两个仓库；如果源码仓库本身公开并开启了 Discussions，也可以是同一个。
+**A. 确认源码仓库。** 当前源码已上传到 `YohakuSama/waylan-blog`；无需再次创建或上传。`.env`、`.dev.vars` 已在 `.gitignore` 中，不会被提交。这个“源码仓库”和第 1 步的“评论仓库”可以是两个仓库；如果源码仓库本身公开并开启了 Discussions，也可以是同一个。
 
-**B. 让 Cloudflare 从仓库自动部署（Workers Builds）。** Cloudflare 控制台 → Workers & Pages → `echo-blog` → Settings → Build → Connect，选择源码仓库和分支 `main`，然后填写：
+**B. 让 Cloudflare 从仓库自动部署（Workers Builds）。** Cloudflare 控制台 → Workers & Pages → `waylan-blog` → Settings → Build → Connect，选择源码仓库和分支 `main`，然后填写：
 
 | 项目 | 填写 |
 |---|---|
@@ -242,7 +240,7 @@ Webhook 校验 SHA-256 签名和仓库名，编辑后失效缓存，删除后清
 | Deploy command | `npx wrangler deploy` |
 | Build variables | `SITE_URL` = `https://blog.your-domain.com`（与 `SITE_ORIGIN` 完全一致） |
 
-`SITE_URL` 必须在这里填：云端构建读不到你本地的 `.env`，不填会被当成预览站并加上 `noindex`。Worker 名称必须与 `wrangler.jsonc` 的 `name`（默认 `echo-blog`）一致。工程需要 Node.js 24，仓库根目录的 `.node-version` 会让云端构建自动使用它。D1 迁移已在第 2 步执行过，自动部署不再碰数据库结构；以后若某个新版本新增了 `migrations/` 文件，在本机运行一次 `npm run db:remote` 即可。
+`SITE_URL` 必须在这里填：云端构建读不到你本地的 `.env`，不填会被当成预览站并加上 `noindex`。Worker 名称必须与 `wrangler.jsonc` 的 `name`（当前 `waylan-blog`）一致。工程需要 Node.js 24，仓库根目录的 `.node-version` 会让云端构建自动使用它。D1 迁移已在第 2 步执行过，自动部署不再碰数据库结构；以后若某个新版本新增了 `migrations/` 文件，在本机运行一次 `npm run db:remote` 即可。
 
 **C. 填后台配置。** `wrangler.jsonc` 的 `vars`：
 
@@ -273,7 +271,7 @@ npx wrangler secret put GITHUB_CONTENT_TOKEN
 
 - **后台显示“后台还没有配置完成”**：页面会列出缺少的项目。通常是 `ADMIN_GITHUB_LOGINS` / `CONTENT_REPO` 仍是占位符、新的 `wrangler.jsonc` 还没部署，或没有录入 `GITHUB_CONTENT_TOKEN`。
 - **提示“无法访问源码仓库”**：检查 `GITHUB_CONTENT_TOKEN` 是否过期、是否勾选了源码仓库、Contents 是否为 Read and write。
-- **保存成功但网站一直没变**：到 Cloudflare → `echo-blog` → Deployments 查看构建日志。最常见的是文章内容不合法导致构建失败（后台会先做同样的检查，通常在保存时就会提示）。超过 10 分钟未更新时后台会给出提醒。
+- **保存成功但网站一直没变**：到 Cloudflare → `waylan-blog` → Deployments 查看构建日志。最常见的是文章内容不合法导致构建失败（后台会先做同样的检查，通常在保存时就会提示）。超过 10 分钟未更新时后台会给出提醒。
 - **改了文章链接名（slug）**：通过 `/admin` 保存时，会自动在同一次 Git 提交中生成旧地址的 301 跳转；评论和划线仍绑定不变的 `id`。直接编辑仓库 Markdown 时，请自行维护 `public/_redirects`；构建会检查旧地址不能与现行文章冲突、目标文章必须存在。
 - **图片限制**：PNG / JPEG / WebP / AVIF / GIF，单张 5 MB；出于安全原因不接受 SVG 上传。
 
@@ -350,15 +348,11 @@ npm run deploy
 - 浏览量：每位访客每篇每天最多计一次，按 UA 排除常见爬虫，并有每 IP 30 次/分钟的上限。D1 的 `view_marks` 只存“密钥 + IP + 文章 + 日期”的哈希，两天内过期并定时清理。
 - 浏览器仅保存主题、字号、阅读位置、阅读清单和私人划线；会话中的草稿在 sessionStorage。清理浏览器数据会移除这些本地数据，不影响 GitHub 公开讨论。
 
-## 验证状态
+## 当前验证状态
 
-2.2 在 Node.js 24+ 下完成 `npm run check`：类型检查、105 项自动化测试（新增后台接口与编辑器测试：权限、CSRF、冲突、图片校验、未改动保存逐字节一致等）、完整构建和产物检查全部通过。另用无头浏览器对后台做了端到端走查（发布、带图预览、编辑、改类型、删除、站点资料与头像、暗色、手机布局），共 30 项检查通过。GitHub 在测试中由模拟服务替代。
+[导入提交 CI](https://github.com/YohakuSama/waylan-blog/actions/runs/43631594229) 通过类型检查、构建、394 项单元测试及静态完整性检查，生成 22 个 HTML 页面。该次主分支检查未运行实际浏览器矩阵；缺少正式 `SITE_URL` 时构建输出 `noindex`，不代表生产环境已发布。
 
-以下为 2.0 的验证记录：
-
-2.0 在 Node.js 24+ 下完成 `npm run check`：类型检查、81 项自动化测试（含真实 SQLite 的 Worker 测试与 JSDOM 交互测试）、完整构建、产物完整性检查和离线单文件检查全部通过。另用 Chromium 内核浏览器对 7 类页面 × 2 种皮肤 × 明暗 × 桌面/手机（共 56 张）做了截图走查，无运行时错误；首屏字体切换的布局偏移（CLS）在模拟慢字体下由 0.088 降至 0.0003。
-
-**本交付没有你的 GitHub OAuth、仓库和 Cloudflare 账户信息，因此没有声称已经实连或上线。** 真实 API 已实现，测试替代的只是外部网络。iOS/Android 实机长按选择、线上 Core Web Vitals 与 OAuth 回调，请在正式域名部署后按根目录 `上线前核对.md` 复查。
+评论、GitHub App 登录、D1、后台写入、Cloudflare 部署和手机真机操作，需要按照 [生产核对清单](docs/ops/RELEASE_HANDOFF.md) 逐项验证。
 
 ## 官方资料
 

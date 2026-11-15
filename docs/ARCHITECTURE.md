@@ -1,6 +1,6 @@
 # 架构、API 与数据边界
 
-## 模块职责与故障定位地图（维护规划，2026-11-05）
+## 模块职责与故障定位地图
 
 > 本节区分 **当前代码已存在的事实** 和 **未来渐进改造的目标**。现有 API、数据库和离线预览契约仍以本文后半部分为准。本节只规定维护边界，不代表下述建议目录已经实施。操作、PR、记录模板见 [维护手册](MAINTENANCE.md)。
 
@@ -58,196 +58,15 @@ flowchart LR
 | Actions 消耗、测试分类与手动运维 | `.github/workflows/verify.yml`、`scripts/ci-plan.mjs`、`scripts/maintenance.test.mjs`；策略见 `docs/ops/ACTIONS_POLICY.md` | `node --test scripts/maintenance.test.mjs`，必要时手动全套 CI |
 | 部署、D1 迁移与仓库转私有 | `wrangler.jsonc`、`scripts/validate-deploy.ts`、`migrations/*`、`worker/auth.ts`；清单见 `docs/MAINTENANCE.md` | `npm run check`、真实 Worker 验证、受控发布与回滚检查 |
 
-### 阅读器拆分第一批（已合并，PR #101）
+## 现有模块边界
 
-阅读器的公开入口仍为 `src/components/Reader.tsx`，由 `src/lib/reader-loader.ts` 按需加载；路由、全文状态、提交、Touch 选区和评论写入协议保持原位。新增两个**按功能划分**的入口：
+- `src/App.tsx`、`src/pages/` 负责路由和页面装配；`src/features/reader/` 负责目录、进度与图片查看。
+- `src/features/discussions/` 负责讨论展示与纯数据模型，`Reader.tsx` 管理选区、草稿及交互生命周期。
+- `src/admin/` 负责管理界面，`worker/admin.ts` 负责权限及 HTTP 编排，`worker/admin-repo.ts` 负责 GitHub 内容提交。
+- `worker/comments.ts`、`worker/comment-reads.ts`、`worker/comment-shared.ts` 分别负责写入、读取与共享输入规则。
+- `src/styles/index.ts` 固定 CSS 和字体的加载顺序。调整样式时核对断点、级联、两种皮肤和深浅主题。
 
-| 功能 | 稳定入口 | 内部实现及责任 |
-| --- | --- | --- |
-| 文章头部与目录 | `src/features/reader/index.ts` | `ArticleHeader.tsx`（文章元信息和返回动作）、`ReaderToc.tsx`（目录/阅读进度/状态展示）、`ImageViewer.tsx`（图片放大与退出动画保留） |
-| 公开评论显示 | `src/features/discussions/index.ts` | `CommentItem.tsx`（回复分页、编辑/删除按钮）、`CommentMarkdown.tsx`（公开评论与草稿共用的安全 Markdown）、`model.ts`（空评论过滤与 GitHub URL 限制） |
-
-- `CommentItem` 通过 `postId`、`comment`、`onReply`、`onQuote`、`onChanged` 等显式输入接收上下文，**不再**使用 `useRouter` 和全局文章表猜测当前文章；递归回复沿用同一 `postId`。新增评论能力可优先修改 `features/discussions` 而不修改导航逻辑。
-- `ReaderToc` 从父组件接收当前段落、阅读进度和控制回调；实际 DOM 位置与跳转时机仍由 `Reader` 负责，避免目录直接操作不属于它的生命周期。
-- 组件对外渲染结构、CSS class、永久链接、评论 API、D1、离线预览和动效策略不变。未新增第三方 UI / 动画 / 状态管理依赖。
-- CI 的 `scripts/ci-plan.mjs` 已将 `src/features/reader/`、`src/features/discussions/` 及后续 `annotations/` 映射至阅读器相关 QA；新功能只需接入对应入口及契约测试，不必创建新工作流。
-- 当前 Reader 仍含选区与评论编辑器的复杂生命周期；**未擅自将这些状态强拆**。后续要抽离其中一个必须先建立独立行为基线，重点覆盖 Safari 长按、评论草稿恢复和错误提交重试。
-
-### 阅读器评论树纯模型后续清理（2026-11-06，已合并 PR #112）
-
-- **根因**：Reader 仍直接处理评论/回复的可见性、跨来源去重及编辑/删除后的树状数据更新；这些纯数据职责与触摸选区、页面状态没有耦合必要。
-- **修改**：复用现有 `src/features/discussions/model.ts`，将纯函数 `discussionView/updateCommentNodes/updateCommentPage` 集中于评论功能；`Reader.tsx` 保留评论 API 请求、草稿、重试、缓存刷新、React state 生命周期与 DOM。现有 `features/discussions/index.ts` 是统一导出入口，不新增模块库或依赖。
-- **安全边界**：保持同一 Map 去重顺序（打开的面板结果覆盖同 ID 旧条目）、空父评论过滤、回复 parentId 补充、编辑/删除后计数与原对象不变；新增纯函数测试并以唯一 Waylan CI 验收。原 Safari/iOS 手势、图片预览、URL、CSS 与 HTTP 合同没有修改。部署/真实设备另行验证。
-
-**A 增量验收记录：** [PR #112](https://github.com/YohakuSama/waylan-blog/pull/112) 在最终头部 `95dd4a60f4c57d85f7c7b2ae39ce3906480296eb` 经 [Waylan CI #42078952498](https://github.com/YohakuSama/waylan-blog/actions/runs/42078952498) **完整通过**类型/构建/单测、SSR/离线、手机/平板/桌面、Chromium/Firefox/WebKit、WCAG、阅读器目录及模拟 iOS 触摸；已 squash 合并 `cc6e3512ee476de30355cdefa3d7d3d595008d5e`。最初运行 #42077573541 因后续格式整理提交被取消，不代表测试失败。旧依赖 `Reader → 自身内联评论树逻辑` 变为 `Reader → features/discussions/model.ts`，评论副作用仍由 Reader 负责；无新第三方依赖和 CI 工作流。
-
-### 阅读器增量解耦 A（2026-11-06，已合并 PR #108）
-
-- **根因**：此前 `Reader.tsx` 的滚动事件、进度持久化、目录高亮、返回定位与选区/评论状态耦合；独立的滚动观察职责不能单独定位或复测。
-- **边界**：`src/features/reader/useReadingProgress.ts` 接收文章与 DOM refs，独占滚动监听、requestAnimationFrame、阅读进度/目录高亮、`echo:reading` 存储和 `?resume=1` 恢复；`Reader` 只消费其状态并传入稳定的选区取消 setter。保持原事件注册条件、滚动计算、保存时机与优先选区规则。
-- **刻意保留**：长按/双击、触摸选区、CSS Highlight、浮动工具手势、目录弹层焦点、评论草稿与发送状态、图片放大仍在原控制路径；它们与 Safari 原生手势/弹窗时序紧密相关，缺少真实设备证据前不进行联合重构。
-- **验收**：[PR #108](https://github.com/YohakuSama/waylan-blog/pull/108) 最终头部 `f110e720` 通过 [Waylan CI #42072965186](https://github.com/YohakuSama/waylan-blog/actions/runs/42072965186)，合并提交 `aa52f770ef2bb79aa6bc243e32e3b4fd8fea5288`。覆盖 `npm run check`、阅读器/返回滚动/目录、iOS 模拟触摸、三引擎与布局回归。WebKit 模拟不能证明真实 iOS Safari 已通过；没有修改 API、数据、URL、CSS、构建或工作流。
-
-### 后台模块化第二批（已合并，PR #102）
-
-现有管理后台是独立入口 `/admin`，并没有引入新的管理框架。本次保留所有提交与上传协议、CSS、前端表单 DTO 及原始 API 路径，仅将原约 1,286 行的 `src/admin/main.tsx` 依责任切分：
-
-| 维护问题 | 唯一主要修改路径 | 依赖与风险 |
-| --- | --- | --- |
-| 后台无法启动、主题同步 | `src/admin/main.tsx` | 只挂载 React、同步主题，不发起业务请求 |
-| 登录与权限提示、会话无法获取 | `src/admin/Gate.tsx` | 通过 `setAdminCsrf` 和 `adminApi` 初始化会话，不在客户端模拟权限控制 |
-| 站点概览、部署进度与视图切换 | `src/admin/Dashboard.tsx` | 负责异步刷新序号与编辑器 `onSaved` / `onClose` 回调，不处理每条内容的删除状态 |
-| 内容列表搜索、单条内容删除 | `src/admin/ContentList.tsx` | 列表与删除确认统一走 `admin/api.ts`，不复制看板刷新逻辑 |
-| 初始化缺失的 GitHub Discussions 评论区 | `src/admin/Discussions.tsx` | 批处理最多 50 轮，服务器明确报告剩余量为 0 才算成功；无进展或上限触发明确错误，不重试到资源耗尽 |
-| 文章撰写/保存、发布日期、slug、上传图片、草稿 | `src/admin/PostEditor.tsx` | 使用 `form.ts` 的 `toForm/toData`、`helpers.ts` 的上传校验；不自行操作 GitHub Token |
-| 站点头像、标签、介绍、联系方式、关于页 | `src/admin/SiteEditor.tsx` | 一个站点表单和一次保存事务；保留原来的 `/api/admin/site` 路径 |
-| 后台字段、Markdown 预览、确认对话框 | `src/admin/ui.tsx` | 两种编辑器复用一套 UI/图片选择逻辑，CSS class、DOM 语义保持 |
-| 本地图片校验、大小限制、上传去重、未保存警告、Ctrl+S | `src/admin/helpers.ts` | 与 `shared/uploads.ts` 的类型校验契约相连，避免每个编辑器重复实现 |
-| API JSON、CSRF、保存超时 | `src/admin/api.ts` | 与公开只读缓存客户端分离，禁止 UI 直接 `fetch` 绕过它 |
-| 管理数据类型和视图 DTO | `src/admin/types.ts` | 前端内部类型，不擅自变更 Worker 响应或 D1 Schema |
-
-**功能增减规则：** 新增后台页面优先在 `Dashboard.tsx` 注册一个独立视图，并用具名 props / 回调连接新模块；只有跨文章/站点编辑器真正一致的 UI/校验才归 `ui.tsx` / `helpers.ts`。新增管理数据调用必须走 `admin/api.ts`，不得从 `Gate.tsx` 或 `main.tsx` 绕过 CSRF，也不得在组件间相互引用彼此的内部表单状态。每次变更同时更新本表对应故障入口、`tests/admin-modules.test.ts`（边界）及关联权限/写入回归，继续使用唯一 `Waylan CI`，不增加工作流。
-
-**第二阶段增量完善：** 将原来同时包含内容列表与评论区创建的 `ContentList.tsx` 拆出 `Discussions.tsx`；批处理不再把超过 50 轮或无进展的操作当成完成，避免高频无效请求和虚假成功通知。`Dashboard` 只修改模块 import；既有后台 API、CSRF、权限、CSS、数据库、内容保存协议不变。相关异常路径用 `tests/admin-modules.test.ts` 的纯逻辑测试覆盖。
-
-**内部依赖方向：** `main → Gate → Dashboard → ContentList/Discussions/PostEditor/SiteEditor → ui/helpers/form → types`；所有 API 调用从各层统一走 `admin/api`。依赖应避免反向从 Editor 访问 Dashboard 内部状态；扩展新后台页面在 Dashboard 增加视图分发和明确的回调，不必修改认证入口。
-
-**不变量：** 发布文章 `post.id`、301 slug 规则、图片限制、同源 CSRF、GitHub 乐观并发 OID、Cloudflare 构建语义、草稿未保存警告和编辑器快捷键均保持旧逻辑。本次不变动 Worker、数据库、依赖、Admin CSS 或打包入口。
-
-**回归与回滚：** `tests/admin-modules.test.ts` 审核模块边界；`tests/admin-form.test.ts` 检查表单规则；`tests/admin.test.ts` 检查真实 Worker 写入/权限/冲突；`scripts/quality-smoke.mjs` 验证跨浏览器的后台交互。PR [#102](https://github.com/YohakuSama/waylan-blog/pull/102) 的头部提交 `7edeb4f0` 已通过 [Waylan CI #42044394381](https://github.com/YohakuSama/waylan-blog/actions/runs/42044394381)：类型检查、构建、单元/契约测试、多端布局、Chromium/Firefox/WebKit 后台交互和 WCAG；合并提交 `49de396e` 的 [main 核心检查 #42045915291](https://github.com/YohakuSama/waylan-blog/actions/runs/42045915291) 亦通过。本次按需分类正确跳过与后台无关的阅读器、摘录、动效专项。**生产环境 OAuth、真实 GitHub 写入/上传、Cloudflare 部署尚未单独验收。** 如出现回归，可回滚本次前端重构并重新部署；本 PR 无数据库迁移，因此无需反向迁移 D1。
-
-### C：已确认的 CSS 级联冗余清理（2026-11-06，已合并 PR #116）
-
-- **定位证据**：`src/styles.css` 的同一 ≤767px media 块对评论编辑器 `.composer-bottom` 重复声明 `gap: 8px`；`src/styles/responsive.css` 的两个 ≤1024px 相同选择器重复写入阅读器头部 `grid-row/grid-column/gap`；`skins.css` 的加载进度条与其后导入的 `motion.css` 在同一选择器重复定义六项几何/命中测试声明。后声明与前声明值逐项相同。
-- **最小修复**：只删除后置无效的重复整条规则、前置被同条件同选择器覆盖的重复属性；样式表文件、导入顺序、media、其它属性、变量、皮肤与动效定义原样保留。进度条位置/宽度、移动端安全区及手势区域仍由原有效声明负责。
-- **验收**：在现有 `tests/css-ownership.test.ts` 增加胜出声明、移动端 CSS 边界、`skins.css → motion.css` 导入归属断言。[PR #116](https://github.com/YohakuSama/waylan-blog/pull/116) 最终 head `e8dcf5b23747a17d662e930942521492006b0eb2` 通过 [Waylan CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188) 的类型/构建/单元、三端/多皮肤视觉、Chromium/Firefox/WebKit、WCAG、Reader/模拟 iOS 触摸、导航、信息流/动效专项；squash 合并 `5cf55256f5bc872d20b4cbbf86bad43f9e88503b`。首轮 #42085652950 的新增测试错误把桌面基本规则计为手机重复规则，修正断言并保留原混合换行符后在最终版本复验成功。该结果不代替真实 Safari 或生产像素验证。
-
-### 第三阶段 CSS 责任边界（首批，已验收合并 PR #105）
-
-> 单一入口：`src/styles/index.ts`。在线/离线同时加载它；不要直接在单个组件 import 此处的功能样式，更不能把覆盖规则追加到任意文件尾部。
-
-| CSS 模块（按级联顺序） | 负责内容 | 最先追踪的组件 / 文档 |
-| --- | --- | --- |
-| `src/styles.css` | 基础颜色/字阶、阅读器、对话框、评论编辑区 | `src/components/Reader.tsx`、`docs/DESIGN_SYSTEM.md` |
-| `src/styles/shell.css` | 页面外壳 token、页眉、首页介绍与搜索/切换控件 | `src/App.tsx`、首页组件 |
-| `src/styles/feed.css` | 内容卡片结构、缩略图、摘要与列表基础规则 | `src/components/Feed.tsx` |
-| `src/styles/sidebar.css` | 首页及索引的统一侧栏/目录结构 | `src/components/Sidebar.tsx`（如有分布在页面组件，以实际 JSX 为准） |
-| `src/styles/site.css` | 归档/项目/关于等索引页、页脚、阅读页和站点外壳对齐 | `src/pages/*`、页脚/阅读组件 |
-| `src/styles/responsive.css` | 跨页面的 1280/1120/860/767/700 等断点布局及手机信息流密度 | `docs/RESPONSIVE_LAYOUT.md` 与实际页面 DOM |
-| `src/styles/skins.css` | editorial / terminal 的配色、字体和必要差异覆盖 | `docs/DESIGN_SYSTEM.md` |
-| `src/styles/motion.css` | 转场、悬停、键盘/触摸反馈和减少动效 | `src/lib/motion.ts` |
-| `src/styles/reader-progress.css` | 阅读进度条自身的基础定位、轨道、游标和两皮肤装饰；窄屏顶栏相对定位仅由 `responsive.css` 覆盖；不计算进度 | `src/features/reader/useReadingProgress.ts` |
-| `src/styles/image-viewer.css` | 图片放大弹窗共用尺寸、图片居中、提示文案及手机自适应；不管理 Dialog 动画/焦点 | `src/features/reader/ImageViewer.tsx` |
-| `src/styles/announcements.css` | 公告横幅、弹窗和现有铃铛中的公告切换/列表，含双皮肤差异 | `src/components/SiteAnnouncements.tsx`、`NotificationBell.tsx` |
-
-**按需修改规则：** 先查功能自身负责文件，再查 `responsive.css`、`skins.css` 与 `motion.css`。进度外观与图片放大通用几何分别由后置专用样式负责；主题文件只保留真正的皮肤差异，不能在多个表中复制同一尺寸或用临时优先级覆盖。页面详情摘要保持完整，列表预览才允许截断。共享布局 token 必须跨主题统一。修改导入顺序前先检查真实获胜规则与断点；本表不代表全站 CSS 已完成去重。
-
-**回归基线：** `tests/css-ownership.test.ts` 约束导入次序和明确责任，`tests/skin-parity.test.ts` 按真实拥有者查找规则；`npm run check` 和 `scripts/visual-smoke.mjs` 检查打包、离线预览和跨皮肤/跨屏宽几何。涉及 CSS 的 PR 必须明确说明原始规则顺序和其后覆盖关系。
-
-### 第四阶段 Worker 后台仓库访问边界（首批已合并，PR #106）
-
-```text
-HTTP request → worker/index.ts → worker/admin.ts
-                                    ├─ requireAdmin/session + CSRF/origin（沿用原入口）
-                                    ├─ payload/content/site/upload validation
-                                    ├─ admin-repo.ts → GitHub REST/GraphQL / branch HEAD / blobs / tree / commit
-                                    └─ syncDiscussions → 现有公开 GitHub Discussions + D1
-```
-
-| 处理的问题 | 第一责任文件 | 不得绕过的合同 |
-| --- | --- | --- |
-| 后台账号和内容权限、403/503、安全错误 | `worker/admin.ts` → `worker/auth.ts`、`worker/security.ts` | 原身份会话、CSRF、同源/速率限制顺序 |
-| 获取内容仓库分支版本、枚举文章、读取/查找内容 | `worker/admin-repo.ts` 的 `repo/head/posts/files` | GitHub GraphQL 仓库与分支、404、OID 和版本检查 |
-| 文章/站点写入、图片 blob、提交冲突 | `worker/admin-repo.ts` 的 `commit/blobOid`；调用方在 `admin.ts` | Git Data REST 的 base tree → commit → 非强制更新 HEAD；409 冲突、403 token 错误映射；不可变 `post.id` |
-| 公共评论加载、批注映射与写入幂等恢复 | `worker/comments.ts`、`worker/github.ts` | 不与后台 GitHub **内容仓库**混用 token、缓存或重试流程 |
-| 公开 Discussions 创建和 D1 登记 | `worker/admin.ts` 的 `syncDiscussions`（当前仍在编排层） | 管理员权限、D1 发布文章映射、公开仓库验证，每次不超过 10 篇 |
-
-此次把 `worker/admin.ts` 的 ~190 行完整 GitHub 内容仓库 I/O 放到 `admin-repo.ts`，不生成第二份 GitHub 客户端，不将私有内容 Token 混入公共评论访问 `worker/github.ts` 的调用路径；`worker/github.ts` 仍是现有通用 GraphQL transport。移动代码不改变任何请求或提交次序。新增 `tests/admin-repository.test.ts` 覆盖分支选择、空请求与 UTF-8 Git blob OID，原 `tests/admin.test.ts` 继续验证令牌失败、并发冲突、上传与不可逆写入。**后续拆分必须以独立 PR 进行，不能在这个提交中更改评论的幂等写入语义。**
-
-**首批验收记录：** [PR #106](https://github.com/YohakuSama/waylan-blog/pull/106) 已合并至 `main`，squash 提交 `0708fa5b`。PR head `f5263384` 的 [Waylan CI #42065361326](https://github.com/YohakuSama/waylan-blog/actions/runs/42065361326) 全部通过：类型检查、构建、单元/Worker 合约、预渲染和离线产物、多端视觉、Chromium/Firefox/WebKit 后台交互、WCAG，以及信息流状态机回归。视觉测试曾因通知服务状态切换的多重路由模拟出现超时，已调整为单一可切换 Mock 并保留原断言，最终复测通过。Cloudflare 真实部署、生产 OAuth 及真实 GitHub 内容写入**尚未确认**。
-
-### 评论 Worker 重复输入校验清理（2026-11-06，已合并 PR #113）
-
-- **修改前**：`worker/comments.ts` 中发表评论和编辑评论分别实现正文长度/保留元数据标记/公开链接数量验证；重复逻辑容易在修改一个接口时产生限制差异，但 HTTP 错误文案不同，不能直接删除分支条件。
-- **处理**：在原写入模块内部复用 `validatedCommentBody`，集中 1–6000 字、可点击链接上限及 `echo:` 保留标记校验；创建与编辑仍分别返回原 `COMMENT_LENGTH` 文案，并在相同请求阶段验证。共享文章/仓库核验仍由 `comment-shared.ts` 负责，不增加跨层抽象或新文件。
-- **验收**：原 Worker SQLite + GitHub mock 的 HTTP 合同测试新增 create/edit 空值、边界超长、保留标记、广告链接和拒绝写入断言。请求标识、payload 哈希、D1 `write_intents`、用户 token、权限/CSRF、重试/恢复 SQL 顺序和缓存处理完全未修改。使用现有 Waylan CI。
-
-**B 增量验收记录：** [PR #113](https://github.com/YohakuSama/waylan-blog/pull/113) 在 A 已合并的 `main` 上复测最终头部 `387fd5cbcbf27a477a3cda6af4b11e10011e0642`，[Waylan CI #42082287403](https://github.com/YohakuSama/waylan-blog/actions/runs/42082287403) **完整通过**类型/构建/Worker HTTP 契约/SSR 离线、多端视觉、Chromium/Firefox/WebKit 和 WCAG；squash 合并 `0fe9adb68c50fa3fca8903d107c64ecf92fc5b07`。更新中的两个旧 CI #42080538682、#42080659259 因提交覆盖被自动取消；改动前基线上的 CI #42077847081 亦曾成功。不修改幂等状态机、D1 schema、Github transport、Webhooks、CSS 或任何部署配置。
-
-### 评论 Worker 读写边界 B（2026-11-06，已合并 PR #109）
-
-- **修改前**：`worker/comments.ts` 同时承担读取聚合、缓存、D1 批注绑定、仓库验证、公开预览、写入幂等/恢复、编辑与删除；单个文件很难在不影响写入事务的前提下审查只读逻辑。
-- **改动后**：`worker/comment-reads.ts` 拥有评论分页、单条、回复、信息流预览、批注分页、最近回声与 `attach`；`worker/comment-shared.ts` 拥有文章存在性、游标、公开 Discussion 仓库验证以及空页合同；`worker/comments.ts` 保留写入、审查权限与 `requestId` 恢复状态机，并作为原路由的稳定导出入口。依赖方向：`worker/index.ts → comments.ts → comment-reads.ts → comment-shared.ts`，写入与读取都调用共享校验模块；共享模块不反向依赖其他评论服务。
-- **安全的冗余**：删除 feed preview 中只原样 `throw error` 的无效 catch；错误仍直接传播，绝不将网络或权限失败伪装为零评论。原有 `github.ts` 的 GraphQL、cacheGet、缓存键和过期/旧缓存逻辑原样复用，未增加另一套包装器。
-- **不变合同**：所有 HTTP 路径/状态码、JSON 结构、OAuth 用户 token、CSRF、公开仓库核验、D1 表与批处理、Reply 元数据、Webhook 清缓存不动；`sending/sent/failed` 意图状态、哈希、保留/恢复窗口、发送后失败分类、重复提交拒绝均保留原始实现，未改排序。
-- **验证界限**：`tests/worker.test.ts` 使用真实 SQLite 结构、模拟 GitHub transport，覆盖 401/403、缓存、断线重试/同 ID/不同 ID、Webhook；新增依赖边界断言。Waylan CI 检查类型、构建、单元/浏览器；不等于生产 GitHub 与 D1 真正写入验收。合并 SHA、CI 结果另记。
-
-
-**B 验收与结构审计（2026-11-06）：** [PR #109](https://github.com/YohakuSama/waylan-blog/pull/109) 在 A 已合并的最新 `main` 上复验，最终 PR head `c53ce4e1ce6977dce3485674efe3d27d3223662b` 经 [Waylan CI #42075026817](https://github.com/YohakuSama/waylan-blog/actions/runs/42075026817) 的类型、构建、单元/Worker HTTP 契约、离线、布局、Chromium/Firefox/WebKit 和 WCAG 检查通过；squash 合并提交 `1a21bb9d5d5437e70217b1d9116ca975ca6c79c6`。原 `persistWrite/writeComment/manageComment` 及最近回声逻辑搬移后逐段对比一致；校验函数仅更改导出位置。首轮 CI #42073247868 由于新增的静态测试错误匹配变量名而失败（300/301 测试通过）；修正断言并重新完整验收后合并。前后依赖方向：原 `index.ts → comments.ts(读+写+仓库核验)`，现 `index.ts → comments.ts(写入/兼容导出) → comment-reads.ts(公开读取)`，读写共同依赖 `comment-shared.ts`，`comment-shared.ts` 不反向引用读取或写入模块；`github.ts` 传输和缓存仍单例复用。未增加 migrations、npm 依赖或 CI 工作流。
-
-### D：跨模块冗余核查与重复读取约束（2026-11-06，已合并 PR #118）
-
-- **确认的重复**：`src/lib/storage.ts` 中 persistent storage 与 session storage 具有逐字一致的 JSON 解码、缺失键 fallback、非法 JSON 及拒绝访问处理；`worker/github.ts` 的缓存 TTL 时间戳与已有的 `worker/types.ts::now()` 使用完全相同的秒时间计算。
-- **最小处置**：保留公开 `storage/transient` 接口和失败返回值差异、现有 `echo:` 前缀及 local/session 相互隔离，只用私有 `readJSON(read, fallback)` 复用读取语义；Worker 缓存直接引用已有 `now()`，不改变 D1 查询、过期/stale 窗口、GitHub transport、API 或共享平台依赖。
-- **审核边界及证据**：不对 `Reader` 原生 Safari 触摸状态、Worker 评论幂等流程或 CSS 级联做无证据重写。[PR #118](https://github.com/YohakuSama/waylan-blog/pull/118) 基于 C 已合并的 main 验证最终 head `22adfcbe2920e25d9b0211ebe029b5b4155f3d6d`，通过 [Waylan CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)（核心、Worker HTTP/SQLite mock、三端、三浏览器、WCAG、Reader/模拟 iOS 触摸及导航）；squash 合并 `cfeb5c910dbbc63040798152e7e64d248e7e6e64`。原 [#117](https://github.com/YohakuSama/waylan-blog/pull/117) 因老 Runner 的 Playwright 安装阻塞及同 PR 并发门禁改用相同代码 head 的 #118，已关闭且未合并。此次有证据的局部清理不等于“所有可能冗余已消除”。
-
-### D：静态依赖图与入口覆盖核查（2026-11-06）
-
-- **检查范围**：现有 `tests/architecture.test.ts` 新增基于已安装 TypeScript AST 的静态依赖测试，遍历 `src/*`、`worker/*`、`shared/*` 和 `scripts/*` 的 TS/TSX；按实际文件路径解析相对 `import` / `export from`，检测静态运行时循环和 `shared → 平台模块`、`src → worker`、`worker → src` 的越界导入。类型专用导入、JSON/CSS/外部包不计入运行时 TS 模块图，不引入 npm 依赖或 Actions 工作流。
-- **按需装载边界**：`src/lib/reader-loader.ts` 的 `import("../components/Reader")` 是动态加载，不能机械地当作静态循环；`Router → reader-loader` 只在进入文章时按需请求 Reader。在线 `src/client.tsx`、离线 `src/offline.tsx`、后台 `src/admin/main.tsx`、Worker `worker/index.ts` 及 `scripts/prerender.tsx` / `scripts/offline-preview.tsx` 是不同的合法入口。
-- **旧代码与兼容职责**：`src/components/Boot.tsx` 由两份预渲染脚本使用，不能因客户端静态 import 没出现而删掉；`worker/comments.ts` 的读取 re-export 是保持 `worker/index.ts` 入口兼容的公开门面；`comment-reads.ts` 和 `comment-shared.ts` 不反向依赖写入状态机。测试同时检查这些关键模块从实际入口可达。
-- **D 补充入口审计（PR [#124](https://github.com/YohakuSama/waylan-blog/pull/124)）**：`src/lib/selection.ts` 由 `Reader.tsx` 的多行 import 实际使用，绝非仅被测试引用；`src/pages.tsx` 仍为 App 路由聚合入口，`src/pages/Privacy.tsx` 由 App 单独引用；`shared/discussions.ts` 仅由受 `npm run setup:github` 调用的 `scripts/setup-github.ts` 使用。现有 AST 测试增加维护 CLI 根入口和两条直接依赖断言，避免仅从运行时网页入口错误删除有效源码。CSS 入口、SSR `Boot`、Worker 评论兼容 re-export 保持不变；CLI 入口纳入审计不代表 CLI 已在生产连接真实 GitHub。PR #124 最终 head `e37e91e218d53127160dda15a54aa134c826065a` 已通过 [Waylan CI #42095896219](https://github.com/YohakuSama/waylan-blog/actions/runs/42095896219) 的类型/构建/310 项单测、SSR/离线、三端视觉、三浏览器通用质量和 WCAG；squash 合并 `3d12bf66b149c57fce3843b00c60b6fc4f7fe69d`，此 PR 的独立 Reader/动效专项按需跳过。
-- **局限**：静态图不证明动态 import、运行时依赖注入、部署权限或生产接口正确；构建/单测、三浏览器/WebKit 模拟和 Cloudflare 真实版本仍分别按 `docs/MAINTENANCE.md` 记录。仅清理可确认冗余；没有证据的源码不删。
-
-**D 最终静态审计验收证据：** [PR #121](https://github.com/YohakuSama/waylan-blog/pull/121) 的 head `a16a7d8a75ba3192562b917432ca81b04f5574d4` 在 [Waylan CI #42091154426](https://github.com/YohakuSama/waylan-blog/actions/runs/42091154426) 第 2 次尝试中通过类型/构建/单测、SSR/离线、三端视觉、Chromium/Firefox/WebKit 通用质量及 WCAG 检查；该次 CI 的按需分类实际为 `reader=false, feed=false, motion=false`，**并未单独运行阅读器、iOS 选区、信息流或动效专项**（Reader / iOS 选区及信息流专项见 [PR #118 CI #42088441135](https://github.com/YohakuSama/waylan-blog/actions/runs/42088441135)，独立动效专项见 [PR #116 CI #42086413188](https://github.com/YohakuSama/waylan-blog/actions/runs/42086413188)）；squash 合并 `e6878ffea22d60f5656df8c5c46c6ea2d1fab00b`。同一 SHA 的第一次运行只有视觉脚本通知面板重试时等待登录按钮超时（`scripts/visual-smoke.mjs:815`），重新运行未复现；该首次失败仍属待观察测试稳定性问题，不因一次重跑通过而宣称根因已解决。未发现扫描范围内的静态运行时循环或跨平台反向依赖，不表示运行时生产功能已全部验收。
-
-### 目标模块组织（渐进方案，**仅部分实施**）
-
-先在现有组件内确认独立状态和事件边界；有必要时逐个功能迁移到以下目录，而不是一次迁移整个项目。示意：
-
-```text
-src/
-  app/                 路由装配、页眉/搜索/全站状态（从 App 局部提取）
-  pages/               保留独立页面和稳定路由入口
-  features/
-    reader/            阅读容器 / 目录 / 封面 / 阅读进度
-    annotations/       选区、私人划线、定位、浮动工具
-    discussions/       评论 UI、草稿、分页与发送状态
-    feed/              列表、筛选、排序与推荐
-    admin/             后台编辑器、站点编辑、内容列表
-  lib/                 跨功能且与业务无关的轻量基础能力
-  styles/              tokens / base / layout / features / skins / motion
-worker/
-  index.ts             入口与路由分发
-  auth.ts / security.ts / ...    原有服务边界先保持
-shared/                跨前后端的类型、定位、输入规则
-```
-
-**迁移规则：** 只在改动相应功能且有验证环境时动一块；外部继续通过稳定的模块入口引用；内部实现原则上不跨功能深层导入。若出现为复用两行代码而创建新的三层抽象，通常应保留局部实现；真正共用且策略一致的能力再提升至 `lib/` 或 `shared/`。
-
-建议优先顺序及约束：
-
-1. **P0｜建立地图和变更记录（已完成）**：为模块建立归属、影响半径、异常定位和维护报告，无业务改动。
-2. **P1｜阅读器拆分（第一批已迁移）**：原 `src/components/Reader.tsx` 约 2,234 行，首批抽出文章头部、目录、图片放大和评论显示；保留 `Reader({ post })` 外部签名、评论 ID、批注锚点和返回行为。复杂的触摸选区、评论草稿及发送状态留待单独验证的下一批，不以行数为唯一目标。
-3. **P2｜后台编辑器拆分（本批已实施）**：`src/admin/main.tsx` 仅保留后台挂载与主题，`Gate.tsx` 单独负责认证闸门，`Dashboard.tsx` 负责管理视图、`ContentList.tsx` 负责内容列表、`Discussions.tsx` 负责评论区初始化，`PostEditor.tsx` 与 `SiteEditor.tsx` 分别负责自己的状态和保存。现有 `admin/api.ts`、表单规则、上传事务和 Worker API 均保持兼容。
-4. **P3｜CSS 归属与级联清理（首批实施）**：先把原 `site.css` 按顶层规则段落顺序拆分为 `shell.css`、`feed.css`、`sidebar.css`、`site.css`、`responsive.css`，保持已存在的 `styles.css → site → skins → motion` 原始相对级联次序；删除两组被最终手机标题声明完全覆盖的旧规则。`styles.css` 的阅读器与基础规则、双皮肤覆盖暂不搬动；未来清理必须先检查原选择器的 @media 作用域、优先级及导入顺序，且实测手机、平板、桌面、明暗模式。
-5. **P4｜Worker 读写职责分离（首批已合并，PR #106）**：先将 `worker/admin.ts` 中的 GitHub 内容仓库 REST/GraphQL、OID 读取、文件读取和原子 commit 完整移至 `worker/admin-repo.ts`，保留 `worker/admin.ts` 的身份/管理员鉴权、校验和 API 编排。`worker/comments.ts` 的缓存/重复提交恢复等写入状态机仍保持原样，后续独立 PR 先建立测试边界再细拆。**不得**同时改 HTTP 协议、D1 迁移、OAuth 安全约束及评论的重复提交恢复语义。
-6. **P5｜测试维护结构**：`tests/navigation.test.ts` 等大文件可按功能和夹具拆分，但先锁定测试数、场景与历史缺陷清单；拆分后不得少测。`scripts/ci-plan.mjs` 应随入口移动同步更新，否则会误判变更范围。
-
-行数是**审查信号，不是重构 KPI**。可以用“文件是否只有一个清晰的变更理由”“一次修改影响哪些功能”“能否单独回滚”判断是否应该拆分。避免把 1 个大文件机械切成 30 个相互依赖的小文件。
-
-### 依赖图算法与智能化边界
-
-- 优先使用简单、确定性且可审计的依赖图：TypeScript import / export 与动态加载入口构成有向图；用拓扑排序判断层级，用强连通分量（如 Tarjan）识别循环依赖，用有限深度遍历寻找 PR 变更的影响范围。
-- 图谱可在**结构变更/定期审计**时生成，保存版本和生成时间；平时故障按上面的定位表寻找责任目录，不要求每次全仓扫描。
-- 神经网络/AI 可用于**提示可能关联的模块、总结异常和建议测试**，不得代替确定性的依赖解析、类型检查、权限判断和合并门禁。当前项目没有必要因此引入新的运行时 AI 框架或服务费用。
-- 后续如实现依赖图生成器，先给它设定可验证的目标：没有漏掉静态依赖、循环依赖有报告、动态 import 需要人工标记、报告可追溯到 commit；未达到要求不将其作为自动决定 QA 的依据。
-
-### 验收指标与不可变契约
-
-每次结构性 PR 必须有基线及对比：相关测试不减少、前端预渲染/离线预览不回退、API 状态码/错误合同不漂移、`post.id` / Discussion / annotation / OAuth / D1 数据兼容、两皮肤两主题关键布局坐标不改变（除非目标明确要求）。记录首次定位时间、跨模块修改数量、复发率、受影响文件和 CI 使用量；**真实指标优先于文件数或代码行减少量**。
-
-遵循基于风险的安全开发流程；可参考 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final) 的安全需求、设计决策追踪和漏洞响应原则，但本项目并未宣称取得任何标准认证。
+上述为当前源码结构说明，不代表已经完成正式环境测试。修改代码时保持现有 API、文章 `id`、批注锚点、认证会话和 D1 数据合同。风险较大的修改需单独测试和发布。
 
 ## 请求与持久化
 

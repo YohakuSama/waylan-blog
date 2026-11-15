@@ -147,7 +147,7 @@ export async function callback(request: Request, env: Env) {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          "User-Agent": "ECHO-Blog/1.0",
+          "User-Agent": "Waylan-Blog/2.3",
         },
         body: JSON.stringify({
           client_id: env.GITHUB_APP_CLIENT_ID,
@@ -174,7 +174,7 @@ export async function callback(request: Request, env: Env) {
       headers: {
         Authorization: `Bearer ${token.access_token}`,
         Accept: "application/vnd.github+json",
-        "User-Agent": "ECHO-Blog/1.0",
+        "User-Agent": "Waylan-Blog/2.3",
       },
       signal: AbortSignal.timeout(10000),
     });

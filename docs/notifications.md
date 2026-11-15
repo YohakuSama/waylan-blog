@@ -1,7 +1,7 @@
 # Waylan private reply notifications
 
 ## Scope
-- Public comments remain on GitHub Discussions (waylan-comments).
+- Public comments use the configured public GitHub Discussions repository. The source repository does not currently have Discussions enabled.
 - This blog's Cloudflare D1 contains notification **metadata only** (no comment content, email addresses, OAuth tokens, or private GitHub notifications).
 - Replies notify the intended GitHub author. New comments (including replies) notify the configured site admin unless authored by that admin.
 - Self-replies never notify. GitHub redelivery is deduplicated by (recipient, comment ID, kind).
@@ -9,12 +9,12 @@
 - Inbox refreshes when opened, when the tab becomes visible again, and during periodic checks while the blog is open; this does NOT implement device push or email.
 
 ## Safe production activation
-1. In GitHub Desktop, Fetch/Pull latest from main on the private `YohakuSama/waylan-blog` repository.
+1. Confirm the current `main` source and actual Discussions repository. This source repository is public; no desktop client is required.
 2. In the project root, run `npx.cmd wrangler d1 migrations apply echo-db --remote` to apply `0004_notifications.sql`. Confirm the migration completes.
 3. Generate one cryptographically random 32-byte webhook secret. Do not commit or share it.
-4. Open GitHub Settings → Developer settings → GitHub Apps → Waylan Comments Login. Activate Webhook and set URL `https://waylan.org/api/webhook/github`, Content type JSON, and the generated secret. In Permissions & events subscribe to `Discussion comment` and `Discussion` events. Leave Repository permissions = Discussions Read and write. Ensure installation remains only `waylan-comments`.
+4. Open GitHub Settings → Developer settings → GitHub Apps → your configured login app. Activate Webhook and set URL `https://waylan.org/api/webhook/github`, Content type JSON, and the generated secret. In Permissions & events subscribe to `Discussion comment` and `Discussion` events. Leave Repository permissions = Discussions Read and write. Install the app only on the actual public Discussions repository.
 5. Cloudflare → Worker `waylan-blog` → Settings → **Runtime variables and secrets** → Production: add `GITHUB_WEBHOOK_SECRET` as **Secret** containing the same value.
-6. `NOTIFICATIONS_ENABLED=true` is now versioned in `wrangler.jsonc`, so subsequent Workers Builds cannot silently drop a dashboard-only flag. Deploy the latest `main`. The notification status will report **disabled** until the D1 tables, GitHub reader token and signed webhook secret are all available; this avoids advertising a broken inbox.
+6. After D1 and webhook verification, set `NOTIFICATIONS_ENABLED=true` in `wrangler.jsonc`, then deploy the latest `main`. The notification status will report **disabled** until the D1 tables, GitHub reader token and signed webhook secret are all available; this avoids advertising a broken inbox.
 7. Test: as a second GitHub user, reply to an existing comment or post a new comment. The notification bell is always visible between the reading shelf and settings. Sign in to read private notifications; disabled services and network failures are shown inside the panel, with retry. Check mark-read and opt-out; check GitHub webhook recent deliveries for response 200.
 
 ## Rollback

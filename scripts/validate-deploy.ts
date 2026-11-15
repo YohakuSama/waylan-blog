@@ -21,7 +21,7 @@ if (config.vars.GITHUB_AUTH_PROVIDER !== "github-app")
   throw new Error("GitHub App is the only supported login provider. Set GITHUB_AUTH_PROVIDER=github-app.");
 if (!valid(config.d1_databases?.[0]?.database_id))
   throw new Error(
-    "Create echo-db and set its real database_id in wrangler.jsonc.",
+    "Create or verify the D1 database and set its real database_id in wrangler.jsonc.",
   );
 if (
   !valid(config.vars.GITHUB_REPO_OWNER) ||

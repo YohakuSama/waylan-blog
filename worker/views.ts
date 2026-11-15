@@ -7,7 +7,8 @@ const BOT = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|lighthouse|cu
 
 /** All counters in one small payload, so lists never fan out into per-post requests. */
 export async function readViews(env: Env) {
-  if (!env.DB) return json({ enabled: false, views: {} });
+  if (!env.DB || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32)
+    return json({ enabled: false, views: {} });
   const { results } = await env.DB.prepare(
     "SELECT post_id, views FROM post_views",
   ).all<{ post_id: string; views: number }>();
@@ -24,7 +25,8 @@ export async function readViews(env: Env) {
 export async function recordView(request: Request, env: Env, postId: string) {
   if (!known.has(postId))
     throw new HttpError(404, "POST_NOT_FOUND", "没有找到这篇文章。");
-  if (!env.DB) return json({ enabled: false, views: null });
+  if (!env.DB || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32)
+    return json({ enabled: false, views: null });
   const current = async () =>
     (
       await env.DB!.prepare("SELECT views FROM post_views WHERE post_id=?")
@@ -38,7 +40,7 @@ export async function recordView(request: Request, env: Env, postId: string) {
   const t = now(),
     day = Math.floor(t / 86400);
   const mark = await hash(
-    `${env.SESSION_SECRET || "echo-views"}:view:${ip}:${postId}:${day}`,
+    `${env.SESSION_SECRET}:view:${ip}:${postId}:${day}`,
   );
   const fresh = await env.DB.prepare(
     "INSERT OR IGNORE INTO view_marks(mark, expires_at) VALUES(?, ?)",

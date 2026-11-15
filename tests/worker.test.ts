@@ -613,9 +613,16 @@ describe("Page views", () => {
     });
     assert.equal((await worker.fetch(forged, env)).status, 403);
   });
-  it("works with only a database and stays quiet without one", async () => {
+  it("does not write predictable view hashes without a strong secret", async () => {
     env = { DB: db.db, SITE_ORIGIN: "https://echo.test" };
-    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+    assert.deepEqual(await (await view()).json(), { enabled: false, views: null });
+    assert.deepEqual(await (await call("/api/views")).json(), {
+      enabled: false,
+      views: {},
+    });
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM view_marks").get()!.n, 0);
+    env.SESSION_SECRET = "short";
+    assert.deepEqual(await (await view()).json(), { enabled: false, views: null });
     env = { SITE_ORIGIN: "https://echo.test" };
     assert.deepEqual(await (await call("/api/views")).json(), {
       enabled: false,

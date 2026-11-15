@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { classify, needsFullVisual, coreMode, visualScope, responsiveImpact } from "./ci-plan.mjs";
 
 test("docs-only changes keep a successful, low-cost status", () => {
-  assert.deepEqual(classify(["README.md", "docs/ops/BRANCH_ARCHIVE.md"]),
+  assert.deepEqual(classify(["README.md", "docs/ops/ACTIONS_POLICY.md"]),
     { code: false, browser: false, reader: false, feed: false, motion: false });
 });
 test("server-only PR keeps strict core tests without public-browser setup", () => {

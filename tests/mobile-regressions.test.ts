@@ -72,7 +72,7 @@ describe("mobile reader regression contracts", () => {
     const bell = readFileSync("src/components/NotificationBell.tsx", "utf8");
     const worker = readFileSync("worker/notifications.ts", "utf8");
     const wrangler = readFileSync("wrangler.jsonc", "utf8");
-    assert.match(wrangler, /"NOTIFICATIONS_ENABLED"\s*:\s*"true"/);
+    assert.match(wrangler, /"NOTIFICATIONS_ENABLED"\s*:\s*"false"/, "notifications must remain disabled until the webhook and D1 setup is verified");
     assert.ok(worker.includes('notificationsAvailable(env)') &&
       worker.includes("sqlite_master") && worker.includes("GITHUB_WEBHOOK_SECRET"));
     assert.ok(bell.includes('document.addEventListener("visibilitychange", onVisible)') &&

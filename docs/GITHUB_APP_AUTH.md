@@ -12,15 +12,15 @@ GitHub App 的用户授权仍使用 `https://github.com/login/oauth/authorize`�
 
 在 GitHub App 的设置中核对 Homepage 与用户授权 Callback，本站使用：
 
-- Homepage：`https://waylan.org`
-- Callback：`https://waylan.org/api/auth/callback`
-- 仓库授权范围：应包含 Discussions 来源仓库 `YohakuSama/waylan-comments`，且仅授予完成读写所需权限。
+- Homepage：`https://你的正式域名`
+- Callback：`https://你的正式域名/api/auth/callback`
+- 仓库授权范围：应包含 已启用 Discussions 的公开评论仓库，且仅授予完成读写所需权限。
 
 Worker 的非敏感 vars（见 `wrangler.jsonc`）：
 
 - `GITHUB_AUTH_PROVIDER=github-app`
-- `SITE_ORIGIN=https://waylan.org`
-- `GITHUB_REPO_OWNER=YohakuSama`，`GITHUB_REPO_NAME=waylan-comments`
+- `SITE_ORIGIN=你的正式 HTTPS 域名`
+- `GITHUB_REPO_OWNER` 与 `GITHUB_REPO_NAME` 为实际启用 Discussions 的仓库
 
 Worker **Secrets**，仅在 Cloudflare 控制台或受保护终端中录入，禁止写进 Git 仓库：
 
@@ -35,7 +35,7 @@ Worker **Secrets**，仅在 Cloudflare 控制台或受保护终端中录入，�
 
 ## 验证已经部署的版本
 
-`GET https://waylan.org/api/status` 只返回非敏感配置状态，预期：
+`GET https://你的正式域名/api/status` 只返回非敏感配置状态，预期：
 
 ```json
 {
