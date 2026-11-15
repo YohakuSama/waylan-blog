@@ -14,7 +14,7 @@ export function ImageViewer({ image, onClose }: {
     <Dialog open={!!image} onClose={onClose}
       label={visible?.alt || "放大图片"} className="image-dialog"
       origin={visible?.from}>
-      {visible && <ArtImage src={visible.src} alt={visible.alt} />}
+      {visible && <ArtImage key={visible.src} src={visible.src} alt={visible.alt} />}
     </Dialog>
   );
 }
