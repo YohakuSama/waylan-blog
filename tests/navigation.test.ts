@@ -404,6 +404,15 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".type-tabs .type-tab").length, 6);
     assert.ok(document.querySelector(".topic-select select"));
     assert.ok(document.querySelectorAll(".filter-tabs button").length > 1);
+    const typeLinks = [...document.querySelectorAll<HTMLAnchorElement>(".type-tabs a.type-tab")];
+    assert.equal(typeLinks.length, 6, "content type tabs remain navigable links");
+    assert.equal(typeLinks[0].getAttribute("href"), "/feed");
+    const noteLink = typeLinks.find((tab) => tab.getAttribute("href") === "/feed?type=note");
+    assert.ok(noteLink, "note filter must retain a shareable URL");
+    await click(noteLink);
+    assert.equal(location.pathname, "/feed");
+    assert.equal(location.search, "?type=note");
+    assert.equal(document.querySelectorAll('.type-tabs [aria-current="page"]').length, 1);
   });
   it("treats the archive as a chronological index, not a second type-filtered feed", async () => {
     await mount("/archive");
