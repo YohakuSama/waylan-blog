@@ -1,6 +1,8 @@
 /** Public site announcements are build-time content, not private GitHub inbox items.
  * The same validation applies to hand-edited site.json and privileged admin saves.
  */
+import { validISODate } from "./date";
+
 export type AnnouncementPriority = "normal" | "important" | "urgent";
 export type Announcement = {
   id: string;
@@ -56,8 +58,7 @@ export function parseAnnouncements(input: unknown): Announcement[] {
     if (!Number.isSafeInteger(value.revision) || Number(value.revision) < 1)
       throw new Error("公告版本号必须为正整数。");
     const updated = value.updated === undefined ? undefined : stringField(value.updated, "日期", 10);
-    if (updated && (!/^\d{4}-\d{2}-\d{2}$/.test(updated) ||
-      Number.isNaN(Date.parse(`${updated}T00:00:00Z`))))
+    if (updated && !validISODate(updated))
       throw new Error("公告日期必须为有效的 YYYY-MM-DD。");
     return { id, title, body, priority: value.priority as AnnouncementPriority,
       published: value.published, link, revision: Number(value.revision),

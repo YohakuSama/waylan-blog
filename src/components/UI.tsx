@@ -48,8 +48,10 @@ export function ArtImage({
   onError,
   ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
-  const [failed, setFailed] = useState(false);
-  return failed ? (
+  const src = String(props.src || "");
+  // A failed source must not block the next image in a reused viewer.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  return failedSrc === src ? (
     <div
       className="art-fallback"
       role="img"
@@ -63,9 +65,9 @@ export function ArtImage({
       {...props}
       ref={fadeIn}
       alt={alt}
-      src={assetURL(String(props.src || ""))}
+      src={assetURL(src)}
       onError={(event) => {
-        setFailed(true);
+        setFailedSrc(src);
         onError?.(event);
       }}
     />

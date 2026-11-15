@@ -601,6 +601,24 @@ describe("Page views", () => {
       views: { [postId]: 2 },
     });
   });
+  it("rolls back a view mark when the counter write fails, allowing a later retry", async () => {
+    const originalBatch = db.db.batch;
+    (db.db as any).batch = async (statements: any[]) =>
+      originalBatch.call(db.db, [
+        statements[0],
+        db.db.prepare("INSERT INTO missing_view_counter_test_table VALUES (1)"),
+      ]);
+    try {
+      assert.equal((await view()).status, 500);
+    } finally {
+      (db.db as any).batch = originalBatch;
+    }
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM view_marks").get()!.n, 0);
+    assert.equal(db.sqlite.prepare("SELECT COUNT(*) AS n FROM post_views").get()!.n, 0);
+    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+    assert.deepEqual(await (await view()).json(), { enabled: true, views: 1 });
+  });
+
   it("stores only opaque marks, never the address", async () => {
     await view();
     const marks = db.sqlite.prepare("SELECT mark FROM view_marks").all();

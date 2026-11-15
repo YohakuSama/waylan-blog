@@ -14,8 +14,6 @@ export { typeLabels };
 export const typeOrder = contentTypes;
 export const isContentType = (value: string | null): value is ContentType =>
   !!value && (contentTypes as readonly string[]).includes(value);
-export const countByType = (type: ContentType | "all") =>
-  type === "all" ? posts.length : posts.filter((p) => p.type === type).length;
 export const dateLabel = (d: string) =>
   new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",

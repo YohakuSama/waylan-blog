@@ -398,9 +398,9 @@ describe("mobile reader regression contracts", () => {
       pages.includes('className="home-project-state"') &&
       pages.includes('className="home-project-end"'),
       "homepage project rows need a shared trailing arrow column");
-    assert.ok(sidebar.includes('className="sidebar-row-end"') &&
-      !sidebar.includes('ArrowUpRight'),
-      "internal sidebar navigation must use one right-arrow convention");
+    assert.ok(sidebar.includes('className="mono explore-count"') &&
+      !sidebar.includes('ArrowUpRight') && !sidebar.includes('SiteLinksBlock'),
+      "active sidebar topic rows must retain their count alignment without retired navigation");
     assert.ok(sideRules.includes('--sidebar-end-slot: 28px;') &&
       sideRules.includes('.site-sidebar .explore-count {') &&
       sideRules.includes('.site-sidebar .sidebar-note summary::after {') &&

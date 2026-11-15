@@ -9,7 +9,6 @@ import { flushSync } from "react-dom";
 import { useReveal } from "../lib/reveal";
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Code2,
   FolderKanban,
@@ -401,25 +400,18 @@ export function FeedList({
   const limit =
     paging.key === resetKey && paging.batch === batch ? paging.limit : batch;
   const loadingMore = useRef(false);
-  // This component unmounts when a reader opens. Cache the expanded count by
-  // canonical filter URL and restore in a layout effect, so React's initial
-  // hydration stays deterministic and the router can restore scroll after
-  // the expanded list actually exists in the DOM.
+  // Restore the cached count on mount and when returning to a previous filter.
+  // A layout effect grows the DOM before the router restores scroll.
   useLayoutEffect(() => {
-    if (variant === "home") return;
-    const saved = transient.get<number>(`feed-limit:${resetKey}`, batch);
-    if (!Number.isSafeInteger(saved) || saved <= batch) return;
-    const restored = Math.min(items.length, Math.max(batch, saved));
-    setPaging({ key: resetKey, batch, limit: restored });
-  }, []);
-  useEffect(() => {
+    const saved = variant === "home" ? batch : transient.get<number>(`feed-limit:${resetKey}`, batch);
+    const restored = Number.isSafeInteger(saved) && saved > batch
+      ? Math.max(batch, Math.min(items.length, saved)) : batch;
     loadingMore.current = false;
     setPaging((current) =>
-      current.key === resetKey && current.batch === batch
-        ? current
-        : { key: resetKey, batch, limit: batch },
+      current.key === resetKey && current.batch === batch && current.limit === restored
+        ? current : { key: resetKey, batch, limit: restored },
     );
-  }, [resetKey, batch]);
+  }, [resetKey, batch, items.length, variant]);
   const visible = items.slice(0, limit);
   const [listRef, grow] = useReveal<HTMLDivElement>(".feed-item", [
     resetKey,
@@ -491,19 +483,5 @@ export function FeedList({
         )}
       </div>}
     </>
-  );
-}
-export function ArrowLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: ReactNode;
-}) {
-  return (
-    <Link className="arrow-link" href={href}>
-      {children}
-      <ArrowUpRight size={14} />
-    </Link>
   );
 }

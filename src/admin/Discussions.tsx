@@ -8,17 +8,19 @@ import type { Overview } from "./types";
  * Do not keep hitting GitHub if an operation makes no progress.
  */
 export async function createDiscussionBatches(
-  request: () => Promise<{ created: number; remaining: number }>,
+  request: () => Promise<{ mapped: number; created: number; remaining: number }>,
 ): Promise<number> {
   let created = 0;
   for (let round = 0; round < 50; round++) {
     const result = await request();
-    if (!result || !Number.isSafeInteger(result.created) || result.created < 0 ||
+    if (!result || !Number.isSafeInteger(result.mapped) || result.mapped < 0 ||
+        !Number.isSafeInteger(result.created) || result.created < 0 ||
+        result.created > result.mapped ||
         !Number.isSafeInteger(result.remaining) || result.remaining < 0)
       throw new Error("评论区初始化返回了异常数据，请稍后重试。");
     created += result.created;
     if (result.remaining === 0) return created;
-    if (result.created === 0)
+    if (result.mapped === 0)
       throw new Error("评论区初始化没有取得进展，请检查 GitHub 权限后重试。");
   }
   throw new Error("评论区仍有未完成项，请刷新后台状态后重试。");
@@ -42,7 +44,7 @@ export function Discussions({
     setError("");
     try {
       const created = await createDiscussionBatches(() =>
-        api<{ created: number; remaining: number }>("/api/admin/discussions", "POST", {}),
+        api<{ mapped: number; created: number; remaining: number }>("/api/admin/discussions", "POST", {}),
       );
       notify(created ? `已为 ${created} 篇内容开启评论区。` : "评论区已全部就绪。");
       onDone();

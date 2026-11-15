@@ -184,8 +184,8 @@ describe("admin discussion provisioning", () => {
     const count = await createDiscussionBatches(async () => {
       rounds++;
       return rounds === 1
-        ? { created: 2, remaining: 1 }
-        : { created: 1, remaining: 0 };
+        ? { mapped: 2, created: 2, remaining: 1 }
+        : { mapped: 1, created: 1, remaining: 0 };
     });
     assert.equal(count, 3);
     assert.equal(rounds, 2);
@@ -195,17 +195,29 @@ describe("admin discussion provisioning", () => {
     let calls = 0;
     const count = await createDiscussionBatches(async () => {
       calls++;
-      return { created: 0, remaining: 0 };
+      return { mapped: 0, created: 0, remaining: 0 };
     });
     assert.equal(count, 0);
     assert.equal(calls, 1);
+  });
+
+  it("continues when existing GitHub Discussions are mapped without creating new ones", async () => {
+    let rounds = 0;
+    const count = await createDiscussionBatches(async () => {
+      rounds++;
+      return rounds === 1
+        ? { mapped: 2, created: 0, remaining: 1 }
+        : { mapped: 1, created: 0, remaining: 0 };
+    });
+    assert.equal(count, 0);
+    assert.equal(rounds, 2);
   });
 
   it("stops immediately on no progress, instead of issuing 50 wasted requests", async () => {
     let calls = 0;
     await assert.rejects(createDiscussionBatches(async () => {
       calls++;
-      return { created: 0, remaining: 8 };
+      return { mapped: 0, created: 0, remaining: 8 };
     }), /没有取得进展/);
     assert.equal(calls, 1);
   });
@@ -214,14 +226,18 @@ describe("admin discussion provisioning", () => {
     let calls = 0;
     await assert.rejects(createDiscussionBatches(async () => {
       calls++;
-      return { created: 1, remaining: 10 };
+      return { mapped: 1, created: 1, remaining: 10 };
     }), /未完成项/);
     assert.equal(calls, 50);
   });
 
   it("rejects invalid API responses and preserves upstream failures", async () => {
     await assert.rejects(
-      createDiscussionBatches(async () => ({ created: -1, remaining: 2 })),
+      createDiscussionBatches(async () => ({ mapped: -1, created: -1, remaining: 2 })),
+      /异常数据/,
+    );
+    await assert.rejects(
+      createDiscussionBatches(async () => ({ mapped: 0, created: 1, remaining: 2 })),
       /异常数据/,
     );
     await assert.rejects(

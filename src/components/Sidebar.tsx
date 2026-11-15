@@ -2,23 +2,16 @@ import type { ReactNode } from "react";
 import {
   ArrowRight,
   BookOpen,
-  ChartColumn,
   Code2,
   Compass,
   Flame,
-  Info,
-  Link2,
   MonitorCog,
   Network,
   NotebookPen,
-  Rss,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "../lib/router";
-import { assetURL, offlinePreview } from "../lib/runtime";
-import { posts, shortDate, site, typeLabels, usedTopics } from "../lib/data";
-import { SocialIcons } from "./Socials";
-import { Avatar } from "./Avatar";
+import { posts, usedTopics } from "../lib/data";
 import { useViews, viewsLabel } from "../lib/views";
 const WEEKS = 16;
 const DAY = 86_400_000;
@@ -181,12 +174,6 @@ export function PopularBlock() {
     </section>
   );
 }
-const siteLinks = [
-  { href: "/archive", label: "归档", hint: "按年份回看记录" },
-  { href: "/projects", label: "项目", hint: "实践项目与工具实验" },
-  { href: "/feed?type=note", label: "笔记", hint: "短篇技术片段" },
-  { href: "/about", label: "关于", hint: "本站介绍与内容范围" },
-];
 /** Distinct topic marks, with a readable fallback for future topics. */
 const topicIcons: Record<string, LucideIcon> = {
   system: MonitorCog,
@@ -222,118 +209,5 @@ export function TopicsBlock({ linkHeading = true, className }: { linkHeading?: b
         })}
       </ul>
     </section>
-  );
-}
-export function RecentBlock({ heatmap = true }: { heatmap?: boolean }) {
-  const recent = [...posts]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 3);
-  return (
-    <section className="side-block">
-      <SideTitle
-        icon={<ChartColumn size={17} />}
-        href="/archive"
-        label="打开归档"
-      >
-        近期更新
-      </SideTitle>
-      {heatmap && <Heatmap />}
-      <ol className="recent-list">
-        {recent.map((p) => (
-          <li key={p.id}>
-            <Link href={`/post/${p.slug}`}>
-              <span className="mono">{shortDate(p.date).slice(5)}</span>
-              <span className="recent-title">{p.title}</span>
-              <span className="recent-type">{typeLabels[p.type]}</span>
-            </Link>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-/** Sibling pages; the current one is left out rather than linking to itself. */
-export function SiteLinksBlock({ current, linkHeading = true }: { current?: string; linkHeading?: boolean }) {
-  return (
-    <section className="side-block">
-      <SideTitle icon={<Link2 size={17} />} href={linkHeading ? "/feed" : undefined} label={linkHeading ? "浏览全部内容" : undefined}>
-        站内导航
-      </SideTitle>
-      <ul className="link-list">
-        {siteLinks
-          .filter((l) => l.href !== current)
-          .map((l) => (
-            <li key={l.href}>
-              <Link href={l.href}>
-                <span>
-                  {l.label}
-                  <small>{l.hint}</small>
-                </span>
-                <span className="sidebar-row-end" aria-hidden="true">
-                  <ArrowRight size={16} />
-                </span>
-              </Link>
-            </li>
-          ))}
-      </ul>
-    </section>
-  );
-}
-export function Sidebar({ current, mode }: { current?: string; mode?: "feed" | "projects" }) {
-  // Project listings are short: keep only contextual discovery on wide
-  // screens, rather than an author profile, heatmap, news and popular rail
-  // stretching well beyond the final project.
-  if (mode === "projects") {
-    return (
-      <aside className="site-sidebar projects-sidebar" aria-label="项目页辅助导航">
-        <TopicsBlock linkHeading={false} />
-        <SiteLinksBlock current={current} linkHeading={false} />
-      </aside>
-    );
-  }
-  return (
-    <aside className="site-sidebar" aria-label="侧栏">
-      <section className="side-block profile-block">
-        <div className="profile-head">
-          <Avatar size={60} className="profile-mark" />
-          <div>
-            <h2>{site.name}</h2>
-            <p className="mono">{site.tagline}</p>
-          </div>
-        </div>
-        <p className="profile-text">{site.description}</p>
-        <div className="profile-tags" aria-label="本站主题标签">
-          {(site.profileTags || []).map((tag) => <span key={tag}>{tag}</span>)}
-        </div>
-        <div className="profile-links">
-          <a
-            className="icon-button"
-            href={assetURL("/rss.xml")}
-            download={offlinePreview() ? `${site.name}-rss.xml` : undefined}
-            aria-label="订阅 RSS"
-            data-tip="RSS 订阅"
-          >
-            <Rss size={17} />
-          </a>
-          <Link
-            className="icon-button"
-            href="/about"
-            aria-label="关于本站"
-            data-tip="关于本站"
-          >
-            <Info size={17} />
-          </Link>
-          <SocialIcons />
-        </div>
-        <details className="sidebar-note">
-          <summary>阅读与收藏</summary>
-          <p>点击书签可保存文章；选中文字可添加私人划线。相关记录仅保存在当前浏览器。</p>
-        </details>
-      </section>
-      <TopicsBlock linkHeading={mode !== "feed"} />
-      <RecentBlock />
-      <SiteLinksBlock current={current} linkHeading={mode !== "feed"} />
-      <PopularBlock />
-    </aside>
   );
 }

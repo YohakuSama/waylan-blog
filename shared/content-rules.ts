@@ -2,6 +2,7 @@
 // anything the admin accepts is guaranteed to build, and vice versa.
 import yaml from "js-yaml";
 import { contentTypes, type ContentType, type ProjectInfo } from "./types";
+import { validISODate } from "./date";
 
 export type Frontmatter = Record<string, unknown>;
 
@@ -14,7 +15,8 @@ export function parseFrontmatter(source: string): {
 } {
   const match = source.match(FENCE);
   if (!match) return { data: {}, content: source.replace(/^﻿/, "") };
-  const data = match[1].trim() ? yaml.safeLoad(match[1]) : {};
+  // Keep bare YAML dates as strings so invalid days are not normalized by js-yaml.
+  const data = match[1].trim() ? yaml.safeLoad(match[1], { schema: yaml.JSON_SCHEMA }) : {};
   if (data === null || typeof data !== "object" || Array.isArray(data))
     throw new Error("front matter 必须是键值对");
   return { data: data as Frontmatter, content: source.slice(match[0].length) };
@@ -50,7 +52,7 @@ export const IMAGE_EXT = /\.(png|jpe?g|webp|avif|gif|svg)$/i;
 export function toDate(value: unknown, label: string) {
   const d =
     value instanceof Date ? value.toISOString().slice(0, 10) : String(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d)))
+  if (!validISODate(d))
     throw new Error(`${label} 必须是 YYYY-MM-DD 格式`);
   return d;
 }
