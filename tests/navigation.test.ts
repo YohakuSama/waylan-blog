@@ -9,6 +9,7 @@ import Reader from "../src/components/Reader";
 import worker from "../worker/index";
 import { metadata, posts, site, structuredData, typeLabels } from "../src/lib/data";
 import { invalidateComments } from "../src/lib/api";
+import { ArtImage } from "../src/components/UI";
 let dom: JSDOM,
   root: Root,
   y = 0;
@@ -136,6 +137,18 @@ afterEach(async () => {
   dom.window.close();
 });
 describe("React navigation and reading interactions (DOM integration, not browser layout)", () => {
+  it("renders another image after an earlier source failed", async () => {
+    const { createRoot } = await import("react-dom/client");
+    root = createRoot(document.getElementById("root")!);
+    await act(async () => { root.render(createElement(ArtImage, { src: "/images/missing.png", alt: "Missing" })); });
+    await act(async () => {
+      document.querySelector("img")!.dispatchEvent(new dom.window.Event("error"));
+    });
+    assert.ok(document.querySelector(".art-fallback"));
+    await act(async () => { root.render(createElement(ArtImage, { src: "/images/working.png", alt: "Working" })); });
+    assert.equal(document.querySelector(".art-fallback"), null);
+    assert.equal(document.querySelector("img")?.getAttribute("src"), "/images/working.png");
+  });
   it("keeps comments neutral and the result slot stable until the initial request resolves", async () => {
     const post = posts[0];
     const originalFetch = globalThis.fetch;
@@ -255,6 +268,25 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(document.querySelectorAll(".post-card").length,
       posts.filter((p) => p.topic === "notes").length);
   });
+  it("restores expanded pagination when returning from an in-place filter", async () => {
+    await mount("/feed");
+    assert.ok(posts.length > 8);
+    await click(document.querySelector(".feed-layout .load-more"));
+    await settle(80);
+    assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length);
+    await click([...document.querySelectorAll(".filter-tabs button")].find((button) =>
+      button.textContent === "随笔")!);
+    assert.equal(location.search, "?topic=notes");
+    await act(async () => {
+      history.back();
+      await pause(100);
+    });
+    await settle(60);
+    assert.equal(location.search, "");
+    assert.equal(document.querySelectorAll(".feed-list .feed-item").length, posts.length);
+    assert.equal(document.querySelector(".feed-layout button.load-more"), null);
+  });
+
   it("restores loaded feed batches and scroll when coming back from a later post", async () => {
     await mount("/feed");
     assert.ok(posts.length > 8, "test requires several feed batches");

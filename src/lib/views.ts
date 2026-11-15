@@ -23,12 +23,18 @@ function load() {
     .then((data) =>
       emit({ enabled: !!data?.enabled, views: { ...data?.views, ...state.views } }),
     )
-    .catch(() => {});
+    .catch(() => { requested = false; });
 }
 function subscribe(listener: () => void) {
   listeners.add(listener);
+  if (listeners.size === 1 && typeof window !== "undefined")
+    window.addEventListener("focus", load);
   load();
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size && typeof window !== "undefined")
+      window.removeEventListener("focus", load);
+  };
 }
 export const useViews = () =>
   useSyncExternalStore(subscribe, () => state, () => EMPTY);
