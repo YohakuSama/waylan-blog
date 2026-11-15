@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { authProvider, authReady, type Env } from "../worker/types";
 import { adminMissing } from "../worker/admin";
 
@@ -39,14 +39,27 @@ describe("GitHub App-only authorization", () => {
 
   it("contains no old OAuth App execution or broad-scope branch", () => {
     const auth = readFileSync("worker/auth.ts", "utf8");
-    const types = readFileSync("worker/types.ts", "utf8");
-    const admin = readFileSync("worker/admin.ts", "utf8");
     assert.doesNotMatch(auth, /scope:\s*["']public_repo["']/);
     assert.doesNotMatch(auth, /authClient(Id|Secret)/);
-    for (const source of [auth, types, admin]) {
-      assert.doesNotMatch(source, /GITHUB_CLIENT_ID|GITHUB_CLIENT_SECRET/);
-      assert.doesNotMatch(source, /["']oauth-app["']/);
+    // Guard every deployable Worker module, script and checked-in config
+    // against accidentally restoring the retired OAuth App credentials.
+    const deployablePaths = [
+      ".dev.vars.example",
+      ".env.example",
+      "wrangler.jsonc",
+      ...["worker", "scripts"].flatMap((dir) =>
+        readdirSync(dir)
+          .filter((name) => /\.(?:ts|mjs)$/.test(name))
+          .map((name) => `${dir}/${name}`),
+      ),
+    ];
+    for (const path of deployablePaths) {
+      const source = readFileSync(path, "utf8");
+      assert.doesNotMatch(source, /\bGITHUB_CLIENT_(?:ID|SECRET)\b/, `${path}: retired credentials`);
+      assert.doesNotMatch(source, /["']oauth-app["']/, `${path}: retired provider`);
     }
+    // GitHub App still uses OAuth callbacks, but does not request broad scopes.
+    assert.doesNotMatch(auth, /\bscope\s*:/);
   });
 
   it("pins the GitHub App provider and keeps real credentials outside tracked vars", () => {

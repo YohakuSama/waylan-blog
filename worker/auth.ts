@@ -166,7 +166,6 @@ export async function callback(request: Request, env: Env) {
       access_token?: string;
       error?: string;
       expires_in?: number;
-      scope?: string;
     };
     if (!response.ok || !token.access_token || token.error)
       throw new Error("exchange");
