@@ -545,6 +545,9 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal(original.includes("echo:v1"), false, "published comment remains scrubbed");
   });
   it("limits comments across many GitHub accounts sharing one IP", async () => {
+    // Keep all requests in one fixed-window bucket regardless of CI timing.
+    const frozenNow = Date.now();
+    mock.method(Date, "now", () => frozenNow);
     for (let i = 0; i < 8; i++) {
       // Simulate different authenticated users, all behind the same client IP.
       db.sqlite.prepare("UPDATE sessions SET user_id=?,user_json=?")
@@ -556,6 +559,9 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
     assert.equal((await send(requestBody({ body: "第九条评论" }))).status, 429);
   });
   it("enforces write rate limits across requests", async () => {
+    // Keep all requests in one fixed-window bucket regardless of CI timing.
+    const frozenNow = Date.now();
+    mock.method(Date, "now", () => frozenNow);
     for (let i = 0; i < 5; i++)
       assert.equal((await send(requestBody({ body: `不同评论 ${i}` }))).status, 201);
     assert.equal((await send(requestBody({ body: "第六条" }))).status, 429);
