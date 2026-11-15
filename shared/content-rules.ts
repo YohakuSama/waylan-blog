@@ -15,7 +15,8 @@ export function parseFrontmatter(source: string): {
 } {
   const match = source.match(FENCE);
   if (!match) return { data: {}, content: source.replace(/^﻿/, "") };
-  const data = match[1].trim() ? yaml.safeLoad(match[1]) : {};
+  // Keep bare YAML dates as strings so invalid days are not normalized by js-yaml.
+  const data = match[1].trim() ? yaml.safeLoad(match[1], { schema: yaml.JSON_SCHEMA }) : {};
   if (data === null || typeof data !== "object" || Array.isArray(data))
     throw new Error("front matter 必须是键值对");
   return { data: data as Frontmatter, content: source.slice(match[0].length) };

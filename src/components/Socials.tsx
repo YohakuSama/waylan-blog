@@ -42,22 +42,6 @@ const external = (s: Social) =>
     ? {}
     : { target: "_blank", rel: "me noopener noreferrer" };
 
-/** Icon-only row, used next to RSS in the sidebar profile. */
-export function SocialIcons() {
-  return socials.map((s) => (
-    <a
-      key={s.url}
-      className="icon-button"
-      href={s.url}
-      aria-label={s.label}
-      data-tip={s.kind === "email" ? s.url.slice(7) : s.kind === "phone" ? s.url.slice(4) : s.label}
-      {...external(s)}
-    >
-      <SocialIcon kind={s.kind} />
-    </a>
-  ));
-}
-
 /** Labelled list for the About page; e-mail shows the address itself. */
 export function SocialList() {
   if (!socials.length) return null;

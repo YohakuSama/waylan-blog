@@ -9,7 +9,6 @@ import { flushSync } from "react-dom";
 import { useReveal } from "../lib/reveal";
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Code2,
   FolderKanban,
@@ -484,19 +483,5 @@ export function FeedList({
         )}
       </div>}
     </>
-  );
-}
-export function ArrowLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: ReactNode;
-}) {
-  return (
-    <Link className="arrow-link" href={href}>
-      {children}
-      <ArrowUpRight size={14} />
-    </Link>
   );
 }
