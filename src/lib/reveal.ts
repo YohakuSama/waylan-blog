@@ -28,13 +28,10 @@ export function useReveal<T extends HTMLElement>(
     }
     if (!motionAllowed() || typeof IntersectionObserver === "undefined")
       return;
-    const fresh = [...root.querySelectorAll<HTMLElement>(selector)].filter(
+    const pending = [...root.querySelectorAll<HTMLElement>(selector)].filter(
       (el) => !("revealed" in el.dataset),
     );
-    const pending = fresh.filter((el) => {
-      el.dataset.revealed = "";
-      return all || el.getBoundingClientRect().top > window.innerHeight;
-    });
+    for (const el of pending) el.dataset.revealed = "";
     if (!pending.length) return;
     for (const el of pending) el.classList.add("reveal-pending");
     const observer = new IntersectionObserver(
