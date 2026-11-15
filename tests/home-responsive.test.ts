@@ -42,7 +42,9 @@ describe("home hero mobile and tablet layout", () => {
     assert.ok(pages.includes('value={type}'));
     assert.ok(pagesCss.includes(".feed-mobile-filter-fields select {"));
     assert.ok(pagesCss.includes("min-height: 44px;"));
-    assert.ok(feed.includes("aria-pressed={selected}"));
+    assert.ok(feed.includes('aria-current={selected ? "page" : undefined}'));
+    assert.equal(feed.includes("aria-pressed={selected}"), false,
+      "retired button-style type tabs must not return");
     assert.equal(feed.includes('className="type-fill"'), false);
   });
   it("keeps two columns from 1120px and stacks the sidebar below that width", () => {

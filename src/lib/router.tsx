@@ -64,7 +64,7 @@ export function RouterProvider({
     pendingTarget = useRef<{ route: string; serial: number } | null>(null),
     pathRef = useRef(path);
   const positions = useRef(new Map<string, number>()),
-    lastOrigin = useRef(transient.get("last-origin", transient.get("last-list", "/feed"))),
+    lastOrigin = useRef(transient.get("last-origin", "/feed")),
     visitedRoutes = useRef(new Map<string, VisitedRoute>());
   const fileHistory = useRef({
     entries: [{ route: initialPath, key: "" }],
