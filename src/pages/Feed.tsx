@@ -35,6 +35,7 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
   const showClearFilters = hasActiveFilters &&
     (type !== "all" || topic !== "all" || sort !== "newest" || (!!query && !!tag));
   const [density, setDensity] = useDensity();
+  const visibleTopics = site.topics.filter((t) => t.id === topic || usedTopics.includes(t));
   const scoped = posts.filter(
     (p) =>
       (topic === "all" || p.topic === topic) &&
@@ -84,8 +85,7 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
                       onChange={(e) => update({ topic: e.target.value })}
                     >
                       <option value="all">全部主题</option>
-                      {site.topics
-                        .filter((t) => t.id === topic || usedTopics.includes(t))
+                      {visibleTopics
                         .map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                     <ChevronDown size={13} aria-hidden="true" />
@@ -110,8 +110,7 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
                 >
                   全部主题
                 </button>
-                {site.topics
-                  .filter((t) => t.id === topic || usedTopics.includes(t))
+                {visibleTopics
                   .map((t) => (
                     <button
                       type="button"
@@ -171,8 +170,7 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
                   <span>写作主题</span>
                   <select value={topic} onChange={(e) => update({ topic: e.target.value })}>
                     <option value="all">全部主题</option>
-                    {site.topics
-                      .filter((t) => t.id === topic || usedTopics.includes(t))
+                    {visibleTopics
                       .map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </label>
