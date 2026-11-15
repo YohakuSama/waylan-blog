@@ -42,17 +42,18 @@ export async function recordView(request: Request, env: Env, postId: string) {
   const mark = await hash(
     `${env.SESSION_SECRET}:view:${ip}:${postId}:${day}`,
   );
-  const fresh = await env.DB.prepare(
-    "INSERT OR IGNORE INTO view_marks(mark, expires_at) VALUES(?, ?)",
-  )
-    .bind(mark, (day + 2) * 86400)
-    .run();
-  if (!fresh.meta.changes)
-    return json({ enabled: true, views: await current() });
-  const row = await env.DB.prepare(
-    "INSERT INTO post_views(post_id, views, updated_at) VALUES(?, 1, ?) ON CONFLICT(post_id) DO UPDATE SET views=views+1, updated_at=excluded.updated_at RETURNING views",
-  )
-    .bind(postId, t)
-    .first<{ views: number }>();
-  return json({ enabled: true, views: row?.views || 1 });
+  // Both statements share one D1 transaction. If the counter update fails,
+  // the mark is rolled back so the visitor can retry.
+  // SQLite changes() reports the preceding INSERT in this transaction.
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT OR IGNORE INTO view_marks(mark, expires_at) VALUES(?, ?)",
+    ).bind(mark, (day + 2) * 86400),
+    env.DB.prepare(
+      "INSERT INTO post_views(post_id, views, updated_at) " +
+      "SELECT ?, 1, ? WHERE changes() = 1 " +
+      "ON CONFLICT(post_id) DO UPDATE SET views=views+1, updated_at=excluded.updated_at",
+    ).bind(postId, t),
+  ]);
+  return json({ enabled: true, views: await current() });
 }

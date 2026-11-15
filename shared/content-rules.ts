@@ -2,6 +2,7 @@
 // anything the admin accepts is guaranteed to build, and vice versa.
 import yaml from "js-yaml";
 import { contentTypes, type ContentType, type ProjectInfo } from "./types";
+import { validISODate } from "./date";
 
 export type Frontmatter = Record<string, unknown>;
 
@@ -50,7 +51,7 @@ export const IMAGE_EXT = /\.(png|jpe?g|webp|avif|gif|svg)$/i;
 export function toDate(value: unknown, label: string) {
   const d =
     value instanceof Date ? value.toISOString().slice(0, 10) : String(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(Date.parse(d)))
+  if (!validISODate(d))
     throw new Error(`${label} 必须是 YYYY-MM-DD 格式`);
   return d;
 }
