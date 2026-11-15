@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
-import { listTransition } from "../lib/motion";
 import { useReveal } from "../lib/reveal";
 import {
   ArrowRight,
@@ -26,7 +25,7 @@ import {
 import { storage, transient } from "../lib/storage";
 import { Link } from "../lib/router";
 import { useApi } from "../lib/api";
-import { posts, shortDate, typeLabels, typeOrder } from "../lib/data";
+import { shortDate, typeLabels, typeOrder } from "../lib/data";
 import { ArtImage } from "./UI";
 import { BookmarkButton } from "./Shelf";
 import { useViews, viewsLabel } from "../lib/views";
@@ -46,15 +45,13 @@ const typeIcons: Record<ContentType, LucideIcon> = {
  * avoid duplicating text in a measured overlay that breaks when tabs wrap. */
 export function TypeTabs({
   active,
-  source = posts,
-  onSelect,
+  source,
   hrefFor,
   label = "按内容类型筛选",
 }: {
   active: TypeFilter;
-  source?: Post[];
-  onSelect?: (type: TypeFilter) => void;
-  hrefFor?: (type: TypeFilter) => string;
+  source: Post[];
+  hrefFor: (type: TypeFilter) => string;
   label?: string;
 }) {
   const options: TypeFilter[] = ["all", ...typeOrder];
@@ -73,20 +70,10 @@ export function TypeTabs({
           className: `type-tab${selected ? " active" : ""}${count ? "" : " empty"}`,
           title: count ? undefined : "暂无内容",
         };
-        return hrefFor ? (
+        return (
           <Link key={type} href={hrefFor(type)} {...props} aria-current={selected ? "page" : undefined}>
             {content}
           </Link>
-        ) : (
-          <button
-            key={type}
-            type="button"
-            {...props}
-            aria-pressed={selected}
-            onClick={() => listTransition(() => flushSync(() => onSelect?.(type)))}
-          >
-            {content}
-          </button>
         );
       })}
     </div>
