@@ -31,12 +31,13 @@ const PROJECT = ["status", "stack", "repo", "demo"] as const;
 export const str = (v: unknown) =>
   v === undefined || v === null ? "" : Array.isArray(v) ? v.join(", ") : String(v);
 export function toForm(data: Record<string, unknown>, body: string, stem: string): Form {
+  const type = !stem && data.type === undefined ? "article" : data.type;
+  if (!contentTypes.includes(type as ContentType))
+    throw new Error("文章类型缺失或无效");
   return {
     title: str(data.title),
     slug: str(data.slug) || stem,
-    type: contentTypes.includes(data.type as ContentType)
-      ? (data.type as ContentType)
-      : "article",
+    type: type as ContentType,
     topic: str(data.topic),
     date: str(data.date),
     updated: str(data.updated),
@@ -65,7 +66,7 @@ export function toData(form: Form, original: Record<string, unknown>, stem: stri
   };
   set("title", form.title);
   if ("slug" in original || form.slug !== stem) set("slug", form.slug);
-  if ("type" in original || form.type !== "article") set("type", form.type);
+  set("type", form.type);
   set("excerpt", form.excerpt);
   set("date", form.date);
   set("updated", form.updated);

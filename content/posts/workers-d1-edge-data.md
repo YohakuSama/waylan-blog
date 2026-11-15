@@ -1,6 +1,7 @@
 ---
 id: echo-003
 slug: workers-d1-edge-data
+type: article
 title: Cloudflare Workers + D1：一个小而完整的边缘数据层
 excerpt: 静态站点只需要很少的服务端能力：登录、评论和批注。用一个 Worker 同时托管静态资源与 API，再配一个 D1 数据库，就能覆盖这些需求。
 date: 2026-10-24

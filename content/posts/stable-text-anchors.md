@@ -1,6 +1,7 @@
 ---
 id: echo-004
 slug: stable-text-anchors
+type: article
 title: 读 Web Annotation 数据模型：文本锚点如何在改稿后存活
 excerpt: 一条批注指向的是“某几个字”，而文章会被修改。精读 W3C Web Annotation 的选择器设计，并记录我在实现中采用的定位顺序与失败策略。
 date: 2026-10-20

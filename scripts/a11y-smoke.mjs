@@ -61,7 +61,6 @@ try {
         await context.addInitScript(({ skin, theme }) => {
           localStorage.setItem("echo:skin", JSON.stringify(skin));
           localStorage.setItem("echo:theme", JSON.stringify(theme));
-          localStorage.setItem("echo:motion", JSON.stringify("reduced"));
         }, { skin, theme });
         const page = await context.newPage();
         await page.route("**/api/status", (route) => route.fulfill({
@@ -81,9 +80,6 @@ try {
     for (const width of widths) {
       const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
       try {
-        await context.addInitScript(() => {
-          localStorage.setItem("echo:motion", JSON.stringify("reduced"));
-        });
         const page = await context.newPage();
         await page.route("**/api/session", (route) => route.fulfill({ json: { user: null } }));
         await page.route("**/api/status", (route) => route.fulfill({

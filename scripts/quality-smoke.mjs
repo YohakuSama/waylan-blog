@@ -48,11 +48,10 @@ async function publicBrowsers() {
           if (name !== "firefox" && width < 900) Object.assign(options, { isMobile: true, hasTouch: true });
           const context = await browser.newContext(options);
           try {
-            await context.addInitScript((level) => {
-              localStorage.setItem("echo:motion", JSON.stringify(level));
+            await context.addInitScript(() => {
               localStorage.setItem("echo:skin", JSON.stringify("editorial"));
               localStorage.setItem("echo:theme", JSON.stringify("light"));
-            }, motion);
+            });
             const page = await context.newPage();
             const errors = [];
             let stage = "home hydration";

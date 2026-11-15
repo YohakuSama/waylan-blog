@@ -16,7 +16,7 @@ async function run(engine,name,width){
   try{
     const ctx=await browser.newContext({viewport:{width,height:900},reducedMotion:"no-preference",hasTouch:width>1024&&width<=1366});
     try{
-      await ctx.addInitScript(()=>{localStorage.setItem("echo:motion",JSON.stringify("full"));localStorage.setItem("echo:skin",JSON.stringify("editorial"));localStorage.setItem("echo:theme",JSON.stringify("light"))});
+      await ctx.addInitScript(()=>{localStorage.setItem("echo:skin",JSON.stringify("editorial"));localStorage.setItem("echo:theme",JSON.stringify("light"))});
       const page=await ctx.newPage();
       const errors=[];page.on("pageerror",e=>errors.push(String(e)));
       await page.route("**/api/status",route=>route.fulfill({json:{comments:false,notifications:false}}));
@@ -453,7 +453,6 @@ async function auditWideReadingBlocks(engine,name,width) {
       await ctx.addInitScript(()=>{
         localStorage.setItem("echo:skin",JSON.stringify("editorial"));
         localStorage.setItem("echo:theme",JSON.stringify("light"));
-        localStorage.setItem("echo:motion",JSON.stringify("reduced"));
       });
       const page=await ctx.newPage(),errors=[],hydrationErrors=[];
       page.on("pageerror",e=>errors.push(String(e)));

@@ -76,8 +76,7 @@ async function scenario(engine, name, width, motion, seed) {
       reducedMotion: motion === "reduced" ? "reduce" : "no-preference",
     });
     try {
-      await context.addInitScript(({ motion, skin, theme }) => {
-        localStorage.setItem("echo:motion", JSON.stringify(motion));
+      await context.addInitScript(({ skin, theme }) => {
         localStorage.setItem("echo:skin", JSON.stringify(skin));
         localStorage.setItem("echo:theme", JSON.stringify(theme));
         window.__qaHistory = [];

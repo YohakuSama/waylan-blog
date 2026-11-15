@@ -29,7 +29,6 @@ async function run(engine, label, width, mobile) {
     });
     try {
       await ctx.addInitScript(() => {
-        localStorage.setItem("echo:motion", JSON.stringify("full"));
         localStorage.setItem("echo:skin", JSON.stringify("editorial"));
         localStorage.setItem("echo:theme", JSON.stringify("dark"));
       });

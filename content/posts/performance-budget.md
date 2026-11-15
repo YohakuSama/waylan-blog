@@ -1,6 +1,7 @@
 ---
 id: echo-006
 slug: performance-budget
+type: article
 title: 前端性能预算：把“别变慢”写成构建门禁
 excerpt: 性能很少在某一次提交里突然变差，而是在几十次“只多了几 KB”之后。给资源体积设定预算，并让 CI 在超出时失败，是我目前最有效的做法。
 date: 2026-10-10

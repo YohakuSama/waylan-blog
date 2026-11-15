@@ -75,7 +75,6 @@ try {
       await context.addInitScript(({ skin, theme }) => {
         localStorage.setItem("echo:skin", JSON.stringify(skin));
         localStorage.setItem("echo:theme", JSON.stringify(theme));
-        localStorage.setItem("echo:motion", JSON.stringify("reduced"));
         if (localStorage.getItem("echo:density") === null)
           localStorage.setItem("echo:density", JSON.stringify("compact"));
         localStorage.setItem("echo:reading", JSON.stringify({ slug: "a-room-on-the-internet", title: "静态优先：内容站的预渲染、水合与边缘 API", progress: 13 }));
@@ -1923,7 +1922,6 @@ try {
             await firstVisit.addInitScript(({ skin, theme }) => {
               localStorage.setItem("echo:skin", JSON.stringify(skin));
               localStorage.setItem("echo:theme", JSON.stringify(theme));
-              localStorage.setItem("echo:motion", JSON.stringify("reduced"));
             }, variant);
             const guest = await firstVisit.newPage();
             const errors = [];

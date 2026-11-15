@@ -26,7 +26,7 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
     tag = params.get("tag") || "",
     sort = params.get("sort") === "oldest" ? "oldest" : "newest";
   const type: TypeFilter =
-    rawType === "all" || isContentType(rawType) ? rawType : "all";
+    isContentType(rawType) ? rawType : "all";
   const hasActiveFilters =
     type !== "all" || topic !== "all" || !!query || !!tag || sort !== "newest";
   const activeFacetCount = Number(type !== "all") + Number(topic !== "all");
@@ -51,13 +51,10 @@ export function Feed({ onOpenSearch }: { onOpenSearch: () => void }) {
   function href(values: Record<string, string>) {
     const next = new URLSearchParams(params);
     for (const [k, v] of Object.entries(values)) {
-      if (!v || v === "newest" || (k === "topic" && v === "all"))
+      if (!v || v === "newest" || ((k === "type" || k === "topic") && v === "all"))
         next.delete(k);
       else next.set(k, v);
     }
-    // /feed is the canonical "all content" route; older ?type=all
-    // permalinks are still accepted as a backwards-compatible alias.
-    if (next.get("type") === "all") next.delete("type");
     const qs = next.toString();
     return `/feed${qs ? "?" + qs : ""}`;
   }

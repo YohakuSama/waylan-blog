@@ -1,6 +1,7 @@
 ---
 id: echo-001
 slug: a-room-on-the-internet
+type: article
 title: 静态优先：内容站的预渲染、水合与边缘 API
 excerpt: 正文在构建时渲染成完整 HTML，交互在水合后接管，登录与评论交给同一个 Worker。记录这个博客的架构取舍，以及为水合一致性处理的那些细节。
 date: 2026-10-31

@@ -68,7 +68,6 @@ try {
       await context.addInitScript(({ skin, theme }) => {
         localStorage.setItem("echo:skin", JSON.stringify(skin));
         localStorage.setItem("echo:theme", JSON.stringify(theme));
-        localStorage.setItem("echo:motion", JSON.stringify("reduced"));
       }, appearance);
       const page = await context.newPage();
       const errors = [];

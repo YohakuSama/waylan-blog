@@ -27,7 +27,6 @@ async function run(engine, label, width, height, touch) {
     });
     try {
       await context.addInitScript(() => {
-        localStorage.setItem("echo:motion", JSON.stringify("reduced"));
         window.__copyCount = 0;
         window.__shareCount = 0;
         Object.defineProperty(navigator, "clipboard", { configurable: true, value: {

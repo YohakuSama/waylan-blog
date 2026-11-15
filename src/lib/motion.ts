@@ -1,40 +1,14 @@
-import { storage } from "./storage";
-export type MotionPreference = "system" | "full" | "reduced";
-export function motionPreference(): MotionPreference {
-  const current =
-    typeof document !== "undefined"
-      ? document.documentElement.dataset.motionPreference
-      : undefined;
-  const value = current || storage.get<string>("motion", "system");
-  return value === "full" || value === "reduced" || value === "system" ? value : "system";
-}
 export function motionAllowed() {
-  const preference = motionPreference();
-  return (
-    preference === "full" ||
-    (preference === "system" &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches)
-  );
+  return !matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 export function motionLevel() {
   return !motionAllowed()
     ? "off"
-    : motionPreference() === "full" || (navigator.hardwareConcurrency || 8) > 2
-      ? "shared"
-      : "simple";
+    : (navigator.hardwareConcurrency || 8) > 2 ? "shared" : "simple";
 }
-export function applyMotionPreference(preference = motionPreference()) {
+export function applyMotionPreference() {
   document.documentElement.dataset.motion =
-    preference === "reduced" ||
-    (preference === "system" &&
-      matchMedia("(prefers-reduced-motion: reduce)").matches)
-      ? "reduced"
-      : "full";
-  document.documentElement.dataset.motionPreference = preference;
-}
-export function setMotionPreference(preference: MotionPreference) {
-  storage.set("motion", preference);
-  applyMotionPreference(preference);
+    matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full";
 }
 export function animateElement(
   element: Element | null,

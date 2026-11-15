@@ -80,7 +80,8 @@ export function postMeta(data: Frontmatter, file: string, topics: string[]) {
   };
   const slug = String(data.slug || file.replace(/\.md$/, ""));
   const id = String(data.id || slug);
-  const type = (data.type || "article") as ContentType;
+  if (!data.type) fail("缺少 type");
+  const type = data.type as ContentType;
   if (!contentTypes.includes(type))
     fail(`未知的 type「${data.type}」，可选：${contentTypes.join(" / ")}`);
   for (const key of ["title", "date", "topic", ...(data.cover ? ["coverAlt"] : [])])

@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
 import {
   motionAllowed,
   motionLevel,
-  setMotionPreference,
+  applyMotionPreference,
   navigateWithMotion,
   listTransition,
   animateDialogResize,
@@ -164,20 +164,16 @@ describe("motion API dispatch, fallback geometry and cancellation (DOM integrati
     assert.equal(changes, 1);
     assert.equal(calls.length, 0);
   });
-  it("allows runtime motion preferences but keeps coarse-pointer route changes opaque", async () => {
+  it("respects system reduced motion even when local storage is unavailable", async () => {
     reduced = true;
     Object.defineProperty(dom.window.Storage.prototype, "setItem", {
-      value() {
-        throw new Error("blocked");
-      },
+      value() { throw new Error("blocked"); },
       configurable: true,
     });
-    setMotionPreference("full");
-    assert.equal(document.documentElement.dataset.motion, "full");
-    assert.equal(motionAllowed(), true);
-    assert.equal(motionLevel(), "shared");
-    // The test's mock matchMedia reports a coarse pointer too. iOS route
-    // changes deliberately skip page fades to avoid Safari toolbar flashes.
+    applyMotionPreference();
+    assert.equal(document.documentElement.dataset.motion, "reduced");
+    assert.equal(motionAllowed(), false);
+    assert.equal(motionLevel(), "off");
     let changes = 0;
     await navigateWithMotion(() => changes++).finished;
     assert.equal(changes, 1);
@@ -339,7 +335,8 @@ describe("list animation single-flight and safe recovery", () => {
     assert.equal(updates, 2, "after rejection the control must work again");
   });
   it("still applies changes immediately with reduced motion", () => {
-    setMotionPreference("reduced");
+    reduced = true;
+    applyMotionPreference();
     let updates = 0;
     for (let i = 0; i < 4; i++) listTransition(() => updates++);
     assert.equal(updates, 4);
@@ -418,12 +415,14 @@ describe("immersive composer viewport and motion contract", () => {
   });
   it("respects reduced-motion preferences", () => {
     const element = document.createElement("dialog");
-    setMotionPreference("reduced");
+    reduced = true;
+    applyMotionPreference();
     assert.equal(
       animateDialogResize(element, rect(400, 200, 760, 700), rect(0, 0, 1920, 1000), "18px", "0px"),
       null,
     );
     assert.equal(calls.length, 0);
-    setMotionPreference("system");
+    reduced = false;
+    applyMotionPreference();
   });
 });

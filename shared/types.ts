@@ -29,7 +29,6 @@ export type ProjectInfo = {
 export type Post = {
   id: string;
   slug: string;
-  /** Older Markdown files have no type and stay long-form articles. */
   type: ContentType;
   title: string;
   excerpt: string;

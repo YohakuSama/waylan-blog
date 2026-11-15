@@ -57,10 +57,7 @@ export function Settings() {
       const s = skinPreference(),
         t = themePreference();
       applyAppearance(s, t);
-      // There is no manual animation preset anymore. Honor the OS preference;
-      // a previously saved "full" or "reduced" must not silently override it.
-      storage.remove("motion");
-      applyMotionPreference("system");
+      applyMotionPreference();
       setSkinState(s);
       setTheme(t);
       const savedSize = storage.get<number>("font-size", defaultReaderFontSize);

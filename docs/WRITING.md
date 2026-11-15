@@ -9,6 +9,7 @@
 ```markdown
 ---
 title: Win11 装完系统后我会做的十件事
+type: article
 date: 2026-11-01
 topic: system
 tags: [Windows, 系统优化]
@@ -17,7 +18,7 @@ tags: [Windows, 系统优化]
 正文从这里开始，标准 Markdown 即可。
 ```
 
-只有 `title`、`date`、`topic` 是必填项，其余都可选：
+`title`、`type`、`date`、`topic` 是必填项，其余可选：
 
 | 字段      | 说明                                                                                                                                            |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,7 +29,7 @@ tags: [Windows, 系统优化]
 | `excerpt` | 摘要。不写时自动截取正文开头；写了会同时显示在文章标题下方                                                                                      |
 | `updated` | 修订日期。文章标题下会显示「更新于 …」，RSS/Sitemap 同步更新                                                                                    |
 | `draft`   | 写 `draft: true` 为草稿，不会发布，写完删掉这一行即可                                                                                           |
-| `type`    | 内容类型，默认 `article` 文章；可选 `note` 笔记、`thought` 想法、`journal` 日志、`project` 项目                                                 |
+| `type`    | 必填：`article` 文章、`note` 笔记、`thought` 想法、`journal` 日志或 `project` 项目                                                 |
 | `slug`    | 网址，默认等于文件名：`/post/win11-setup`。文件名是中文时必须手写，只能用小写英文、数字和连字符                                                 |
 | `cover`   | 封面图，例如 `/images/win11-cover.png`；写了封面必须同时写 `coverAlt`（图片的文字说明）                                                         |
 

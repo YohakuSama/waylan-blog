@@ -20,7 +20,6 @@ async function run(engine,browser,width){
     const context=await b.newContext({viewport:{width,height:780},reducedMotion:"reduce"});
     try{
       await context.addInitScript(()=>{
-        localStorage.setItem("echo:motion",JSON.stringify("reduced"));
         localStorage.setItem("echo:skin",JSON.stringify("editorial"));
         localStorage.setItem("echo:theme",JSON.stringify("light"));
         Object.defineProperty(navigator,"clipboard",{configurable:true,value:{writeText:async text=>{window.__qaCopiedText=text;}}});

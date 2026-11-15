@@ -50,12 +50,12 @@ describe("mobile reader regression contracts", () => {
       !settings.includes('<legend>动效</legend>') &&
       !settings.includes('const motions:'),
       "the three unused animation presets should not clutter reading settings");
-    assert.ok(settings.includes('applyMotionPreference("system")') &&
-      settings.includes('storage.remove("motion")'),
-      "old stored overrides must not silently defeat system reduced motion");
-    assert.ok(bootScript.includes("dataset.motionPreference='system'") &&
-      bootScript.includes("prefers-reduced-motion: reduce") &&
-      !bootScript.includes("localStorage.getItem('echo:motion')"),
+    assert.ok(settings.includes("applyMotionPreference()") &&
+      !settings.includes('storage.remove("motion")'),
+      "motion must use the operating-system preference without legacy storage");
+    assert.ok(bootScript.includes("prefers-reduced-motion: reduce") &&
+      !bootScript.includes("motionPreference") &&
+      !bootScript.includes("echo:motion"),
       "first paint must follow the operating system before React hydrates");
   });
   it("matches terminal wordmark scale to the shared editorial logo slot", () => {

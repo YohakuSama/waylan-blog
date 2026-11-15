@@ -1,6 +1,7 @@
 ---
 id: echo-002
 slug: design-tokens-theming
+type: article
 title: 设计 token 的三层结构：让多主题不再是第二套样式
 excerpt: 深色模式之所以难维护，往往是因为颜色直接写在了组件里。把 token 分成原始值、语义与组件三层，主题切换就只是换一组映射。
 date: 2026-10-28

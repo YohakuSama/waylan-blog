@@ -364,7 +364,6 @@ try {
   await click(dom, doc.querySelector(".settings-button"));
   assert.equal(doc.querySelector('input[name="motion-preference"]'), null,
     "obsolete manual motion settings must remain removed from the offline preview");
-  assert.equal(doc.documentElement.dataset.motionPreference, "system");
   assert.equal(doc.documentElement.dataset.motion, "full",
     "the simulated no-reduction OS preference must enable motion");
   await click(dom, doc.querySelector(".settings-dialog .dialog-header button"));

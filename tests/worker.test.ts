@@ -521,7 +521,7 @@ describe("Worker HTTP API with real SQLite schema and mocked GitHub transport", 
       assert.equal(result.status, 400);
       const error = (await result.json()) as { code: string; message: string };
       assert.equal(error.code, code);
-      if (code === "COMMENT_LENGTH") assert.equal(error.message, "请写下 1 到 6000 字的想法。");
+      if (code === "COMMENT_LENGTH") assert.equal(error.message, "评论需要 1 到 6000 字。");
     }
     assert.equal(writeTokens.length, 0);
     const created = (await (await send(requestBody())).json()) as { comment: Comment };

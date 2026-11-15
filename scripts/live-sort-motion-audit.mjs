@@ -75,7 +75,6 @@ async function audit(engine, name, width, seed) {
     });
     try {
       await context.addInitScript(() => {
-        localStorage.setItem("echo:motion", JSON.stringify("full"));
         localStorage.setItem("echo:skin", JSON.stringify("editorial"));
         localStorage.setItem("echo:theme", JSON.stringify("light"));
       });

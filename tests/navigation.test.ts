@@ -372,7 +372,6 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.equal(transitions, 0);
   });
   it("changes between collections and articles without overlapping native snapshots", async () => {
-    document.documentElement.dataset.motionPreference = "full";
     Object.defineProperty(globalThis, "matchMedia", {
       value: () => ({ matches: false }),
       configurable: true,
@@ -1706,16 +1705,14 @@ describe("React navigation and reading interactions (DOM integration, not browse
     assert.ok(document.querySelector(".about-prose"));
     assert.equal(y, 960, "browser back should restore about reading position");
   });
-  it("removes legacy manual motion settings while honoring the system preference", async () => {
-    localStorage.setItem("echo:motion", JSON.stringify("full"));
+  it("uses system motion settings without manual controls", async () => {
     await mount();
     await click(document.querySelector(".settings-button"));
     assert.ok(document.querySelector(".settings-dialog[open]"));
     assert.equal(document.querySelector(".motion-choice"), null,
       "obsolete full/reduced animation options must stay removed");
-    assert.equal(localStorage.getItem("echo:motion"), null,
-      "legacy local motion settings must not override operating-system accessibility");
-    assert.equal(document.documentElement.dataset.motionPreference, "system");
+    assert.equal(document.documentElement.dataset.motion,
+      matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "full");
     await click(document.querySelector(".settings-dialog .dialog-header button"));
     await settle(30);
     assert.equal(document.querySelector(".settings-dialog[open]"), null);

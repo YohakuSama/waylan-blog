@@ -44,10 +44,12 @@ describe("Admin editor form", () => {
     };
     const data = toData(form, {}, "");
     assert.deepEqual(data.tags, ["甲", "乙", "丙"]);
-    assert.equal("type" in data, false);
+    assert.equal(data.type, "article");
     const meta = postMeta(data, "new-post.md", topics);
     assert.equal(meta.slug, "new-post");
     assert.equal(meta.type, "article");
+    assert.throws(() => postMeta({ ...data, type: undefined }, "new-post.md", topics), /缺少 type/);
+    assert.throws(() => toForm({ title: "旧文章" }, "正文", "old-post"), /文章类型缺失或无效/);
   });
   it("switching away from project drops project fields; clearing fields removes them", () => {
     const project = posts.find((p) => p.data.type === "project")!;
